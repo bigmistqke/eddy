@@ -1,0 +1,377 @@
+{
+  "lexicon": 1,
+  "id": "app.klip.project",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A Klip project containing tracks, layout, and mix settings",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["title", "canvas", "tracks", "createdAt"],
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2048
+          },
+          "bpm": {
+            "type": "number",
+            "description": "Beats per minute for grid/sync features",
+            "minimum": 20,
+            "maximum": 400
+          },
+          "duration": {
+            "type": "integer",
+            "description": "Total project duration in milliseconds",
+            "minimum": 0
+          },
+          "canvas": {
+            "type": "ref",
+            "ref": "#canvas",
+            "description": "Output canvas dimensions"
+          },
+          "grids": {
+            "type": "array",
+            "items": { "type": "ref", "ref": "#gridDef" },
+            "maxLength": 32,
+            "description": "Reusable grid definitions"
+          },
+          "defaultGridId": {
+            "type": "string",
+            "description": "ID of the default grid to use"
+          },
+          "tracks": {
+            "type": "array",
+            "items": { "type": "ref", "ref": "#track" },
+            "maxLength": 32,
+            "description": "Ordered list of tracks (MVP: max 4)"
+          },
+          "master": {
+            "type": "ref",
+            "ref": "#mixSettings",
+            "description": "Master bus settings"
+          },
+          "parent": {
+            "type": "ref",
+            "ref": "com.atproto.repo.strongRef",
+            "description": "Source project if this is a remix"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "datetime"
+          }
+        }
+      }
+    },
+
+    "canvas": {
+      "type": "object",
+      "description": "Output canvas/frame dimensions",
+      "required": ["width", "height"],
+      "properties": {
+        "width": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096
+        },
+        "background": {
+          "type": "string",
+          "description": "Background color (hex) or 'transparent'",
+          "maxLength": 32
+        }
+      }
+    },
+
+    "gridDef": {
+      "type": "object",
+      "description": "A reusable grid definition. MVP: equal columns/rows. Extensible later.",
+      "required": ["id", "columns", "rows"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this grid",
+          "maxLength": 64
+        },
+        "columns": {
+          "type": "integer",
+          "description": "Number of equal columns (MVP). Future: array of sizes.",
+          "minimum": 1,
+          "maximum": 16
+        },
+        "rows": {
+          "type": "integer",
+          "description": "Number of equal rows (MVP). Future: array of sizes.",
+          "minimum": 1,
+          "maximum": 16
+        },
+        "gap": {
+          "type": "number",
+          "description": "Gap between cells (0-1, relative to canvas)",
+          "minimum": 0,
+          "maximum": 0.5,
+          "default": 0
+        },
+        "padding": {
+          "type": "number",
+          "description": "Padding around grid (0-1, relative to canvas)",
+          "minimum": 0,
+          "maximum": 0.5,
+          "default": 0
+        }
+      }
+    },
+
+    "track": {
+      "type": "object",
+      "description": "A single track containing media and positioning",
+      "required": ["id", "type", "clips", "mix"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable ID for referencing this track"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "type": {
+          "type": "string",
+          "enum": ["video", "audio"],
+          "description": "Track type - video tracks have visual layout, audio tracks are mix-only"
+        },
+        "stem": {
+          "type": "ref",
+          "ref": "com.atproto.repo.strongRef",
+          "description": "Reference to app.klip.stem record"
+        },
+        "clips": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "#clip" },
+          "maxLength": 256,
+          "description": "Clips on this track (MVP: just 1)"
+        },
+        "mix": {
+          "type": "ref",
+          "ref": "#mixSettings"
+        },
+        "placement": {
+          "type": "ref",
+          "ref": "#placement",
+          "description": "How this track is positioned: grid cell or absolute"
+        },
+        "muted": {
+          "type": "boolean",
+          "default": false
+        },
+        "solo": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+
+    "clip": {
+      "type": "object",
+      "description": "A region on the timeline referencing part of a stem",
+      "required": ["id", "offset", "duration"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable ID for this clip"
+        },
+        "offset": {
+          "type": "integer",
+          "description": "Position on timeline in milliseconds",
+          "minimum": 0
+        },
+        "sourceOffset": {
+          "type": "integer",
+          "description": "Start position within the source stem (for trimming)",
+          "minimum": 0,
+          "default": 0
+        },
+        "duration": {
+          "type": "integer",
+          "description": "Duration in milliseconds",
+          "minimum": 0
+        },
+        "placement": {
+          "type": "ref",
+          "ref": "#placement",
+          "description": "Visual placement for this clip's duration. If omitted, inherits from track. Can reference a different gridId to change layout."
+        }
+      }
+    },
+
+    "placement": {
+      "type": "union",
+      "description": "Track/clip placement: grid cell reference or absolute positioning",
+      "refs": ["#gridPlacement", "#absolutePlacement"]
+    },
+
+    "gridPlacement": {
+      "type": "object",
+      "description": "Place in a grid cell. Grid is referenced by ID.",
+      "required": ["type", "gridId", "column", "row"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "grid"
+        },
+        "gridId": {
+          "type": "string",
+          "description": "Reference to a grid defined in project.grids"
+        },
+        "column": {
+          "type": "integer",
+          "description": "Column index (1-based, like CSS Grid)",
+          "minimum": 1
+        },
+        "row": {
+          "type": "integer",
+          "description": "Row index (1-based)",
+          "minimum": 1
+        },
+        "columnSpan": {
+          "type": "integer",
+          "description": "How many columns to span",
+          "minimum": 1,
+          "default": 1
+        },
+        "rowSpan": {
+          "type": "integer",
+          "description": "How many rows to span",
+          "minimum": 1,
+          "default": 1
+        },
+        "zIndex": {
+          "type": "integer",
+          "description": "Layer order within cell (for overlapping)",
+          "default": 0
+        },
+        "fit": {
+          "type": "string",
+          "enum": ["contain", "cover", "fill"],
+          "default": "cover",
+          "description": "How video fits within cell"
+        }
+      }
+    },
+
+    "absolutePlacement": {
+      "type": "object",
+      "description": "Absolute positioning on canvas (for PiP, overlays, free-form)",
+      "required": ["type", "x", "y", "width", "height"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "absolute"
+        },
+        "x": {
+          "type": "number",
+          "description": "X position (0-1, relative to canvas)"
+        },
+        "y": {
+          "type": "number",
+          "description": "Y position (0-1, relative to canvas)"
+        },
+        "width": {
+          "type": "number",
+          "description": "Width (0-1, relative to canvas)"
+        },
+        "height": {
+          "type": "number",
+          "description": "Height (0-1, relative to canvas)"
+        },
+        "zIndex": {
+          "type": "integer",
+          "description": "Layer order (higher = on top)",
+          "default": 0
+        },
+        "rotation": {
+          "type": "number",
+          "description": "Rotation in degrees",
+          "default": 0
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 1
+        },
+        "fit": {
+          "type": "string",
+          "enum": ["contain", "cover", "fill"],
+          "default": "contain"
+        },
+        "anchor": {
+          "type": "string",
+          "enum": ["center", "top-left", "top-right", "bottom-left", "bottom-right"],
+          "default": "top-left",
+          "description": "Which point x/y refers to"
+        }
+      }
+    },
+
+    "mixSettings": {
+      "type": "object",
+      "description": "Audio mix settings for a track or master bus",
+      "properties": {
+        "gain": {
+          "type": "number",
+          "description": "Volume multiplier (1.0 = unity)",
+          "minimum": 0,
+          "maximum": 4,
+          "default": 1
+        },
+        "pan": {
+          "type": "number",
+          "description": "Stereo pan (-1 = left, 0 = center, 1 = right)",
+          "minimum": -1,
+          "maximum": 1,
+          "default": 0
+        },
+        "effects": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "#effect" },
+          "maxLength": 16,
+          "description": "Effect chain"
+        }
+      }
+    },
+
+    "effect": {
+      "type": "object",
+      "description": "An audio or video effect",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Effect type identifier",
+          "maxLength": 64
+        },
+        "bypass": {
+          "type": "boolean",
+          "default": false
+        },
+        "params": {
+          "type": "object",
+          "description": "Effect-specific parameters (key-value pairs)"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,165 @@
+{
+  "lexicon": 1,
+  "id": "app.klip.stem",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A media stem (audio or video) that can be used in projects",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["blob", "type", "mimeType", "duration", "createdAt"],
+        "properties": {
+          "blob": {
+            "type": "blob",
+            "description": "The media file",
+            "accept": [
+              "audio/webm",
+              "audio/ogg",
+              "audio/mp4",
+              "audio/mpeg",
+              "video/webm",
+              "video/mp4",
+              "video/quicktime"
+            ],
+            "maxSize": 52428800
+          },
+          "type": {
+            "type": "string",
+            "enum": ["audio", "video"],
+            "description": "Media type"
+          },
+          "mimeType": {
+            "type": "string",
+            "description": "MIME type of the blob",
+            "maxLength": 128
+          },
+          "duration": {
+            "type": "integer",
+            "description": "Duration in milliseconds",
+            "minimum": 0
+          },
+          "audio": {
+            "type": "ref",
+            "ref": "#audioMeta",
+            "description": "Audio-specific metadata"
+          },
+          "video": {
+            "type": "ref",
+            "ref": "#videoMeta",
+            "description": "Video-specific metadata"
+          },
+          "waveform": {
+            "type": "ref",
+            "ref": "#waveform",
+            "description": "Pre-computed waveform for display"
+          },
+          "thumbnail": {
+            "type": "blob",
+            "description": "Preview thumbnail for video stems",
+            "accept": ["image/jpeg", "image/png", "image/webp"],
+            "maxSize": 1000000
+          },
+          "sourceProject": {
+            "type": "ref",
+            "ref": "com.atproto.repo.strongRef",
+            "description": "If this stem was extracted from another project"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime"
+          }
+        }
+      }
+    },
+
+    "audioMeta": {
+      "type": "object",
+      "description": "Audio-specific metadata",
+      "properties": {
+        "sampleRate": {
+          "type": "integer",
+          "description": "Sample rate in Hz",
+          "minimum": 8000,
+          "maximum": 192000
+        },
+        "channels": {
+          "type": "integer",
+          "description": "Number of audio channels",
+          "minimum": 1,
+          "maximum": 8
+        },
+        "bitrate": {
+          "type": "integer",
+          "description": "Bitrate in bits per second"
+        },
+        "codec": {
+          "type": "string",
+          "description": "Audio codec (e.g., 'opus', 'aac', 'mp3')",
+          "maxLength": 32
+        }
+      }
+    },
+
+    "videoMeta": {
+      "type": "object",
+      "description": "Video-specific metadata",
+      "properties": {
+        "width": {
+          "type": "integer",
+          "description": "Video width in pixels",
+          "minimum": 1,
+          "maximum": 8192
+        },
+        "height": {
+          "type": "integer",
+          "description": "Video height in pixels",
+          "minimum": 1,
+          "maximum": 8192
+        },
+        "fps": {
+          "type": "number",
+          "description": "Frames per second",
+          "minimum": 1,
+          "maximum": 240
+        },
+        "codec": {
+          "type": "string",
+          "description": "Video codec (e.g., 'h264', 'vp9', 'av1')",
+          "maxLength": 32
+        },
+        "hasAudio": {
+          "type": "boolean",
+          "description": "Whether the video contains an audio track",
+          "default": true
+        }
+      }
+    },
+
+    "waveform": {
+      "type": "object",
+      "description": "Pre-computed waveform data for visualization",
+      "required": ["peaks", "sampleCount"],
+      "properties": {
+        "peaks": {
+          "type": "bytes",
+          "description": "Normalized peak values (0-255) as binary data",
+          "maxLength": 16384
+        },
+        "sampleCount": {
+          "type": "integer",
+          "description": "Number of peak samples",
+          "minimum": 1,
+          "maximum": 16384
+        },
+        "channels": {
+          "type": "integer",
+          "description": "Number of channels in waveform data",
+          "minimum": 1,
+          "maximum": 2,
+          "default": 1
+        }
+      }
+    }
+  }
+}

@@ -124,79 +124,33 @@ Made with Klip
 
 ## Technical Scope
 
-### Data Model (Future-Proof Lexicon)
+### Data Model
 
-The editor is simple, but the data model is designed for extensibility. MVP UI only exposes a subset of what the schema supports.
+Full lexicon definitions in `lexicons/` directory:
+- `app.klip.project.json` - Project with tracks, layout, and mix settings
+- `app.klip.stem.json` - Reusable media stems
 
-```
-app.klip.project
-├── $type: "app.klip.project"
-├── title: string
-├── description?: string
-├── bpm?: number                    # For future grid/sync features
-├── duration: number                # Total duration in ms
-├── tracks: Track[]                 # Ordered list of tracks
-├── master?: MixSettings            # Master bus settings (future: effects)
-├── parent?: StrongRef              # Remix source (at-uri + cid)
-├── createdAt: datetime
-└── updatedAt?: datetime
+**Key design decisions:**
 
-Track (object, not separate record)
-├── id: string                      # Stable ID for references
-├── name?: string
-├── type: "audio" | "video"
-├── stem: BlobRef                   # Reference to uploaded blob
-├── clips: Clip[]                   # Multiple clips per track (MVP: just one)
-├── mix: MixSettings
-└── muted: boolean
+| Feature | Data Model | MVP UI |
+|---------|------------|--------|
+| Tracks | Unlimited (max 32) | 4 slots |
+| Clips per track | Unlimited (max 256) | 1 clip (start from t=0) |
+| Layout | Absolute positioning (x,y,w,h) | Preset picker (grid, stack, etc) |
+| Effects | Full effect chain arrays | Ignored |
+| Mix | Gain, pan, effects | Gain + pan only |
 
-Clip (object) - represents a region on the timeline
-├── id: string
-├── offset: number                  # Position on timeline (ms)
-├── trimStart?: number              # Trim from beginning of source (ms)
-├── trimEnd?: number                # Trim from end of source (ms)
-├── duration: number                # Duration after trim (ms)
-└── effects?: Effect[]              # Future: per-clip effects
+**Why absolute positioning for layout:**
+- Presets are client-side conveniences, not stored in schema
+- User picks "Grid 2x2" → client computes x/y/w/h → saves absolute values
+- Future: drag to reposition, pinch to resize, no schema changes needed
+- Projects portable between clients with different preset libraries
 
-MixSettings (object)
-├── gain: number                    # 0.0 - 2.0 (1.0 = unity)
-├── pan: number                     # -1.0 (L) to 1.0 (R)
-└── effects?: Effect[]              # Future: effect chain
-
-Effect (object) - extensible effect system
-├── type: string                    # "eq" | "reverb" | "delay" | etc.
-├── bypass: boolean
-└── params: Record<string, number>  # Effect-specific parameters
-
-# Separate record for stems (enables reuse across projects)
-app.klip.stem
-├── $type: "app.klip.stem"
-├── blob: BlobRef
-├── type: "audio" | "video" | "midi"
-├── mimeType: string
-├── duration: number
-├── sampleRate?: number             # For audio
-├── channels?: number               # For audio
-├── width?: number                  # For video
-├── height?: number                 # For video
-├── fps?: number                    # For video
-├── waveform?: number[]             # Pre-computed for fast display
-└── createdAt: datetime
-```
-
-**Why this structure:**
-- `tracks[].clips[]` allows multiple clips per track (MVP: 1 clip, future: full arrangement)
-- `trimStart/trimEnd` enables non-destructive editing
-- `effects[]` is an array, ready for effect chains
-- `stem` as separate record means stems can be reused/referenced across projects
-- `bpm` on project enables future grid snapping, tempo sync
-- `parent` uses StrongRef (uri + cid) for tamper-evident attribution
-
-**MVP simplifications:**
-- UI limits to 4 tracks
-- UI limits to 1 clip per track
-- UI ignores effects arrays
-- UI only sets gain/pan/mute
+**Stem reuse:**
+- Stems are separate records, referenced by `strongRef`
+- Same stem can appear in multiple projects
+- Remixing = clone project record, keep stem references
+- Only re-upload if you modify the actual media
 
 ### File Formats
 
@@ -222,53 +176,102 @@ app.klip.stem
 For Bluesky posting, we need to composite all tracks into a single video file.
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Render Pipeline                           │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐ │
-│  │ Track 1  │   │ Track 2  │   │ Track 3  │   │ Track 4  │ │
-│  │ (video)  │   │ (audio)  │   │ (audio)  │   │ (audio)  │ │
-│  └────┬─────┘   └────┬─────┘   └────┬─────┘   └────┬─────┘ │
-│       │              │              │              │        │
-│       ▼              ▼              ▼              ▼        │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              Web Audio API Mixer                     │   │
-│  │   (apply gain, pan, timing offsets)                 │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                          │                                  │
-│       ┌──────────────────┼──────────────────┐              │
-│       │                  │                  │              │
-│       ▼                  ▼                  ▼              │
-│  ┌─────────┐      ┌───────────┐      ┌───────────┐        │
-│  │ Canvas  │      │ AudioCtx  │      │ MediaRec  │        │
-│  │ (video) │      │ (mix bus) │      │ (capture) │        │
-│  └────┬────┘      └─────┬─────┘      └─────┬─────┘        │
-│       │                 │                  │               │
-│       └─────────────────┼──────────────────┘               │
-│                         ▼                                   │
-│                ┌─────────────────┐                         │
-│                │  mp4box.js mux  │                         │
-│                │  (H.264 + AAC)  │                         │
-│                └────────┬────────┘                         │
-│                         │                                   │
-│                         ▼                                   │
-│                ┌─────────────────┐                         │
-│                │   Final MP4     │                         │
-│                │ (Bluesky-ready) │                         │
-│                └─────────────────┘                         │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                       Render Pipeline                            │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   VIDEO PATH                         AUDIO PATH                  │
+│   ──────────                         ──────────                  │
+│                                                                  │
+│   ┌──────────┐                ┌──────────┐  ┌──────────┐        │
+│   │ Track 1  │                │ Track 2  │  │ Track 3  │  ...   │
+│   │ (video)  │                │ (audio)  │  │ (audio)  │        │
+│   └────┬─────┘                └────┬─────┘  └────┬─────┘        │
+│        │                           │             │               │
+│        │ decode frames             │             │               │
+│        ▼                           ▼             ▼               │
+│   ┌─────────┐                ┌─────────────────────────────┐    │
+│   │ Canvas  │                │      Web Audio API          │    │
+│   │ 2D/WebGL│                │  ┌─────┐ ┌─────┐ ┌─────┐   │    │
+│   └────┬────┘                │  │Gain │ │Gain │ │Gain │   │    │
+│        │                     │  │+Pan │ │+Pan │ │+Pan │   │    │
+│        │                     │  └──┬──┘ └──┬──┘ └──┬──┘   │    │
+│        │                     │     └───────┼───────┘      │    │
+│        │                     │             ▼              │    │
+│        │                     │        ┌─────────┐         │    │
+│        │                     │        │ Master  │         │    │
+│        │                     │        │  Bus    │         │    │
+│        │                     │        └────┬────┘         │    │
+│        │                     └─────────────┼──────────────┘    │
+│        │                                   │                    │
+│        │ captureStream()                   │ createMediaStream- │
+│        │                                   │ Destination()      │
+│        ▼                                   ▼                    │
+│   ┌─────────┐                        ┌─────────┐               │
+│   │ Video   │                        │ Audio   │               │
+│   │ Stream  │                        │ Stream  │               │
+│   └────┬────┘                        └────┬────┘               │
+│        │                                  │                     │
+│        └──────────────┬───────────────────┘                     │
+│                       ▼                                         │
+│              ┌─────────────────┐                                │
+│              │ MediaRecorder   │  ← real-time capture           │
+│              │ (WebM/VP8+Opus) │                                │
+│              └────────┬────────┘                                │
+│                       │                                         │
+│                       ▼                                         │
+│              ┌─────────────────┐                                │
+│              │ WebCodecs +     │  ← re-encode for Bluesky       │
+│              │ mp4box.js       │    (H.264 + AAC in MP4)        │
+│              └────────┬────────┘                                │
+│                       │                                         │
+│                       ▼                                         │
+│              ┌─────────────────┐                                │
+│              │   Final MP4     │                                │
+│              └─────────────────┘                                │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-**Two render modes:**
+**Two parallel paths:**
+1. **Video** → Canvas → `captureStream()` → video MediaStream
+2. **Audio** → Web Audio (gain/pan per track → master bus) → `MediaStreamDestination` → audio MediaStream
 
-1. **Preview (real-time):** Play through Web Audio + Canvas, no encoding
-2. **Export (offline):** Render faster-than-realtime, encode with WebCodecs/mp4box.js
+**Combined into final output:**
+- MediaRecorder captures both streams (quick but WebM only)
+- WebCodecs + mp4box.js re-encodes to MP4 (H.264+AAC) for Bluesky compatibility
+
+**Alternative: Offline render (faster than realtime)**
+- Skip MediaRecorder entirely
+- Decode frames manually with WebCodecs
+- Process audio in chunks with OfflineAudioContext
+- Encode directly to H.264/AAC with WebCodecs
+- Mux with mp4box.js
 
 **For MVP:**
-- Audio-only projects: Just render audio mix, generate static waveform video
-- Video projects: Composite video track with mixed audio
-- Single video track only (no video compositing in MVP)
+- 4 video slots rendered as a grid (2x2 or 1x4 depending on aspect ratio)
+- Each track can be video (with audio) or audio-only (show waveform/color in slot)
+- Recording happens in-app: record yourself while hearing/seeing other tracks
+- MVP constraint: each recording starts from t=0 (one continuous take per slot)
+- Future: stop/start recording = multiple clips per track
+
+**Layout system:**
+
+Underlying model is always absolute positioning (x, y, width, height, z-index). Auto-layouts are just presets that generate these values.
+
+```
+MVP: Simple layout presets
+┌─────────────────────────────────────────┐
+│  [Grid 2x2]  [Stack]  [Single]  [Free]  │
+└─────────────────────────────────────────┘
+
+Future: Full positioning control
+- Drag to reposition
+- Pinch to resize
+- Layer order controls
+- Grouping/nesting
+```
+
+This keeps MVP simple (pick a preset) while the data model supports full flexibility later. See `lexicons/` for schema details.
 
 ### Client Tech Stack
 

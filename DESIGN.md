@@ -46,34 +46,17 @@ Klip treats every project as a **remixable stem collection**. When you create a 
 
 ### Custom Lexicons
 
-```
-app.klip.project
-├── stems[]           # References to audio/video stem blobs
-├── timeline          # Arrangement data (JSON)
-├── bpm               # Project tempo
-├── parentProject?    # Reference to forked-from project (attribution)
-├── collaborators[]   # DIDs of contributors
-└── createdAt
+Full schemas in `lexicons/` directory. Core records:
 
-app.klip.stem
-├── blob              # The actual audio/video data
-├── type              # "audio" | "video" | "midi"
-├── metadata          # Duration, sample rate, codec, etc.
-├── license           # Usage permissions
-└── createdAt
+| Lexicon | Purpose |
+|---------|---------|
+| `app.klip.project` | Project with tracks, layout, mix settings, and remix attribution |
+| `app.klip.stem` | Reusable media files (audio/video) with metadata and waveforms |
 
-app.klip.remix
-├── originalProject   # AT-URI of source project
-├── remixProject      # AT-URI of the remix
-├── description       # What was changed
-└── createdAt
-
-app.klip.comment
-├── project           # AT-URI of project
-├── timestamp         # Position in timeline (ms)
-├── text              # Comment content
-└── createdAt
-```
+**Future lexicons (not yet defined):**
+- `app.klip.comment` - Timestamped comments on projects
+- `app.klip.like` - Engagement (or use Bluesky's native like?)
+- `app.klip.collection` - Playlists/albums
 
 ### Data Flow
 
