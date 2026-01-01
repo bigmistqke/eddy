@@ -1,19 +1,24 @@
 export interface RecordingResult {
   blob: Blob
   duration: number
+  type: 'audio' | 'video'
 }
 
-export async function requestMicrophoneAccess(): Promise<MediaStream> {
-  return navigator.mediaDevices.getUserMedia({ audio: true })
+export async function requestMediaAccess(video: boolean = false): Promise<MediaStream> {
+  return navigator.mediaDevices.getUserMedia({
+    audio: true,
+    video: video ? { facingMode: 'user' } : false,
+  })
 }
 
 export function createRecorder(stream: MediaStream): {
   start: () => void
   stop: () => Promise<RecordingResult>
 } {
-  const mediaRecorder = new MediaRecorder(stream, {
-    mimeType: 'audio/webm;codecs=opus',
-  })
+  const hasVideo = stream.getVideoTracks().length > 0
+  const mimeType = hasVideo ? 'video/webm;codecs=vp9,opus' : 'audio/webm;codecs=opus'
+
+  const mediaRecorder = new MediaRecorder(stream, { mimeType })
   const chunks: Blob[] = []
   let startTime = 0
 
@@ -33,8 +38,8 @@ export function createRecorder(stream: MediaStream): {
       return new Promise<RecordingResult>((resolve) => {
         mediaRecorder.onstop = () => {
           const duration = (performance.now() - startTime) / 1000
-          const blob = new Blob(chunks, { type: 'audio/webm;codecs=opus' })
-          resolve({ blob, duration })
+          const blob = new Blob(chunks, { type: mimeType })
+          resolve({ blob, duration, type: hasVideo ? 'video' : 'audio' })
         }
         mediaRecorder.stop()
       })
