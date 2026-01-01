@@ -1,7 +1,7 @@
 import { render } from 'solid-js/web'
 import { Router, Route } from '@solidjs/router'
 import { lazy } from 'solid-js'
-import App from './App'
+import { App } from './App'
 import './index.css'
 
 const Home = lazy(() => import('~/routes/index'))

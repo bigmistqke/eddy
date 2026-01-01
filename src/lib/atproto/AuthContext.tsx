@@ -3,64 +3,54 @@ import {
   createContext,
   useContext,
   createSignal,
-  onMount,
+  createMemo,
 } from 'solid-js'
+import { action, query, createAsync } from '@solidjs/router'
 import { Agent } from '@atproto/api'
 import type { OAuthSession } from '@atproto/oauth-client-browser'
 import { initSession, signIn as doSignIn, createAgent } from './client'
 
+const getSession = query(async () => {
+  const session = await initSession()
+  return session
+}, 'session')
+
+export const signInAction = action(async (handle: string) => {
+  await doSignIn(handle)
+  return { ok: true }
+})
+
 interface AuthContextValue {
-  session: () => OAuthSession | null
+  session: () => OAuthSession | null | undefined
   agent: () => Agent | null
   loading: () => boolean
-  error: () => string | null
-  signIn: (handle: string) => Promise<void>
   signOut: () => void
 }
 
 const AuthContext = createContext<AuthContextValue>()
 
 export const AuthProvider: ParentComponent = (props) => {
-  const [session, setSession] = createSignal<OAuthSession | null>(null)
-  const [agent, setAgent] = createSignal<Agent | null>(null)
-  const [loading, setLoading] = createSignal(true)
-  const [error, setError] = createSignal<string | null>(null)
+  const session = createAsync(() => getSession())
+  const [manualSignOut, setManualSignOut] = createSignal(false)
 
-  onMount(async () => {
-    try {
-      const existingSession = await initSession()
-      if (existingSession) {
-        setSession(existingSession)
-        setAgent(createAgent(existingSession))
-      }
-    } catch (err) {
-      console.error('Failed to restore session:', err)
-      setError(err instanceof Error ? err.message : 'Failed to restore session')
-    } finally {
-      setLoading(false)
-    }
+  const activeSession = createMemo(() => {
+    if (manualSignOut()) return null
+    return session()
   })
 
-  const signIn = async (handle: string) => {
-    setError(null)
-    try {
-      await doSignIn(handle)
-    } catch (err) {
-      console.error('Sign in failed:', err)
-      setError(err instanceof Error ? err.message : 'Sign in failed')
-      throw err
-    }
-  }
+  const agent = createMemo(() => {
+    const s = activeSession()
+    return s ? createAgent(s) : null
+  })
+
+  const loading = () => session() === undefined && !manualSignOut()
 
   const signOut = () => {
-    setSession(null)
-    setAgent(null)
+    setManualSignOut(true)
   }
 
   return (
-    <AuthContext.Provider
-      value={{ session, agent, loading, error, signIn, signOut }}
-    >
+    <AuthContext.Provider value={{ session: activeSession, agent, loading, signOut }}>
       {props.children}
     </AuthContext.Provider>
   )

@@ -1,9 +1,9 @@
 import { type ParentComponent, Suspense } from 'solid-js'
 import { AuthProvider } from '~/lib/atproto/AuthContext'
-import Header from '~/components/layout/Header'
+import { Header } from '~/components/layout/Header'
 import styles from './App.module.css'
 
-const App: ParentComponent = (props) => {
+export const App: ParentComponent = (props) => {
   return (
     <AuthProvider>
       <div class={styles.app}>
@@ -18,4 +18,3 @@ const App: ParentComponent = (props) => {
   )
 }
 
-export default App

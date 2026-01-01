@@ -2,7 +2,7 @@ import { type Component, createSignal, Show } from 'solid-js'
 import { useAuth } from '~/lib/atproto/AuthContext'
 import styles from './UserMenu.module.css'
 
-const UserMenu: Component = () => {
+export const UserMenu: Component = () => {
   const auth = useAuth()
   const [open, setOpen] = createSignal(false)
 
@@ -36,4 +36,3 @@ const UserMenu: Component = () => {
   )
 }
 
-export default UserMenu

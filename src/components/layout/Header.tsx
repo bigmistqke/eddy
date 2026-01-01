@@ -1,11 +1,11 @@
 import { type Component, Show } from 'solid-js'
 import { A } from '@solidjs/router'
 import { useAuth } from '~/lib/atproto/AuthContext'
-import LoginButton from '~/components/auth/LoginButton'
-import UserMenu from '~/components/auth/UserMenu'
+import { LoginButton } from '~/components/auth/LoginButton'
+import { UserMenu } from '~/components/auth/UserMenu'
 import styles from './Header.module.css'
 
-const Header: Component = () => {
+export const Header: Component = () => {
   const auth = useAuth()
 
   return (
@@ -24,4 +24,3 @@ const Header: Component = () => {
   )
 }
 
-export default Header

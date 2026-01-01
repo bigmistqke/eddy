@@ -1,6 +1,6 @@
 import { type Component } from 'solid-js'
 import { useParams } from '@solidjs/router'
-import Timeline from '~/components/editor/Timeline'
+import { Timeline } from '~/components/editor/Timeline'
 import styles from './[id].module.css'
 
 const Editor: Component = () => {
