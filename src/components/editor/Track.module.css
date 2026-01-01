@@ -1,10 +1,29 @@
 .track {
   display: grid;
-  grid-template-rows: auto auto auto auto;
+  grid-template-rows: auto auto auto;
   gap: 8px;
   padding: 12px;
   background: #1a1a1a;
   border-radius: 8px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.track:hover {
+  background: #222;
+}
+
+.track.selected {
+  border-color: #3b82f6;
+}
+
+.track.recording {
+  border-color: #e53935;
+}
+
+.track.hasRecording {
+  cursor: default;
 }
 
 .trackHeader {
@@ -22,6 +41,15 @@
 .status {
   font-size: 12px;
   color: #888;
+}
+
+.track.selected .status,
+.track.recording .status {
+  color: #3b82f6;
+}
+
+.track.recording .status {
+  color: #e53935;
 }
 
 .hiddenVideo {
@@ -54,40 +82,9 @@
 
 .controls {
   display: grid;
-  grid-template-columns: auto auto;
+  grid-template-columns: auto;
   justify-content: center;
   gap: 8px;
-}
-
-.recordButton {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  background: #e53935;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.recordButton:hover {
-  background: #c62828;
-}
-
-.recordButton:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.recordButton.recording {
-  animation: pulse 1s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
 }
 
 .clearButton {

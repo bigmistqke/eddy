@@ -1,16 +1,16 @@
 import { type Component } from 'solid-js'
 import { useParams } from '@solidjs/router'
-import { Timeline } from '~/components/editor/Timeline'
+import { Editor } from '~/components/editor/Editor'
 import styles from './[id].module.css'
 
-const Editor: Component = () => {
+const EditorPage: Component = () => {
   const params = useParams<{ id?: string }>()
 
   return (
     <div class={styles.container}>
-      <Timeline projectId={params.id} />
+      <Editor projectId={params.id} />
     </div>
   )
 }
 
-export default Editor
+export default EditorPage

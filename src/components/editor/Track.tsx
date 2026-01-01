@@ -1,93 +1,56 @@
 import { type Component, createSignal, createEffect, onCleanup, onMount, Show } from 'solid-js'
-import { FiCircle, FiSquare, FiTrash2 } from 'solid-icons/fi'
-import { requestMediaAccess, createRecorder, type RecordingResult } from '~/lib/audio/recorder'
+import { FiTrash2 } from 'solid-icons/fi'
+import { type RecordingResult } from '~/lib/audio/recorder'
 import { createAudioPipeline, type AudioPipeline } from '~/lib/audio/pipeline'
-import { resumeAudioContext } from '~/lib/audio/context'
 import styles from './Track.module.css'
 
 interface TrackProps {
   id: number
   isPlaying?: boolean
+  isSelected?: boolean
+  isRecording?: boolean
+  isLoading?: boolean
   currentTime?: number
+  recording: RecordingResult | null
+  onSelect?: () => void
   onVideoChange?: (index: number, video: HTMLVideoElement | null) => void
+  onClear?: () => void
 }
 
 export const Track: Component<TrackProps> = (props) => {
-  const [isRecording, setIsRecording] = createSignal(false)
   const [volume, setVolume] = createSignal(1)
   const [pan, setPan] = createSignal(0)
-  const [recording, setRecording] = createSignal<RecordingResult | null>(null)
-  const [error, setError] = createSignal<string | null>(null)
-  const [pending, setPending] = createSignal(false)
   const [playbackEl, setPlaybackEl] = createSignal<HTMLVideoElement | null>(null)
 
-  let videoRef: HTMLVideoElement | undefined
   let pipeline: AudioPipeline | null = null
-  let stream: MediaStream | null = null
-  let recorder: ReturnType<typeof createRecorder> | null = null
 
   onMount(() => {
     pipeline = createAudioPipeline()
   })
 
   onCleanup(() => {
-    stream?.getTracks().forEach((track) => track.stop())
     pipeline?.disconnect()
     props.onVideoChange?.(props.id, null)
   })
 
-  // React to global play/pause
+  // React to global play/pause and seek
   createEffect(() => {
     const el = playbackEl()
-    if (!el || !recording()) return
+    if (!el || !props.recording) return
+
+    // Seek if currentTime is specified
+    if (props.currentTime !== undefined) {
+      el.currentTime = props.currentTime
+    }
+
     if (props.isPlaying) {
-      el.play()
+      el.play().catch(() => {
+        // Ignore AbortError when play is interrupted by pause
+      })
     } else {
       el.pause()
     }
   })
-
-  // React to seek (stop resets to 0)
-  createEffect(() => {
-    const el = playbackEl()
-    const time = props.currentTime
-    if (!el || time === undefined) return
-    el.currentTime = time
-  })
-
-  const handleRecord = async () => {
-    setError(null)
-
-    if (isRecording()) {
-      // Stop recording
-      if (recorder) {
-        const result = await recorder.stop()
-        setRecording(result)
-        stream?.getTracks().forEach((track) => track.stop())
-        stream = null
-      }
-      if (videoRef) videoRef.srcObject = null
-      setIsRecording(false)
-    } else {
-      // Start recording
-      setPending(true)
-      try {
-        await resumeAudioContext()
-        stream = await requestMediaAccess(true)
-        recorder = createRecorder(stream)
-        recorder.start()
-        if (videoRef) {
-          videoRef.srcObject = stream
-          videoRef.play()
-        }
-        setIsRecording(true)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to start recording')
-      } finally {
-        setPending(false)
-      }
-    }
-  }
 
   const handleClear = () => {
     const el = playbackEl()
@@ -96,10 +59,8 @@ export const Track: Component<TrackProps> = (props) => {
       el.src = ''
     }
     setPlaybackEl(null)
-    props.onVideoChange?.(props.id, null)
     pipeline?.disconnect()
-    setRecording(null)
-    setError(null)
+    props.onClear?.()
   }
 
   const handleVolumeChange = (e: Event) => {
@@ -125,24 +86,35 @@ export const Track: Component<TrackProps> = (props) => {
   }
 
   const recordingUrl = () => {
-    const rec = recording()
-    return rec ? URL.createObjectURL(rec.blob) : undefined
+    return props.recording ? URL.createObjectURL(props.recording.blob) : undefined
+  }
+
+  const getStatus = () => {
+    if (props.isLoading) return 'Loading...'
+    if (props.isRecording) return 'Recording'
+    if (props.isSelected) return 'Preview'
+    if (props.isPlaying && props.recording) return 'Playing'
+    if (props.recording) return 'Ready'
+    return 'Empty'
   }
 
   return (
-    <div class={styles.track}>
+    <div
+      class={styles.track}
+      classList={{
+        [styles.selected]: props.isSelected,
+        [styles.recording]: props.isRecording,
+        [styles.hasRecording]: !!props.recording,
+      }}
+      onClick={props.onSelect}
+    >
       <div class={styles.trackHeader}>
         <span class={styles.trackLabel}>Track {props.id + 1}</span>
-        <Show when={recording()}>
-          <span class={styles.status}>{props.isPlaying ? 'Playing' : 'Ready'}</span>
-        </Show>
+        <span class={styles.status}>{getStatus()}</span>
       </div>
 
-      {/* Hidden video elements for playback */}
-      <Show when={isRecording()}>
-        <video ref={videoRef} class={styles.hiddenVideo} muted playsinline />
-      </Show>
-      <Show when={!isRecording() && recording()}>
+      {/* Hidden video element for playback */}
+      <Show when={props.recording}>
         <video
           ref={setupPlayback}
           src={recordingUrl()}
@@ -161,6 +133,7 @@ export const Track: Component<TrackProps> = (props) => {
             step="0.01"
             value={volume()}
             onInput={handleVolumeChange}
+            onClick={(e) => e.stopPropagation()}
           />
         </label>
         <label class={styles.slider}>
@@ -172,29 +145,18 @@ export const Track: Component<TrackProps> = (props) => {
             step="0.01"
             value={pan()}
             onInput={handlePanChange}
+            onClick={(e) => e.stopPropagation()}
           />
         </label>
       </div>
 
-      <div class={styles.controls}>
-        <button
-          class={styles.recordButton}
-          classList={{ [styles.recording]: isRecording() }}
-          onClick={handleRecord}
-          disabled={pending() || !!recording()}
-        >
-          {isRecording() ? <FiSquare size={14} /> : <FiCircle size={14} />}
-        </button>
-        <Show when={recording()}>
-          <button class={styles.clearButton} onClick={handleClear}>
+      <Show when={props.recording}>
+        <div class={styles.controls}>
+          <button class={styles.clearButton} onClick={(e) => { e.stopPropagation(); handleClear(); }}>
             <FiTrash2 size={14} />
           </button>
-        </Show>
-      </div>
-      <Show when={error()}>
-        <div class={styles.error}>{String(error())}</div>
+        </div>
       </Show>
     </div>
   )
 }
-

@@ -6,6 +6,14 @@
   gap: 16px;
 }
 
+.transport {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
 .compositorContainer {
   display: grid;
   place-items: center;
@@ -20,12 +28,35 @@
   object-fit: contain;
 }
 
-.transport {
+.recordButton {
   display: grid;
-  grid-template-columns: auto auto;
-  justify-content: center;
-  align-items: center;
-  gap: 12px;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  background: #e53935;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.recordButton:hover {
+  background: #c62828;
+}
+
+.recordButton:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.recordButton.recording {
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
 .playButton {
@@ -43,6 +74,12 @@
 
 .playButton:hover {
   background: #2563eb;
+}
+
+.playButton:disabled,
+.stopButton:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 .stopButton {

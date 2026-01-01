@@ -1,7 +1,6 @@
 import { getAudioContext } from './context'
 
 export interface AudioPipeline {
-  source: MediaElementAudioSourceNode | null
   gain: GainNode
   pan: StereoPannerNode
   setVolume: (value: number) => void
@@ -9,6 +8,9 @@ export interface AudioPipeline {
   connect: (element: HTMLMediaElement) => void
   disconnect: () => void
 }
+
+// Track elements that have been connected (can only create one source per element ever)
+const connectedElements = new WeakMap<HTMLMediaElement, MediaElementAudioSourceNode>()
 
 export function createAudioPipeline(): AudioPipeline {
   const ctx = getAudioContext()
@@ -20,10 +22,9 @@ export function createAudioPipeline(): AudioPipeline {
   gain.connect(pan)
   pan.connect(ctx.destination)
 
-  let source: MediaElementAudioSourceNode | null = null
+  let currentSource: MediaElementAudioSourceNode | null = null
 
   return {
-    source,
     gain,
     pan,
 
@@ -38,17 +39,26 @@ export function createAudioPipeline(): AudioPipeline {
     },
 
     connect(element: HTMLMediaElement) {
-      if (source) {
-        source.disconnect()
+      // Disconnect current source from our gain node
+      if (currentSource) {
+        currentSource.disconnect()
       }
-      source = ctx.createMediaElementSource(element)
+
+      // Check if element already has a source node (can only create once per element)
+      let source = connectedElements.get(element)
+      if (!source) {
+        source = ctx.createMediaElementSource(element)
+        connectedElements.set(element, source)
+      }
+
       source.connect(gain)
+      currentSource = source
     },
 
     disconnect() {
-      if (source) {
-        source.disconnect()
-        source = null
+      if (currentSource) {
+        currentSource.disconnect()
+        currentSource = null
       }
     },
   }
