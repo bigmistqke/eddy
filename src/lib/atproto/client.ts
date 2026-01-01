@@ -12,7 +12,8 @@ export async function getOAuthClient(): Promise<BrowserOAuthClient> {
   // - App must be accessed via http://127.0.0.1:<port>
   const port = window.location.port || '5173'
   const redirectUri = `http://127.0.0.1:${port}/callback`
-  const clientId = `http://localhost?redirect_uri=${encodeURIComponent(redirectUri)}&scope=atproto`
+  const scope = 'atproto transition:generic'
+  const clientId = `http://localhost?redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}`
 
   oauthClient = await BrowserOAuthClient.load({
     clientId,
@@ -35,6 +36,6 @@ export async function initSession(): Promise<OAuthSession | null> {
 export async function signIn(handle: string): Promise<void> {
   const client = await getOAuthClient()
   await client.signIn(handle, {
-    scope: 'atproto',
+    scope: 'atproto transition:generic',
   })
 }

@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@atproto/api": "^0.13.0",
+    "@atproto/lexicon": "^0.6.0",
     "@atproto/oauth-client-browser": "^0.3.0",
     "@bigmistqke/view.gl": "^0.1.9",
     "@bigmistqke/worker-proxy": "^0.0.13",

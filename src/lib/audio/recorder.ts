@@ -37,7 +37,7 @@ export function createRecorder(stream: MediaStream): {
     stop() {
       return new Promise<RecordingResult>((resolve) => {
         mediaRecorder.onstop = () => {
-          const duration = (performance.now() - startTime) / 1000
+          const duration = performance.now() - startTime // milliseconds
           const blob = new Blob(chunks, { type: mimeType })
           resolve({ blob, duration, type: hasVideo ? 'video' : 'audio' })
         }

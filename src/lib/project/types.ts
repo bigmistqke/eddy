@@ -1,0 +1,143 @@
+// Types matching app.klip.project and app.klip.stem lexicons
+// Note: Runtime uses floats (0.0-1.0), but AT Protocol serialization
+// converts to integers scaled by 100 (since floats aren't supported)
+
+export interface Canvas {
+  width: number
+  height: number
+  background?: string
+}
+
+export interface StaticValue {
+  value: number
+  min?: number
+  max?: number
+  default?: number
+}
+
+export interface StaticBooleanValue {
+  value: boolean
+}
+
+export type Value = StaticValue
+export type BooleanValue = StaticBooleanValue
+
+export interface AudioEffectGain {
+  type: 'audio.gain'
+  enabled?: BooleanValue
+  value: Value
+}
+
+export interface AudioEffectPan {
+  type: 'audio.pan'
+  enabled?: BooleanValue
+  value: Value
+}
+
+export type AudioEffect = AudioEffectGain | AudioEffectPan
+
+export interface Clip {
+  id: string
+  offset: number
+  sourceOffset?: number
+  duration: number
+  speed?: Value
+  reverse?: BooleanValue
+  audioPipeline?: AudioEffect[]
+}
+
+export interface StemRef {
+  uri: string
+  cid: string
+}
+
+export interface Track {
+  id: string
+  name?: string
+  stem?: StemRef
+  clips: Clip[]
+  audioPipeline?: AudioEffect[]
+  muted?: BooleanValue
+  solo?: BooleanValue
+}
+
+export interface GridMember {
+  id: string
+  column?: number
+  row?: number
+  columnSpan?: number
+  rowSpan?: number
+  fit?: 'contain' | 'cover' | 'fill'
+}
+
+export interface GridGroup {
+  type: 'grid'
+  id: string
+  name?: string
+  columns: number
+  rows: number
+  gap?: Value
+  padding?: Value
+  autoPlace?: boolean
+  members: GridMember[]
+}
+
+export type Group = GridGroup
+
+export interface Project {
+  schemaVersion: number
+  title: string
+  description?: string
+  bpm?: number
+  duration?: number
+  canvas: Canvas
+  curves?: unknown[]
+  groups: Group[]
+  tracks: Track[]
+  masterAudioPipeline?: AudioEffect[]
+  createdAt: string
+  updatedAt?: string
+}
+
+// Stem record (separate from project)
+export interface StemAudioMeta {
+  sampleRate?: number
+  channels?: number
+  bitrate?: number
+  codec?: string
+}
+
+export interface StemVideoMeta {
+  width?: number
+  height?: number
+  fps?: number
+  codec?: string
+  hasAudio?: boolean
+}
+
+export interface Stem {
+  schemaVersion: number
+  blob: {
+    ref: { $link: string }
+    mimeType: string
+    size: number
+  }
+  type: 'audio' | 'video'
+  mimeType: string
+  duration: number
+  audio?: StemAudioMeta
+  video?: StemVideoMeta
+  createdAt: string
+}
+
+// Local state extensions (not persisted to PDS)
+export interface LocalTrackState {
+  // The actual blob for playback (not serialized)
+  localBlob?: Blob
+  // Duration in ms
+  localDuration?: number
+}
+
+export interface LocalProjectState {
+  tracks: Map<string, LocalTrackState>
+}

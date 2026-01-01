@@ -1,5 +1,12 @@
 import { action, useAction, useSubmission } from "@solidjs/router";
-import { FiCircle, FiPause, FiPlay, FiSquare } from "solid-icons/fi";
+import {
+  FiCircle,
+  FiPause,
+  FiPlay,
+  FiSquare,
+  FiUpload,
+  FiVolume2,
+} from "solid-icons/fi";
 import {
   type Component,
   createSignal,
@@ -8,11 +15,11 @@ import {
   onMount,
 } from "solid-js";
 import { resumeAudioContext } from "~/lib/audio/context";
-import {
-  createRecorder,
-  type RecordingResult,
-  requestMediaAccess,
-} from "~/lib/audio/recorder";
+import { getMasterMixer } from "~/lib/audio/mixer";
+import { createRecorder, requestMediaAccess } from "~/lib/audio/recorder";
+import { useAuth } from "~/lib/atproto/AuthContext";
+import { publishProject } from "~/lib/atproto/records";
+import { useProject } from "~/lib/project/context";
 import { type Compositor, createCompositor } from "~/lib/video/compositor";
 import styles from "./Editor.module.css";
 import { Track } from "./Track";
@@ -35,18 +42,17 @@ const stopRecordingAction = action(
 );
 
 export const Editor: Component<EditorProps> = () => {
+  const { agent } = useAuth();
+  const project = useProject();
+
   const [isPlaying, setIsPlaying] = createSignal(false);
   const [isRecording, setIsRecording] = createSignal(false);
+  const [isPublishing, setIsPublishing] = createSignal(false);
   const [selectedTrack, setSelectedTrack] = createSignal<number | null>(null);
   const [currentTime, setCurrentTime] = createSignal<number | undefined>(
     undefined,
   );
-  const [recordings, setRecordings] = createSignal<(RecordingResult | null)[]>([
-    null,
-    null,
-    null,
-    null,
-  ]);
+  const [masterVolume, setMasterVolume] = createSignal(1);
 
   const startPreview$ = useAction(startPreviewAction);
   const stopRecording$ = useAction(stopRecordingAction);
@@ -61,7 +67,10 @@ export const Editor: Component<EditorProps> = () => {
   let recorder: ReturnType<typeof createRecorder> | null = null;
 
   onMount(() => {
-    compositor = createCompositor(640, 360);
+    compositor = createCompositor(
+      project.store.project.canvas.width,
+      project.store.project.canvas.height,
+    );
     compositor.canvas.className = styles.compositorCanvas;
     if (compositorContainer) {
       compositorContainer.appendChild(compositor.canvas);
@@ -122,7 +131,7 @@ export const Editor: Component<EditorProps> = () => {
     // If already selected, deselect
     if (selectedTrack() === trackIndex) {
       const prevTrack = selectedTrack();
-      if (prevTrack !== null && !recordings()[prevTrack]) {
+      if (prevTrack !== null && !project.hasRecording(prevTrack)) {
         compositor?.setVideo(prevTrack, null);
       }
       stopPreview();
@@ -135,13 +144,13 @@ export const Editor: Component<EditorProps> = () => {
 
     // Clear previous preview if no recording there
     const prevTrack = selectedTrack();
-    if (prevTrack !== null && !recordings()[prevTrack]) {
+    if (prevTrack !== null && !project.hasRecording(prevTrack)) {
       compositor?.setVideo(prevTrack, null);
     }
     stopPreview();
 
     // Start preview for new track (only if no recording exists)
-    if (!recordings()[trackIndex]) {
+    if (!project.hasRecording(trackIndex)) {
       setSelectedTrack(trackIndex);
       await startPreview(trackIndex);
     }
@@ -158,11 +167,7 @@ export const Editor: Component<EditorProps> = () => {
       }
       const result = await stopRecording$(recorder);
       if (result) {
-        setRecordings((prev) => {
-          const next = [...prev];
-          next[track] = result;
-          return next;
-        });
+        project.addRecording(track, result.blob, result.duration);
       }
       stopPreview();
       setIsRecording(false);
@@ -189,7 +194,7 @@ export const Editor: Component<EditorProps> = () => {
     // Stop preview when playing
     if (selectedTrack() !== null && !isRecording()) {
       const track = selectedTrack();
-      if (track !== null && !recordings()[track]) {
+      if (track !== null && !project.hasRecording(track)) {
         compositor?.setVideo(track, null);
       }
       stopPreview();
@@ -213,12 +218,59 @@ export const Editor: Component<EditorProps> = () => {
   };
 
   const handleClearRecording = (index: number) => {
-    setRecordings((prev) => {
-      const next = [...prev];
-      next[index] = null;
-      return next;
-    });
+    project.clearTrack(index);
     compositor?.setVideo(index, null);
+  };
+
+  const handleMasterVolumeChange = (e: Event) => {
+    const value = parseFloat((e.target as HTMLInputElement).value);
+    setMasterVolume(value);
+    getMasterMixer().setMasterVolume(value);
+  };
+
+  const handlePublish = async () => {
+    const currentAgent = agent();
+    if (!currentAgent) {
+      alert("Please sign in to publish");
+      return;
+    }
+
+    // Collect track blobs
+    const trackBlobs = new Map<string, { blob: Blob; duration: number }>();
+    for (let i = 0; i < 4; i++) {
+      const blob = project.getTrackBlob(i);
+      const duration = project.getTrackDuration(i);
+      if (blob && duration) {
+        trackBlobs.set(`track-${i}`, { blob, duration });
+      }
+    }
+
+    if (trackBlobs.size === 0) {
+      alert("No recordings to publish");
+      return;
+    }
+
+    setIsPublishing(true);
+    try {
+      const result = await publishProject(
+        currentAgent,
+        project.store.project,
+        trackBlobs,
+      );
+      alert(`Published! URI: ${result.uri}`);
+    } catch (error) {
+      console.error("Publish failed:", error);
+      alert(`Publish failed: ${error}`);
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  const hasAnyRecording = () => {
+    for (let i = 0; i < 4; i++) {
+      if (project.hasRecording(i)) return true;
+    }
+    return false;
   };
 
   return (
@@ -251,6 +303,31 @@ export const Editor: Component<EditorProps> = () => {
         >
           <FiSquare size={20} />
         </button>
+        <label class={styles.masterVolume}>
+          <FiVolume2 size={16} />
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value={masterVolume()}
+            onInput={handleMasterVolumeChange}
+          />
+        </label>
+        <button
+          class={styles.publishButton}
+          onClick={handlePublish}
+          disabled={
+            isRecording() ||
+            isPlaying() ||
+            isPublishing() ||
+            !hasAnyRecording() ||
+            !agent()
+          }
+        >
+          <FiUpload size={16} />
+          {isPublishing() ? "Publishing..." : "Publish"}
+        </button>
       </div>
       <div class={styles.grid}>
         <For each={TRACK_IDS}>
@@ -262,7 +339,6 @@ export const Editor: Component<EditorProps> = () => {
               isRecording={isRecording() && selectedTrack() === id}
               isLoading={previewSubmission.pending && selectedTrack() === id}
               currentTime={currentTime()}
-              recording={recordings()[id]}
               onSelect={() => handleSelectTrack(id)}
               onVideoChange={handleVideoChange}
               onClear={() => handleClearRecording(id)}
