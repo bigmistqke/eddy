@@ -1,8 +1,9 @@
-import { type Component, createSignal, onCleanup, onMount, Show } from 'solid-js'
+import { type Component, createSignal, onCleanup, onMount, Show, createEffect } from 'solid-js'
 import { action, useAction, useSubmission } from '@solidjs/router'
 import { requestMediaAccess, createRecorder, type RecordingResult } from '~/lib/audio/recorder'
 import { createAudioPipeline, type AudioPipeline } from '~/lib/audio/pipeline'
 import { resumeAudioContext } from '~/lib/audio/context'
+import { createCompositor, type Compositor } from '~/lib/video/compositor'
 import styles from './Track.module.css'
 
 let stream: MediaStream | null = null
@@ -31,7 +32,10 @@ export const Track: Component = () => {
 
   let videoRef: HTMLVideoElement | undefined
   let playbackRef: HTMLVideoElement | undefined
+  let previewContainer: HTMLDivElement | undefined
   let pipeline: AudioPipeline | null = null
+  let compositor: Compositor | null = null
+  let animationId: number | null = null
 
   const doStartRecording = useAction(startRecording)
   const doStopRecording = useAction(stopRecording)
@@ -40,12 +44,31 @@ export const Track: Component = () => {
 
   onMount(() => {
     pipeline = createAudioPipeline()
+    compositor = createCompositor(640, 360)
+    compositor.canvas.className = styles.video
   })
 
   onCleanup(() => {
     stream?.getTracks().forEach((track) => track.stop())
     pipeline?.disconnect()
+    compositor?.destroy()
+    if (animationId) cancelAnimationFrame(animationId)
   })
+
+  const startRenderLoop = () => {
+    const loop = () => {
+      compositor?.render()
+      animationId = requestAnimationFrame(loop)
+    }
+    loop()
+  }
+
+  const stopRenderLoop = () => {
+    if (animationId) {
+      cancelAnimationFrame(animationId)
+      animationId = null
+    }
+  }
 
   const handleRecord = async () => {
     if (isRecording()) {
@@ -69,9 +92,11 @@ export const Track: Component = () => {
 
     if (isPlaying()) {
       playbackRef.pause()
+      stopRenderLoop()
       setIsPlaying(false)
     } else {
       playbackRef.play()
+      startRenderLoop()
       setIsPlaying(true)
     }
   }
@@ -81,6 +106,7 @@ export const Track: Component = () => {
       playbackRef.pause()
       playbackRef.src = ''
     }
+    stopRenderLoop()
     pipeline?.disconnect()
     setIsPlaying(false)
     stopSubmission.clear()
@@ -101,13 +127,32 @@ export const Track: Component = () => {
 
   const setupPlayback = (el: HTMLVideoElement) => {
     playbackRef = el
-    el.onended = () => setIsPlaying(false)
+    el.onended = () => {
+      stopRenderLoop()
+      setIsPlaying(false)
+    }
     el.onloadeddata = () => {
       if (pipeline) {
         pipeline.connect(el)
       }
+      if (compositor) {
+        compositor.setVideo(el)
+        // Render first frame
+        compositor.render()
+      }
     }
   }
+
+  // Mount compositor canvas when we have a recording
+  createEffect(() => {
+    const rec = recording()
+    if (rec && previewContainer && compositor && !isRecording()) {
+      // Attach canvas to preview
+      if (!previewContainer.contains(compositor.canvas)) {
+        previewContainer.appendChild(compositor.canvas)
+      }
+    }
+  })
 
   const recording = () => stopSubmission.result as RecordingResult | undefined
   const recordingUrl = () => {
@@ -118,7 +163,7 @@ export const Track: Component = () => {
 
   return (
     <div class={styles.track}>
-      <div class={styles.preview}>
+      <div class={styles.preview} ref={previewContainer}>
         <Show when={isRecording()}>
           <video ref={videoRef} class={styles.video} muted playsinline />
         </Show>
@@ -126,7 +171,7 @@ export const Track: Component = () => {
           <video
             ref={setupPlayback}
             src={recordingUrl()}
-            class={styles.video}
+            class={styles.hiddenVideo}
             playsinline
           />
         </Show>
