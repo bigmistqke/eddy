@@ -8,7 +8,7 @@ import type {
   LocalTrackState,
   GridGroup,
 } from './types'
-import { getProject, getStemBlob, type ProjectRecord } from '../atproto/records'
+import { getProjectByRkey, getStemBlob, type ProjectRecord } from '../atproto/records'
 
 export interface ProjectStore {
   project: Project
@@ -209,11 +209,11 @@ export function createProjectStore() {
       return { ...store.project }
     },
 
-    // Load a project from AT Protocol URI
-    async loadFromUri(agent: Agent, uri: string) {
+    // Load a project by rkey (and optional handle)
+    async loadProject(agent: Agent, handle: string | undefined, rkey: string) {
       setStore('loading', true)
       try {
-        const record = await getProject(agent, uri)
+        const record = await getProjectByRkey(agent, rkey, handle)
 
         // Convert record to Project format
         const project: Project = {
@@ -243,7 +243,7 @@ export function createProjectStore() {
         }
 
         setStore('project', project)
-        setStore('remoteUri', uri)
+        setStore('remoteUri', record.uri)
 
         // Fetch stem blobs for each track
         for (const track of record.value.tracks) {

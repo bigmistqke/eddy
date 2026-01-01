@@ -40,7 +40,7 @@ const Home: Component = () => {
             <For each={projects()}>
               {(project) => (
                 <A
-                  href={`/editor/${encodeURIComponent(project.uri)}`}
+                  href={`/editor/${project.rkey}`}
                   class={styles.projectCard}
                 >
                   <div class={styles.projectTitle}>{project.title}</div>

@@ -9,6 +9,7 @@ export interface RecordRef {
 export interface ProjectListItem {
   uri: string
   cid: string
+  rkey: string
   title: string
   createdAt: string
   trackCount: number
@@ -62,6 +63,30 @@ export async function getProject(agent: Agent, uri: string): Promise<ProjectReco
   }
 }
 
+// Resolve a handle to a DID
+async function resolveHandle(agent: Agent, handle: string): Promise<string> {
+  const response = await agent.resolveHandle({ handle })
+  return response.data.did
+}
+
+// Get project by handle (optional) and rkey
+// If no handle provided, uses the agent's own DID
+export async function getProjectByRkey(
+  agent: Agent,
+  rkey: string,
+  handle?: string
+): Promise<ProjectRecord> {
+  let did: string
+  if (handle) {
+    did = await resolveHandle(agent, handle)
+  } else {
+    did = agent.assertDid
+  }
+
+  const uri = `at://${did}/app.klip.project/${rkey}`
+  return getProject(agent, uri)
+}
+
 interface StemRecord {
   blob: {
     $type: 'blob'
@@ -111,9 +136,11 @@ export async function listProjects(agent: Agent): Promise<ProjectListItem[]> {
       createdAt?: string
       tracks?: unknown[]
     }
+    const { rkey } = parseAtUri(record.uri)
     return {
       uri: record.uri,
       cid: record.cid,
+      rkey,
       title: value.title ?? 'Untitled',
       createdAt: value.createdAt ?? '',
       trackCount: value.tracks?.length ?? 0,

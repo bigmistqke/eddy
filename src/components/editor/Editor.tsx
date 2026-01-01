@@ -27,7 +27,8 @@ import styles from "./Editor.module.css";
 import { Track } from "./Track";
 
 interface EditorProps {
-  projectId?: string;
+  handle?: string;
+  rkey?: string;
 }
 
 const TRACK_IDS = [0, 1, 2, 3] as const;
@@ -56,12 +57,11 @@ export const Editor: Component<EditorProps> = (props) => {
   );
   const [masterVolume, setMasterVolume] = createSignal(1);
 
-  // Load project from URI if provided
+  // Load project if rkey provided (handle is optional - defaults to own DID)
   createEffect(() => {
     const currentAgent = agent();
-    const projectId = props.projectId;
-    if (currentAgent && projectId) {
-      project.loadFromUri(currentAgent, decodeURIComponent(projectId));
+    if (currentAgent && props.rkey) {
+      project.loadProject(currentAgent, props.handle, props.rkey);
     }
   });
 
