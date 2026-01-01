@@ -25,10 +25,10 @@ A media stem (audio or video file) that can be used across multiple projects.
 project
 ├── canvas                    # Output dimensions
 ├── curves[]                  # Reusable animation curves (unique IDs)
-├── groups[]                  # Layout containers
-│   ├── layout                # How members are positioned (grid, absolute, custom)
-│   ├── members[]             # Track/group references + position hints
-│   └── pipeline[]            # Visual effects only
+├── groups[]                  # Union: group.absolute | group.grid | group.custom
+│   ├── [grid-specific]       # columns, rows, gap, padding (grid only)
+│   ├── members[]             # Member type matches group type
+│   └── pipeline[]            # Visual effects
 ├── tracks[]                  # Media tracks
 │   ├── clips[]               # Timeline regions
 │   │   ├── audioPipeline[]   # Clip-level audio effects
@@ -193,26 +193,50 @@ For discrete values like zIndex:
 | `visual.opacity` | Transparency (0-1) with blend modes |
 | `visual.custom` | Third-party visual effects |
 
-## Layout
+## Groups
 
-Layout is a dedicated slot on groups (not part of the effect pipeline):
+Groups are typed by their layout strategy. Each group type has its own member type:
 
-| Layout | Description |
-|--------|-------------|
-| `grid` | CSS Grid-like arrangement with rows/columns |
-| `absolute` | Manual x/y/w/h positioning via member hints |
-| `custom` | Third-party layouts |
+| Group Type | Member Type | Description |
+|------------|-------------|-------------|
+| `group.absolute` | `member.absolute` | Free positioning with x/y/width/height |
+| `group.grid` | `member.grid` | CSS Grid-like cells with optional offset |
+| `group.custom` | `member.custom` | Third-party layouts with custom hints |
+
+### Absolute Group
 
 ```json
 {
-  "groups": [{
-    "id": "main",
-    "layout": { "type": "grid", "columns": 2, "rows": 2 },
-    "members": [{ "id": "t1" }, { "id": "t2" }],
-    "pipeline": []
-  }]
+  "type": "absolute",
+  "id": "main",
+  "members": [
+    { "id": "t1", "x": { "value": 0 }, "y": { "value": 0 }, "width": { "value": 1 }, "height": { "value": 1 } }
+  ],
+  "pipeline": []
 }
 ```
+
+### Grid Group
+
+Grid config lives on the group. Members specify cell placement + optional offset within cell:
+
+```json
+{
+  "type": "grid",
+  "id": "main",
+  "columns": 2,
+  "rows": 2,
+  "gap": { "value": 0.02 },
+  "members": [
+    { "id": "t1", "column": 1, "row": 1 },
+    { "id": "t2", "column": 2, "row": 1 },
+    { "id": "t3", "column": 1, "row": 2, "x": { "value": 0.1 }, "y": { "value": 0.1 } }
+  ],
+  "pipeline": []
+}
+```
+
+The `x`/`y` on grid members is relative to the cell (0-1), allowing fine-tuning within the grid structure.
 
 ## Processing Order
 
@@ -240,8 +264,10 @@ Master Processing:
   "curves": [],
   "groups": [
     {
+      "type": "grid",
       "id": "main",
-      "layout": { "type": "grid", "columns": 2, "rows": 2 },
+      "columns": 2,
+      "rows": 2,
       "members": [
         { "id": "t1" },
         { "id": "t2" },
@@ -304,8 +330,8 @@ Master Processing:
 {
   "groups": [
     {
+      "type": "absolute",
       "id": "main",
-      "layout": { "type": "absolute" },
       "members": [
         {
           "id": "background",

@@ -469,10 +469,17 @@
     },
 
     "group": {
+      "type": "union",
+      "description": "A group of tracks/groups. Type determines layout strategy.",
+      "refs": ["#group.absolute", "#group.grid", "#group.custom"]
+    },
+
+    "group.absolute": {
       "type": "object",
-      "description": "A group of tracks/groups with layout and visual effects",
-      "required": ["id", "members"],
+      "description": "Group with absolute positioning. Members specify x/y/width/height.",
+      "required": ["type", "id", "members"],
       "properties": {
+        "type": { "type": "string", "const": "absolute" },
         "id": {
           "type": "string",
           "maxLength": 64
@@ -483,14 +490,8 @@
         },
         "members": {
           "type": "array",
-          "items": { "type": "ref", "ref": "#groupMember" },
-          "maxLength": 32,
-          "description": "Tracks or nested groups in this group"
-        },
-        "layout": {
-          "type": "ref",
-          "ref": "#layout",
-          "description": "How members are positioned within this group"
+          "items": { "type": "ref", "ref": "#member.absolute" },
+          "maxLength": 32
         },
         "pipeline": {
           "type": "array",
@@ -501,29 +502,155 @@
       }
     },
 
-    "groupMember": {
+    "group.grid": {
       "type": "object",
-      "description": "A member of a group with optional position hints. Validators must ensure referenced id exists in project.tracks (if isGroup=false) or project.groups (if isGroup=true).",
+      "description": "Group with CSS Grid-like layout. Members placed in cells.",
+      "required": ["type", "id", "columns", "rows", "members"],
+      "properties": {
+        "type": { "type": "string", "const": "grid" },
+        "id": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "columns": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16
+        },
+        "rows": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16
+        },
+        "gap": {
+          "type": "ref",
+          "ref": "#value",
+          "description": "Gap between cells (0-1 relative to group size)"
+        },
+        "padding": {
+          "type": "ref",
+          "ref": "#value",
+          "description": "Padding around grid (0-1 relative to group size)"
+        },
+        "autoPlace": {
+          "type": "boolean",
+          "description": "Auto-place members without explicit column/row",
+          "default": true
+        },
+        "members": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "#member.grid" },
+          "maxLength": 32
+        },
+        "pipeline": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "#visualEffect" },
+          "maxLength": 16,
+          "description": "Visual effects applied to the composited group"
+        }
+      }
+    },
+
+    "group.custom": {
+      "type": "object",
+      "description": "Group with custom/third-party layout",
+      "required": ["type", "id", "members"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Custom layout identifier (e.g., 'vendor.layoutName')"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "params": {
+          "type": "object",
+          "description": "Layout-specific parameters"
+        },
+        "members": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "#member.custom" },
+          "maxLength": 32
+        },
+        "pipeline": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "#visualEffect" },
+          "maxLength": 16,
+          "description": "Visual effects applied to the composited group"
+        }
+      }
+    },
+
+    "member.absolute": {
+      "type": "object",
+      "description": "Member in an absolute group. Position and size in normalized coordinates.",
       "required": ["id"],
       "properties": {
         "id": {
           "type": "string",
-          "description": "Track ID or group ID. Must match an existing track.id or group.id in the project.",
+          "description": "Track ID or group ID. Must be unique across project.tracks and project.groups.",
           "maxLength": 64
         },
-        "isGroup": {
-          "type": "boolean",
-          "description": "True if this references a group, false/omitted for track",
-          "default": false
+        "x": {
+          "type": "ref",
+          "ref": "#value",
+          "description": "X position (0-1 relative to group)"
+        },
+        "y": {
+          "type": "ref",
+          "ref": "#value",
+          "description": "Y position (0-1 relative to group)"
+        },
+        "width": {
+          "type": "ref",
+          "ref": "#value",
+          "description": "Width (0-1 relative to group)"
+        },
+        "height": {
+          "type": "ref",
+          "ref": "#value",
+          "description": "Height (0-1 relative to group)"
+        },
+        "zIndex": {
+          "type": "ref",
+          "ref": "#integerValue",
+          "description": "Layer order within group"
+        },
+        "fit": {
+          "type": "string",
+          "enum": ["contain", "cover", "fill"],
+          "default": "cover"
+        }
+      }
+    },
+
+    "member.grid": {
+      "type": "object",
+      "description": "Member in a grid group. Placed in cell with optional offset.",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Track ID or group ID. Must be unique across project.tracks and project.groups.",
+          "maxLength": 64
         },
         "column": {
           "type": "integer",
-          "description": "Grid column (1-based), used by grid layout",
+          "description": "Grid column (1-based). Omit for auto-placement.",
           "minimum": 1
         },
         "row": {
           "type": "integer",
-          "description": "Grid row (1-based), used by grid layout",
+          "description": "Grid row (1-based). Omit for auto-placement.",
           "minimum": 1
         },
         "columnSpan": {
@@ -539,22 +666,39 @@
         "x": {
           "type": "ref",
           "ref": "#value",
-          "description": "X position (0-1), used by absolute layout"
+          "description": "X offset within cell (0-1 relative to cell)"
         },
         "y": {
           "type": "ref",
           "ref": "#value",
-          "description": "Y position (0-1), used by absolute layout"
+          "description": "Y offset within cell (0-1 relative to cell)"
         },
-        "width": {
+        "zIndex": {
           "type": "ref",
-          "ref": "#value",
-          "description": "Width (0-1), used by absolute layout"
+          "ref": "#integerValue",
+          "description": "Layer order within group"
         },
-        "height": {
-          "type": "ref",
-          "ref": "#value",
-          "description": "Height (0-1), used by absolute layout"
+        "fit": {
+          "type": "string",
+          "enum": ["contain", "cover", "fill"],
+          "default": "cover"
+        }
+      }
+    },
+
+    "member.custom": {
+      "type": "object",
+      "description": "Member in a custom group. Hints depend on layout implementation.",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Track ID or group ID. Must be unique across project.tracks and project.groups.",
+          "maxLength": 64
+        },
+        "hints": {
+          "type": "object",
+          "description": "Layout-specific member hints"
         },
         "zIndex": {
           "type": "ref",
@@ -803,75 +947,6 @@
         "params": {
           "type": "object",
           "description": "Effect-specific parameters"
-        }
-      }
-    },
-
-    "layout": {
-      "type": "union",
-      "description": "Layout algorithm for positioning group members",
-      "refs": [
-        "#layout.grid",
-        "#layout.absolute",
-        "#layout.custom"
-      ]
-    },
-
-    "layout.grid": {
-      "type": "object",
-      "description": "Arrange group members in a grid",
-      "required": ["type", "columns", "rows"],
-      "properties": {
-        "type": { "type": "string", "const": "grid" },
-        "columns": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 16
-        },
-        "rows": {
-          "type": "integer",
-          "minimum": 1,
-          "maximum": 16
-        },
-        "gap": {
-          "type": "ref",
-          "ref": "#value",
-          "description": "Gap between cells (0-1 relative)"
-        },
-        "padding": {
-          "type": "ref",
-          "ref": "#value",
-          "description": "Padding around grid (0-1 relative)"
-        },
-        "autoPlace": {
-          "type": "boolean",
-          "description": "Auto-place members without explicit positions",
-          "default": true
-        }
-      }
-    },
-
-    "layout.absolute": {
-      "type": "object",
-      "description": "Position group members using absolute coordinates from member hints",
-      "required": ["type"],
-      "properties": {
-        "type": { "type": "string", "const": "absolute" }
-      }
-    },
-
-    "layout.custom": {
-      "type": "object",
-      "description": "Custom or third-party layout",
-      "required": ["type"],
-      "properties": {
-        "type": {
-          "type": "string",
-          "description": "Custom layout identifier (e.g., 'vendor.layoutName')"
-        },
-        "params": {
-          "type": "object",
-          "description": "Layout-specific parameters"
         }
       }
     }
