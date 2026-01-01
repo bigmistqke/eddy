@@ -16,6 +16,7 @@ Klip treats every project as a **remixable stem collection**. When you create a 
 2. **Remix as social interaction** - Forking someone's project is a form of engagement, visible on the social graph
 3. **Browser-native compositing** - All rendering happens client-side (leveraging your mp4box.js expertise)
 4. **Mobile-first, desktop-capable** - Touch-optimized interface that scales up
+5. **Everything is an effect** - Audio processing, video transforms, and layout are all modeled as composable effects
 
 ## Feature Set
 
@@ -50,13 +51,38 @@ Full schemas in `lexicons/` directory. Core records:
 
 | Lexicon | Purpose |
 |---------|---------|
-| `app.klip.project` | Project with tracks, layout, mix settings, and remix attribution |
+| `app.klip.project` | Project with groups, tracks, effect pipelines, and remix attribution |
 | `app.klip.stem` | Reusable media files (audio/video) with metadata and waveforms |
 
 **Future lexicons (not yet defined):**
 - `app.klip.comment` - Timestamped comments on projects
 - `app.klip.like` - Engagement (or use Bluesky's native like?)
 - `app.klip.collection` - Playlists/albums
+
+### Data Architecture
+
+The project structure follows an effect-based architecture where all processing is modeled uniformly:
+
+```
+project
+├── canvas                    # Output dimensions
+├── groups[]                  # Layout containers
+│   ├── members[]             # Track/group references + position hints
+│   └── pipeline[]            # Effects: layout, visual, mask
+├── tracks[]                  # Media tracks
+│   ├── stem                  # Reference to app.klip.stem record
+│   ├── clips[]               # Timeline regions
+│   ├── audioPipeline[]       # Audio effects chain
+│   └── videoPipeline[]       # Visual effects chain
+├── masterAudioPipeline[]     # Master audio bus
+└── masterVideoPipeline[]     # Master video output
+```
+
+**Effect Categories:**
+- `audio.*` - Gain, pan, EQ, compressor, reverb, delay, filter
+- `visual.*` - Transform, opacity, crop, color correction, blur, sharpen
+- `group.layout.*` - Grid, stack, absolute positioning
+- `group.mask` - Shape or track-based masking
 
 ### Data Flow
 
@@ -186,11 +212,10 @@ Full schemas in `lexicons/` directory. Core records:
 ## Open Questions
 
 1. **Stem format** - Opus for audio (128kbps, excellent quality/size), H.264/VP9 for video
-2. **Project format** - JSON timeline spec? Adapt existing DAW format?
-3. **Blob hosting** - Start with PDS directly, piggyback Bluesky's video CDN where possible
-4. **Monetization** - How do creators benefit? Tipping via AT Protocol?
-5. **Sample library** - Built-in sounds? Community-contributed?
-6. **MIDI data** - Not for MVP, consider for future versions
+2. **Blob hosting** - Start with PDS directly, piggyback Bluesky's video CDN where possible
+3. **Monetization** - How do creators benefit? Tipping via AT Protocol?
+4. **Sample library** - Built-in sounds? Community-contributed?
+5. **MIDI data** - Not for MVP, consider for future versions
 
 ## Name
 
@@ -198,7 +223,7 @@ Full schemas in `lexicons/` directory. Core records:
 
 ## Next Steps
 
-1. Define minimal viable lexicon schema
+1. Define minimal viable lexicon schema ✓
 2. Prototype timeline UI (touch-first)
 3. Prove out stem storage/retrieval on AT Protocol
 4. Build basic audio engine with Web Audio API

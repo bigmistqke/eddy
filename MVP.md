@@ -87,7 +87,7 @@ Critical for testing and buzz-building. Every Klip project can be rendered and p
 │                                         │
 │  Caption:                               │
 │  ┌─────────────────────────────────┐   │
-│  │ late night jam 🎵               │   │
+│  │ late night jam                  │   │
 │  │                                  │   │
 │  └─────────────────────────────────┘   │
 │                                         │
@@ -99,6 +99,7 @@ Critical for testing and buzz-building. Every Klip project can be rendered and p
 ```
 
 **The flow:**
+
 1. Tap "Share" on any project
 2. Klip renders composite video (all tracks mixed down)
 3. Preview before posting
@@ -107,8 +108,9 @@ Critical for testing and buzz-building. Every Klip project can be rendered and p
 6. Post text includes link back to Klip project
 
 **Post format:**
+
 ```
-late night jam 🎵
+late night jam
 
 🔗 Remix this: https://klip.app/p/did:plc:xxx/rkey
 
@@ -116,6 +118,7 @@ Made with Klip
 ```
 
 **Technical:**
+
 - Render to MP4 (H.264 + AAC for max Bluesky compatibility)
 - Max 3 minutes, 720p (fits Bluesky limits)
 - Use `app.bsky.feed.post` with `app.bsky.embed.video`
@@ -127,26 +130,62 @@ Made with Klip
 ### Data Model
 
 Full lexicon definitions in `lexicons/` directory:
-- `app.klip.project.json` - Project with tracks, layout, and mix settings
+
+- `app.klip.project.json` - Project with groups, tracks, and effect pipelines
 - `app.klip.stem.json` - Reusable media stems
 
-**Key design decisions:**
+**Schema vs MVP UI:**
 
-| Feature | Data Model | MVP UI |
-|---------|------------|--------|
-| Tracks | Unlimited (max 32) | 4 slots |
-| Clips per track | Unlimited (max 256) | 1 clip (start from t=0) |
-| Layout | Absolute positioning (x,y,w,h) | Preset picker (grid, stack, etc) |
-| Effects | Full effect chain arrays | Ignored |
-| Mix | Gain, pan, effects | Gain + pan only |
+The lexicons define a rich, future-proof data model. MVP uses a subset:
 
-**Why absolute positioning for layout:**
-- Presets are client-side conveniences, not stored in schema
-- User picks "Grid 2x2" → client computes x/y/w/h → saves absolute values
-- Future: drag to reposition, pinch to resize, no schema changes needed
-- Projects portable between clients with different preset libraries
+| Feature | Schema Capacity | MVP Implementation |
+|---------|-----------------|-------------------|
+| Tracks | Up to 32 | 4 slots |
+| Clips per track | Up to 256 | 1 clip (start from t=0) |
+| Layout | Grid, stack, absolute effects | Grid 2x2 preset |
+| Audio effects | Full chain (EQ, reverb, etc.) | Gain + pan only |
+| Video effects | Transform, blur, color, etc. | None |
+| Groups | Nested hierarchy | Single root group |
+
+**Effect-Based Architecture:**
+
+Everything is an effect. The schema stores layout algorithms, not just computed positions:
+
+```json
+{
+  "groups": [{
+    "id": "main",
+    "members": [
+      { "id": "t1" },
+      { "id": "t2" },
+      { "id": "t3" },
+      { "id": "t4" }
+    ],
+    "pipeline": [
+      { "type": "group.layout.grid", "columns": 2, "rows": 2, "autoPlace": true }
+    ]
+  }],
+  "tracks": [{
+    "id": "t1",
+    "stem": { "uri": "at://...", "cid": "..." },
+    "clips": [{ "id": "c1", "offset": 0, "duration": 60000 }],
+    "audioPipeline": [
+      { "type": "audio.gain", "value": 1.0 },
+      { "type": "audio.pan", "value": 0 }
+    ],
+    "videoPipeline": []
+  }]
+}
+```
+
+**Why this matters:**
+
+- Projects are portable—any client can interpret the layout intent
+- Future clients can add new layout types without breaking old projects
+- Remixers can change layout without re-uploading stems
 
 **Stem reuse:**
+
 - Stems are separate records, referenced by `strongRef`
 - Same stem can appear in multiple projects
 - Remixing = clone project record, keep stem references
@@ -155,18 +194,21 @@ Full lexicon definitions in `lexicons/` directory:
 ### File Formats
 
 **Audio stems:**
+
 - Codec: Opus
 - Container: WebM or OGG
 - Bitrate: 128kbps (good quality, reasonable size)
 - Sample rate: 48kHz
 
 **Video stems:**
+
 - Codec: H.264 (widest compatibility) or VP9 (better compression)
 - Container: MP4 or WebM
 - Resolution: 720p max for MVP
 - Audio: Opus track embedded
 
 **Size budget per project:**
+
 - 4 stems × ~10MB each = ~40MB max
 - Fits within 50MB PDS blob limit
 - 60-90 seconds of content at good quality
@@ -176,79 +218,99 @@ Full lexicon definitions in `lexicons/` directory:
 For Bluesky posting, we need to composite all tracks into a single video file.
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                       Render Pipeline                            │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│   VIDEO PATH                         AUDIO PATH                  │
-│   ──────────                         ──────────                  │
-│                                                                  │
-│   ┌──────────┐                ┌──────────┐  ┌──────────┐        │
-│   │ Track 1  │                │ Track 2  │  │ Track 3  │  ...   │
-│   │ (video)  │                │ (audio)  │  │ (audio)  │        │
-│   └────┬─────┘                └────┬─────┘  └────┬─────┘        │
-│        │                           │             │               │
-│        │ decode frames             │             │               │
-│        ▼                           ▼             ▼               │
-│   ┌─────────┐                ┌─────────────────────────────┐    │
-│   │ Canvas  │                │      Web Audio API          │    │
-│   │ 2D/WebGL│                │  ┌─────┐ ┌─────┐ ┌─────┐   │    │
-│   └────┬────┘                │  │Gain │ │Gain │ │Gain │   │    │
-│        │                     │  │+Pan │ │+Pan │ │+Pan │   │    │
-│        │                     │  └──┬──┘ └──┬──┘ └──┬──┘   │    │
-│        │                     │     └───────┼───────┘      │    │
-│        │                     │             ▼              │    │
-│        │                     │        ┌─────────┐         │    │
-│        │                     │        │ Master  │         │    │
-│        │                     │        │  Bus    │         │    │
-│        │                     │        └────┬────┘         │    │
-│        │                     └─────────────┼──────────────┘    │
-│        │                                   │                    │
-│        │ captureStream()                   │ createMediaStream- │
-│        │                                   │ Destination()      │
-│        ▼                                   ▼                    │
-│   ┌─────────┐                        ┌─────────┐               │
-│   │ Video   │                        │ Audio   │               │
-│   │ Stream  │                        │ Stream  │               │
-│   └────┬────┘                        └────┬────┘               │
-│        │                                  │                     │
-│        └──────────────┬───────────────────┘                     │
-│                       ▼                                         │
-│              ┌─────────────────┐                                │
-│              │ MediaRecorder   │  ← real-time capture           │
-│              │ (WebM/VP8+Opus) │                                │
-│              └────────┬────────┘                                │
-│                       │                                         │
-│                       ▼                                         │
-│              ┌─────────────────┐                                │
-│              │ WebCodecs +     │  ← re-encode for Bluesky       │
-│              │ mp4box.js       │    (H.264 + AAC in MP4)        │
-│              └────────┬────────┘                                │
-│                       │                                         │
-│                       ▼                                         │
-│              ┌─────────────────┐                                │
-│              │   Final MP4     │                                │
-│              └─────────────────┘                                │
-└─────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────┐
+│                            Render Pipeline                                 │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│  MAIN THREAD                         │  WORKERS (via worker-proxy)         │
+│  ───────────                         │  ──────────────────────────         │
+│                                      │                                     │
+│  ┌──────────┐ ┌──────────┐           │    ┌─────────────────────────┐      │
+│  │ Track 1  │ │ Track 2  │  ...      │    │    Decode Worker        │      │
+│  │ (video)  │ │ (video)  │           │    │  ┌───────────────────┐  │      │
+│  └────┬─────┘ └────┬─────┘           │    │  │ WebCodecs         │  │      │
+│       │            │                 │    │  │ VideoDecoder      │  │      │
+│       │  $async()  │                 │    │  └─────────┬─────────┘  │      │
+│       └────────────┼─────────────────┼───►│            │            │      │
+│                    │                 │    │  $transfer(frames)      │      │
+│       ◄────────────┼─────────────────┼────│            │            │      │
+│       │            │                 │    └────────────┼────────────┘      │
+│       ▼            ▼                 │                 │                   │
+│  ┌─────────────────────────────┐     │                 │                   │
+│  │      view.gl (WebGL)        │     │                 │                   │
+│  │  ┌───────┐ ┌───────┐        │◄────┼─────────────────┘                   │
+│  │  │ tex0  │ │ tex1  │ ...    │     │   VideoFrames as textures           │
+│  │  └───┬───┘ └───┬───┘        │     │                                     │
+│  │      │         │            │     │                                     │
+│  │      ▼         ▼            │     │                                     │
+│  │  ┌─────────────────────┐    │     │                                     │
+│  │  │   Layout Shader     │    │     │                                     │
+│  │  │   (grid/stack →     │    │     │                                     │
+│  │  │    UV transforms)   │    │     │                                     │
+│  │  └──────────┬──────────┘    │     │                                     │
+│  │             ▼               │     │                                     │
+│  │  ┌─────────────────────┐    │     │                                     │
+│  │  │   Output Canvas     │    │     │                                     │
+│  │  └──────────┬──────────┘    │     │                                     │
+│  └─────────────┼───────────────┘     │                                     │
+│                │                     │                                     │
+│                │ captureStream()     │                                     │
+│                ▼                     │                                     │
+│  ┌────────────────────────────┐      │    ┌─────────────────────────┐      │
+│  │      Web Audio API         │      │    │    Encode Worker        │      │
+│  │  ┌─────┐ ┌─────┐ ┌─────┐   │      │    │  ┌───────────────────┐  │      │
+│  │  │Gain │ │Gain │ │Gain │   │      │    │  │ WebCodecs         │  │      │
+│  │  │+Pan │ │+Pan │ │+Pan │   │      │    │  │ VideoEncoder      │  │      │
+│  │  └──┬──┘ └──┬──┘ └──┬──┘   │      │    │  │ AudioEncoder      │  │      │
+│  │     └───────┼───────┘      │      │    │  └─────────┬─────────┘  │      │
+│  │             ▼              │      │    │            │            │      │
+│  │        ┌─────────┐         │      │    │  ┌─────────▼─────────┐  │      │
+│  │        │ Master  │         │      │    │  │    mp4box.js      │  │      │
+│  │        └────┬────┘         │      │    │  │    (muxer)        │  │      │
+│  └─────────────┼──────────────┘      │    │  └─────────┬─────────┘  │      │
+│                │                     │    └────────────┼────────────┘      │
+│                │                     │                 │                   │
+│   video frames + audio chunks ───────┼────────────────►│                   │
+│   via $transfer()                    │                 │                   │
+│                                      │                 ▼                   │
+│                                      │    ┌─────────────────────────┐      │
+│                                      │    │      Final MP4          │      │
+│                                      │    │   (H.264 + AAC)         │      │
+│                                      │    └─────────────────────────┘      │
+│                                      │                                     │
+└──────────────────────────────────────┴─────────────────────────────────────┘
 ```
 
-**Two parallel paths:**
-1. **Video** → Canvas → `captureStream()` → video MediaStream
-2. **Audio** → Web Audio (gain/pan per track → master bus) → `MediaStreamDestination` → audio MediaStream
+**Main thread (real-time preview):**
 
-**Combined into final output:**
-- MediaRecorder captures both streams (quick but WebM only)
-- WebCodecs + mp4box.js re-encodes to MP4 (H.264+AAC) for Bluesky compatibility
+1. **Decode** → Request frames via `worker-proxy.$async()`, get back VideoFrames
+2. **Composite** → `view.gl` renders frames to textures, layout shader positions them based on group pipeline effects
+3. **Mix** → Web Audio handles gain/pan per track → master bus
 
-**Alternative: Offline render (faster than realtime)**
-- Skip MediaRecorder entirely
-- Decode frames manually with WebCodecs
-- Process audio in chunks with OfflineAudioContext
-- Encode directly to H.264/AAC with WebCodecs
-- Mux with mp4box.js
+**Workers (via worker-proxy):**
+
+- **Decode Worker**: WebCodecs VideoDecoder, `$transfer()` frames back to main
+- **Encode Worker**: WebCodecs encoders + mp4box.js muxing, receives frames via `$transfer()`
+- **Waveform Worker**: Generate peaks for visualization (not shown)
+
+**Export flow:**
+
+1. Main thread renders frame via view.gl
+2. Read pixels or use `canvas.captureStream()`
+3. `$transfer()` frame to Encode Worker
+4. Worker encodes H.264 + AAC, muxes with mp4box.js
+5. Final MP4 ready for Bluesky upload
+
+**Why this architecture:**
+
+- Main thread stays responsive (decode/encode in workers)
+- `$transfer()` avoids copying large ArrayBuffers
+- view.gl handles multi-texture compositing efficiently
+- Type-safe RPC means no manual postMessage juggling
 
 **For MVP:**
-- 4 video slots rendered as a grid (2x2 or 1x4 depending on aspect ratio)
+
+- 4 video slots rendered via `group.layout.grid` effect (2x2)
 - Each track can be video (with audio) or audio-only (show waveform/color in slot)
 - Recording happens in-app: record yourself while hearing/seeing other tracks
 - MVP constraint: each recording starts from t=0 (one continuous take per slot)
@@ -256,37 +318,53 @@ For Bluesky posting, we need to composite all tracks into a single video file.
 
 **Layout system:**
 
-Underlying model is always absolute positioning (x, y, width, height, z-index). Auto-layouts are just presets that generate these values.
+Layout is stored as effects in the group pipeline. MVP uses a single preset that generates the appropriate effect:
 
 ```
-MVP: Simple layout presets
+MVP: Simple layout presets (UI)
 ┌─────────────────────────────────────────┐
 │  [Grid 2x2]  [Stack]  [Single]  [Free]  │
 └─────────────────────────────────────────┘
+        │
+        ▼
+Stored in schema as effect:
+{ "type": "group.layout.grid", "columns": 2, "rows": 2, "autoPlace": true }
 
 Future: Full positioning control
-- Drag to reposition
-- Pinch to resize
-- Layer order controls
-- Grouping/nesting
+- Drag to reposition → updates member position hints
+- Pinch to resize → updates member width/height
+- Layer order → updates member zIndex
+- Switch layouts → swaps layout effect type
 ```
 
-This keeps MVP simple (pick a preset) while the data model supports full flexibility later. See `lexicons/` for schema details.
+This keeps MVP simple (pick a preset) while the schema preserves the layout intent for portability and future features. See `lexicons/README.md` for full effect documentation.
 
 ### Client Tech Stack
 
 ```
 ┌──────────────────────────────────────────┐
-│             Klip MVP                      │
+│             Klip MVP                     │
 ├──────────────────────────────────────────┤
 │  SolidJS                                 │
 │  - Reactive, fast, small bundle          │
 │  - Good mobile perf                      │
 ├──────────────────────────────────────────┤
-│  @anthropic/atproto-api                  │
+│  @atproto/api                            │
 │  - OAuth login                           │
 │  - Blob upload                           │
 │  - Record CRUD                           │
+├──────────────────────────────────────────┤
+│  @bigmistqke/view.gl                     │
+│  - Type-safe WebGL resource management   │
+│  - GLSL template literals → TS types     │
+│  - Video compositing on GPU              │
+│  - Shader-based effects (future)         │
+├──────────────────────────────────────────┤
+│  @bigmistqke/worker-proxy (rpc branch)   │
+│  - Type-safe RPC for Web Workers         │
+│  - $async for awaitable calls            │
+│  - $transfer for ArrayBuffer ownership   │
+│  - Offload encode/decode to workers      │
 ├──────────────────────────────────────────┤
 │  Web Audio API                           │
 │  - Playback                              │
@@ -303,6 +381,16 @@ This keeps MVP simple (pick a preset) while the data model supports full flexibi
 │  - Falls back to ffmpeg.wasm if needed   │
 └──────────────────────────────────────────┘
 ```
+
+**Why these choices:**
+
+| Library | Role in Klip |
+|---------|--------------|
+| view.gl | Render video grid to canvas via WebGL, interpret layout effects, GPU-accelerated |
+| worker-proxy | Heavy lifting (decode, encode, waveform gen) in workers without losing type safety |
+| mp4box.js | Your TS rewrite - parse/mux MP4, extract tracks, no native dependencies |
+| Web Audio | Real-time mixing, effects chain, recording |
+| WebCodecs | Frame-level video encode/decode, faster than MediaRecorder for export |
 
 ### What We Skip for MVP
 
@@ -322,33 +410,33 @@ Mobile-first. One hand operation where possible.
 
 ```
 ┌─────────────────────────────────┐
-│ ☰  Klip            [@handle ▼] │
+│    Klip            [@handle  ]  |
 ├─────────────────────────────────┤
 │                                 │
-│  ┌─────────────────────────┐   │
-│  │ 🎥 Track 1    [≡][-][M] │   │  <- Video track
-│  │ ████████░░░░░░░░░░░░░░░ │   │     Thumbnail strip
-│  └─────────────────────────┘   │
+│  ┌─────────────────────────┐    │
+│  │    Track 1    [≡][-][M] │    │  <- Video track
+│  │ ████████░░░░░░░░░░░░░░░ │    │     Thumbnail strip
+│  └─────────────────────────┘    │
 │                                 │
-│  ┌─────────────────────────┐   │
-│  │ 🎤 Track 2    [≡][-][M] │   │  <- Audio track
-│  │ ▃▅▇▅▃▁▃▅▇█▇▅▃▁▃▅▇▅▃▁▃▅ │   │     Waveform
-│  └─────────────────────────┘   │
+│  ┌─────────────────────────┐    │
+│  │    Track 2    [≡][-][M] │    │  <- Audio track
+│  │ ▃▅▇▅▃▁▃▅▇█▇▅▃▁▃▅▇▅▃▁▃▅  │    │     Waveform
+│  └─────────────────────────┘    │
 │                                 │
-│  ┌─────────────────────────┐   │
-│  │ 🎸 Track 3    [≡][-][M] │   │
-│  │ ▁▃▅▃▁▃▅▇▅▃▁▃▅▇█▇▅▃▁▃▅▃ │   │
-│  └─────────────────────────┘   │
+│  ┌─────────────────────────┐    │
+│  │    Track 3    [≡][-][M] │    │
+│  │ ▁▃▅▃▁▃▅▇▅▃▁▃▅▇█▇▅▃▁▃▅▃  │    │
+│  └─────────────────────────┘    │
 │                                 │
-│  ┌─────────────────────────┐   │
-│  │ + Track 4              │   │  <- Empty slot
-│  │   [Record] [Import]     │   │
-│  └─────────────────────────┘   │
+│  ┌─────────────────────────┐    │
+│  │ + Track 4               │    │  <- Empty slot
+│  │   [Record] [Import]     │    │
+│  └─────────────────────────┘    │
 │                                 │
 ├─────────────────────────────────┤
-│ ◀◀  ▶ PLAY   ▶▶    0:24/1:30  │
+│ ◀◀  ▶ PLAY   ▶▶    0:24/1:30    │
 ├─────────────────────────────────┤
-│ [Save Draft]      [Publish →]  │
+│ [Save Draft]      [Publish →]   │
 └─────────────────────────────────┘
 
 [≡] = Volume slider (tap to expand)
@@ -366,11 +454,12 @@ your-remix
         └── remixed from: @creator/first-version
 ```
 
-This is just following `parent` references. No special indexing needed for MVP.
+This is just following `parent` references in the project record. No special indexing needed for MVP.
 
 ## Authentication
 
 Use AT Protocol OAuth flow:
+
 1. User taps "Sign in with Bluesky"
 2. Redirects to Bluesky OAuth
 3. Returns with credentials
@@ -381,11 +470,13 @@ No custom auth, no passwords to manage.
 ## Hosting / Deployment
 
 **MVP deployment:**
+
 - Static site (Vercel, Netlify, Cloudflare Pages)
 - No backend needed—everything goes to user's PDS
 - Just HTML/JS/CSS
 
 **Domain:**
+
 - klip.audio? klip.fm? getklip.app?
 
 ## Risks & Mitigations
@@ -401,6 +492,7 @@ No custom auth, no passwords to manage.
 ## Success Metrics
 
 MVP is successful if:
+
 - [ ] Can create a 4-track project in under 2 minutes
 - [ ] Can remix someone else's project
 - [ ] Remix chain is visible
@@ -410,12 +502,14 @@ MVP is successful if:
 ## Development Phases
 
 ### Phase 1: Proof of Concept
+
 - [ ] AT Protocol OAuth login working
 - [ ] Upload a single audio blob to PDS
 - [ ] Retrieve and play it back
 - [ ] Basic project record creation
 
 ### Phase 2: Core Editor
+
 - [ ] 4-track timeline UI
 - [ ] Record audio via MediaRecorder
 - [ ] Import from file picker
@@ -423,18 +517,21 @@ MVP is successful if:
 - [ ] Playback with Web Audio mixing
 
 ### Phase 3: Video Support
+
 - [ ] Import video clips
 - [ ] Thumbnail strip visualization
 - [ ] Video playback synced with audio
 - [ ] mp4box.js integration for parsing
 
 ### Phase 4: Publishing to PDS
+
 - [ ] Encode stems to Opus/H.264
 - [ ] Upload stems as separate blobs
 - [ ] Create project record with lexicon
 - [ ] Retrieve and display published projects
 
 ### Phase 5: Bluesky Posting (Critical for Testing)
+
 - [ ] Render composite video (mix all tracks)
 - [ ] Offline render with WebCodecs + mp4box.js
 - [ ] Upload to Bluesky video CDN
@@ -442,18 +539,21 @@ MVP is successful if:
 - [ ] Audio-only fallback (waveform video)
 
 ### Phase 6: Social Features
+
 - [ ] Feed of followed users' projects
 - [ ] Project playback view
 - [ ] Remix flow (clone stems, create child project)
 - [ ] Attribution chain display
 
 ### Phase 7: Web Player
+
 - [ ] Public URL for each project (klip.app/p/...)
 - [ ] Embeddable player
 - [ ] "Remix in Klip" CTA
 - [ ] Open Graph tags for rich link previews
 
 ### Phase 8: Polish
+
 - [ ] Mobile touch optimization
 - [ ] Loading states and error handling
 - [ ] PWA support (add to home screen)
@@ -462,8 +562,9 @@ MVP is successful if:
 ## Decisions Made
 
 1. **Separate blob per stem** - More flexible, enables stem reuse, future-proofs for collaboration
-2. **Future-proof lexicon** - Simple UI, rich data model that supports clips, effects, automation later
-3. **Bluesky posting built-in** - Critical for testing loop and organic growth
+2. **Effect-based architecture** - Layout, audio, and video processing all modeled as composable effects in pipelines
+3. **Schema stores intent** - Layout type (grid/stack/absolute) stored in schema, not computed client-side
+4. **Bluesky posting built-in** - Critical for testing loop and organic growth
 
 ## Open Questions for MVP
 

@@ -10,6 +10,11 @@
         "type": "object",
         "required": ["blob", "type", "mimeType", "duration", "createdAt"],
         "properties": {
+          "schemaVersion": {
+            "type": "integer",
+            "description": "Schema version for migration support",
+            "default": 1
+          },
           "blob": {
             "type": "blob",
             "description": "The media file",

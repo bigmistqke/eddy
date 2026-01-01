@@ -4,12 +4,17 @@
   "defs": {
     "main": {
       "type": "record",
-      "description": "A Klip project containing tracks, layout, and mix settings",
+      "description": "A Klip project containing groups, tracks, and effect pipelines",
       "key": "tid",
       "record": {
         "type": "object",
-        "required": ["title", "canvas", "tracks", "createdAt"],
+        "required": ["title", "canvas", "groups", "tracks", "createdAt"],
         "properties": {
+          "schemaVersion": {
+            "type": "integer",
+            "description": "Schema version for migration support",
+            "default": 1
+          },
           "title": {
             "type": "string",
             "maxLength": 256
@@ -31,29 +36,30 @@
           },
           "canvas": {
             "type": "ref",
-            "ref": "#canvas",
-            "description": "Output canvas dimensions"
+            "ref": "#canvas"
           },
-          "grids": {
+          "groups": {
             "type": "array",
-            "items": { "type": "ref", "ref": "#gridDef" },
-            "maxLength": 32,
-            "description": "Reusable grid definitions"
-          },
-          "defaultGridId": {
-            "type": "string",
-            "description": "ID of the default grid to use"
+            "items": { "type": "ref", "ref": "#group" },
+            "maxLength": 64,
+            "description": "Groups containing tracks with layout effects"
           },
           "tracks": {
             "type": "array",
             "items": { "type": "ref", "ref": "#track" },
-            "maxLength": 32,
-            "description": "Ordered list of tracks (MVP: max 4)"
+            "maxLength": 32
           },
-          "master": {
-            "type": "ref",
-            "ref": "#mixSettings",
-            "description": "Master bus settings"
+          "masterAudioPipeline": {
+            "type": "array",
+            "items": { "type": "ref", "ref": "#audioEffect" },
+            "maxLength": 16,
+            "description": "Master audio bus effects"
+          },
+          "masterVideoPipeline": {
+            "type": "array",
+            "items": { "type": "ref", "ref": "#videoEffect" },
+            "maxLength": 16,
+            "description": "Master video output effects"
           },
           "parent": {
             "type": "ref",
@@ -74,7 +80,7 @@
 
     "canvas": {
       "type": "object",
-      "description": "Output canvas/frame dimensions",
+      "description": "Output canvas dimensions",
       "required": ["width", "height"],
       "properties": {
         "width": {
@@ -95,62 +101,109 @@
       }
     },
 
-    "gridDef": {
+    "group": {
       "type": "object",
-      "description": "A reusable grid definition. MVP: equal columns/rows. Extensible later.",
-      "required": ["id", "columns", "rows"],
+      "description": "A group of tracks/groups with layout and composite effects",
+      "required": ["id", "members"],
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for this grid",
           "maxLength": 64
         },
-        "columns": {
-          "type": "integer",
-          "description": "Number of equal columns (MVP). Future: array of sizes.",
-          "minimum": 1,
-          "maximum": 16
+        "name": {
+          "type": "string",
+          "maxLength": 128
         },
-        "rows": {
-          "type": "integer",
-          "description": "Number of equal rows (MVP). Future: array of sizes.",
-          "minimum": 1,
-          "maximum": 16
+        "members": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "#groupMember" },
+          "maxLength": 32,
+          "description": "Tracks or nested groups in this group"
         },
-        "gap": {
+        "pipeline": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "#groupEffect" },
+          "maxLength": 16,
+          "description": "Group effects: layout, transform, composite"
+        }
+      }
+    },
+
+    "groupMember": {
+      "type": "object",
+      "description": "A member of a group with optional position hints",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Track ID or group ID"
+        },
+        "isGroup": {
+          "type": "boolean",
+          "description": "True if this references a group, false/omitted for track",
+          "default": false
+        },
+        "column": {
+          "type": "integer",
+          "description": "Grid column (1-based), used by grid layout",
+          "minimum": 1
+        },
+        "row": {
+          "type": "integer",
+          "description": "Grid row (1-based), used by grid layout",
+          "minimum": 1
+        },
+        "columnSpan": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        },
+        "rowSpan": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        },
+        "x": {
           "type": "number",
-          "description": "Gap between cells (0-1, relative to canvas)",
-          "minimum": 0,
-          "maximum": 0.5,
+          "description": "X position (0-1), used by absolute layout"
+        },
+        "y": {
+          "type": "number",
+          "description": "Y position (0-1), used by absolute layout"
+        },
+        "width": {
+          "type": "number",
+          "description": "Width (0-1), used by absolute layout"
+        },
+        "height": {
+          "type": "number",
+          "description": "Height (0-1), used by absolute layout"
+        },
+        "zIndex": {
+          "type": "integer",
+          "description": "Layer order within group",
           "default": 0
         },
-        "padding": {
-          "type": "number",
-          "description": "Padding around grid (0-1, relative to canvas)",
-          "minimum": 0,
-          "maximum": 0.5,
-          "default": 0
+        "fit": {
+          "type": "string",
+          "enum": ["contain", "cover", "fill"],
+          "default": "cover"
         }
       }
     },
 
     "track": {
       "type": "object",
-      "description": "A single track containing media and positioning",
-      "required": ["id", "type", "clips", "mix"],
+      "description": "A track containing media clips and effect pipelines",
+      "required": ["id", "clips"],
       "properties": {
         "id": {
           "type": "string",
-          "description": "Stable ID for referencing this track"
+          "maxLength": 64
         },
         "name": {
           "type": "string",
           "maxLength": 128
-        },
-        "type": {
-          "type": "string",
-          "enum": ["video", "audio"],
-          "description": "Track type - video tracks have visual layout, audio tracks are mix-only"
         },
         "stem": {
           "type": "ref",
@@ -160,17 +213,19 @@
         "clips": {
           "type": "array",
           "items": { "type": "ref", "ref": "#clip" },
-          "maxLength": 256,
-          "description": "Clips on this track (MVP: just 1)"
+          "maxLength": 256
         },
-        "mix": {
-          "type": "ref",
-          "ref": "#mixSettings"
+        "audioPipeline": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "#audioEffect" },
+          "maxLength": 16,
+          "description": "Audio effect chain"
         },
-        "placement": {
-          "type": "ref",
-          "ref": "#placement",
-          "description": "How this track is positioned: grid cell or absolute"
+        "videoPipeline": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "#videoEffect" },
+          "maxLength": 16,
+          "description": "Video effect chain (transform, filters - NOT layout)"
         },
         "muted": {
           "type": "boolean",
@@ -190,7 +245,7 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Stable ID for this clip"
+          "maxLength": 64
         },
         "offset": {
           "type": "integer",
@@ -199,7 +254,7 @@
         },
         "sourceOffset": {
           "type": "integer",
-          "description": "Start position within the source stem (for trimming)",
+          "description": "Start position within source stem (for trimming)",
           "minimum": 0,
           "default": 0
         },
@@ -208,168 +263,642 @@
           "description": "Duration in milliseconds",
           "minimum": 0
         },
-        "placement": {
-          "type": "ref",
-          "ref": "#placement",
-          "description": "Visual placement for this clip's duration. If omitted, inherits from track. Can reference a different gridId to change layout."
+        "speed": {
+          "type": "number",
+          "description": "Playback speed multiplier",
+          "minimum": 0.1,
+          "maximum": 10,
+          "default": 1
+        },
+        "reverse": {
+          "type": "boolean",
+          "description": "Play clip in reverse",
+          "default": false
         }
       }
     },
 
-    "placement": {
+    "audioEffect": {
       "type": "union",
-      "description": "Track/clip placement: grid cell reference or absolute positioning",
-      "refs": ["#gridPlacement", "#absolutePlacement"]
+      "description": "Audio processing effect",
+      "refs": [
+        "#audioEffect.gain",
+        "#audioEffect.pan",
+        "#audioEffect.eq",
+        "#audioEffect.compressor",
+        "#audioEffect.reverb",
+        "#audioEffect.delay",
+        "#audioEffect.filter",
+        "#audioEffect.custom"
+      ]
     },
 
-    "gridPlacement": {
+    "audioEffect.gain": {
       "type": "object",
-      "description": "Place in a grid cell. Grid is referenced by ID.",
-      "required": ["type", "gridId", "column", "row"],
+      "required": ["type"],
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "grid"
-        },
-        "gridId": {
-          "type": "string",
-          "description": "Reference to a grid defined in project.grids"
-        },
-        "column": {
-          "type": "integer",
-          "description": "Column index (1-based, like CSS Grid)",
-          "minimum": 1
-        },
-        "row": {
-          "type": "integer",
-          "description": "Row index (1-based)",
-          "minimum": 1
-        },
-        "columnSpan": {
-          "type": "integer",
-          "description": "How many columns to span",
-          "minimum": 1,
+        "type": { "type": "string", "const": "audio.gain" },
+        "enabled": { "type": "boolean", "default": true },
+        "value": {
+          "type": "number",
+          "description": "Volume multiplier (1.0 = unity)",
+          "minimum": 0,
+          "maximum": 4,
           "default": 1
-        },
-        "rowSpan": {
-          "type": "integer",
-          "description": "How many rows to span",
-          "minimum": 1,
-          "default": 1
-        },
-        "zIndex": {
-          "type": "integer",
-          "description": "Layer order within cell (for overlapping)",
-          "default": 0
-        },
-        "fit": {
-          "type": "string",
-          "enum": ["contain", "cover", "fill"],
-          "default": "cover",
-          "description": "How video fits within cell"
         }
       }
     },
 
-    "absolutePlacement": {
+    "audioEffect.pan": {
       "type": "object",
-      "description": "Absolute positioning on canvas (for PiP, overlays, free-form)",
-      "required": ["type", "x", "y", "width", "height"],
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "const": "audio.pan" },
+        "enabled": { "type": "boolean", "default": true },
+        "value": {
+          "type": "number",
+          "description": "-1 = left, 0 = center, 1 = right",
+          "minimum": -1,
+          "maximum": 1,
+          "default": 0
+        }
+      }
+    },
+
+    "audioEffect.eq": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "const": "audio.eq" },
+        "enabled": { "type": "boolean", "default": true },
+        "lowGain": {
+          "type": "number",
+          "description": "Low frequency gain in dB",
+          "minimum": -24,
+          "maximum": 24,
+          "default": 0
+        },
+        "midGain": {
+          "type": "number",
+          "description": "Mid frequency gain in dB",
+          "minimum": -24,
+          "maximum": 24,
+          "default": 0
+        },
+        "highGain": {
+          "type": "number",
+          "description": "High frequency gain in dB",
+          "minimum": -24,
+          "maximum": 24,
+          "default": 0
+        },
+        "lowFreq": {
+          "type": "number",
+          "description": "Low band frequency in Hz",
+          "default": 320
+        },
+        "highFreq": {
+          "type": "number",
+          "description": "High band frequency in Hz",
+          "default": 3200
+        }
+      }
+    },
+
+    "audioEffect.compressor": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "const": "audio.compressor" },
+        "enabled": { "type": "boolean", "default": true },
+        "threshold": {
+          "type": "number",
+          "description": "Threshold in dB",
+          "minimum": -60,
+          "maximum": 0,
+          "default": -24
+        },
+        "ratio": {
+          "type": "number",
+          "description": "Compression ratio",
+          "minimum": 1,
+          "maximum": 20,
+          "default": 4
+        },
+        "attack": {
+          "type": "number",
+          "description": "Attack time in ms",
+          "minimum": 0,
+          "maximum": 1000,
+          "default": 10
+        },
+        "release": {
+          "type": "number",
+          "description": "Release time in ms",
+          "minimum": 0,
+          "maximum": 3000,
+          "default": 250
+        },
+        "makeupGain": {
+          "type": "number",
+          "description": "Makeup gain in dB",
+          "minimum": 0,
+          "maximum": 24,
+          "default": 0
+        }
+      }
+    },
+
+    "audioEffect.reverb": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "const": "audio.reverb" },
+        "enabled": { "type": "boolean", "default": true },
+        "wet": {
+          "type": "number",
+          "description": "Wet/dry mix (0 = dry, 1 = wet)",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.3
+        },
+        "decay": {
+          "type": "number",
+          "description": "Decay time in seconds",
+          "minimum": 0.1,
+          "maximum": 10,
+          "default": 1.5
+        },
+        "preDelay": {
+          "type": "number",
+          "description": "Pre-delay in ms",
+          "minimum": 0,
+          "maximum": 200,
+          "default": 20
+        }
+      }
+    },
+
+    "audioEffect.delay": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "const": "audio.delay" },
+        "enabled": { "type": "boolean", "default": true },
+        "time": {
+          "type": "number",
+          "description": "Delay time in ms",
+          "minimum": 0,
+          "maximum": 5000,
+          "default": 250
+        },
+        "feedback": {
+          "type": "number",
+          "description": "Feedback amount (0-1)",
+          "minimum": 0,
+          "maximum": 0.95,
+          "default": 0.3
+        },
+        "wet": {
+          "type": "number",
+          "description": "Wet/dry mix",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.3
+        },
+        "sync": {
+          "type": "boolean",
+          "description": "Sync delay time to project BPM",
+          "default": false
+        }
+      }
+    },
+
+    "audioEffect.filter": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "const": "audio.filter" },
+        "enabled": { "type": "boolean", "default": true },
+        "filterType": {
+          "type": "string",
+          "enum": ["lowpass", "highpass", "bandpass", "notch"],
+          "default": "lowpass"
+        },
+        "frequency": {
+          "type": "number",
+          "description": "Cutoff frequency in Hz",
+          "minimum": 20,
+          "maximum": 20000,
+          "default": 1000
+        },
+        "q": {
+          "type": "number",
+          "description": "Filter Q/resonance",
+          "minimum": 0.1,
+          "maximum": 20,
+          "default": 1
+        }
+      }
+    },
+
+    "audioEffect.custom": {
+      "type": "object",
+      "description": "Custom or third-party audio effect",
+      "required": ["type"],
       "properties": {
         "type": {
           "type": "string",
-          "const": "absolute"
+          "description": "Custom effect identifier (e.g., 'audio.vendor.effectName')"
         },
-        "x": {
+        "enabled": { "type": "boolean", "default": true },
+        "params": {
+          "type": "object",
+          "description": "Effect-specific parameters"
+        }
+      }
+    },
+
+    "videoEffect": {
+      "type": "union",
+      "description": "Visual processing effect (usable on tracks and groups)",
+      "refs": [
+        "#visualEffect.transform",
+        "#visualEffect.opacity",
+        "#visualEffect.crop",
+        "#visualEffect.colorCorrect",
+        "#visualEffect.blur",
+        "#visualEffect.sharpen",
+        "#visualEffect.custom"
+      ]
+    },
+
+    "visualEffect.transform": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "const": "visual.transform" },
+        "enabled": { "type": "boolean", "default": true },
+        "offsetX": {
           "type": "number",
-          "description": "X position (0-1, relative to canvas)"
-        },
-        "y": {
-          "type": "number",
-          "description": "Y position (0-1, relative to canvas)"
-        },
-        "width": {
-          "type": "number",
-          "description": "Width (0-1, relative to canvas)"
-        },
-        "height": {
-          "type": "number",
-          "description": "Height (0-1, relative to canvas)"
-        },
-        "zIndex": {
-          "type": "integer",
-          "description": "Layer order (higher = on top)",
+          "description": "X offset relative to layout position",
           "default": 0
+        },
+        "offsetY": {
+          "type": "number",
+          "description": "Y offset relative to layout position",
+          "default": 0
+        },
+        "scale": {
+          "type": "number",
+          "description": "Uniform scale",
+          "minimum": 0,
+          "default": 1
+        },
+        "scaleX": {
+          "type": "number",
+          "description": "Horizontal scale (overrides uniform scale)",
+          "minimum": 0
+        },
+        "scaleY": {
+          "type": "number",
+          "description": "Vertical scale (overrides uniform scale)",
+          "minimum": 0
         },
         "rotation": {
           "type": "number",
           "description": "Rotation in degrees",
           "default": 0
         },
-        "opacity": {
+        "anchorX": {
+          "type": "number",
+          "description": "Transform anchor X (0-1)",
+          "default": 0.5
+        },
+        "anchorY": {
+          "type": "number",
+          "description": "Transform anchor Y (0-1)",
+          "default": 0.5
+        }
+      }
+    },
+
+    "visualEffect.opacity": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "const": "visual.opacity" },
+        "enabled": { "type": "boolean", "default": true },
+        "value": {
           "type": "number",
           "minimum": 0,
           "maximum": 1,
           "default": 1
         },
-        "fit": {
+        "blendMode": {
           "type": "string",
-          "enum": ["contain", "cover", "fill"],
-          "default": "contain"
-        },
-        "anchor": {
-          "type": "string",
-          "enum": ["center", "top-left", "top-right", "bottom-left", "bottom-right"],
-          "default": "top-left",
-          "description": "Which point x/y refers to"
+          "enum": ["normal", "multiply", "screen", "overlay", "darken", "lighten", "difference", "add"],
+          "default": "normal"
         }
       }
     },
 
-    "mixSettings": {
+    "visualEffect.crop": {
       "type": "object",
-      "description": "Audio mix settings for a track or master bus",
+      "required": ["type"],
       "properties": {
-        "gain": {
+        "type": { "type": "string", "const": "visual.crop" },
+        "enabled": { "type": "boolean", "default": true },
+        "left": {
           "type": "number",
-          "description": "Volume multiplier (1.0 = unity)",
+          "description": "Crop from left (0-1)",
           "minimum": 0,
-          "maximum": 4,
-          "default": 1
+          "maximum": 1,
+          "default": 0
         },
-        "pan": {
+        "right": {
           "type": "number",
-          "description": "Stereo pan (-1 = left, 0 = center, 1 = right)",
+          "description": "Crop from right (0-1)",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0
+        },
+        "top": {
+          "type": "number",
+          "description": "Crop from top (0-1)",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0
+        },
+        "bottom": {
+          "type": "number",
+          "description": "Crop from bottom (0-1)",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0
+        }
+      }
+    },
+
+    "visualEffect.colorCorrect": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "const": "visual.colorCorrect" },
+        "enabled": { "type": "boolean", "default": true },
+        "brightness": {
+          "type": "number",
+          "description": "Brightness adjustment (-1 to 1)",
           "minimum": -1,
           "maximum": 1,
           "default": 0
         },
-        "effects": {
-          "type": "array",
-          "items": { "type": "ref", "ref": "#effect" },
-          "maxLength": 16,
-          "description": "Effect chain"
+        "contrast": {
+          "type": "number",
+          "description": "Contrast multiplier",
+          "minimum": 0,
+          "maximum": 4,
+          "default": 1
+        },
+        "saturation": {
+          "type": "number",
+          "description": "Saturation multiplier",
+          "minimum": 0,
+          "maximum": 4,
+          "default": 1
+        },
+        "hue": {
+          "type": "number",
+          "description": "Hue rotation in degrees",
+          "minimum": -180,
+          "maximum": 180,
+          "default": 0
+        },
+        "temperature": {
+          "type": "number",
+          "description": "Color temperature (-1 = cool, 1 = warm)",
+          "minimum": -1,
+          "maximum": 1,
+          "default": 0
         }
       }
     },
 
-    "effect": {
+    "visualEffect.blur": {
       "type": "object",
-      "description": "An audio or video effect",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "const": "visual.blur" },
+        "enabled": { "type": "boolean", "default": true },
+        "radius": {
+          "type": "number",
+          "description": "Blur radius in pixels",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 5
+        },
+        "blurType": {
+          "type": "string",
+          "enum": ["gaussian", "box", "motion"],
+          "default": "gaussian"
+        },
+        "angle": {
+          "type": "number",
+          "description": "Motion blur angle (for motion blur type)",
+          "default": 0
+        }
+      }
+    },
+
+    "visualEffect.sharpen": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "const": "visual.sharpen" },
+        "enabled": { "type": "boolean", "default": true },
+        "amount": {
+          "type": "number",
+          "description": "Sharpening amount",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 1
+        }
+      }
+    },
+
+    "visualEffect.custom": {
+      "type": "object",
+      "description": "Custom or third-party visual effect",
       "required": ["type"],
       "properties": {
         "type": {
           "type": "string",
-          "description": "Effect type identifier",
-          "maxLength": 64
+          "description": "Custom effect identifier (e.g., 'visual.vendor.effectName')"
         },
-        "bypass": {
-          "type": "boolean",
-          "default": false
-        },
+        "enabled": { "type": "boolean", "default": true },
         "params": {
           "type": "object",
-          "description": "Effect-specific parameters (key-value pairs)"
+          "description": "Effect-specific parameters"
+        }
+      }
+    },
+
+    "groupEffect": {
+      "type": "union",
+      "description": "Group-level effect: layout + visual effects + group-specific (mask)",
+      "refs": [
+        "#groupEffect.layout.grid",
+        "#groupEffect.layout.stack",
+        "#groupEffect.layout.absolute",
+        "#groupEffect.layout.custom",
+        "#groupEffect.mask",
+        "#visualEffect.transform",
+        "#visualEffect.opacity",
+        "#visualEffect.crop",
+        "#visualEffect.colorCorrect",
+        "#visualEffect.blur",
+        "#visualEffect.sharpen",
+        "#visualEffect.custom"
+      ]
+    },
+
+    "groupEffect.layout.grid": {
+      "type": "object",
+      "description": "Arrange group members in a grid",
+      "required": ["type", "columns", "rows"],
+      "properties": {
+        "type": { "type": "string", "const": "group.layout.grid" },
+        "enabled": { "type": "boolean", "default": true },
+        "columns": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16
+        },
+        "rows": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16
+        },
+        "gap": {
+          "type": "number",
+          "description": "Gap between cells (0-1 relative)",
+          "minimum": 0,
+          "maximum": 0.5,
+          "default": 0
+        },
+        "padding": {
+          "type": "number",
+          "description": "Padding around grid (0-1 relative)",
+          "minimum": 0,
+          "maximum": 0.5,
+          "default": 0
+        },
+        "autoPlace": {
+          "type": "boolean",
+          "description": "Auto-place members without explicit positions",
+          "default": true
+        },
+        "autoFlow": {
+          "type": "string",
+          "description": "Direction for auto-placement",
+          "enum": ["row", "column"],
+          "default": "row"
+        }
+      }
+    },
+
+    "groupEffect.layout.stack": {
+      "type": "object",
+      "description": "Arrange group members in a stack (horizontal or vertical)",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "const": "group.layout.stack" },
+        "enabled": { "type": "boolean", "default": true },
+        "direction": {
+          "type": "string",
+          "enum": ["horizontal", "vertical"],
+          "default": "horizontal"
+        },
+        "gap": {
+          "type": "number",
+          "description": "Gap between items (0-1 relative)",
+          "minimum": 0,
+          "maximum": 0.5,
+          "default": 0
+        },
+        "align": {
+          "type": "string",
+          "description": "Cross-axis alignment",
+          "enum": ["start", "center", "end", "stretch"],
+          "default": "stretch"
+        },
+        "justify": {
+          "type": "string",
+          "description": "Main-axis distribution",
+          "enum": ["start", "center", "end", "space-between", "space-around"],
+          "default": "start"
+        }
+      }
+    },
+
+    "groupEffect.layout.absolute": {
+      "type": "object",
+      "description": "Position group members using absolute coordinates from member hints",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "const": "group.layout.absolute" },
+        "enabled": { "type": "boolean", "default": true }
+      }
+    },
+
+    "groupEffect.mask": {
+      "type": "object",
+      "description": "Mask the group with a shape or another track",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "const": "group.mask" },
+        "enabled": { "type": "boolean", "default": true },
+        "maskType": {
+          "type": "string",
+          "enum": ["rectangle", "ellipse", "track"],
+          "default": "rectangle"
+        },
+        "trackId": {
+          "type": "string",
+          "description": "Track to use as mask (when maskType = track)"
+        },
+        "x": { "type": "number", "default": 0 },
+        "y": { "type": "number", "default": 0 },
+        "width": { "type": "number", "default": 1 },
+        "height": { "type": "number", "default": 1 },
+        "invert": {
+          "type": "boolean",
+          "description": "Invert the mask",
+          "default": false
+        },
+        "feather": {
+          "type": "number",
+          "description": "Edge feather amount",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0
+        }
+      }
+    },
+
+    "groupEffect.layout.custom": {
+      "type": "object",
+      "description": "Custom or third-party layout effect",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Custom layout identifier (e.g., 'group.layout.vendor.effectName')"
+        },
+        "enabled": { "type": "boolean", "default": true },
+        "params": {
+          "type": "object",
+          "description": "Layout-specific parameters"
         }
       }
     }
