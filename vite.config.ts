@@ -14,4 +14,8 @@ export default defineConfig({
       localsConvention: 'camelCase',
     },
   },
+  server: {
+    // AT Protocol OAuth requires accessing via 127.0.0.1 for loopback clients
+    host: '127.0.0.1',
+  },
 })
