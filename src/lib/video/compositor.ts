@@ -3,21 +3,55 @@ import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
 const fragmentShader = glsl`
   precision mediump float;
 
-  ${uniform.sampler2D('u_video')}
-  ${uniform.vec2('u_resolution')}
-  ${uniform.float('u_mirror')}
+  ${uniform.sampler2D('u_video0')}
+  ${uniform.sampler2D('u_video1')}
+  ${uniform.sampler2D('u_video2')}
+  ${uniform.sampler2D('u_video3')}
+  ${uniform.vec4('u_active')}
 
   varying vec2 v_uv;
 
   void main() {
     vec2 coord = v_uv * 0.5 + 0.5;
 
-    // Mirror horizontally if enabled (for selfie camera)
-    if (u_mirror > 0.5) {
-      coord.x = 1.0 - coord.x;
+    // Determine which quadrant we're in (2x2 grid)
+    int quadrant = 0;
+    vec2 localUv = coord;
+
+    if (coord.x < 0.5 && coord.y >= 0.5) {
+      // Top-left = track 0
+      quadrant = 0;
+      localUv = vec2(coord.x * 2.0, (coord.y - 0.5) * 2.0);
+    } else if (coord.x >= 0.5 && coord.y >= 0.5) {
+      // Top-right = track 1
+      quadrant = 1;
+      localUv = vec2((coord.x - 0.5) * 2.0, (coord.y - 0.5) * 2.0);
+    } else if (coord.x < 0.5 && coord.y < 0.5) {
+      // Bottom-left = track 2
+      quadrant = 2;
+      localUv = vec2(coord.x * 2.0, coord.y * 2.0);
+    } else {
+      // Bottom-right = track 3
+      quadrant = 3;
+      localUv = vec2((coord.x - 0.5) * 2.0, coord.y * 2.0);
     }
 
-    gl_FragColor = texture2D(u_video, coord);
+    // Flip Y for video texture
+    localUv.y = 1.0 - localUv.y;
+
+    vec4 color = vec4(0.1, 0.1, 0.1, 1.0);
+
+    if (quadrant == 0 && u_active.x > 0.5) {
+      color = texture2D(u_video0, localUv);
+    } else if (quadrant == 1 && u_active.y > 0.5) {
+      color = texture2D(u_video1, localUv);
+    } else if (quadrant == 2 && u_active.z > 0.5) {
+      color = texture2D(u_video2, localUv);
+    } else if (quadrant == 3 && u_active.w > 0.5) {
+      color = texture2D(u_video3, localUv);
+    }
+
+    gl_FragColor = color;
   }
 `
 
@@ -36,8 +70,7 @@ function createVideoTexture(gl: WebGLRenderingContext | WebGL2RenderingContext):
 
 export interface Compositor {
   canvas: HTMLCanvasElement
-  setVideo: (video: HTMLVideoElement) => void
-  setMirror: (mirror: boolean) => void
+  setVideo: (index: number, video: HTMLVideoElement | null) => void
   render: () => void
   destroy: () => void
 }
@@ -51,50 +84,56 @@ export function createCompositor(width: number, height: number): Compositor {
   if (!gl) throw new Error('WebGL not supported')
 
   const { view, program } = compile.toQuad(gl, fragmentShader)
-  const texture = createVideoTexture(gl)
+  const textures = [
+    createVideoTexture(gl),
+    createVideoTexture(gl),
+    createVideoTexture(gl),
+    createVideoTexture(gl),
+  ]
 
-  let videoElement: HTMLVideoElement | null = null
-  let mirror = true
+  const videos: (HTMLVideoElement | null)[] = [null, null, null, null]
 
-  // Use program and set initial uniforms
   gl.useProgram(program)
-  view.uniforms.u_resolution.set(width, height)
-  view.uniforms.u_mirror.set(mirror ? 1 : 0)
 
   return {
     canvas,
 
-    setVideo(video: HTMLVideoElement) {
-      videoElement = video
-    },
-
-    setMirror(value: boolean) {
-      mirror = value
-      gl.useProgram(program)
-      view.uniforms.u_mirror.set(value ? 1 : 0)
+    setVideo(index: number, video: HTMLVideoElement | null) {
+      if (index >= 0 && index < 4) {
+        videos[index] = video
+      }
     },
 
     render() {
-      if (!videoElement || videoElement.readyState < 2) return
-
       gl.useProgram(program)
 
-      // Update texture from video
-      gl.activeTexture(gl.TEXTURE0)
-      gl.bindTexture(gl.TEXTURE_2D, texture)
-      gl.texImage2D(
-        gl.TEXTURE_2D,
-        0,
-        gl.RGBA,
-        gl.RGBA,
-        gl.UNSIGNED_BYTE,
-        videoElement
-      )
+      const active = [0, 0, 0, 0]
+
+      // Update textures from videos
+      for (let i = 0; i < 4; i++) {
+        const video = videos[i]
+        gl.activeTexture(gl.TEXTURE0 + i)
+        gl.bindTexture(gl.TEXTURE_2D, textures[i])
+
+        if (video && video.readyState >= 2) {
+          gl.texImage2D(
+            gl.TEXTURE_2D,
+            0,
+            gl.RGBA,
+            gl.RGBA,
+            gl.UNSIGNED_BYTE,
+            video
+          )
+          active[i] = 1
+        }
+      }
 
       // Set uniforms
-      view.uniforms.u_video.set(0)
-      view.uniforms.u_resolution.set(canvas.width, canvas.height)
-      view.uniforms.u_mirror.set(mirror ? 1 : 0)
+      view.uniforms.u_video0.set(0)
+      view.uniforms.u_video1.set(1)
+      view.uniforms.u_video2.set(2)
+      view.uniforms.u_video3.set(3)
+      view.uniforms.u_active.set(active[0], active[1], active[2], active[3])
 
       // Bind quad attribute
       view.attributes.a_quad.bind()
@@ -105,7 +144,7 @@ export function createCompositor(width: number, height: number): Compositor {
     },
 
     destroy() {
-      gl.deleteTexture(texture)
+      textures.forEach((t) => gl.deleteTexture(t))
     },
   }
 }

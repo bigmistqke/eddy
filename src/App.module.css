@@ -1,18 +1,16 @@
 .app {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: auto 1fr;
   height: 100%;
 }
 
 .main {
-  flex: 1;
   overflow: hidden;
 }
 
 .loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   height: 100%;
   color: #888;
 }

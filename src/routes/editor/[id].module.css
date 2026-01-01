@@ -1,5 +1,4 @@
 .container {
+  display: grid;
   height: 100%;
-  display: flex;
-  flex-direction: column;
 }
