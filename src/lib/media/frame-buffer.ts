@@ -98,6 +98,9 @@ export async function createFrameBuffer(
   // Whether decoder is in a valid state (has received a keyframe)
   let decoderReady = false
 
+  // Whether the buffer has been destroyed
+  let destroyed = false
+
   // State
   let state: FrameBufferState = 'idle'
 
@@ -143,9 +146,12 @@ export async function createFrameBuffer(
 
   /** Decode samples and add to buffer */
   const decodeAndBuffer = async (samples: DemuxedSample[]) => {
-    if (samples.length === 0) return
+    if (samples.length === 0 || destroyed) return
 
     for (const sample of samples) {
+      // Check if destroyed during loop
+      if (destroyed) return
+
       // Skip delta frames if decoder hasn't received a keyframe yet
       if (!decoderReady && !sample.isKeyframe) {
         bufferPosition = sample.pts + sample.duration
@@ -154,6 +160,10 @@ export async function createFrameBuffer(
 
       try {
         const frame = await decoder.decode(sample)
+        if (destroyed) {
+          frame.close()
+          return
+        }
         decoderReady = true
         addFrame(frame, sample.pts, sample.duration)
         bufferPosition = sample.pts + sample.duration
@@ -169,9 +179,12 @@ export async function createFrameBuffer(
       }
     }
 
-    await decoder.flush()
-    // After flush, decoder needs a new keyframe to continue
-    decoderReady = false
+    // Only flush if not destroyed
+    if (!destroyed) {
+      await decoder.flush()
+      // After flush, decoder needs a new keyframe to continue
+      decoderReady = false
+    }
   }
 
   return {
@@ -215,6 +228,8 @@ export async function createFrameBuffer(
     },
 
     async seekTo(time: number): Promise<void> {
+      if (destroyed) return
+
       state = 'buffering'
 
       // Clear existing buffer
@@ -249,7 +264,7 @@ export async function createFrameBuffer(
     },
 
     async bufferMore(): Promise<void> {
-      if (state === 'ended') return
+      if (destroyed || state === 'ended') return
 
       state = 'buffering'
 
@@ -288,6 +303,7 @@ export async function createFrameBuffer(
     },
 
     destroy(): void {
+      destroyed = true
       clearFrames()
       decoder.close()
       state = 'idle'

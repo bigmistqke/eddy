@@ -239,10 +239,12 @@ export async function createVideoDecoder(
     },
 
     async flush(): Promise<void> {
+      if (decoder.state === 'closed') return
       await decoder.flush()
     },
 
     async reset(): Promise<void> {
+      if (decoder.state === 'closed') return
       decoder.reset()
       // Re-configure after reset
       decoder.configure({
@@ -261,6 +263,7 @@ export async function createVideoDecoder(
     },
 
     close(): void {
+      if (decoder.state === 'closed') return
       decoder.close()
       // Close any remaining frames
       for (const frame of pendingFrames) {
