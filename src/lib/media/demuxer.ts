@@ -1,4 +1,4 @@
-import { createFile, type ISOFile, type Movie, type Track, MP4BoxBuffer } from 'mp4box'
+import { createFile, type ISOFile, type Movie, type Track, type Sample, MP4BoxBuffer } from 'mp4box'
 
 export interface VideoTrackInfo {
   id: number
@@ -31,14 +31,75 @@ export interface DemuxerInfo {
   audioTracks: AudioTrackInfo[]
 }
 
+/** Normalized sample with timestamps in seconds */
+export interface DemuxedSample {
+  /** Sample number (0-indexed) */
+  number: number
+  /** Track ID this sample belongs to */
+  trackId: number
+  /** Presentation timestamp in seconds */
+  pts: number
+  /** Decode timestamp in seconds */
+  dts: number
+  /** Duration in seconds */
+  duration: number
+  /** Whether this is a sync/keyframe sample */
+  isKeyframe: boolean
+  /** Raw sample data */
+  data: Uint8Array
+  /** Size in bytes */
+  size: number
+}
+
+export { type Sample }
+
 export interface Demuxer {
   readonly info: DemuxerInfo
   readonly file: ISOFile
+
+  /**
+   * Get samples from a track within a time range
+   * @param trackId - The track ID to extract samples from
+   * @param startTime - Start time in seconds
+   * @param endTime - End time in seconds
+   * @returns Promise resolving to array of samples
+   */
+  getSamples(trackId: number, startTime: number, endTime: number): Promise<DemuxedSample[]>
+
+  /**
+   * Get all samples from a track
+   * @param trackId - The track ID to extract samples from
+   * @returns Promise resolving to array of all samples
+   */
+  getAllSamples(trackId: number): Promise<DemuxedSample[]>
+
+  /**
+   * Find the keyframe at or before the given time
+   * @param trackId - The track ID
+   * @param time - Time in seconds
+   * @returns The keyframe sample or null if not found
+   */
+  getKeyframeBefore(trackId: number, time: number): Promise<DemuxedSample | null>
+
   destroy(): void
 }
 
 type VideoTrack = Track & { video: NonNullable<Track['video']> }
 type AudioTrack = Track & { audio: NonNullable<Track['audio']> }
+
+function normalizeSample(sample: Sample): DemuxedSample {
+  const timescale = sample.timescale
+  return {
+    number: sample.number,
+    trackId: sample.track_id,
+    pts: sample.cts / timescale,
+    dts: sample.dts / timescale,
+    duration: sample.duration / timescale,
+    isKeyframe: sample.is_sync,
+    data: sample.data ?? new Uint8Array(0),
+    size: sample.size,
+  }
+}
 
 function isVideoTrack(track: Track): track is VideoTrack {
   return track.video !== undefined
@@ -109,11 +170,84 @@ export async function createDemuxer(source: ArrayBuffer | File): Promise<Demuxer
     file.onReady = (mp4Info: Movie) => {
       const info = parseInfo(mp4Info)
 
+      // Build sample lists so we can access individual samples
+      file.buildSampleLists()
+
+      // Helper to get track info by ID
+      const getTrackInfo = (trackId: number) => {
+        return [...info.videoTracks, ...info.audioTracks].find(t => t.id === trackId)
+      }
+
+      // Cache for extracted samples per track
+      const samplesCache = new Map<number, Sample[]>()
+
+      // Get all samples for a track using getTrackSamplesInfo
+      const getSamplesForTrack = (trackId: number): Sample[] => {
+        // Return cached samples if available
+        const cached = samplesCache.get(trackId)
+        if (cached) {
+          return cached
+        }
+
+        const samples = file.getTrackSamplesInfo(trackId)
+        samplesCache.set(trackId, samples)
+        return samples
+      }
+
       resolve({
         info,
         file,
+
+        async getSamples(trackId: number, startTime: number, endTime: number): Promise<DemuxedSample[]> {
+          const trackInfo = getTrackInfo(trackId)
+          if (!trackInfo) {
+            throw new Error(`Track ${trackId} not found`)
+          }
+
+          const allSamples = getSamplesForTrack(trackId)
+
+          return allSamples
+            .filter(sample => {
+              const pts = sample.cts / sample.timescale
+              return pts >= startTime && pts < endTime
+            })
+            .map(normalizeSample)
+        },
+
+        async getAllSamples(trackId: number): Promise<DemuxedSample[]> {
+          const trackInfo = getTrackInfo(trackId)
+          if (!trackInfo) {
+            throw new Error(`Track ${trackId} not found`)
+          }
+
+          const allSamples = getSamplesForTrack(trackId)
+          return allSamples.map(normalizeSample)
+        },
+
+        async getKeyframeBefore(trackId: number, time: number): Promise<DemuxedSample | null> {
+          const trackInfo = getTrackInfo(trackId)
+          if (!trackInfo) {
+            throw new Error(`Track ${trackId} not found`)
+          }
+
+          const allSamples = getSamplesForTrack(trackId)
+
+          // Find the last keyframe at or before the given time
+          let lastKeyframe: Sample | null = null
+          for (const sample of allSamples) {
+            const pts = sample.cts / sample.timescale
+            if (sample.is_sync && pts <= time) {
+              lastKeyframe = sample
+            }
+            if (pts > time) break
+          }
+
+          return lastKeyframe ? normalizeSample(lastKeyframe) : null
+        },
+
         destroy() {
           file.flush()
+          samplesCache.clear()
         },
       })
     }

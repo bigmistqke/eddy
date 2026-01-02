@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { createDemuxer, type DemuxerInfo } from '../demuxer'
+import { createDemuxer, type DemuxerInfo, type DemuxedSample } from '../demuxer'
 import { readFile } from 'fs/promises'
 import { join } from 'path'
 
@@ -94,6 +94,141 @@ describe('Demuxer - Container Parsing', () => {
 
     expect(demuxer).toBeDefined()
     expect(demuxer.info.videoTracks.length).toBeGreaterThan(0)
+
+    demuxer.destroy()
+  })
+})
+
+describe('Demuxer - Sample Extraction', () => {
+  let testBuffer: ArrayBuffer
+  let testWithAudioBuffer: ArrayBuffer
+
+  beforeAll(async () => {
+    testBuffer = await loadFixture('test.mp4')
+    testWithAudioBuffer = await loadFixture('test-with-audio.mp4')
+  })
+
+  it('should extract all video samples', async () => {
+    const demuxer = await createDemuxer(testBuffer)
+    const videoTrack = demuxer.info.videoTracks[0]
+
+    const samples = await demuxer.getAllSamples(videoTrack.id)
+
+    expect(samples.length).toBe(videoTrack.sampleCount)
+    expect(samples.length).toBeGreaterThan(0)
+
+    demuxer.destroy()
+  })
+
+  it('should return samples with correct structure', async () => {
+    const demuxer = await createDemuxer(testBuffer)
+    const videoTrack = demuxer.info.videoTracks[0]
+
+    const samples = await demuxer.getAllSamples(videoTrack.id)
+    const sample = samples[0]
+
+    expect(sample.number).toBe(0)
+    expect(sample.trackId).toBe(videoTrack.id)
+    expect(typeof sample.pts).toBe('number')
+    expect(typeof sample.dts).toBe('number')
+    expect(typeof sample.duration).toBe('number')
+    expect(typeof sample.isKeyframe).toBe('boolean')
+    expect(sample.data).toBeInstanceOf(Uint8Array)
+    expect(sample.size).toBeGreaterThan(0)
+
+    demuxer.destroy()
+  })
+
+  it('should have normalized timestamps in seconds', async () => {
+    const demuxer = await createDemuxer(testBuffer)
+    const videoTrack = demuxer.info.videoTracks[0]
+
+    const samples = await demuxer.getAllSamples(videoTrack.id)
+
+    // First sample should start at or near 0
+    expect(samples[0].pts).toBeGreaterThanOrEqual(0)
+    expect(samples[0].pts).toBeLessThan(1)
+
+    // Last sample should be near the track duration
+    const lastSample = samples[samples.length - 1]
+    expect(lastSample.pts).toBeLessThanOrEqual(videoTrack.duration)
+
+    demuxer.destroy()
+  })
+
+  it('should filter samples by time range', async () => {
+    const demuxer = await createDemuxer(testBuffer)
+    const videoTrack = demuxer.info.videoTracks[0]
+
+    // Get samples from 0 to 1 second
+    const samples = await demuxer.getSamples(videoTrack.id, 0, 1)
+
+    expect(samples.length).toBeGreaterThan(0)
+    expect(samples.length).toBeLessThan(videoTrack.sampleCount)
+
+    // All samples should be within range
+    for (const sample of samples) {
+      expect(sample.pts).toBeGreaterThanOrEqual(0)
+      expect(sample.pts).toBeLessThan(1)
+    }
+
+    demuxer.destroy()
+  })
+
+  it('should find keyframe before a given time', async () => {
+    const demuxer = await createDemuxer(testBuffer)
+    const videoTrack = demuxer.info.videoTracks[0]
+
+    // Get keyframe before middle of video
+    const midTime = videoTrack.duration / 2
+    const keyframe = await demuxer.getKeyframeBefore(videoTrack.id, midTime)
+
+    expect(keyframe).not.toBeNull()
+    expect(keyframe!.isKeyframe).toBe(true)
+    expect(keyframe!.pts).toBeLessThanOrEqual(midTime)
+
+    demuxer.destroy()
+  })
+
+  it('should find first keyframe', async () => {
+    const demuxer = await createDemuxer(testBuffer)
+    const videoTrack = demuxer.info.videoTracks[0]
+
+    // Get all samples to find the first keyframe's pts
+    const allSamples = await demuxer.getAllSamples(videoTrack.id)
+    const firstKeyframe = allSamples.find(s => s.isKeyframe)
+
+    expect(firstKeyframe).toBeDefined()
+
+    // Now verify getKeyframeBefore returns the same keyframe
+    const keyframe = await demuxer.getKeyframeBefore(videoTrack.id, firstKeyframe!.pts + 0.001)
+
+    expect(keyframe).not.toBeNull()
+    expect(keyframe!.isKeyframe).toBe(true)
+    expect(keyframe!.number).toBe(firstKeyframe!.number)
+
+    demuxer.destroy()
+  })
+
+  it('should extract audio samples', async () => {
+    const demuxer = await createDemuxer(testWithAudioBuffer)
+    const audioTrack = demuxer.info.audioTracks[0]
+
+    const samples = await demuxer.getAllSamples(audioTrack.id)
+
+    expect(samples.length).toBe(audioTrack.sampleCount)
+    expect(samples.length).toBeGreaterThan(0)
+
+    // Audio samples should have size info (data loaded separately)
+    expect(samples[0].size).toBeGreaterThan(0)
+
+    demuxer.destroy()
+  })
+
+  it('should throw for invalid track ID', async () => {
+    const demuxer = await createDemuxer(testBuffer)
+
+    await expect(demuxer.getAllSamples(9999)).rejects.toThrow('Track 9999 not found')
 
     demuxer.destroy()
   })
