@@ -30,16 +30,18 @@ function createDefaultProject(): Project {
     },
     groups: [
       {
-        type: 'grid',
         id: 'main-grid',
-        columns: 2,
-        rows: 2,
         members: [
-          { id: 'track-0', column: 1, row: 1 },
-          { id: 'track-1', column: 2, row: 1 },
-          { id: 'track-2', column: 1, row: 2 },
-          { id: 'track-3', column: 2, row: 2 },
+          { id: 'track-0' },
+          { id: 'track-1' },
+          { id: 'track-2' },
+          { id: 'track-3' },
         ],
+        layout: {
+          type: 'grid',
+          columns: 2,
+          rows: 2,
+        },
       },
     ],
     // Values are scaled integers (100 = 1.0, 50 = 0.5)

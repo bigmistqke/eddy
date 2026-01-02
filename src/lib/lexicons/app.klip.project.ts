@@ -48,9 +48,9 @@ export default {
           },
           "groups": {
             "type": "array",
-            "items": { "type": "union", "refs": ["#group.grid", "#group.absolute"] },
+            "items": { "type": "ref", "ref": "#group" },
             "maxLength": 64,
-            "description": "Groups containing tracks with layout effects"
+            "description": "Groups containing tracks. Without layout, members stack. With grid layout, members fill cells."
           },
           "tracks": {
             "type": "array",
@@ -334,12 +334,11 @@ export default {
       }
     },
 
-    "group.absolute": {
+    "group": {
       "type": "object",
-      "description": "Group with absolute positioning. Members specify x/y/width/height.",
-      "required": ["type", "id", "members"],
+      "description": "A group containing tracks or nested groups. Without layout, members stack. With grid layout, members fill cells in order.",
+      "required": ["id", "members"],
       "properties": {
-        "type": { "type": "string", "const": "absolute" },
         "id": {
           "type": "string",
           "maxLength": 64
@@ -350,8 +349,14 @@ export default {
         },
         "members": {
           "type": "array",
-          "items": { "type": "ref", "ref": "#member.absolute" },
-          "maxLength": 32
+          "items": { "type": "union", "refs": ["#member", "#member.void"] },
+          "maxLength": 64,
+          "description": "Track/group IDs or voids. Fill grid cells left-to-right, top-to-bottom. Without layout, all stack."
+        },
+        "layout": {
+          "type": "ref",
+          "ref": "#layout.grid",
+          "description": "Optional grid layout. If omitted, members stack on top of each other."
         },
         "pipeline": {
           "type": "array",
@@ -362,20 +367,34 @@ export default {
       }
     },
 
-    "group.grid": {
+    "member": {
       "type": "object",
-      "description": "Group with CSS Grid-like layout. Members placed in cells.",
-      "required": ["type", "id", "columns", "rows", "members"],
+      "description": "Reference to a track or group",
+      "required": ["id"],
       "properties": {
-        "type": { "type": "string", "const": "grid" },
         "id": {
           "type": "string",
+          "description": "Track ID or group ID",
           "maxLength": 64
-        },
-        "name": {
-          "type": "string",
-          "maxLength": 128
-        },
+        }
+      }
+    },
+
+    "member.void": {
+      "type": "object",
+      "description": "Empty cell placeholder (skips a grid cell)",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "const": "void" }
+      }
+    },
+
+    "layout.grid": {
+      "type": "object",
+      "description": "Grid layout configuration",
+      "required": ["type", "columns", "rows"],
+      "properties": {
+        "type": { "type": "string", "const": "grid" },
         "columns": {
           "type": "integer",
           "minimum": 1,
@@ -395,180 +414,6 @@ export default {
           "type": "union",
           "refs": ["#staticValue", "#curveRef"],
           "description": "Padding around grid (0-1 relative to group size)"
-        },
-        "autoPlace": {
-          "type": "boolean",
-          "description": "Auto-place members without explicit column/row",
-          "default": true
-        },
-        "members": {
-          "type": "array",
-          "items": { "type": "ref", "ref": "#member.grid" },
-          "maxLength": 32
-        },
-        "pipeline": {
-          "type": "array",
-          "items": { "type": "union", "refs": ["#visualEffect.transform", "#visualEffect.opacity", "#visualEffect.custom"] },
-          "maxLength": 16,
-          "description": "Visual effects applied to the composited group"
-        }
-      }
-    },
-
-    "group.custom": {
-      "type": "object",
-      "description": "Group with custom/third-party layout",
-      "required": ["type", "id", "members"],
-      "properties": {
-        "type": {
-          "type": "string",
-          "description": "Custom layout identifier (e.g., 'vendor.layoutName')"
-        },
-        "id": {
-          "type": "string",
-          "maxLength": 64
-        },
-        "name": {
-          "type": "string",
-          "maxLength": 128
-        },
-        "params": {
-          "type": "unknown",
-          "description": "Layout-specific parameters"
-        },
-        "members": {
-          "type": "array",
-          "items": { "type": "ref", "ref": "#member.custom" },
-          "maxLength": 32
-        },
-        "pipeline": {
-          "type": "array",
-          "items": { "type": "union", "refs": ["#visualEffect.transform", "#visualEffect.opacity", "#visualEffect.custom"] },
-          "maxLength": 16,
-          "description": "Visual effects applied to the composited group"
-        }
-      }
-    },
-
-    "member.absolute": {
-      "type": "object",
-      "description": "Member in an absolute group. Position and size in normalized coordinates.",
-      "required": ["id"],
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Track ID or group ID. Must be unique across project.tracks and project.groups.",
-          "maxLength": 64
-        },
-        "x": {
-          "type": "union",
-          "refs": ["#staticValue", "#curveRef"],
-          "description": "X position (0-1 relative to group)"
-        },
-        "y": {
-          "type": "union",
-          "refs": ["#staticValue", "#curveRef"],
-          "description": "Y position (0-1 relative to group)"
-        },
-        "width": {
-          "type": "union",
-          "refs": ["#staticValue", "#curveRef"],
-          "description": "Width (0-1 relative to group)"
-        },
-        "height": {
-          "type": "union",
-          "refs": ["#staticValue", "#curveRef"],
-          "description": "Height (0-1 relative to group)"
-        },
-        "zIndex": {
-          "type": "union",
-          "refs": ["#staticValue", "#curveRef"],
-          "description": "Layer order within group"
-        },
-        "fit": {
-          "type": "string",
-          "enum": ["contain", "cover", "fill"],
-          "default": "cover"
-        }
-      }
-    },
-
-    "member.grid": {
-      "type": "object",
-      "description": "Member in a grid group. Placed in cell with optional offset.",
-      "required": ["id"],
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Track ID or group ID. Must be unique across project.tracks and project.groups.",
-          "maxLength": 64
-        },
-        "column": {
-          "type": "integer",
-          "description": "Grid column (1-based). Omit for auto-placement.",
-          "minimum": 1
-        },
-        "row": {
-          "type": "integer",
-          "description": "Grid row (1-based). Omit for auto-placement.",
-          "minimum": 1
-        },
-        "columnSpan": {
-          "type": "integer",
-          "minimum": 1,
-          "default": 1
-        },
-        "rowSpan": {
-          "type": "integer",
-          "minimum": 1,
-          "default": 1
-        },
-        "x": {
-          "type": "union",
-          "refs": ["#staticValue", "#curveRef"],
-          "description": "X offset within cell (0-1 relative to cell)"
-        },
-        "y": {
-          "type": "union",
-          "refs": ["#staticValue", "#curveRef"],
-          "description": "Y offset within cell (0-1 relative to cell)"
-        },
-        "zIndex": {
-          "type": "union",
-          "refs": ["#staticValue", "#curveRef"],
-          "description": "Layer order within group"
-        },
-        "fit": {
-          "type": "string",
-          "enum": ["contain", "cover", "fill"],
-          "default": "cover"
-        }
-      }
-    },
-
-    "member.custom": {
-      "type": "object",
-      "description": "Member in a custom group. Hints depend on layout implementation.",
-      "required": ["id"],
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Track ID or group ID. Must be unique across project.tracks and project.groups.",
-          "maxLength": 64
-        },
-        "hints": {
-          "type": "unknown",
-          "description": "Layout-specific member hints"
-        },
-        "zIndex": {
-          "type": "union",
-          "refs": ["#staticValue", "#curveRef"],
-          "description": "Layer order within group"
-        },
-        "fit": {
-          "type": "string",
-          "enum": ["contain", "cover", "fill"],
-          "default": "cover"
         }
       }
     },

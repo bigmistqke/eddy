@@ -23,10 +23,11 @@ export type StaticValue = Mutable<v.InferOutput<typeof projectValidators.staticV
 export type CurveRef = Mutable<v.InferOutput<typeof projectValidators.curveRef>>;
 export type StemRef = Mutable<v.InferOutput<AtprotoRefs['com.atproto.repo.strongRef']>>;
 
-// Union types (inlined in lexicon, composed here for convenience)
-export type GroupAbsolute = Mutable<v.InferOutput<typeof projectValidators["group.absolute"]>>;
-export type GroupGrid = Mutable<v.InferOutput<typeof projectValidators["group.grid"]>>;
-export type Group = GroupAbsolute | GroupGrid;
+// Group types
+export type Group = Mutable<v.InferOutput<typeof projectValidators["group"]>>;
+export type Member = Mutable<v.InferOutput<typeof projectValidators["member"]>>;
+export type MemberVoid = Mutable<v.InferOutput<typeof projectValidators["member.void"]>>;
+export type LayoutGrid = Mutable<v.InferOutput<typeof projectValidators["layout.grid"]>>;
 
 export type AudioEffectGain = Mutable<v.InferOutput<typeof projectValidators["audioEffect.gain"]>>;
 export type AudioEffectPan = Mutable<v.InferOutput<typeof projectValidators["audioEffect.pan"]>>;

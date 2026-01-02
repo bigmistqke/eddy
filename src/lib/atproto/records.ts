@@ -252,22 +252,11 @@ export async function publishProject(
       width: project.canvas.width,
       height: project.canvas.height,
     },
-    groups: project.groups.map((group) => {
-      if (group.type === "grid") {
-        return {
-          type: group.type,
-          id: group.id,
-          columns: group.columns,
-          rows: group.rows,
-          members: group.members.map((m) => ({ id: m.id })),
-        }
-      }
-      return {
-        type: group.type,
-        id: group.id,
-        members: group.members.map((m) => ({ id: m.id })),
-      }
-    }),
+    groups: project.groups.map((group) => ({
+      id: group.id,
+      members: group.members,
+      ...(group.layout && { layout: group.layout }),
+    })),
     tracks,
     createdAt: project.createdAt,
   })
