@@ -25,6 +25,8 @@ import { createRecorder, requestMediaAccess } from "~/lib/audio/recorder";
 import { ProjectContext } from "~/lib/project/context";
 import { createProjectStore } from "~/lib/project/store";
 import { type Compositor, createCompositor } from "~/lib/video/compositor";
+import type { Player } from "~/lib/media/player";
+import { createPlayerCompositor, type PlayerCompositor } from "~/lib/media/player-compositor";
 import styles from "./Editor.module.css";
 import { Track } from "./Track";
 
@@ -79,7 +81,7 @@ export const Editor: Component<EditorProps> = (props) => {
 
   let compositorContainer: HTMLDivElement | undefined;
   let compositor: Compositor | null = null;
-  let animationId: number | null = null;
+  let playerCompositor: PlayerCompositor | null = null;
   let previewVideo: HTMLVideoElement | null = null;
   let stream: MediaStream | null = null;
   let recorder: ReturnType<typeof createRecorder> | null = null;
@@ -93,29 +95,15 @@ export const Editor: Component<EditorProps> = (props) => {
     if (compositorContainer) {
       compositorContainer.appendChild(compositor.canvas);
     }
-    startRenderLoop();
+    // Create player compositor for WebCodecs-based playback
+    playerCompositor = createPlayerCompositor(compositor, { autoStart: true });
   });
 
   onCleanup(() => {
-    stopRenderLoop();
+    playerCompositor?.destroy();
     stopPreview();
     compositor?.destroy();
   });
-
-  function startRenderLoop() {
-    const loop = () => {
-      compositor?.render();
-      animationId = requestAnimationFrame(loop);
-    };
-    loop();
-  }
-
-  function stopRenderLoop() {
-    if (animationId) {
-      cancelAnimationFrame(animationId);
-      animationId = null;
-    }
-  }
 
   function setupPreviewStream(mediaStream: MediaStream, trackIndex: number) {
     stream = mediaStream;
@@ -124,7 +112,7 @@ export const Editor: Component<EditorProps> = (props) => {
     previewVideo.muted = true;
     previewVideo.playsInline = true;
     previewVideo.play();
-    compositor?.setVideo(trackIndex, previewVideo);
+    compositor?.setSource(trackIndex, previewVideo);
   }
 
   async function startPreview(trackIndex: number) {
@@ -150,7 +138,7 @@ export const Editor: Component<EditorProps> = (props) => {
     if (isSelectedTrack(trackIndex)) {
       const prevTrack = selectedTrack();
       if (prevTrack !== null && !project.hasRecording(prevTrack)) {
-        compositor?.setVideo(prevTrack, null);
+        compositor?.setSource(prevTrack, null);
       }
       stopPreview();
       setSelectedTrack(null);
@@ -163,7 +151,7 @@ export const Editor: Component<EditorProps> = (props) => {
     // Clear previous preview if no recording there
     const prevTrack = selectedTrack();
     if (prevTrack !== null && !project.hasRecording(prevTrack)) {
-      compositor?.setVideo(prevTrack, null);
+      compositor?.setSource(prevTrack, null);
     }
     stopPreview();
 
@@ -213,7 +201,7 @@ export const Editor: Component<EditorProps> = (props) => {
     if (selectedTrack() !== null && !isRecording()) {
       const track = selectedTrack();
       if (track !== null && !project.hasRecording(track)) {
-        compositor?.setVideo(track, null);
+        compositor?.setSource(track, null);
       }
       stopPreview();
       setSelectedTrack(null);
@@ -229,15 +217,19 @@ export const Editor: Component<EditorProps> = (props) => {
     setCurrentTime(0);
   }
 
-  function handleVideoChange(index: number, video: HTMLVideoElement | null) {
+  function handlePlayerChange(index: number, player: Player | null) {
     // Don't override preview video for selected track
     if (selectedTrack() === index && previewVideo) return;
-    compositor?.setVideo(index, video);
+    if (player) {
+      playerCompositor?.attach(index, player);
+    } else {
+      playerCompositor?.detach(index);
+    }
   }
 
   function handleClearRecording(index: number) {
     project.clearTrack(index);
-    compositor?.setVideo(index, null);
+    playerCompositor?.detach(index);
   }
 
   function handleMasterVolumeChange(e: Event) {
@@ -370,7 +362,7 @@ export const Editor: Component<EditorProps> = (props) => {
                 isLoading={previewSubmission.pending && selectedTrack() === id}
                 currentTime={currentTime()}
                 onSelect={() => handleSelectTrack(id)}
-                onVideoChange={handleVideoChange}
+                onPlayerChange={handlePlayerChange}
                 onClear={() => handleClearRecording(id)}
               />
             )}

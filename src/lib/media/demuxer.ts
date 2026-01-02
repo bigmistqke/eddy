@@ -112,7 +112,9 @@ function parseDuration(duration: number): number {
 
 function parseVideoTrack(stream: WebAVStream, index: number): VideoTrackInfo {
   return {
-    id: stream.id,
+    // Use index as id because stream.id is not unique across track types
+    // (both video and audio can have stream.id=0)
+    id: index,
     index,
     codec: stream.codec_string,
     width: stream.width,
@@ -126,7 +128,9 @@ function parseVideoTrack(stream: WebAVStream, index: number): VideoTrackInfo {
 
 function parseAudioTrack(stream: WebAVStream, index: number): AudioTrackInfo {
   return {
-    id: stream.id,
+    // Use index as id because stream.id is not unique across track types
+    // (both video and audio can have stream.id=0)
+    id: index,
     index,
     codec: stream.codec_string,
     sampleRate: stream.sample_rate,
@@ -161,12 +165,16 @@ function parseInfo(mediaInfo: WebMediaInfo): DemuxerInfo {
 }
 
 function packetToSample(packet: WebAVPacket, trackId: number, sampleNumber: number): DemuxedSample {
+  // web-demuxer returns timestamp and duration already in seconds
+  const pts = (packet as any).pts ?? packet.timestamp
+  const dts = (packet as any).dts ?? pts
+
   return {
     number: sampleNumber,
     trackId,
-    pts: packet.timestamp / 1_000_000, // Convert from microseconds to seconds
-    dts: packet.timestamp / 1_000_000, // DTS same as PTS for most cases
-    duration: packet.duration / 1_000_000,
+    pts, // Already in seconds
+    dts,
+    duration: packet.duration, // Already in seconds
     isKeyframe: packet.keyframe === 1,
     data: packet.data,
     size: packet.size,
@@ -215,12 +223,13 @@ export async function createDemuxer(source: ArrayBuffer | File): Promise<Demuxer
   const info = parseInfo(mediaInfo)
 
   // Build track index mapping (trackId -> stream info)
+  // Since track.id is now set to track.index, this ensures unique keys
   const trackMap = new Map<number, { type: 'video' | 'audio', index: number }>()
   for (const track of info.videoTracks) {
-    trackMap.set(track.id, { type: 'video', index: track.index })
+    trackMap.set(track.index, { type: 'video', index: track.index })
   }
   for (const track of info.audioTracks) {
-    trackMap.set(track.id, { type: 'audio', index: track.index })
+    trackMap.set(track.index, { type: 'audio', index: track.index })
   }
 
   return {
@@ -246,13 +255,17 @@ export async function createDemuxer(source: ArrayBuffer | File): Promise<Demuxer
         throw new Error(`Track ${trackId} not found`)
       }
 
+      // Skip if time range is invalid
+      if (endTime <= startTime) {
+        return []
+      }
+
       try {
-        // Use readMediaPacket which handles stream selection by type
         const stream = demuxer.readMediaPacket(trackInfo.type, startTime, endTime)
         const packets = await collectStream(stream)
         return packets.map((packet, i) => packetToSample(packet, trackId, i))
-      } catch (err) {
-        console.error(`Failed to get samples for track ${trackId}:`, err)
+      } catch {
+        // Silently return empty array - web-demuxer throws "Unknown Error" for various edge cases
         return []
       }
     },
@@ -264,12 +277,13 @@ export async function createDemuxer(source: ArrayBuffer | File): Promise<Demuxer
       }
 
       try {
-        // Use readMediaPacket which handles stream selection by type
-        const stream = demuxer.readMediaPacket(trackInfo.type, 0, info.duration)
+        // Use a large end time if duration is unknown (0)
+        const endTime = info.duration > 0 ? info.duration : 3600 // 1 hour max
+        const stream = demuxer.readMediaPacket(trackInfo.type, 0, endTime)
         const packets = await collectStream(stream)
         return packets.map((packet, i) => packetToSample(packet, trackId, i))
-      } catch (err) {
-        console.error(`Failed to get all samples for track ${trackId}:`, err)
+      } catch {
+        // Silently return empty array
         return []
       }
     },

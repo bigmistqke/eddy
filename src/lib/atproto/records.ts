@@ -1,6 +1,6 @@
 import type { Agent } from '@atproto/api'
 import * as v from 'valibot'
-import { parseProject, parseStem, projectWireValidators, stemWireValidators, type Project, type Stem, type StemRef } from '../lexicons'
+import { type Project, projectValidators, projectWireValidators, type Stem, type StemRef, stemValidators, stemWireValidators } from '../lexicons'
 
 export interface RecordRef {
   uri: string
@@ -45,7 +45,7 @@ export async function getProject(agent: Agent, uri: string): Promise<ProjectReco
   return {
     uri: response.data.uri,
     cid: response.data.cid ?? '',
-    value: parseProject(response.data.value),
+    value: v.parse(projectValidators.main, response.data.value),
   }
 }
 
@@ -83,7 +83,7 @@ async function getStem(agent: Agent, uri: string): Promise<StemRecord> {
   return {
     uri: response.data.uri,
     cid: response.data.cid ?? '',
-    value: parseStem(response.data.value),
+    value: v.parse(stemValidators.main, response.data.value),
   }
 }
 
@@ -114,7 +114,7 @@ export async function listProjects(agent: Agent): Promise<ProjectListItem[]> {
   })
 
   return response.data.records.map((record) => {
-    const project = parseProject(record.value)
+    const project = v.parse(projectValidators.main, record.value)
     const { rkey } = parseAtUri(record.uri)
     return {
       uri: record.uri,

@@ -106,6 +106,11 @@ export async function createVideoDecoder(
     decoder,
 
     async decode(sample: DemuxedSample): Promise<VideoFrame> {
+      // Check if decoder is in a usable state
+      if (decoder.state === 'closed') {
+        throw new Error('VideoDecoder is closed')
+      }
+
       const chunk = new EncodedVideoChunk({
         type: sample.isKeyframe ? 'key' : 'delta',
         timestamp: sample.pts * 1_000_000, // Convert to microseconds

@@ -104,8 +104,11 @@ export async function createFrameBuffer(
   // State
   let state: FrameBufferState = 'idle'
 
-  // Track duration for end detection
-  const trackDuration = trackInfo.duration
+  // Lock to prevent concurrent buffering operations
+  let isBuffering = false
+
+  // Track duration for end detection (use 1 hour fallback for unknown duration from MediaRecorder)
+  const trackDuration = trackInfo.duration > 0 ? trackInfo.duration : 3600
 
   /** Get all samples for the track */
   const getAllSamples = async (): Promise<DemuxedSample[]> => {
@@ -148,9 +151,12 @@ export async function createFrameBuffer(
   const decodeAndBuffer = async (samples: DemuxedSample[]) => {
     if (samples.length === 0 || destroyed) return
 
+    // Check decoder state before starting
+    if (decoder.decoder.state === 'closed') return
+
     for (const sample of samples) {
-      // Check if destroyed during loop
-      if (destroyed) return
+      // Check if destroyed or decoder closed during loop
+      if (destroyed || decoder.decoder.state === 'closed') return
 
       // Skip delta frames if decoder hasn't received a keyframe yet
       if (!decoderReady && !sample.isKeyframe) {
@@ -167,7 +173,9 @@ export async function createFrameBuffer(
         decoderReady = true
         addFrame(frame, sample.pts, sample.duration)
         bufferPosition = sample.pts + sample.duration
-      } catch (err) {
+      } catch {
+        // If decoder is closed, stop trying
+        if (decoder.decoder.state === 'closed') return
         // If we fail on a keyframe, reset decoderReady
         if (sample.isKeyframe) {
           decoderReady = false
@@ -179,8 +187,8 @@ export async function createFrameBuffer(
       }
     }
 
-    // Only flush if not destroyed
-    if (!destroyed) {
+    // Only flush if not destroyed and decoder is still open
+    if (!destroyed && decoder.decoder.state !== 'closed') {
       await decoder.flush()
       // After flush, decoder needs a new keyframe to continue
       decoderReady = false
@@ -230,61 +238,81 @@ export async function createFrameBuffer(
     async seekTo(time: number): Promise<void> {
       if (destroyed) return
 
-      state = 'buffering'
-
-      // Clear existing buffer
-      clearFrames()
-
-      // Reset decoder for clean state
-      await decoder.reset()
-      decoderReady = false
-
-      // Find keyframe at or before the target time
-      const keyframe = await findKeyframeBefore(time)
-      if (!keyframe) {
-        // No keyframe found, start from beginning
-        bufferPosition = 0
-      } else {
-        bufferPosition = keyframe.pts
+      // Wait for any pending buffering to complete
+      while (isBuffering) {
+        await new Promise((resolve) => setTimeout(resolve, 10))
       }
 
-      // Get samples from keyframe position up to buffer ahead target
-      const targetEnd = Math.min(time + bufferAhead, trackDuration)
-      const samples = await demuxer.getSamples(trackInfo.id, bufferPosition, targetEnd)
+      isBuffering = true
 
-      // Decode all samples
-      await decodeAndBuffer(samples)
+      try {
+        state = 'buffering'
 
-      // Update state
-      if (bufferPosition >= trackDuration) {
-        state = 'ended'
-      } else {
-        state = frames.length > 0 ? 'ready' : 'idle'
+        // Clear existing buffer
+        clearFrames()
+
+        // Reset decoder for clean state
+        await decoder.reset()
+        decoderReady = false
+
+        // Find keyframe at or before the target time
+        const keyframe = await findKeyframeBefore(time)
+        if (!keyframe) {
+          // No keyframe found, start from beginning
+          bufferPosition = 0
+        } else {
+          bufferPosition = keyframe.pts
+        }
+
+        // Get samples from keyframe position up to buffer ahead target
+        const targetEnd = Math.min(time + bufferAhead, trackDuration)
+        const samples = await demuxer.getSamples(trackInfo.id, bufferPosition, targetEnd)
+
+        // Decode all samples
+        await decodeAndBuffer(samples)
+
+        // Update state
+        if (bufferPosition >= trackDuration) {
+          state = 'ended'
+        } else {
+          state = frames.length > 0 ? 'ready' : 'idle'
+        }
+      } finally {
+        isBuffering = false
       }
     },
 
     async bufferMore(): Promise<void> {
       if (destroyed || state === 'ended') return
 
-      state = 'buffering'
+      // Skip if already buffering (non-blocking check)
+      if (isBuffering) return
 
-      // Get more samples from current position
-      const targetEnd = Math.min(bufferPosition + bufferAhead, trackDuration)
-      if (bufferPosition >= targetEnd) {
+      isBuffering = true
+
+      try {
+        state = 'buffering'
+
+        // Get more samples from current position
+        const targetEnd = Math.min(bufferPosition + bufferAhead, trackDuration)
+        if (bufferPosition >= targetEnd) {
+          state = bufferPosition >= trackDuration ? 'ended' : 'ready'
+          return
+        }
+
+        const samples = await demuxer.getSamples(trackInfo.id, bufferPosition, targetEnd)
+
+        if (samples.length === 0) {
+          state = bufferPosition >= trackDuration ? 'ended' : 'ready'
+          return
+        }
+
+        await decodeAndBuffer(samples)
+
         state = bufferPosition >= trackDuration ? 'ended' : 'ready'
-        return
+      } finally {
+        isBuffering = false
       }
-
-      const samples = await demuxer.getSamples(trackInfo.id, bufferPosition, targetEnd)
-
-      if (samples.length === 0) {
-        state = bufferPosition >= trackDuration ? 'ended' : 'ready'
-        return
-      }
-
-      await decodeAndBuffer(samples)
-
-      state = bufferPosition >= trackDuration ? 'ended' : 'ready'
     },
 
     isBufferedAt(time: number): boolean {
@@ -299,11 +327,13 @@ export async function createFrameBuffer(
       clearFrames()
       bufferPosition = 0
       decoderReady = false
+      isBuffering = false
       state = 'idle'
     },
 
     destroy(): void {
       destroyed = true
+      isBuffering = false
       clearFrames()
       decoder.close()
       state = 'idle'

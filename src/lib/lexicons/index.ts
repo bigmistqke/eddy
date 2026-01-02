@@ -1,5 +1,5 @@
 import { type AtprotoRefs, atprotoRefs, lexiconToValibot } from "@bigmistqke/lexicon-to-valibot";
-import * as v from "valibot";
+import type * as v from "valibot";
 import projectLexicon from "./app.klip.project";
 import stemLexicon from "./app.klip.stem";
 
@@ -47,21 +47,4 @@ export type Value = StaticValue | CurveRef;
 
 export type Stem = v.InferOutput<typeof stemValidators.main>;
 export type AudioMeta = v.InferOutput<typeof stemValidators.audioMeta>;
-export type VideoMeta = v.InferOutput<typeof stemValidators.videoMeta>;
-
-// Validation helpers
-export function parseProject(data: unknown): Project {
-  return v.parse(projectValidators.main, data);
-}
-
-export function parseProjectSafe(data: unknown): v.SafeParseResult<typeof projectValidators.main> {
-  return v.safeParse(projectValidators.main, data);
-}
-
-export function parseStem(data: unknown): Stem {
-  return v.parse(stemValidators.main, data);
-}
-
-export function parseStemSafe(data: unknown): v.SafeParseResult<typeof stemValidators.main> {
-  return v.safeParse(stemValidators.main, data);
-}
+export type VideoMeta = v.InferOutput<typeof stemValidators.videoMeta>; 

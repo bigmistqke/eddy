@@ -117,6 +117,10 @@ export async function createPlayer(
   let animationFrameId: number | null = null
   let lastFramePts = -1
 
+  // Video-only playback timing (used when no audio scheduler)
+  let playbackStartTime = 0 // performance.now() when playback started
+  let playbackStartPosition = 0 // position in seconds when playback started
+
   // Callbacks
   const frameCallbacks: Array<(frame: VideoFrame | null, time: number) => void> = []
   const stateCallbacks: Array<(state: PlayerState) => void> = []
@@ -156,19 +160,18 @@ export async function createPlayer(
     audioTrack?.duration ?? 0
   )
 
-  /** Get current time from audio scheduler or estimate from video */
+  /** Get current time from audio scheduler or calculate from elapsed time */
   const getCurrentTime = (): number => {
     if (audioScheduler && audioScheduler.state === 'playing') {
       return audioScheduler.currentTime
     }
-    // Fallback for video-only or when audio is not playing
-    if (frameBuffer) {
-      const frame = frameBuffer.getFrame(Infinity)
-      if (frame) {
-        return frame.pts
-      }
+    // Video-only playback: calculate time from elapsed since playback start
+    if (state === 'playing') {
+      const elapsed = (performance.now() - playbackStartTime) / 1000
+      return playbackStartPosition + elapsed
     }
-    return 0
+    // When paused/stopped, return the last known position
+    return playbackStartPosition
   }
 
   /** Buffer and schedule audio for a time range */
@@ -291,6 +294,10 @@ export async function createPlayer(
         audioScheduler.play(startTime)
       }
 
+      // Set up video-only timing
+      playbackStartPosition = startTime
+      playbackStartTime = performance.now()
+
       setState('playing')
       lastFramePts = -1
 
@@ -300,6 +307,9 @@ export async function createPlayer(
 
     pause(): void {
       if (state !== 'playing') return
+
+      // Save current position for resume
+      playbackStartPosition = getCurrentTime()
 
       // Stop animation loop
       if (animationFrameId !== null) {
@@ -332,6 +342,8 @@ export async function createPlayer(
         frameBuffer.clear()
       }
 
+      // Reset position
+      playbackStartPosition = 0
       lastFramePts = -1
       setState('ready')
     },
@@ -362,6 +374,8 @@ export async function createPlayer(
         await audioDecoder.reset()
       }
 
+      // Update playback position
+      playbackStartPosition = time
       lastFramePts = -1
 
       // Resume if was playing
@@ -375,6 +389,9 @@ export async function createPlayer(
           audioScheduler.play(time)
         }
 
+        // Reset timing for video-only playback
+        playbackStartTime = performance.now()
+
         setState('playing')
         animationFrameId = requestAnimationFrame(renderLoop)
       } else {
@@ -384,7 +401,8 @@ export async function createPlayer(
 
     getCurrentFrame(): VideoFrame | null {
       if (!frameBuffer) return null
-      const bufferedFrame = frameBuffer.getFrame(getCurrentTime())
+      const time = getCurrentTime()
+      const bufferedFrame = frameBuffer.getFrame(time)
       return bufferedFrame?.frame ?? null
     },
 

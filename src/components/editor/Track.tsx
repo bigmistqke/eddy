@@ -4,7 +4,6 @@ import {
   type Component,
   createEffect,
   createMemo,
-  createSignal,
   For,
   onCleanup,
   onMount,
@@ -12,6 +11,8 @@ import {
 } from "solid-js";
 import { type AudioPipeline, createAudioPipeline } from "~/lib/audio/pipeline";
 import type { AudioEffect } from "~/lib/lexicons";
+import { usePlayer } from "~/lib/media/usePlayer";
+import type { Player } from "~/lib/media/player";
 import { useProject } from "~/lib/project/context";
 import styles from "./Track.module.css";
 
@@ -23,7 +24,8 @@ interface TrackProps {
   isLoading?: boolean;
   currentTime?: number;
   onSelect?: () => void;
-  onVideoChange?: (index: number, video: HTMLVideoElement | null) => void;
+  /** Called when player is ready or cleared */
+  onPlayerChange?: (index: number, player: Player | null) => void;
   onClear?: () => void;
 }
 
@@ -31,9 +33,12 @@ export const Track: Component<TrackProps> = (props) => {
   const project = useProject();
   const trackId = `track-${props.id}`;
 
-  const [playbackEl, setPlaybackEl] = createSignal<HTMLVideoElement | null>(
-    null,
-  );
+  // WebCodecs-based player
+  const playerHook = usePlayer({
+    onFrame: (frame, time) => {
+      // Frame updates handled by PlayerCompositor in Editor
+    },
+  });
 
   let pipeline: AudioPipeline | null = null;
 
@@ -78,36 +83,55 @@ export const Track: Component<TrackProps> = (props) => {
 
   onCleanup(() => {
     pipeline?.disconnect();
-    props.onVideoChange?.(props.id, null);
+    props.onPlayerChange?.(props.id, null);
   });
+
+  // Load clip blob into player when it changes
+  createEffect(() => {
+    const blob = clipBlob();
+    if (blob) {
+      playerHook.load(blob).then(() => {
+        const player = playerHook.player();
+        if (player) {
+          props.onPlayerChange?.(props.id, player);
+        }
+      }).catch((err) => {
+        console.error('Failed to load clip:', err);
+      });
+    } else {
+      playerHook.unload();
+      props.onPlayerChange?.(props.id, null);
+    }
+  });
+
+  // Track last seeked time to avoid infinite loops
+  let lastSeekedTime: number | undefined;
 
   // React to global play/pause and seek
   createEffect(() => {
-    const el = playbackEl();
-    if (!el || !hasRecording()) return;
+    if (!hasRecording() || !playerHook.isReady()) return;
 
-    // Seek if currentTime is specified
-    if (props.currentTime !== undefined) {
-      el.currentTime = props.currentTime;
+    // Seek if currentTime is specified and different from last seek
+    if (props.currentTime !== undefined && props.currentTime !== lastSeekedTime) {
+      lastSeekedTime = props.currentTime;
+      playerHook.seek(props.currentTime).catch(() => {
+        // Ignore seek errors during rapid state changes
+      });
     }
 
     if (props.isPlaying) {
-      el.play().catch(() => {
-        // Ignore AbortError when play is interrupted by pause
+      playerHook.play().catch(() => {
+        // Ignore play errors
       });
     } else {
-      el.pause();
+      playerHook.pause();
     }
   });
 
   function handleClear() {
-    const el = playbackEl();
-    if (el) {
-      el.pause();
-      el.src = "";
-    }
-    setPlaybackEl(null);
+    playerHook.unload();
     pipeline?.disconnect();
+    props.onPlayerChange?.(props.id, null);
     props.onClear?.();
   }
 
@@ -120,21 +144,6 @@ export const Track: Component<TrackProps> = (props) => {
     project.setEffectValue(trackId, index, value);
     applyEffectToAudioPipeline(effect.type, value);
   }
-
-  function setupPlayback(el: HTMLVideoElement) {
-    el.onloadeddata = () => {
-      setPlaybackEl(el);
-      if (pipeline) {
-        pipeline.connect(el);
-      }
-      props.onVideoChange?.(props.id, el);
-    };
-  }
-
-  const recordingUrl = createMemo(() => {
-    const blob = clipBlob();
-    return blob ? URL.createObjectURL(blob) : undefined;
-  });
 
   function getStatus() {
     if (props.isLoading) return "Loading...";
@@ -195,20 +204,6 @@ export const Track: Component<TrackProps> = (props) => {
         <span class={styles.trackLabel}>Track {props.id + 1}</span>
         <span class={styles.status}>{getStatus()}</span>
       </div>
-
-      {/* Hidden video element for playback */}
-      <Show when={hasRecording() && recordingUrl()}>
-        {(url) => (
-          <video
-            ref={setupPlayback}
-            src={url()}
-            class={styles.hiddenVideo}
-            playsinline
-          >
-            <track kind="captions"></track>
-          </video>
-        )}
-      </Show>
 
       <div class={styles.sliders}>
         <For each={audioPipeline()}>
