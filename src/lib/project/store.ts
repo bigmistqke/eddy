@@ -207,22 +207,24 @@ export function createProjectStore() {
         setStore('project', record.value as unknown as Project)
         setStore('remoteUri', record.uri)
 
-        // Fetch stem blobs for each clip
-        for (const track of record.value.tracks) {
-          for (const clip of track.clips) {
-            if (clip.stem) {
-              try {
-                const blob = await getStemBlob(agent, clip.stem.uri)
-                setStore('local', 'clips', clip.id, {
-                  blob,
-                  duration: clip.duration,
-                })
-              } catch (err) {
-                console.error(`Failed to fetch stem for clip ${clip.id}:`, err)
-              }
+        // Fetch stem blobs in parallel
+        const clipsWithStems = record.value.tracks
+          .flatMap((track) => track.clips)
+          .filter((clip) => clip.stem)
+
+        await Promise.all(
+          clipsWithStems.map(async (clip) => {
+            try {
+              const blob = await getStemBlob(agent, clip.stem!.uri)
+              setStore('local', 'clips', clip.id, {
+                blob,
+                duration: clip.duration,
+              })
+            } catch (err) {
+              console.error(`Failed to fetch stem for clip ${clip.id}:`, err)
             }
-          }
-        }
+          })
+        )
       } finally {
         setStore('loading', false)
       }
