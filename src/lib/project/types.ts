@@ -1,6 +1,7 @@
 // Types matching app.klip.project and app.klip.stem lexicons
-// Note: Runtime uses floats (0.0-1.0), but AT Protocol serialization
-// converts to integers scaled by 100 (since floats aren't supported)
+// Values are stored as integers scaled by 100 (AT Protocol doesn't support floats)
+// e.g., gain 1.0 = 100, pan center 0.5 = 50
+// UI interprets values at render time (value / 100)
 
 export interface Canvas {
   width: number

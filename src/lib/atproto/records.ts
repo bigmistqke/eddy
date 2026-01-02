@@ -206,39 +206,19 @@ export async function publishProject(
     })
   }
 
-  // Build tracks with audioPipeline using full $type paths for union discrimination
-  // AT Protocol requires $type with "lexiconId#localRef" format for unions
+  // Build tracks - data is already in record format (scaled integers)
   const tracks = project.tracks
     .filter((track) => stemRefs.has(track.id))
-    .map((track) => {
-      const gainEffect = track.audioPipeline?.find(e => e.type === 'audio.gain')
-      const panEffect = track.audioPipeline?.find(e => e.type === 'audio.pan')
-      return {
-        id: track.id,
-        clips: track.clips.map((clip) => ({
-          id: clip.id,
-          offset: clip.offset,
-          duration: clip.duration,
-        })),
-        stem: stemRefs.get(track.id),
-        // Use integers scaled by 100 since AT Protocol doesn't support floats
-        // (e.g., 100 = 1.0, 50 = 0.5)
-        audioPipeline: [
-          {
-            type: 'audio.gain',
-            value: {
-              value: Math.round((gainEffect?.value.value ?? 1) * 100),
-            },
-          },
-          {
-            type: 'audio.pan',
-            value: {
-              value: Math.round((panEffect?.value.value ?? 0.5) * 100),
-            },
-          },
-        ],
-      }
-    })
+    .map((track) => ({
+      id: track.id,
+      clips: track.clips.map((clip) => ({
+        id: clip.id,
+        offset: clip.offset,
+        duration: clip.duration,
+      })),
+      stem: stemRefs.get(track.id),
+      audioPipeline: track.audioPipeline,
+    }))
 
   // Build project record
   const record = {

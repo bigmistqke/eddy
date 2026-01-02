@@ -5,12 +5,14 @@ import {
   createEffect,
   createMemo,
   createSignal,
+  For,
   onCleanup,
   onMount,
   Show,
 } from "solid-js";
 import { type AudioPipeline, createAudioPipeline } from "~/lib/audio/pipeline";
 import { useProject } from "~/lib/project/context";
+import type { AudioEffect } from "~/lib/project/types";
 import styles from "./Track.module.css";
 
 interface TrackProps {
@@ -37,17 +39,34 @@ export const Track: Component<TrackProps> = (props) => {
 
   // Derived state from project store
   const hasRecording = createMemo(() => project.hasRecording(props.id));
-  const trackBlob = createMemo(() => project.getTrackBlob(props.id));
-  const gain = createMemo(() => project.getTrackGain(props.id));
-  const pan = createMemo(() => project.getTrackPan(props.id));
+  const clipBlob = createMemo(() => project.getClipBlob(trackId));
+  const audioPipeline = createMemo(() => project.getTrackPipeline(trackId));
+
+  // Helper to get effect value by index
+  const getEffectValue = (index: number) => project.getEffectValue(trackId, index);
 
   onMount(() => {
     pipeline = createAudioPipeline();
     // Initialize pipeline with store values
-    pipeline.setVolume(gain());
-    // Convert 0-1 (lexicon) to -1..1 (Web Audio)
-    pipeline.setPan((pan() - 0.5) * 2);
+    const effects = audioPipeline();
+    effects.forEach((effect, i) => {
+      applyEffectToAudioPipeline(effect.type, getEffectValue(i));
+    });
   });
+
+  // Apply effect value to the Web Audio pipeline
+  function applyEffectToAudioPipeline(effectType: string, value: number) {
+    if (!pipeline) return;
+    switch (effectType) {
+      case "audio.gain":
+        pipeline.setVolume(value);
+        break;
+      case "audio.pan":
+        // Convert 0-1 (lexicon) to -1..1 (Web Audio)
+        pipeline.setPan((value - 0.5) * 2);
+        break;
+    }
+  }
 
   onCleanup(() => {
     pipeline?.disconnect();
@@ -84,17 +103,10 @@ export const Track: Component<TrackProps> = (props) => {
     props.onClear?.();
   }
 
-  function handleVolumeChange(e: Event) {
-    const value = parseFloat((e.target as HTMLInputElement).value);
-    project.setTrackGain(trackId, value);
-    pipeline?.setVolume(value);
-  }
-
-  function handlePanChange(e: Event) {
-    const value = parseFloat((e.target as HTMLInputElement).value);
-    // Store as 0-1 in lexicon format
-    project.setTrackPan(trackId, (value + 1) / 2);
-    pipeline?.setPan(value);
+  // Generic effect change handler
+  function handleEffectChange(effect: AudioEffect, index: number, value: number) {
+    project.setEffectValue(trackId, index, value);
+    applyEffectToAudioPipeline(effect.type, value);
   }
 
   function setupPlayback(el: HTMLVideoElement) {
@@ -108,7 +120,7 @@ export const Track: Component<TrackProps> = (props) => {
   }
 
   const recordingUrl = createMemo(() => {
-    const blob = trackBlob();
+    const blob = clipBlob();
     return blob ? URL.createObjectURL(blob) : undefined;
   });
 
@@ -121,8 +133,35 @@ export const Track: Component<TrackProps> = (props) => {
     return "Empty";
   }
 
-  // Convert 0-1 lexicon pan to -1..1 for slider
-  const panSliderValue = createMemo(() => (pan() - 0.5) * 2);
+  // Get display value for an effect (handles pan conversion for UI)
+  function getDisplayValue(effect: AudioEffect, index: number): number {
+    const value = getEffectValue(index);
+    // Pan uses -1..1 for display but 0..1 for storage
+    if (effect.type === "audio.pan") {
+      return (value - 0.5) * 2;
+    }
+    return value;
+  }
+
+  // Convert display value back for storage
+  function parseDisplayValue(effect: AudioEffect, displayValue: number): number {
+    if (effect.type === "audio.pan") {
+      return (displayValue + 1) / 2;
+    }
+    return displayValue;
+  }
+
+  // Get slider config for each effect type
+  function getSliderConfig(effect: AudioEffect) {
+    switch (effect.type) {
+      case "audio.gain":
+        return { min: 0, max: 1, step: 0.01, label: "Vol" };
+      case "audio.pan":
+        return { min: -1, max: 1, step: 0.01, label: "Pan" };
+      default:
+        return { min: 0, max: 1, step: 0.01, label: effect.type };
+    }
+  }
 
   return (
     <div
@@ -157,30 +196,29 @@ export const Track: Component<TrackProps> = (props) => {
       </Show>
 
       <div class={styles.sliders}>
-        <label class={styles.slider}>
-          <span>Vol</span>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={gain()}
-            onInput={handleVolumeChange}
-            onClick={(e) => e.stopPropagation()}
-          />
-        </label>
-        <label class={styles.slider}>
-          <span>Pan</span>
-          <input
-            type="range"
-            min="-1"
-            max="1"
-            step="0.01"
-            value={panSliderValue()}
-            onInput={handlePanChange}
-            onClick={(e) => e.stopPropagation()}
-          />
-        </label>
+        <For each={audioPipeline()}>
+          {(effect, index) => {
+            const config = getSliderConfig(effect);
+            return (
+              <label class={styles.slider}>
+                <span>{config.label}</span>
+                <input
+                  type="range"
+                  min={config.min}
+                  max={config.max}
+                  step={config.step}
+                  value={getDisplayValue(effect, index())}
+                  onInput={(e) => {
+                    const displayValue = parseFloat((e.target as HTMLInputElement).value);
+                    const storeValue = parseDisplayValue(effect, displayValue);
+                    handleEffectChange(effect, index(), storeValue);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </label>
+            );
+          }}
+        </For>
       </div>
 
       <Show when={hasRecording()}>

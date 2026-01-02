@@ -6,7 +6,7 @@ Post-MVP refactoring and improvements.
 
 ### T1: Record = Data (no transformation layer)
 
-**Status**: Open
+**Status**: Done
 
 The AT Protocol record should BE the project state directly. No transformation between record format and internal types.
 
@@ -34,7 +34,7 @@ const project: Project = {
 
 ### T2: Use action/submission for loadProject
 
-**Status**: Open
+**Status**: Open (reverted due to reactivity issues)
 
 Replace manual `loading` state with SolidJS Router's action/submission pattern.
 
@@ -63,7 +63,7 @@ const submission = useSubmission(loadProjectAction)
 
 ### T3: Rename getTrackBlob to getClipBlob(trackId, clipId)
 
-**Status**: Open
+**Status**: Done
 
 Current naming implies one blob per track. A track can have multiple clips, each referencing a stem.
 
@@ -83,7 +83,7 @@ Also update local state structure to support multiple clips per track.
 
 ### T4: Dynamic effect chain UI
 
-**Status**: Open
+**Status**: Done
 
 Replace hardcoded `getTrackGain`/`setTrackGain`/`getTrackPan`/`setTrackPan` with generic effect chain rendering.
 

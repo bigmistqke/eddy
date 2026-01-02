@@ -3,10 +3,8 @@ import type { Agent } from '@atproto/api'
 import type {
   Project,
   Track,
-  Clip,
   AudioEffect,
   LocalTrackState,
-  GridGroup,
 } from './types'
 import { getProjectByRkey, getStemBlob, type ProjectRecord } from '../atproto/records'
 
@@ -41,14 +39,15 @@ function createDefaultProject(): Project {
         ],
       },
     ],
+    // Values are scaled integers (100 = 1.0, 50 = 0.5)
     tracks: [
       {
         id: 'track-0',
         name: 'Track 1',
         clips: [],
         audioPipeline: [
-          { type: 'audio.gain', value: { value: 1 } },
-          { type: 'audio.pan', value: { value: 0.5 } },
+          { type: 'audio.gain', value: { value: 100 } },
+          { type: 'audio.pan', value: { value: 50 } },
         ],
       },
       {
@@ -56,8 +55,8 @@ function createDefaultProject(): Project {
         name: 'Track 2',
         clips: [],
         audioPipeline: [
-          { type: 'audio.gain', value: { value: 1 } },
-          { type: 'audio.pan', value: { value: 0.5 } },
+          { type: 'audio.gain', value: { value: 100 } },
+          { type: 'audio.pan', value: { value: 50 } },
         ],
       },
       {
@@ -65,8 +64,8 @@ function createDefaultProject(): Project {
         name: 'Track 3',
         clips: [],
         audioPipeline: [
-          { type: 'audio.gain', value: { value: 1 } },
-          { type: 'audio.pan', value: { value: 0.5 } },
+          { type: 'audio.gain', value: { value: 100 } },
+          { type: 'audio.pan', value: { value: 50 } },
         ],
       },
       {
@@ -74,8 +73,8 @@ function createDefaultProject(): Project {
         name: 'Track 4',
         clips: [],
         audioPipeline: [
-          { type: 'audio.gain', value: { value: 1 } },
-          { type: 'audio.pan', value: { value: 0.5 } },
+          { type: 'audio.gain', value: { value: 100 } },
+          { type: 'audio.pan', value: { value: 50 } },
         ],
       },
     ],
@@ -99,31 +98,32 @@ export function createProjectStore() {
       setStore('project', 'updatedAt', new Date().toISOString())
     },
 
-    setTrackGain(trackId: string, value: number) {
+    // Set effect value by index in the pipeline
+    // Accepts float (0.0-1.0), stores as scaled integer
+    setEffectValue(trackId: string, effectIndex: number, value: number) {
       setStore(
         'project',
         'tracks',
         (t) => t.id === trackId,
         'audioPipeline',
-        (e: AudioEffect) => e.type === 'audio.gain',
+        effectIndex,
         'value',
         'value',
-        value
+        Math.round(value * 100)
       )
     },
 
-    setTrackPan(trackId: string, value: number) {
-      // Pan in lexicon is 0-1 (0=left, 0.5=center, 1=right)
-      setStore(
-        'project',
-        'tracks',
-        (t) => t.id === trackId,
-        'audioPipeline',
-        (e: AudioEffect) => e.type === 'audio.pan',
-        'value',
-        'value',
-        value
-      )
+    // Get effect value as float (0.0-1.0)
+    getEffectValue(trackId: string, effectIndex: number): number {
+      const track = store.project.tracks.find((t) => t.id === trackId)
+      const effect = track?.audioPipeline?.[effectIndex]
+      return (effect?.value.value ?? 100) / 100
+    },
+
+    // Get track's audio pipeline
+    getTrackPipeline(trackId: string): AudioEffect[] {
+      const track = store.project.tracks.find((t) => t.id === trackId)
+      return track?.audioPipeline ?? []
     },
 
     addRecording(trackIndex: number, blob: Blob, duration: number) {
@@ -172,13 +172,12 @@ export function createProjectStore() {
       setStore('project', 'updatedAt', new Date().toISOString())
     },
 
-    getTrackBlob(trackIndex: number): Blob | undefined {
-      const trackId = `track-${trackIndex}`
+    // Get clip blob by track ID (clipId reserved for future multi-clip support)
+    getClipBlob(trackId: string, _clipId?: string): Blob | undefined {
       return store.local.tracks[trackId]?.localBlob
     },
 
-    getTrackDuration(trackIndex: number): number | undefined {
-      const trackId = `track-${trackIndex}`
+    getClipDuration(trackId: string, _clipId?: string): number | undefined {
       return store.local.tracks[trackId]?.localDuration
     },
 
@@ -188,21 +187,6 @@ export function createProjectStore() {
       return (track?.clips.length ?? 0) > 0
     },
 
-    getTrackGain(trackIndex: number): number {
-      const trackId = `track-${trackIndex}`
-      const track = store.project.tracks.find((t) => t.id === trackId)
-      const gainEffect = track?.audioPipeline?.find(
-        (e) => e.type === 'audio.gain'
-      )
-      return gainEffect?.value.value ?? 1
-    },
-
-    getTrackPan(trackIndex: number): number {
-      const trackId = `track-${trackIndex}`
-      const track = store.project.tracks.find((t) => t.id === trackId)
-      const panEffect = track?.audioPipeline?.find((e) => e.type === 'audio.pan')
-      return panEffect?.value.value ?? 0.5
-    },
 
     // Get project ready for publishing (without local state)
     getProjectForPublish(): Project {
@@ -214,35 +198,7 @@ export function createProjectStore() {
       setStore('loading', true)
       try {
         const record = await getProjectByRkey(agent, rkey, handle)
-
-        // Convert record to Project format
-        const project: Project = {
-          schemaVersion: record.value.schemaVersion ?? 1,
-          title: record.value.title,
-          canvas: record.value.canvas,
-          groups: record.value.groups.map((g) => ({
-            type: g.type as 'grid',
-            id: g.id,
-            columns: g.columns ?? 2,
-            rows: g.rows ?? 2,
-            members: g.members,
-          })) as GridGroup[],
-          tracks: record.value.tracks.map((t) => ({
-            id: t.id,
-            clips: t.clips,
-            stem: t.stem,
-            audioPipeline: t.audioPipeline?.map((e) => ({
-              type: e.type as 'audio.gain' | 'audio.pan',
-              value: { value: e.value.value / 100 }, // Convert from scaled integer
-            })) ?? [
-              { type: 'audio.gain' as const, value: { value: 1 } },
-              { type: 'audio.pan' as const, value: { value: 0.5 } },
-            ],
-          })),
-          createdAt: record.value.createdAt,
-        }
-
-        setStore('project', project)
+        setStore('project', record.value as unknown as Project)
         setStore('remoteUri', record.uri)
 
         // Fetch stem blobs for each track

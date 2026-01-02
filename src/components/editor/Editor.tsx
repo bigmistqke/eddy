@@ -58,18 +58,20 @@ export const Editor: Component<EditorProps> = (props) => {
   );
   const [masterVolume, setMasterVolume] = createSignal(1);
 
-  // Load project if rkey provided (handle is optional - defaults to own DID)
-  createEffect(() => {
-    const currentAgent = agent();
-    if (currentAgent && props.rkey) {
-      project.loadProject(currentAgent, props.handle, props.rkey);
-    }
-  });
-
-  const xstartPreview$ = useAction(startPreviewAction);
+  const startPreview$ = useAction(startPreviewAction);
   const stopRecording$ = useAction(stopRecordingAction);
   const previewSubmission = useSubmission(startPreviewAction);
   const stopRecordingSubmission = useSubmission(stopRecordingAction);
+
+  // Load project if rkey provided (handle is optional - defaults to own DID)
+  let projectLoaded = false;
+  createEffect(() => {
+    const currentAgent = agent();
+    if (currentAgent && props.rkey && !projectLoaded) {
+      projectLoaded = true;
+      project.loadProject(currentAgent, props.handle, props.rkey);
+    }
+  });
 
   const isSelectedTrack = createSelector(selectedTrack);
 
@@ -252,10 +254,11 @@ export const Editor: Component<EditorProps> = (props) => {
     // Collect track blobs
     const trackBlobs = new Map<string, { blob: Blob; duration: number }>();
     for (let i = 0; i < 4; i++) {
-      const blob = project.getTrackBlob(i);
-      const duration = project.getTrackDuration(i);
+      const trackId = `track-${i}`;
+      const blob = project.getClipBlob(trackId);
+      const duration = project.getClipDuration(trackId);
       if (blob && duration) {
-        trackBlobs.set(`track-${i}`, { blob, duration });
+        trackBlobs.set(trackId, { blob, duration });
       }
     }
 
