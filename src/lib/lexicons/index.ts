@@ -1,8 +1,8 @@
 import { type AtprotoRefs, atprotoRefs, lexiconToValibot } from "@bigmistqke/lexicon-to-valibot";
 import * as v from "valibot";
 import type { Mutable } from "~/utils";
-import projectLexicon from "../../../lexicons/app.klip.project";
-import stemLexicon from "../../../lexicons/app.klip.stem";
+import projectLexicon from "./app.klip.project";
+import stemLexicon from "./app.klip.stem";
 
 const options = { externalRefs: atprotoRefs };
 export const projectValidators = lexiconToValibot(projectLexicon, options);
