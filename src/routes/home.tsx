@@ -1,6 +1,6 @@
 import { A } from "@solidjs/router";
 import { FiTrash2 } from "solid-icons/fi";
-import { createResource, For, Show } from "solid-js";
+import { createResource, For, Show, startTransition } from "solid-js";
 import { useAuth } from "~/lib/atproto/AuthContext";
 import { deleteProject, listProjects } from "~/lib/atproto/records";
 import styles from "./home.module.css";
@@ -23,7 +23,7 @@ export default function Home() {
     if (!currentAgent) return;
     if (!confirm("Delete this project?")) return;
     await deleteProject(currentAgent, uri);
-    refetch();
+    startTransition(() => refetch());
   }
 
   const formatDate = (dateStr: string) => {
