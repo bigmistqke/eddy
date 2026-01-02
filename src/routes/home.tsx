@@ -1,19 +1,30 @@
 import { A } from "@solidjs/router";
+import { FiTrash2 } from "solid-icons/fi";
 import { createResource, For, Show } from "solid-js";
 import { useAuth } from "~/lib/atproto/AuthContext";
-import { listProjects } from "~/lib/atproto/records";
+import { deleteProject, listProjects } from "~/lib/atproto/records";
 import styles from "./home.module.css";
 
 export default function Home() {
   const { agent } = useAuth();
 
-  const [projects] = createResource(
+  const [projects, { refetch }] = createResource(
     () => agent(),
     async (currentAgent) => {
       if (!currentAgent) return [];
       return listProjects(currentAgent);
     },
   );
+
+  async function handleDelete(uri: string, e: Event) {
+    e.preventDefault();
+    e.stopPropagation();
+    const currentAgent = agent();
+    if (!currentAgent) return;
+    if (!confirm("Delete this project?")) return;
+    await deleteProject(currentAgent, uri);
+    refetch();
+  }
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "";
@@ -46,6 +57,13 @@ export default function Home() {
                     {project.trackCount !== 1 ? "s" : ""} ·{" "}
                     {formatDate(project.createdAt)}
                   </div>
+                  <button
+                    type="button"
+                    class={styles.deleteButton}
+                    onClick={(e) => handleDelete(project.uri, e)}
+                  >
+                    <FiTrash2 size={14} />
+                  </button>
                 </A>
               )}
             </For>

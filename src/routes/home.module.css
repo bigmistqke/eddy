@@ -61,6 +61,7 @@
 }
 
 .projectCard {
+  position: relative;
   display: block;
   padding: 1rem;
   background: #1a1a1a;
@@ -84,4 +85,27 @@
 .projectMeta {
   font-size: 0.875rem;
   color: #888;
+}
+
+.deleteButton {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  padding: 0.5rem;
+  background: transparent;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  border-radius: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+
+.projectCard:hover .deleteButton {
+  opacity: 1;
+}
+
+.deleteButton:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
 }
