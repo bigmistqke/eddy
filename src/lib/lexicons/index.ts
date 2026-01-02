@@ -4,9 +4,15 @@ import type { Mutable } from "~/utils";
 import projectLexicon from "./app.klip.project";
 import stemLexicon from "./app.klip.stem";
 
-const options = { externalRefs: atprotoRefs };
-export const projectValidators = lexiconToValibot(projectLexicon, options);
-export const stemValidators = lexiconToValibot(stemLexicon, options);
+// SDK format validators for parsing incoming data from PDS
+const sdkOptions = { externalRefs: atprotoRefs, format: 'sdk' as const };
+export const projectValidators = lexiconToValibot(projectLexicon, sdkOptions);
+export const stemValidators = lexiconToValibot(stemLexicon, sdkOptions);
+
+// Wire format validators for validating outgoing data to PDS
+const wireOptions = { externalRefs: atprotoRefs, format: 'wire' as const };
+export const projectWireValidators = lexiconToValibot(projectLexicon, wireOptions);
+export const stemWireValidators = lexiconToValibot(stemLexicon, wireOptions);
 
 // Types inferred from validators (satisfies preserves literal types without readonly)
 export type Project = Mutable<v.InferOutput<typeof projectValidators.main>>;

@@ -1,6 +1,6 @@
 import type { Agent } from '@atproto/api'
-import type { Wired } from '~/utils'
-import { parseProject, parseStem, type Project, type Stem, type StemRef } from '../lexicons'
+import * as v from 'valibot'
+import { parseProject, parseStem, projectWireValidators, stemWireValidators, type Project, type Stem, type StemRef } from '../lexicons'
 
 export interface RecordRef {
   uri: string
@@ -152,7 +152,7 @@ export async function createStemRecord(
 ): Promise<RecordRef> {
   const uploadedBlob = await uploadBlob(agent, blob)
 
-  const record = {
+  const record = v.parse(stemWireValidators.main, {
     $type: 'app.klip.stem',
     schemaVersion: 1,
     blob: uploadedBlob.toJSON(),
@@ -163,7 +163,7 @@ export async function createStemRecord(
       hasAudio: true,
     },
     createdAt: new Date().toISOString(),
-  } satisfies Stem & { $type: 'app.klip.stem' }
+  })
 
   const response = await agent.com.atproto.repo.createRecord({
     repo: agent.assertDid,
@@ -251,8 +251,8 @@ export async function publishProject(
     }))
     .filter((track) => track.clips.length > 0)
 
-  // Build project record
-  const record: Wired<Project, 'app.klip.project'> = {
+  // Build and validate project record
+  const record = v.parse(projectWireValidators.main, {
     $type: 'app.klip.project',
     schemaVersion: 1,
     title: project.title,
@@ -278,12 +278,9 @@ export async function publishProject(
     }),
     tracks,
     createdAt: project.createdAt,
-  }
+  })
 
   console.log('Creating project record:', JSON.stringify(record, null, 2))
-
-  // Note: Local validation with @atproto/lexicon doesn't support union types
-  // The PDS will validate the record server-side
 
   const response = await agent.com.atproto.repo.createRecord({
     repo: agent.assertDid,
