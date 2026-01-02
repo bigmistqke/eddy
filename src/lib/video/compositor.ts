@@ -68,9 +68,17 @@ function createVideoTexture(gl: WebGLRenderingContext | WebGL2RenderingContext):
   return texture
 }
 
+/** Video source - can be HTMLVideoElement or VideoFrame */
+export type VideoSource = HTMLVideoElement | VideoFrame | null
+
 export interface Compositor {
   canvas: HTMLCanvasElement
+  /** Set a video source (HTMLVideoElement or VideoFrame) for a track */
+  setSource: (index: number, source: VideoSource) => void
+  /** @deprecated Use setSource instead */
   setVideo: (index: number, video: HTMLVideoElement | null) => void
+  /** Set a VideoFrame for a track */
+  setFrame: (index: number, frame: VideoFrame | null) => void
   render: () => void
   destroy: () => void
 }
@@ -91,17 +99,60 @@ export function createCompositor(width: number, height: number): Compositor {
     createVideoTexture(gl),
   ]
 
-  const videos: (HTMLVideoElement | null)[] = [null, null, null, null]
+  const sources: VideoSource[] = [null, null, null, null]
 
   gl.useProgram(program)
+
+  /** Check if a source is ready for rendering */
+  const isSourceReady = (source: VideoSource): boolean => {
+    if (!source) return false
+    if (source instanceof VideoFrame) return true
+    // HTMLVideoElement
+    return source.readyState >= 2
+  }
+
+  /** Upload source to texture */
+  const uploadSource = (source: VideoSource) => {
+    if (!source) return
+
+    if (source instanceof VideoFrame) {
+      // VideoFrame can be used directly with texImage2D
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        source
+      )
+    } else {
+      // HTMLVideoElement
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RGBA,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        source
+      )
+    }
+  }
 
   return {
     canvas,
 
-    setVideo(index: number, video: HTMLVideoElement | null) {
+    setSource(index: number, source: VideoSource) {
       if (index >= 0 && index < 4) {
-        videos[index] = video
+        sources[index] = source
       }
+    },
+
+    setVideo(index: number, video: HTMLVideoElement | null) {
+      this.setSource(index, video)
+    },
+
+    setFrame(index: number, frame: VideoFrame | null) {
+      this.setSource(index, frame)
     },
 
     render() {
@@ -109,21 +160,14 @@ export function createCompositor(width: number, height: number): Compositor {
 
       const active = [0, 0, 0, 0]
 
-      // Update textures from videos
+      // Update textures from sources
       for (let i = 0; i < 4; i++) {
-        const video = videos[i]
+        const source = sources[i]
         gl.activeTexture(gl.TEXTURE0 + i)
         gl.bindTexture(gl.TEXTURE_2D, textures[i])
 
-        if (video && video.readyState >= 2) {
-          gl.texImage2D(
-            gl.TEXTURE_2D,
-            0,
-            gl.RGBA,
-            gl.RGBA,
-            gl.UNSIGNED_BYTE,
-            video
-          )
+        if (isSourceReady(source)) {
+          uploadSource(source)
           active[i] = 1
         }
       }
