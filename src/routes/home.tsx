@@ -1,6 +1,6 @@
 import { A } from "@solidjs/router";
 import { FiTrash2 } from "solid-icons/fi";
-import { createResource, For, Show, startTransition } from "solid-js";
+import { createResource, For, Show, useTransition } from "solid-js";
 import { useAuth } from "~/lib/atproto/AuthContext";
 import { deleteProject, listProjects } from "~/lib/atproto/records";
 import styles from "./home.module.css";
@@ -15,6 +15,8 @@ export default function Home() {
       return listProjects(currentAgent);
     },
   );
+
+  const [pending, startTransition] = useTransition();
 
   async function handleDelete(uri: string, e: Event) {
     e.preventDefault();
@@ -47,7 +49,7 @@ export default function Home() {
       <Show when={agent() && projects()?.length}>
         <div class={styles.projectList}>
           <h2 class={styles.projectListTitle}>Your Projects</h2>
-          <div class={styles.projectGrid}>
+          <div class={styles.projectGrid} style={{ opacity: pending() ? 0.5 : 1 }}>
             <For each={projects()}>
               {(project) => (
                 <A href={`/editor/${project.rkey}`} class={styles.projectCard}>
