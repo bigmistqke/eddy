@@ -90,9 +90,11 @@ export const Track: Component<TrackProps> = (props) => {
   createEffect(() => {
     const blob = clipBlob();
     if (blob) {
-      playerHook.load(blob).then(() => {
+      playerHook.load(blob).then(async () => {
         const player = playerHook.player();
         if (player) {
+          // Seek to 0 to buffer and display the first frame
+          await playerHook.seek(0);
           props.onPlayerChange?.(props.id, player);
         }
       }).catch((err) => {
