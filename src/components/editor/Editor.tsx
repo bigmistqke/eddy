@@ -1,4 +1,4 @@
-import { action, useAction, useSubmission } from "@solidjs/router";
+import { action, useAction, useNavigate, useSubmission } from "@solidjs/router";
 import {
   FiCircle,
   FiPause,
@@ -48,6 +48,7 @@ const stopRecordingAction = action(
 
 export const Editor: Component<EditorProps> = (props) => {
   const { agent } = useAuth();
+  const navigate = useNavigate();
   const project = createProjectStore();
 
   const [isPlaying, setIsPlaying] = createSignal(false);
@@ -276,7 +277,9 @@ export const Editor: Component<EditorProps> = (props) => {
         project.store.project,
         clipBlobs,
       );
-      alert(`Published! URI: ${result.uri}`);
+      // Extract rkey from AT URI: at://did/collection/rkey
+      const rkey = result.uri.split("/").pop();
+      navigate(`/editor/${rkey}`);
     } catch (error) {
       console.error("Publish failed:", error);
       alert(`Publish failed: ${error}`);
