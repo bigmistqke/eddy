@@ -109,3 +109,24 @@
   color: #ef4444;
   background: rgba(239, 68, 68, 0.1);
 }
+
+.cleanupButton {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid #333;
+  color: #888;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.cleanupButton:hover:not(:disabled) {
+  border-color: #666;
+  color: #ccc;
+}
+
+.cleanupButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

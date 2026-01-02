@@ -279,7 +279,7 @@ export const Editor: Component<EditorProps> = (props) => {
       );
       // Extract rkey from AT URI: at://did/collection/rkey
       const rkey = result.uri.split("/").pop();
-      navigate(`/editor/${rkey}`);
+      // navigate(`/editor/${rkey}`);
     } catch (error) {
       console.error("Publish failed:", error);
       alert(`Publish failed: ${error}`);
