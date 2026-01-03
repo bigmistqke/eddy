@@ -81,4 +81,6 @@ Each group type has a matching member type (`member.absolute`, `member.grid`, `m
 
 ## Workflow
 
+- **Tickets** - A ticket is a single task. After completing a ticket, ask the user to confirm before proceeding
 - **Before committing** - Write a list of things for the user to test and wait for confirmation before creating the commit
+- **Commit messages** - No Claude signature in commit messages
