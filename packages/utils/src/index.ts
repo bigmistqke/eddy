@@ -7,9 +7,9 @@ const ENABLED = false
  *   const log = debug("player", true);
  *   log("loading clip", { trackIndex, blob });
  */
-export function debug(title: string, enabled: boolean) {
+export function debug(title: string, enabled: boolean, force: boolean) {
   return (...args: unknown[]) => {
-    if (ENABLED && enabled) {
+    if (force || (ENABLED && enabled)) {
       console.log(`[${title}]`, ...args)
     }
   }

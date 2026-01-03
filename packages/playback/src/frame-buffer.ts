@@ -1,10 +1,11 @@
 import type { DemuxedSample, Demuxer, VideoTrackInfo } from '@eddy/codecs'
 import { createVideoDecoder } from '@eddy/codecs'
 import { debug } from '@eddy/utils'
+import { type FrameCache, getSharedFrameCache } from './frame-cache'
 
 /** A decoded frame with timing information */
 export interface BufferedFrame {
-  /** The decoded VideoFrame */
+  /** The decoded VideoFrame (this is a CLONE - caller should close when done) */
   frame: VideoFrame
   /** Presentation timestamp in seconds */
   pts: number
@@ -18,8 +19,10 @@ export type FrameBufferState = 'idle' | 'buffering' | 'ready' | 'ended'
 export interface FrameBufferOptions {
   /** How many seconds to buffer ahead of current position (default: 2) */
   bufferAhead?: number
-  /** Maximum frames to keep in buffer (default: 60) */
+  /** Maximum frames to keep in local tracking (default: 60) */
   maxFrames?: number
+  /** Shared frame cache (uses global singleton if not provided) */
+  cache?: FrameCache
 }
 
 export interface FrameBuffer {
@@ -86,17 +89,21 @@ export async function createFrameBuffer(
   options: FrameBufferOptions = {},
 ): Promise<FrameBuffer> {
   const bufferId = frameBufferIdCounter++
-  const log = debug(`frame-buffer-${bufferId}`, false)
+  const log = debug(`frame-buffer-${bufferId}`, false, true)
   log('createFrameBuffer', { trackId: trackInfo.id, duration: trackInfo.duration })
 
   const bufferAhead = options.bufferAhead ?? 2
-  const maxFrames = options.maxFrames ?? 60
+  const maxLocalEntries = options.maxFrames ?? 60
+
+  // Use provided cache or global singleton
+  const cache = options.cache ?? getSharedFrameCache()
 
   // Create the decoder
   const decoder = await createVideoDecoder(demuxer, trackInfo)
 
-  // Buffered frames sorted by PTS
-  let frames: BufferedFrame[] = []
+  // Track which PTS values we have buffered (sorted by PTS)
+  // We store { pts, duration } - the actual frames are in the shared cache
+  let bufferedPts: Array<{ pts: number; duration: number }> = []
 
   // Track last getFrame call for logging
   let getFrameCallCount = 0
@@ -120,48 +127,40 @@ export async function createFrameBuffer(
   // Track duration for end detection (use 1 hour fallback for unknown duration from MediaRecorder)
   const trackDuration = trackInfo.duration > 0 ? trackInfo.duration : 3600
 
-  /** Get all samples for the track */
-  const getAllSamples = async (): Promise<DemuxedSample[]> => {
-    return demuxer.getAllSamples(trackInfo.id)
-  }
-
   /** Find the keyframe at or before the given time */
   const findKeyframeBefore = async (time: number): Promise<DemuxedSample | null> => {
     return demuxer.getKeyframeBefore(trackInfo.id, time)
   }
 
-  /** Add a frame to the buffer, maintaining sort order */
+  /** Add a frame to the cache and track it locally */
   const addFrame = (frame: VideoFrame, pts: number, duration: number) => {
-    const bufferedFrame: BufferedFrame = { frame, pts, duration }
+    // Store in shared cache (cache takes ownership)
+    // Use bufferId (unique per frame buffer) not trackInfo.id (demuxer's internal ID)
+    cache.put(bufferId, pts, frame)
 
-    // Insert in sorted order by PTS
-    const insertIndex = frames.findIndex(f => f.pts > pts)
+    // Track locally in sorted order by PTS
+    const insertIndex = bufferedPts.findIndex(f => f.pts > pts)
     if (insertIndex === -1) {
-      frames.push(bufferedFrame)
+      bufferedPts.push({ pts, duration })
     } else {
-      frames.splice(insertIndex, 0, bufferedFrame)
+      bufferedPts.splice(insertIndex, 0, { pts, duration })
     }
 
-    log('addFrame', { pts, duration, frameCount: frames.length })
+    log('addFrame', { pts, duration, bufferedCount: bufferedPts.length, cacheSize: cache.size })
 
-    // Evict oldest frames if over limit
-    while (frames.length > maxFrames) {
-      const oldest = frames.shift()
-      log('evictFrame', { pts: oldest?.pts })
-      oldest?.frame.close()
+    // Trim local tracking if too large (cache handles actual eviction)
+    while (bufferedPts.length > maxLocalEntries) {
+      bufferedPts.shift()
     }
   }
 
-  /** Clear all frames */
-  const clearFrames = () => {
-    log('clearFrames', { frameCount: frames.length })
-    for (const f of frames) {
-      f.frame.close()
-    }
-    frames = []
+  /** Clear local tracking (cache frames remain for other tracks) */
+  const clearLocalTracking = () => {
+    log('clearLocalTracking', { bufferedCount: bufferedPts.length })
+    bufferedPts = []
   }
 
-  /** Decode samples and add to buffer */
+  /** Decode samples and add to cache */
   const decodeAndBuffer = async (samples: DemuxedSample[]) => {
     log('decodeAndBuffer', {
       sampleCount: samples.length,
@@ -172,11 +171,11 @@ export async function createFrameBuffer(
     if (samples.length === 0 || destroyed) return
 
     // Check decoder state before starting
-    // Cast to string for comparison as TypeScript types may not include 'closed'
     if ((decoder.decoder.state as string) === 'closed') return
 
     let decodedCount = 0
     let skippedCount = 0
+    let cacheHitCount = 0
     let errorCount = 0
 
     for (const sample of samples) {
@@ -187,6 +186,24 @@ export async function createFrameBuffer(
       if (!decoderReady && !sample.isKeyframe) {
         bufferPosition = sample.pts + sample.duration
         skippedCount++
+        continue
+      }
+
+      // Check if already in cache (LRU benefit!)
+      if (cache.has(bufferId, sample.pts)) {
+        // Already cached, just update local tracking
+        const existingIdx = bufferedPts.findIndex(f => f.pts === sample.pts)
+        if (existingIdx === -1) {
+          const insertIndex = bufferedPts.findIndex(f => f.pts > sample.pts)
+          if (insertIndex === -1) {
+            bufferedPts.push({ pts: sample.pts, duration: sample.duration })
+          } else {
+            bufferedPts.splice(insertIndex, 0, { pts: sample.pts, duration: sample.duration })
+          }
+        }
+        bufferPosition = sample.pts + sample.duration
+        cacheHitCount++
+        decoderReady = true // Assume cache has valid frames
         continue
       }
 
@@ -203,13 +220,10 @@ export async function createFrameBuffer(
       } catch (err) {
         errorCount++
         log('decodeAndBuffer error', { pts: sample.pts, isKeyframe: sample.isKeyframe, error: err })
-        // If decoder is closed, stop trying
         if (decoder.decoder.state === 'closed') return
-        // If we fail on a keyframe, reset decoderReady
         if (sample.isKeyframe) {
           decoderReady = false
         }
-        // Silently skip failed delta frames
         if (!sample.isKeyframe) {
           bufferPosition = sample.pts + sample.duration
         }
@@ -219,14 +233,15 @@ export async function createFrameBuffer(
     log('decodeAndBuffer complete', {
       decodedCount,
       skippedCount,
+      cacheHitCount,
       errorCount,
-      frameCount: frames.length,
+      bufferedCount: bufferedPts.length,
+      cacheSize: cache.size,
     })
 
     // Only flush if not destroyed and decoder is still open
     if (!destroyed && decoder.decoder.state !== 'closed') {
       await decoder.flush()
-      // After flush, decoder needs a new keyframe to continue
       decoderReady = false
     }
   }
@@ -237,18 +252,18 @@ export async function createFrameBuffer(
     },
 
     get bufferStart() {
-      if (frames.length === 0) return 0
-      return frames[0].pts
+      if (bufferedPts.length === 0) return 0
+      return bufferedPts[0].pts
     },
 
     get bufferEnd() {
-      if (frames.length === 0) return 0
-      const last = frames[frames.length - 1]
+      if (bufferedPts.length === 0) return 0
+      const last = bufferedPts[bufferedPts.length - 1]
       return last.pts + last.duration
     },
 
     get frameCount() {
-      return frames.length
+      return bufferedPts.length
     },
 
     get trackInfo() {
@@ -258,14 +273,14 @@ export async function createFrameBuffer(
     getFrame(time: number): BufferedFrame | null {
       getFrameCallCount++
 
-      if (frames.length === 0) {
+      if (bufferedPts.length === 0) {
         log('getFrame: no frames', { time, callCount: getFrameCallCount, state, destroyed })
         return null
       }
 
-      // Find the frame at or just before the given time
-      let best: BufferedFrame | null = null
-      for (const f of frames) {
+      // Find the frame info at or just before the given time
+      let best: { pts: number; duration: number } | null = null
+      for (const f of bufferedPts) {
         if (f.pts <= time) {
           best = f
         } else {
@@ -273,28 +288,37 @@ export async function createFrameBuffer(
         }
       }
 
-      // If no frame found at or before time, return the first frame
-      // (handles seeking to t=0 when first frame has pts > 0)
-      const result = best ?? frames[0]
+      // If no frame found at or before time, use the first one
+      const target = best ?? bufferedPts[0]
+
+      // Get CLONE from cache (cache keeps original)
+      const frame = cache.get(bufferId, target.pts)
+
+      if (!frame) {
+        // Cache miss - frame was evicted by LRU
+        log('getFrame: cache miss', { time, targetPts: target.pts, cacheSize: cache.size })
+        return null
+      }
 
       // Log every call, but with rate limiting for repeated same-frame fetches
-      if (result.pts !== lastLoggedPts || getFrameCallCount % 30 === 0) {
+      if (target.pts !== lastLoggedPts || getFrameCallCount % 30 === 0) {
         log('getFrame', {
           time: time.toFixed(3),
-          resultPts: result.pts.toFixed(3),
-          frameCount: frames.length,
+          resultPts: target.pts.toFixed(3),
+          bufferedCount: bufferedPts.length,
+          cacheSize: cache.size,
           callCount: getFrameCallCount,
           state,
           destroyed,
         })
-        lastLoggedPts = result.pts
+        lastLoggedPts = target.pts
       }
 
-      return result
+      return { frame, pts: target.pts, duration: target.duration }
     },
 
     async seekTo(time: number): Promise<void> {
-      log('seekTo', { time, destroyed, isBuffering, state, frameCount: frames.length })
+      log('seekTo', { time, destroyed, isBuffering, state, bufferedCount: bufferedPts.length })
       if (destroyed) return
 
       // Wait for any pending buffering to complete
@@ -307,8 +331,8 @@ export async function createFrameBuffer(
       try {
         state = 'buffering'
 
-        // Clear existing buffer
-        clearFrames()
+        // Clear local tracking (cache frames may still be used by other tracks)
+        clearLocalTracking()
 
         // Reset decoder for clean state
         await decoder.reset()
@@ -327,23 +351,24 @@ export async function createFrameBuffer(
         const targetEnd = Math.min(time + bufferAhead, trackDuration)
         const samples = await demuxer.getSamples(trackInfo.id, bufferPosition, targetEnd)
 
-        // Decode all samples
+        // Decode all samples (will use cache hits where available)
         await decodeAndBuffer(samples)
 
         // Update state
         if (bufferPosition >= trackDuration) {
           state = 'ended'
         } else {
-          state = frames.length > 0 ? 'ready' : 'idle'
+          state = bufferedPts.length > 0 ? 'ready' : 'idle'
         }
 
         log('seekTo complete', {
           time,
           state,
-          frameCount: frames.length,
+          bufferedCount: bufferedPts.length,
+          cacheSize: cache.size,
           bufferPosition,
-          firstFramePts: frames[0]?.pts,
-          lastFramePts: frames[frames.length - 1]?.pts,
+          firstPts: bufferedPts[0]?.pts,
+          lastPts: bufferedPts[bufferedPts.length - 1]?.pts,
         })
       } finally {
         isBuffering = false
@@ -359,7 +384,7 @@ export async function createFrameBuffer(
       // Skip if already buffering (non-blocking check)
       if (isBuffering) return
 
-      log('bufferMore: starting', { bufferPosition, frameCount: frames.length })
+      log('bufferMore: starting', { bufferPosition, bufferedCount: bufferedPts.length })
       isBuffering = true
 
       try {
@@ -382,23 +407,24 @@ export async function createFrameBuffer(
         await decodeAndBuffer(samples)
 
         state = bufferPosition >= trackDuration ? 'ended' : 'ready'
-        log('bufferMore: complete', { state, frameCount: frames.length })
+        log('bufferMore: complete', { state, bufferedCount: bufferedPts.length, cacheSize: cache.size })
       } finally {
         isBuffering = false
       }
     },
 
     isBufferedAt(time: number): boolean {
-      if (frames.length === 0) return false
-      const start = frames[0].pts
-      const last = frames[frames.length - 1]
+      if (bufferedPts.length === 0) return false
+      const start = bufferedPts[0].pts
+      const last = bufferedPts[bufferedPts.length - 1]
       const end = last.pts + last.duration
-      return time >= start && time < end
+      // Also check cache to handle LRU eviction
+      return time >= start && time < end && cache.has(bufferId, start)
     },
 
     clear(): void {
-      log('clear', { frameCount: frames.length, state, getFrameCallCount })
-      clearFrames()
+      log('clear', { bufferedCount: bufferedPts.length, state, getFrameCallCount })
+      clearLocalTracking()
       bufferPosition = 0
       decoderReady = false
       isBuffering = false
@@ -408,10 +434,12 @@ export async function createFrameBuffer(
     },
 
     destroy(): void {
-      log('destroy', { frameCount: frames.length, state, getFrameCallCount })
+      log('destroy', { bufferedCount: bufferedPts.length, state, getFrameCallCount })
       destroyed = true
       isBuffering = false
-      clearFrames()
+      // Remove this buffer's frames from cache
+      cache.removeTrack(bufferId)
+      clearLocalTracking()
       decoder.close()
       state = 'idle'
     },

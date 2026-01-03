@@ -1,3 +1,12 @@
+// Frame cache (LRU cache for decoded frames)
+export {
+  createFrameCache,
+  destroySharedFrameCache,
+  type FrameCache,
+  type FrameKey,
+  getSharedFrameCache,
+} from './frame-cache'
+
 // Frame buffer
 export {
   type BufferedFrame,
