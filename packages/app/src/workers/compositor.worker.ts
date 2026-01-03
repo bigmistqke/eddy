@@ -2,7 +2,7 @@
  * Compositor Worker
  *
  * Handles WebGL video compositing off the main thread using OffscreenCanvas.
- * Renders a 2x2 grid of video tracks.
+ * Renders video tracks as individual quads in a grid layout.
  */
 
 import { expose, transfer } from '@bigmistqke/rpc/messenger'
@@ -12,67 +12,25 @@ import type { CompositorWorkerMethods } from './types'
 
 const log = debug('compositor-worker', false)
 
-// Configurable grid shader - supports 1x1 (bypass) up to 2x2 layouts
+// Simple shader - samples a single texture per quad
 const fragmentShader = glsl`
   precision mediump float;
 
-  ${uniform.sampler2D('u_video0')}
-  ${uniform.sampler2D('u_video1')}
-  ${uniform.sampler2D('u_video2')}
-  ${uniform.sampler2D('u_video3')}
-  ${uniform.vec4('u_active')}
-  ${uniform.vec2('u_grid')} // (cols, rows)
+  ${uniform.sampler2D('u_video')}
 
   varying vec2 v_uv;
 
   void main() {
-    vec2 coord = v_uv * 0.5 + 0.5;
-
-    float cols = u_grid.x;
-    float rows = u_grid.y;
-
-    // Calculate which cell we're in (row 0 = top, col 0 = left)
-    float colF = min(floor(coord.x * cols), cols - 1.0);
-    float rowF = min(floor((1.0 - coord.y) * rows), rows - 1.0);
-
-    int col = int(colF);
-    int row = int(rowF);
-    int cellIndex = row * int(cols) + col;
-
-    // Calculate local UV within cell
-    // Row starts at y = (rows - 1 - rowF) / rows
-    float rowStartY = (rows - 1.0 - rowF) / rows;
-    float cellX = coord.x * cols - colF;
-    float cellY = (coord.y - rowStartY) * rows;
-
-    // Flip Y for video texture sampling
-    vec2 localUv = vec2(cellX, 1.0 - cellY);
-
-    vec4 color = vec4(0.1, 0.1, 0.1, 1.0);
-
-    if (cellIndex == 0 && u_active.x > 0.5) {
-      color = texture2D(u_video0, localUv);
-    } else if (cellIndex == 1 && u_active.y > 0.5) {
-      color = texture2D(u_video1, localUv);
-    } else if (cellIndex == 2 && u_active.z > 0.5) {
-      color = texture2D(u_video2, localUv);
-    } else if (cellIndex == 3 && u_active.w > 0.5) {
-      color = texture2D(u_video3, localUv);
-    }
-
-    gl_FragColor = color;
+    vec2 uv = v_uv * 0.5 + 0.5;
+    uv.y = 1.0 - uv.y; // Flip Y for video
+    gl_FragColor = texture2D(u_video, uv);
   }
 `
 
 // View type with our specific uniforms
 interface CompositorView {
   uniforms: {
-    u_video0: { set: (value: number) => void }
-    u_video1: { set: (value: number) => void }
-    u_video2: { set: (value: number) => void }
-    u_video3: { set: (value: number) => void }
-    u_active: { set: (x: number, y: number, z: number, w: number) => void }
-    u_grid: { set: (cols: number, rows: number) => void }
+    u_video: { set: (value: number) => void }
   }
   attributes: {
     a_quad: { bind: () => void }
@@ -93,9 +51,31 @@ let captureView: CompositorView | null = null
 let captureProgram: WebGLProgram | null = null
 let captureTextures: WebGLTexture[] = []
 
-// Grid configuration (1x1 = bypass, 2x2 = normal grid)
+// Grid configuration
 let gridCols = 2
 let gridRows = 2
+
+// Helper to calculate viewport for a grid cell
+function getCellViewport(
+  index: number,
+  cols: number,
+  rows: number,
+  canvasWidth: number,
+  canvasHeight: number
+): { x: number; y: number; width: number; height: number } {
+  const col = index % cols
+  const row = Math.floor(index / cols)
+  const cellWidth = canvasWidth / cols
+  const cellHeight = canvasHeight / rows
+  // Row 0 is top, but WebGL y=0 is bottom, so flip
+  const y = (rows - 1 - row) * cellHeight
+  return {
+    x: col * cellWidth,
+    y,
+    width: cellWidth,
+    height: cellHeight,
+  }
+}
 
 // Frame sources - either from preview stream or playback
 const previewFrames: (VideoFrame | null)[] = [null, null, null, null]
@@ -234,43 +214,38 @@ const methods: CompositorWorkerMethods = {
     if (!gl || !canvas || !view || !program) return
 
     gl.useProgram(program)
+
+    // Clear entire canvas with dark background
     gl.viewport(0, 0, canvas.width, canvas.height)
+    gl.clearColor(0.1, 0.1, 0.1, 1.0)
+    gl.clear(gl.COLOR_BUFFER_BIT)
 
-    const active = [0, 0, 0, 0]
-
-    // Update textures from frames (prefer playback over preview)
+    // Draw each track as a separate quad
     for (let i = 0; i < 4; i++) {
       const frame = playbackFrames[i] || previewFrames[i]
+      if (!frame) continue
 
-      gl.activeTexture(gl.TEXTURE0 + i)
+      // Upload texture
+      gl.activeTexture(gl.TEXTURE0)
       gl.bindTexture(gl.TEXTURE_2D, textures[i])
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, frame)
 
-      if (frame) {
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, frame)
-        active[i] = 1
-      }
+      // Set viewport for this cell
+      const vp = getCellViewport(i, gridCols, gridRows, canvas.width, canvas.height)
+      gl.viewport(vp.x, vp.y, vp.width, vp.height)
+
+      // Set uniforms and draw
+      view.uniforms.u_video.set(0)
+      view.attributes.a_quad.bind()
+      gl.drawArrays(gl.TRIANGLES, 0, 6)
     }
-
-    // Set uniforms
-    view.uniforms.u_video0.set(0)
-    view.uniforms.u_video1.set(1)
-    view.uniforms.u_video2.set(2)
-    view.uniforms.u_video3.set(3)
-    view.uniforms.u_active.set(active[0], active[1], active[2], active[3])
-    view.uniforms.u_grid.set(gridCols, gridRows)
-
-    // Bind quad attribute
-    view.attributes.a_quad.bind()
-
-    // Draw
-    gl.drawArrays(gl.TRIANGLES, 0, 6)
   },
 
   // Set a frame on the capture canvas (for pre-rendering)
   setCaptureFrame(index: number, frame: VideoFrame | null) {
     if (!captureGl || !captureTextures[index]) return
 
-    captureGl.activeTexture(captureGl.TEXTURE0 + index)
+    captureGl.activeTexture(captureGl.TEXTURE0)
     captureGl.bindTexture(captureGl.TEXTURE_2D, captureTextures[index])
 
     if (frame) {
@@ -284,21 +259,29 @@ const methods: CompositorWorkerMethods = {
     if (!captureGl || !captureCanvas || !captureView || !captureProgram) return
 
     captureGl.useProgram(captureProgram)
+
+    // Clear entire canvas with dark background
     captureGl.viewport(0, 0, captureCanvas.width, captureCanvas.height)
+    captureGl.clearColor(0.1, 0.1, 0.1, 1.0)
+    captureGl.clear(captureGl.COLOR_BUFFER_BIT)
 
-    // Set uniforms
-    captureView.uniforms.u_video0.set(0)
-    captureView.uniforms.u_video1.set(1)
-    captureView.uniforms.u_video2.set(2)
-    captureView.uniforms.u_video3.set(3)
-    captureView.uniforms.u_active.set(activeSlots[0], activeSlots[1], activeSlots[2], activeSlots[3])
-    captureView.uniforms.u_grid.set(2, 2) // Always 2x2 for pre-render
+    // Draw each active track as a separate quad (always 2x2 for pre-render)
+    for (let i = 0; i < 4; i++) {
+      if (activeSlots[i] < 0.5) continue
 
-    // Bind quad attribute
-    captureView.attributes.a_quad.bind()
+      // Bind texture
+      captureGl.activeTexture(captureGl.TEXTURE0)
+      captureGl.bindTexture(captureGl.TEXTURE_2D, captureTextures[i])
 
-    // Draw
-    captureGl.drawArrays(captureGl.TRIANGLES, 0, 6)
+      // Set viewport for this cell
+      const vp = getCellViewport(i, 2, 2, captureCanvas.width, captureCanvas.height)
+      captureGl.viewport(vp.x, vp.y, vp.width, vp.height)
+
+      // Set uniforms and draw
+      captureView.uniforms.u_video.set(0)
+      captureView.attributes.a_quad.bind()
+      captureGl.drawArrays(captureGl.TRIANGLES, 0, 6)
+    }
   },
 
   captureFrame(timestamp: number): VideoFrame | null {

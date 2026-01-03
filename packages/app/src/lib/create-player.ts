@@ -232,6 +232,12 @@ export async function createPlayer(width: number, height: number): Promise<Playe
       // Use 2x2 grid mode with individual track playbacks
       compositor.setGrid(2, 2)
 
+      // Clear pre-render frame from slot 0 if it was left over
+      if (lastPreRenderTimestamp !== null) {
+        compositor.setFrame(0, null)
+        lastPreRenderTimestamp = null
+      }
+
       // Update compositor with frames from all playbacks
       perf.start('getFrames')
       for (let i = 0; i < NUM_TRACKS; i++) {
