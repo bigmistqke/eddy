@@ -1,7 +1,7 @@
 import { debug } from '@eddy/utils'
 import type { DemuxedSample, Demuxer, VideoTrackInfo } from './demuxer'
 
-const log = debug('video-decoder', true)
+const log = debug('video-decoder', false)
 
 export interface VideoDecoderHandle {
   readonly config: VideoDecoderConfig

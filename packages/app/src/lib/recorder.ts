@@ -1,7 +1,7 @@
 import { debug } from '@eddy/utils'
 import { ALL_FORMATS, EncodedPacketSink, Input, ReadableStreamSource } from 'mediabunny'
 
-const log = debug('recorder', true)
+const log = debug('recorder', false)
 
 export interface RecordingResult {
   blob: Blob

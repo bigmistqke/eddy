@@ -1,7 +1,7 @@
 import { debug } from '@eddy/utils'
 import { getAudioContext } from './context'
 
-const log = debug('mixer', true)
+const log = debug('mixer', false)
 
 export interface MasterMixer {
   masterGain: GainNode

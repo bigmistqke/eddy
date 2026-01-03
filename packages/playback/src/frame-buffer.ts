@@ -89,7 +89,7 @@ export async function createFrameBuffer(
   options: FrameBufferOptions = {},
 ): Promise<FrameBuffer> {
   const bufferId = frameBufferIdCounter++
-  const log = debug(`frame-buffer-${bufferId}`, false, true)
+  const log = debug(`frame-buffer-${bufferId}`, false)
   log('createFrameBuffer', { trackId: trackInfo.id, duration: trackInfo.duration })
 
   const bufferAhead = options.bufferAhead ?? 2

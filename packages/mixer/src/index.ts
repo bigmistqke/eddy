@@ -2,7 +2,7 @@ import { debug } from '@eddy/utils'
 import { getAudioContext } from './context'
 import { getMasterMixer } from './mixer'
 
-const log = debug('audio-pipeline', true)
+const log = debug('audio-pipeline', false)
 
 // Re-export context utilities
 export { getAudioContext, resumeAudioContext } from './context'

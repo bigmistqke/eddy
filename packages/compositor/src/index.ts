@@ -1,7 +1,7 @@
 import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
 import { debug } from '@eddy/utils'
 
-const log = debug('compositor', true)
+const log = debug('compositor', false)
 
 const fragmentShader = glsl`
   precision mediump float;

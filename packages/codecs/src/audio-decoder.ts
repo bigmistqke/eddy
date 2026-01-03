@@ -1,7 +1,7 @@
 import { debug } from '@eddy/utils'
 import type { AudioTrackInfo, DemuxedSample, Demuxer } from './demuxer'
 
-const log = debug('audio-decoder', true)
+const log = debug('audio-decoder', false)
 
 export interface AudioDecoderHandle {
   readonly config: AudioDecoderConfig

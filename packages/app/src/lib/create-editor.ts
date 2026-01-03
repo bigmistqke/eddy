@@ -14,7 +14,7 @@ import { createProjectStore } from '~/lib/project-store'
 import { requestMediaAccess } from '~/lib/recorder'
 import { createRecorderWorker, type WorkerRecorder } from '~/workers'
 
-const log = debug('editor', true)
+const log = debug('editor', false)
 
 // Debug interface for E2E tests
 export interface EditorDebugInfo {

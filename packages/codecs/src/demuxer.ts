@@ -9,7 +9,7 @@ import {
   type InputVideoTrack,
 } from 'mediabunny'
 
-const log = debug('demuxer', true)
+const log = debug('demuxer', false)
 
 export interface VideoTrackInfo {
   id: number

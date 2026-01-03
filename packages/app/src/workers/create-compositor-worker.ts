@@ -7,7 +7,7 @@ import { transfer } from '@bigmistqke/rpc/messenger'
 import { debug } from '@eddy/utils'
 import { createCompositorWorker, type CompositorWorkerMethods, type WorkerHandle } from './index'
 
-const log = debug('compositor-wrapper', true)
+const log = debug('compositor-wrapper', false)
 
 export interface WorkerCompositor {
   /** The canvas element (rendered by worker via OffscreenCanvas) */

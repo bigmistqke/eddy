@@ -20,7 +20,7 @@ import type { RecordingStartConfig, RecordingWorkerMethods } from './types'
 
 import { debug } from '@eddy/utils'
 
-const log = debug('recording-worker', true)
+const log = debug('recording-worker', false)
 
 // Worker state
 let output: Output | null = null

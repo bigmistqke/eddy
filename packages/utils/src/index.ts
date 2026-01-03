@@ -1,4 +1,4 @@
-const ENABLED = false
+const ENABLED = true
 
 /**
  * Create a debug logger that can be toggled on/off
@@ -7,9 +7,9 @@ const ENABLED = false
  *   const log = debug("player", true);
  *   log("loading clip", { trackIndex, blob });
  */
-export function debug(title: string, enabled: boolean, force: boolean) {
+export function debug(title: string, enabled: boolean) {
   return (...args: unknown[]) => {
-    if (force || (ENABLED && enabled)) {
+    if ((ENABLED && enabled)) {
       console.log(`[${title}]`, ...args)
     }
   }

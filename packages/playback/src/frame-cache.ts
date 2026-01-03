@@ -1,6 +1,6 @@
 import { debug } from '@eddy/utils'
 
-const log = debug('frame-cache', true)
+const log = debug('frame-cache', false)
 
 /** Unique key for a cached frame */
 export type FrameKey = `${number}:${number}` // trackId:pts
@@ -64,9 +64,9 @@ export interface FrameCache {
 /**
  * Create an LRU frame cache.
  *
- * @param maxFrames - Maximum number of frames to keep (default: 120)
+ * @param maxFrames - Maximum number of frames to keep (default: 1024)
  */
-export function createFrameCache(maxFrames: number = 120_000): FrameCache {
+export function createFrameCache(maxFrames: number = 1024): FrameCache {
   // Map preserves insertion order - we use delete+set to move to end (most recent)
   const cache = new Map<FrameKey, CacheEntry>()
 

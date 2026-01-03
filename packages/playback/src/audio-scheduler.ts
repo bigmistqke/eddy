@@ -4,7 +4,7 @@
 
 import { debug } from '@eddy/utils'
 
-const log = debug('audio-scheduler', true)
+const log = debug('audio-scheduler', false)
 
 /** Playback state */
 export type AudioSchedulerState = 'stopped' | 'playing' | 'paused'

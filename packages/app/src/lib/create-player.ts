@@ -4,7 +4,7 @@ import { createPlayback, type Playback } from '@eddy/playback'
 import { debug } from '@eddy/utils'
 import { createCompositorWorkerWrapper, createDemuxerWorker } from '~/workers'
 
-const log = debug('player', true)
+const log = debug('player', false)
 
 export interface TrackSlot {
   playback: Playback | null

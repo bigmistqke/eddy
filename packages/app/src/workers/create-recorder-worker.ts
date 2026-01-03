@@ -8,7 +8,7 @@ import { debug } from '@eddy/utils'
 import { createRecordingWorker, type RecordingWorkerMethods, type WorkerHandle } from './index'
 import type { RecordingResult } from './types'
 
-const log = debug('recorder-worker', true)
+const log = debug('recorder-worker', false)
 
 export interface WorkerRecorder {
   /** Start recording from the media stream */
