@@ -84,15 +84,21 @@ export interface Playback {
   /**
    * Tick the playback at given clock time
    * Buffers more content as needed, schedules audio
+   * Does NOT return a frame - use getFrameTimestamp/takeFrameAt for borrow model
    * @param clockTime - Current time from master clock
-   * @returns Current video frame or null
    */
-  tick(clockTime: number): VideoFrame | null
+  tick(clockTime: number): void
 
   /**
-   * Get frame at specific time (for static display)
+   * Get frame at specific time (for static display, clones from cache)
    */
   getFrameAt(time: number): VideoFrame | null
+
+  /**
+   * Get the timestamp of the frame at specific time (for checking if new frame needed)
+   * @returns timestamp in microseconds (matching VideoFrame.timestamp), or null
+   */
+  getFrameTimestamp(time: number): number | null
 
   /**
    * Register a callback for state changes
@@ -115,7 +121,7 @@ export async function createPlayback(
   options: PlaybackOptions = {},
 ): Promise<Playback> {
   const id = String(playbackIdCounter++)
-  const log = debug(`playback-${id}`, true)
+  const log = debug(`playback-${id}`, false)
   log('creating playback')
 
   const videoBufferAhead = options.videoBufferAhead ?? 2
@@ -197,6 +203,13 @@ export async function createPlayback(
     if (duration > 0 && time >= duration) return null
     const bufferedFrame = frameBuffer.getFrame(time)
     return bufferedFrame?.frame ?? null
+  }
+
+  /** Get timestamp of frame at specific time (for checking if new frame needed) */
+  const getFrameTimestampAtTime = (time: number): number | null => {
+    if (!frameBuffer) return null
+    if (duration > 0 && time >= duration) return null
+    return frameBuffer.getFrameTimestamp(time)
   }
 
   // Mark as ready
@@ -341,16 +354,16 @@ export async function createPlayback(
       log('seek complete', { finalState: state })
     },
 
-    tick(clockTime: number): VideoFrame | null {
+    tick(clockTime: number): void {
       if (state !== 'playing') {
-        return getFrameAtTime(clockTime)
+        return
       }
 
       // Check for end
       if (duration > 0 && clockTime >= duration) {
         log('tick: reached end', { clockTime, duration })
         setState('ended')
-        return null
+        return
       }
 
       // Buffer more video if needed
@@ -366,13 +379,14 @@ export async function createPlayback(
           lastTickTime = clockTime
         }
       }
-
-      // Get current frame
-      return getFrameAtTime(clockTime)
     },
 
     getFrameAt(time: number): VideoFrame | null {
       return getFrameAtTime(time)
+    },
+
+    getFrameTimestamp(time: number): number | null {
+      return getFrameTimestampAtTime(time)
     },
 
     onStateChange(callback: (state: PlaybackState) => void): () => void {

@@ -171,14 +171,16 @@ export async function createPlayer(width: number, height: number): Promise<Playe
     for (let i = 0; i < NUM_TRACKS; i++) {
       const { playback } = slots[i]
       if (playback) {
-        // Use tick() when playing, getFrameAt() when static
-        // Note: With LRU cache, each call returns a NEW clone
-        perf.start(`tick-${i}`)
-        const frame = isPlaying ? playback.tick(time) : playback.getFrameAt(time)
-        perf.end(`tick-${i}`)
+        // Trigger buffering when playing
+        if (isPlaying) {
+          playback.tick(time)
+        }
 
-        // Handle null frames (cache miss or no playback)
-        if (!frame) {
+        // Check what frame timestamp would be returned (without fetching)
+        const frameTimestamp = playback.getFrameTimestamp(time)
+
+        // Handle null frames (past duration or no video)
+        if (frameTimestamp === null) {
           if (lastSentTimestamp[i] !== null) {
             lastSentTimestamp[i] = null
             compositor.setFrame(i, null)
@@ -187,17 +189,23 @@ export async function createPlayer(width: number, height: number): Promise<Playe
           continue
         }
 
-        // Compare by timestamp to detect same frame
-        const frameTimestamp = frame.timestamp
-
+        // Same frame as before - compositor already has it, skip entirely
         if (frameTimestamp === lastSentTimestamp[i]) {
-          // Same frame as before - close the clone, don't send
-          frame.close()
           perf.increment('frame-reused')
           continue
         }
 
-        // New frame - transfer to compositor and update tracking
+        // New frame needed - get it (clones from cache)
+        perf.start(`getFrame-${i}`)
+        const frame = playback.getFrameAt(time)
+        perf.end(`getFrame-${i}`)
+
+        if (!frame) {
+          perf.increment(`frame-miss-${i}`)
+          continue
+        }
+
+        // Transfer to compositor
         lastSentTimestamp[i] = frameTimestamp
         perf.start(`setFrame-${i}`)
         compositor.setFrame(i, frame)

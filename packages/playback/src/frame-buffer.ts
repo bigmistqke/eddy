@@ -44,11 +44,19 @@ export interface FrameBuffer {
   readonly trackInfo: VideoTrackInfo
 
   /**
-   * Get the frame at or just before the given time
+   * Get the frame at or just before the given time (clones from cache)
    * @param time - Time in seconds
    * @returns The frame at the given time, or null if not buffered
    */
   getFrame(time: number): BufferedFrame | null
+
+  /**
+   * Get just the timestamp of the frame that would be returned for a given time
+   * Use this to check if a new frame is needed before fetching
+   * @param time - Time in seconds
+   * @returns PTS in microseconds (VideoFrame.timestamp), or null if not buffered
+   */
+  getFrameTimestamp(time: number): number | null
 
   /**
    * Start buffering from a given time
@@ -91,7 +99,7 @@ export async function createFrameBuffer(
   options: FrameBufferOptions = {},
 ): Promise<FrameBuffer> {
   const bufferId = frameBufferIdCounter++
-  const log = debug(`frame-buffer-${bufferId}`, true)
+  const log = debug(`frame-buffer-${bufferId}`, false)
   log('createFrameBuffer', { trackId: trackInfo.id, duration: trackInfo.duration })
 
   const bufferAhead = options.bufferAhead ?? 2
@@ -357,6 +365,25 @@ export async function createFrameBuffer(
       }
 
       return { frame, pts: target.pts, duration: target.duration }
+    },
+
+    getFrameTimestamp(time: number): number | null {
+      if (bufferedPts.length === 0) return null
+
+      // Find the frame info at or just before the given time
+      let best: { pts: number; duration: number } | null = null
+      for (const f of bufferedPts) {
+        if (f.pts <= time) {
+          best = f
+        } else {
+          break
+        }
+      }
+
+      const target = best ?? bufferedPts[0]
+
+      // Return timestamp in microseconds (matching VideoFrame.timestamp)
+      return target.pts * 1_000_000
     },
 
     async seekTo(time: number): Promise<void> {

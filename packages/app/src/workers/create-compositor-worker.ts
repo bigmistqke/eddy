@@ -90,8 +90,8 @@ export async function createCompositorWorkerWrapper(
       }
     },
 
-    setFrame(index: number, frame: VideoFrame | null) {
-      // Transfer frame to worker (frame ownership moves to worker)
+    setFrame(index: number, frame: VideoFrame | null): void {
+      // Transfer frame to worker (worker closes previous frame)
       if (frame) {
         handle.rpc.setFrame(index, transfer(frame) as unknown as VideoFrame)
       } else {
