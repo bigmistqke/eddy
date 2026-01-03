@@ -20,6 +20,9 @@ importers:
       '@atproto/oauth-client-browser':
         specifier: ^0.3.0
         version: 0.3.38
+      '@bigmistqke/solid-whenever':
+        specifier: ^0.1.1
+        version: 0.1.1(solid-js@1.9.10)
       '@bigmistqke/worker-proxy':
         specifier: ^0.0.13
         version: 0.0.13
@@ -117,15 +120,9 @@ importers:
 
   packages/mixer:
     devDependencies:
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.19.3
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
-      vite:
-        specifier: ^6.0.0
-        version: 6.4.1(@types/node@22.19.3)
 
   packages/playback:
     dependencies:
@@ -296,6 +293,12 @@ packages:
     resolution: {integrity: sha512-iuwDL1xZf4bMuWEe9ysx9DXXFN1y3eJCGw7e8HdsV165Tiw2PJsEQYCvWf5Dt+MpS5focBugV+5VVspL9jUdsw==}
     peerDependencies:
       valibot: '>=1.0.0'
+
+  '@bigmistqke/solid-whenever@0.1.1':
+    resolution: {integrity: sha512-BhAtrauFOsYsNVhoNV93CPNIcj++R3tPzCok4eWB6BVCYVPedHGDtvqlUcAvftt67bOq9yAkF8DSJMjx3zfYeQ==}
+    engines: {node: '>=18', pnpm: '>=9.0.0'}
+    peerDependencies:
+      solid-js: ^1.6.0
 
   '@bigmistqke/view.gl@0.1.9':
     resolution: {integrity: sha512-Xxi6EHwNRwLSmKEtTCDAjlmA9Q9MxVznXfZ73mIcXD/1zTVuV4z8ycVYCNW2w+1TDqXtUYuvv2H1+crf+VV9GA==}
@@ -1354,6 +1357,10 @@ snapshots:
   '@bigmistqke/lexicon-to-valibot@0.1.7(valibot@1.2.0(typescript@5.9.3))':
     dependencies:
       valibot: 1.2.0(typescript@5.9.3)
+
+  '@bigmistqke/solid-whenever@0.1.1(solid-js@1.9.10)':
+    dependencies:
+      solid-js: 1.9.10
 
   '@bigmistqke/view.gl@0.1.9': {}
 
