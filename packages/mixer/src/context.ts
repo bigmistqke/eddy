@@ -1,7 +1,7 @@
 let audioContext: AudioContext | null = null
 
 export function getAudioContext(): AudioContext {
-  return audioContext ??= new AudioContext()
+  return (audioContext ??= new AudioContext())
 }
 
 export function resumeAudioContext(): Promise<void> {

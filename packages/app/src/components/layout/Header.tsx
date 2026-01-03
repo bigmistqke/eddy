@@ -1,12 +1,12 @@
-import { A } from "@solidjs/router";
-import { type Component, Show } from "solid-js";
-import { LoginButton } from "~/components/auth/LoginButton";
-import { UserMenu } from "~/components/auth/UserMenu";
-import { useAuth } from "~/lib/atproto/auth-context";
-import styles from "./Header.module.css";
+import { A } from '@solidjs/router'
+import { type Component, Show } from 'solid-js'
+import { LoginButton } from '~/components/auth/LoginButton'
+import { UserMenu } from '~/components/auth/UserMenu'
+import { useAuth } from '~/lib/atproto/auth-context'
+import styles from './Header.module.css'
 
 export const Header: Component = () => {
-  const auth = useAuth();
+  const auth = useAuth()
 
   return (
     <header class={styles.header}>
@@ -14,15 +14,12 @@ export const Header: Component = () => {
         Klip
       </A>
       <div class={styles.actions}>
-        <Show
-          when={!auth.loading()}
-          fallback={<span class={styles.loading}>...</span>}
-        >
+        <Show when={!auth.loading()} fallback={<span class={styles.loading}>...</span>}>
           <Show when={auth.session()} fallback={<LoginButton />}>
             <UserMenu />
           </Show>
         </Show>
       </div>
     </header>
-  );
-};
+  )
+}

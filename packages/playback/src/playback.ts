@@ -7,7 +7,14 @@ import type { FrameBuffer } from './frame-buffer'
 import { createFrameBuffer } from './frame-buffer'
 
 /** Playback state */
-export type PlaybackState = 'idle' | 'loading' | 'ready' | 'playing' | 'paused' | 'seeking' | 'ended'
+export type PlaybackState =
+  | 'idle'
+  | 'loading'
+  | 'ready'
+  | 'playing'
+  | 'paused'
+  | 'seeking'
+  | 'ended'
 
 export interface PlaybackOptions {
   /** How far ahead to buffer video frames (default: 2 seconds) */
@@ -99,7 +106,7 @@ let playbackIdCounter = 0
 
 export async function createPlayback(
   demuxer: Demuxer,
-  options: PlaybackOptions = {}
+  options: PlaybackOptions = {},
 ): Promise<Playback> {
   const id = String(playbackIdCounter++)
   const log = debug(`playback-${id}`, true)
@@ -157,10 +164,7 @@ export async function createPlayback(
   }
 
   // Duration is the max of video and audio durations
-  const duration = Math.max(
-    videoTrack?.duration ?? 0,
-    audioTrack?.duration ?? 0
-  )
+  const duration = Math.max(videoTrack?.duration ?? 0, audioTrack?.duration ?? 0)
 
   /** Buffer and schedule audio for a time range */
   const bufferAudio = async (startTime: number, endTime: number) => {

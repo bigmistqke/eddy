@@ -27,6 +27,7 @@ compositor.destroy()
 ## Layout
 
 Currently renders a fixed 2x2 grid:
+
 ```
 ┌───────┬───────┐
 │   0   │   1   │

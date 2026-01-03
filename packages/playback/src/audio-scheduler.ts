@@ -111,9 +111,8 @@ export function createAudioScheduler(options: AudioSchedulerOptions = {}): Audio
   log('createAudioScheduler')
   const scheduleAhead = options.scheduleAhead ?? 0.5
   // Use the destination's context if available, otherwise use provided context or create new
-  const audioContext = options.destination?.context as AudioContext
-    ?? options.audioContext
-    ?? new AudioContext()
+  const audioContext =
+    (options.destination?.context as AudioContext) ?? options.audioContext ?? new AudioContext()
   const destination = options.destination ?? audioContext.destination
 
   // Scheduled chunks
@@ -160,7 +159,7 @@ export function createAudioScheduler(options: AudioSchedulerOptions = {}): Audio
   /** Remove chunks that have finished playing */
   const pruneFinishedChunks = () => {
     const now = audioContext.currentTime
-    scheduledChunks = scheduledChunks.filter((chunk) => {
+    scheduledChunks = scheduledChunks.filter(chunk => {
       const endTime = chunk.contextStartTime + chunk.duration
       return endTime > now
     })

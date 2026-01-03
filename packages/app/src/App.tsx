@@ -1,13 +1,13 @@
-import { Route, Router } from "@solidjs/router";
-import { lazy, type ParentProps, Suspense } from "solid-js";
-import { Header } from "~/components/layout/Header";
-import { AuthProvider } from "~/lib/atproto/auth-context";
-import styles from "./App.module.css";
-import "./index.css";
+import { Route, Router } from '@solidjs/router'
+import { lazy, type ParentProps, Suspense } from 'solid-js'
+import { Header } from '~/components/layout/Header'
+import { AuthProvider } from '~/lib/atproto/auth-context'
+import styles from './App.module.css'
+import './index.css'
 
-const Home = lazy(() => import("~/routes/home"));
-const Editor = lazy(() => import("~/routes/editor"));
-const Callback = lazy(() => import("~/routes/callback"));
+const Home = lazy(() => import('~/routes/home'))
+const Editor = lazy(() => import('~/routes/editor'))
+const Callback = lazy(() => import('~/routes/callback'))
 
 function Root(props: ParentProps) {
   return (
@@ -21,7 +21,7 @@ function Root(props: ParentProps) {
         </main>
       </div>
     </AuthProvider>
-  );
+  )
 }
 
 export function App() {
@@ -33,5 +33,5 @@ export function App() {
       <Route path="/editor/:handle/:rkey" component={Editor} />
       <Route path="/callback" component={Callback} />
     </Router>
-  );
+  )
 }

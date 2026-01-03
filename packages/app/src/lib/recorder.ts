@@ -1,9 +1,4 @@
-import {
-  ALL_FORMATS,
-  EncodedPacketSink,
-  Input,
-  ReadableStreamSource
-} from 'mediabunny'
+import { ALL_FORMATS, EncodedPacketSink, Input, ReadableStreamSource } from 'mediabunny'
 import { debug } from '@klip/utils'
 
 const log = debug('recorder', true)
@@ -29,7 +24,10 @@ export function createRecorder(stream: MediaStream): {
   /** Get the first decoded frame (available during recording) */
   getFirstFrame: () => VideoFrame | null
 } {
-  log('createRecorder', { videoTracks: stream.getVideoTracks().length, audioTracks: stream.getAudioTracks().length })
+  log('createRecorder', {
+    videoTracks: stream.getVideoTracks().length,
+    audioTracks: stream.getAudioTracks().length,
+  })
   const hasVideo = stream.getVideoTracks().length > 0
   const mimeType = hasVideo ? 'video/webm;codecs=vp9,opus' : 'audio/webm;codecs=opus'
 
@@ -38,7 +36,10 @@ export function createRecorder(stream: MediaStream): {
   let startTime = 0
 
   // Streaming demux infrastructure
-  let streamController: { readable: ReadableStream<Uint8Array>, writer: WritableStreamDefaultWriter<Uint8Array> } | null = null
+  let streamController: {
+    readable: ReadableStream<Uint8Array>
+    writer: WritableStreamDefaultWriter<Uint8Array>
+  } | null = null
   let input: Input | null = null
   let decoder: VideoDecoder | null = null
   let firstFrame: VideoFrame | null = null
@@ -78,7 +79,7 @@ export function createRecorder(stream: MediaStream): {
 
       // Initialize decoder to capture first frame
       decoder = new VideoDecoder({
-        output: (frame) => {
+        output: frame => {
           if (!firstFrame) {
             firstFrame = frame
           } else {
@@ -110,7 +111,7 @@ export function createRecorder(stream: MediaStream): {
     }
   }
 
-  mediaRecorder.ondataavailable = async (e) => {
+  mediaRecorder.ondataavailable = async e => {
     if (e.data.size > 0) {
       chunks.push(e.data)
 
@@ -148,7 +149,7 @@ export function createRecorder(stream: MediaStream): {
 
     async stop(): Promise<RecordingResult> {
       log('stop')
-      return new Promise((resolve) => {
+      return new Promise(resolve => {
         mediaRecorder.onstop = async () => {
           log('onstop callback')
           // Abort stream immediately (don't wait for pending operations)

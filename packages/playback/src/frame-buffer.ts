@@ -2,8 +2,6 @@ import type { DemuxedSample, Demuxer, VideoTrackInfo } from '@klip/codecs'
 import { createVideoDecoder } from '@klip/codecs'
 import { debug } from '@klip/utils'
 
-const log = debug('frame-buffer', true)
-
 /** A decoded frame with timing information */
 export interface BufferedFrame {
   /** The decoded VideoFrame */
@@ -85,11 +83,12 @@ let frameBufferIdCounter = 0
 export async function createFrameBuffer(
   demuxer: Demuxer,
   trackInfo: VideoTrackInfo,
-  options: FrameBufferOptions = {}
+  options: FrameBufferOptions = {},
 ): Promise<FrameBuffer> {
   const bufferId = frameBufferIdCounter++
-  const bufferLog = debug(`frame-buffer-${bufferId}`, true)
-  bufferLog('createFrameBuffer', { trackId: trackInfo.id, duration: trackInfo.duration })
+  const log = debug(`frame-buffer-${bufferId}`, true)
+  log('createFrameBuffer', { trackId: trackInfo.id, duration: trackInfo.duration })
+
   const bufferAhead = options.bufferAhead ?? 2
   const maxFrames = options.maxFrames ?? 60
 
@@ -136,26 +135,26 @@ export async function createFrameBuffer(
     const bufferedFrame: BufferedFrame = { frame, pts, duration }
 
     // Insert in sorted order by PTS
-    const insertIndex = frames.findIndex((f) => f.pts > pts)
+    const insertIndex = frames.findIndex(f => f.pts > pts)
     if (insertIndex === -1) {
       frames.push(bufferedFrame)
     } else {
       frames.splice(insertIndex, 0, bufferedFrame)
     }
 
-    bufferLog('addFrame', { pts, duration, frameCount: frames.length })
+    log('addFrame', { pts, duration, frameCount: frames.length })
 
     // Evict oldest frames if over limit
     while (frames.length > maxFrames) {
       const oldest = frames.shift()
-      bufferLog('evictFrame', { pts: oldest?.pts })
+      log('evictFrame', { pts: oldest?.pts })
       oldest?.frame.close()
     }
   }
 
   /** Clear all frames */
   const clearFrames = () => {
-    bufferLog('clearFrames', { frameCount: frames.length })
+    log('clearFrames', { frameCount: frames.length })
     for (const f of frames) {
       f.frame.close()
     }
@@ -164,7 +163,12 @@ export async function createFrameBuffer(
 
   /** Decode samples and add to buffer */
   const decodeAndBuffer = async (samples: DemuxedSample[]) => {
-    bufferLog('decodeAndBuffer', { sampleCount: samples.length, destroyed, decoderState: decoder.decoder.state })
+    log('decodeAndBuffer', {
+      sampleCount: samples.length,
+      destroyed,
+      decoderState: decoder.decoder.state,
+    })
+
     if (samples.length === 0 || destroyed) return
 
     // Check decoder state before starting
@@ -198,7 +202,7 @@ export async function createFrameBuffer(
         decodedCount++
       } catch (err) {
         errorCount++
-        bufferLog('decodeAndBuffer error', { pts: sample.pts, isKeyframe: sample.isKeyframe, error: err })
+        log('decodeAndBuffer error', { pts: sample.pts, isKeyframe: sample.isKeyframe, error: err })
         // If decoder is closed, stop trying
         if (decoder.decoder.state === 'closed') return
         // If we fail on a keyframe, reset decoderReady
@@ -212,7 +216,12 @@ export async function createFrameBuffer(
       }
     }
 
-    bufferLog('decodeAndBuffer complete', { decodedCount, skippedCount, errorCount, frameCount: frames.length })
+    log('decodeAndBuffer complete', {
+      decodedCount,
+      skippedCount,
+      errorCount,
+      frameCount: frames.length,
+    })
 
     // Only flush if not destroyed and decoder is still open
     if (!destroyed && decoder.decoder.state !== 'closed') {
@@ -250,7 +259,7 @@ export async function createFrameBuffer(
       getFrameCallCount++
 
       if (frames.length === 0) {
-        bufferLog('getFrame: no frames', { time, callCount: getFrameCallCount, state, destroyed })
+        log('getFrame: no frames', { time, callCount: getFrameCallCount, state, destroyed })
         return null
       }
 
@@ -270,13 +279,13 @@ export async function createFrameBuffer(
 
       // Log every call, but with rate limiting for repeated same-frame fetches
       if (result.pts !== lastLoggedPts || getFrameCallCount % 30 === 0) {
-        bufferLog('getFrame', {
+        log('getFrame', {
           time: time.toFixed(3),
           resultPts: result.pts.toFixed(3),
           frameCount: frames.length,
           callCount: getFrameCallCount,
           state,
-          destroyed
+          destroyed,
         })
         lastLoggedPts = result.pts
       }
@@ -285,12 +294,12 @@ export async function createFrameBuffer(
     },
 
     async seekTo(time: number): Promise<void> {
-      bufferLog('seekTo', { time, destroyed, isBuffering, state, frameCount: frames.length })
+      log('seekTo', { time, destroyed, isBuffering, state, frameCount: frames.length })
       if (destroyed) return
 
       // Wait for any pending buffering to complete
       while (isBuffering) {
-        await new Promise((resolve) => setTimeout(resolve, 10))
+        await new Promise(resolve => setTimeout(resolve, 10))
       }
 
       isBuffering = true
@@ -328,13 +337,13 @@ export async function createFrameBuffer(
           state = frames.length > 0 ? 'ready' : 'idle'
         }
 
-        bufferLog('seekTo complete', {
+        log('seekTo complete', {
           time,
           state,
           frameCount: frames.length,
           bufferPosition,
           firstFramePts: frames[0]?.pts,
-          lastFramePts: frames[frames.length - 1]?.pts
+          lastFramePts: frames[frames.length - 1]?.pts,
         })
       } finally {
         isBuffering = false
@@ -343,14 +352,14 @@ export async function createFrameBuffer(
 
     async bufferMore(): Promise<void> {
       if (destroyed || state === 'ended') {
-        bufferLog('bufferMore: skipped', { destroyed, state })
+        log('bufferMore: skipped', { destroyed, state })
         return
       }
 
       // Skip if already buffering (non-blocking check)
       if (isBuffering) return
 
-      bufferLog('bufferMore: starting', { bufferPosition, frameCount: frames.length })
+      log('bufferMore: starting', { bufferPosition, frameCount: frames.length })
       isBuffering = true
 
       try {
@@ -373,7 +382,7 @@ export async function createFrameBuffer(
         await decodeAndBuffer(samples)
 
         state = bufferPosition >= trackDuration ? 'ended' : 'ready'
-        bufferLog('bufferMore: complete', { state, frameCount: frames.length })
+        log('bufferMore: complete', { state, frameCount: frames.length })
       } finally {
         isBuffering = false
       }
@@ -388,7 +397,7 @@ export async function createFrameBuffer(
     },
 
     clear(): void {
-      bufferLog('clear', { frameCount: frames.length, state, getFrameCallCount })
+      log('clear', { frameCount: frames.length, state, getFrameCallCount })
       clearFrames()
       bufferPosition = 0
       decoderReady = false
@@ -399,7 +408,7 @@ export async function createFrameBuffer(
     },
 
     destroy(): void {
-      bufferLog('destroy', { frameCount: frames.length, state, getFrameCallCount })
+      log('destroy', { frameCount: frames.length, state, getFrameCallCount })
       destroyed = true
       isBuffering = false
       clearFrames()
@@ -419,7 +428,7 @@ export async function createFrameBuffer(
 export function evictOldFrames(
   buffer: FrameBuffer & { frames?: BufferedFrame[] },
   currentTime: number,
-  keepBehind: number = 0.5
+  keepBehind: number = 0.5,
 ): void {
   // This would need internal access to frames array
   // For now this is a placeholder for future optimization

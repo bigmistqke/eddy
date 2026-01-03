@@ -96,7 +96,9 @@ export function createCompositor(width: number, height: number): Compositor {
   const gl = canvas.getContext('webgl2') || canvas.getContext('webgl')
   if (!gl) throw new Error('WebGL not supported')
 
-  log('WebGL context created', { version: gl instanceof WebGL2RenderingContext ? 'webgl2' : 'webgl' })
+  log('WebGL context created', {
+    version: gl instanceof WebGL2RenderingContext ? 'webgl2' : 'webgl',
+  })
 
   const { view, program } = compile.toQuad(gl, fragmentShader)
   const textures = [
@@ -124,24 +126,10 @@ export function createCompositor(width: number, height: number): Compositor {
 
     if (source instanceof VideoFrame) {
       // VideoFrame can be used directly with texImage2D
-      gl.texImage2D(
-        gl.TEXTURE_2D,
-        0,
-        gl.RGBA,
-        gl.RGBA,
-        gl.UNSIGNED_BYTE,
-        source
-      )
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source)
     } else {
       // HTMLVideoElement
-      gl.texImage2D(
-        gl.TEXTURE_2D,
-        0,
-        gl.RGBA,
-        gl.RGBA,
-        gl.UNSIGNED_BYTE,
-        source
-      )
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source)
     }
   }
 
@@ -195,7 +183,7 @@ export function createCompositor(width: number, height: number): Compositor {
     },
 
     destroy() {
-      textures.forEach((t) => gl.deleteTexture(t))
+      textures.forEach(t => gl.deleteTexture(t))
     },
   }
 }

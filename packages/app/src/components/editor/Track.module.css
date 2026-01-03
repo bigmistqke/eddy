@@ -7,7 +7,9 @@
   border-radius: 8px;
   border: 2px solid transparent;
   cursor: pointer;
-  transition: border-color 0.2s, background 0.2s;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
 }
 
 .track:hover {

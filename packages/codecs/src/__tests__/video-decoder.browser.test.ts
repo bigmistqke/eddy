@@ -100,7 +100,7 @@ describe('Video Decoder - Decoding (VP9)', () => {
 
     // Get samples from the beginning
     const samples = await demuxer.getSamples(videoTrack.id, 0, 0.5)
-    const firstKeyframe = samples.find((s) => s.isKeyframe)
+    const firstKeyframe = samples.find(s => s.isKeyframe)
 
     expect(firstKeyframe).toBeDefined()
     expect(firstKeyframe!.data.byteLength).toBeGreaterThan(0)

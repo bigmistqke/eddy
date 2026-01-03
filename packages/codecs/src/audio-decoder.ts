@@ -54,13 +54,17 @@ export interface CreateAudioDecoderOptions {
 export async function createAudioDecoder(
   demuxer: Demuxer,
   _trackInfo: AudioTrackInfo,
-  options: CreateAudioDecoderOptions = {}
+  options: CreateAudioDecoderOptions = {},
 ): Promise<AudioDecoderHandle> {
   log('createAudioDecoder')
 
   // Get config from demuxer
   const config = await demuxer.getAudioConfig()
-  log('got config', { codec: config.codec, sampleRate: config.sampleRate, channels: config.numberOfChannels })
+  log('got config', {
+    codec: config.codec,
+    sampleRate: config.sampleRate,
+    channels: config.numberOfChannels,
+  })
 
   // Check if the codec is supported
   const support = await AudioDecoder.isConfigSupported(config)
@@ -117,11 +121,11 @@ export async function createAudioDecoder(
       // Otherwise, wait for the data
       return new Promise((resolve, reject) => {
         const originalErrorHandler = errorHandler
-        errorHandler = (error) => {
+        errorHandler = error => {
           errorHandler = originalErrorHandler
           reject(error)
         }
-        decodeResolvers.push((data) => {
+        decodeResolvers.push(data => {
           errorHandler = originalErrorHandler
           resolve(data)
         })

@@ -1,6 +1,14 @@
 import type { Agent } from '@atproto/api'
 import * as v from 'valibot'
-import { type Project, projectValidators, projectWireValidators, type Stem, type StemRef, stemValidators, stemWireValidators } from '@klip/lexicons'
+import {
+  type Project,
+  projectValidators,
+  projectWireValidators,
+  type Stem,
+  type StemRef,
+  stemValidators,
+  stemWireValidators,
+} from '@klip/lexicons'
 
 export interface RecordRef {
   uri: string
@@ -60,7 +68,7 @@ async function resolveHandle(agent: Agent, handle: string): Promise<string> {
 export async function getProjectByRkey(
   agent: Agent,
   rkey: string,
-  handle?: string
+  handle?: string,
 ): Promise<ProjectRecord> {
   let did: string
   if (handle) {
@@ -113,7 +121,7 @@ export async function listProjects(agent: Agent): Promise<ProjectListItem[]> {
     limit: 50,
   })
 
-  return response.data.records.map((record) => {
+  return response.data.records.map(record => {
     const project = v.parse(projectValidators.main, record.value)
     const { rkey } = parseAtUri(record.uri)
     return {
@@ -127,10 +135,7 @@ export async function listProjects(agent: Agent): Promise<ProjectListItem[]> {
   })
 }
 
-export async function uploadBlob(
-  agent: Agent,
-  blob: Blob
-) {
+export async function uploadBlob(agent: Agent, blob: Blob) {
   const response = await agent.uploadBlob(blob, {
     encoding: blob.type,
   })
@@ -140,7 +145,7 @@ export async function uploadBlob(
 export async function createStemRecord(
   agent: Agent,
   blob: Blob,
-  duration: number
+  duration: number,
 ): Promise<RecordRef> {
   const uploadedBlob = await uploadBlob(agent, blob)
 
@@ -180,10 +185,7 @@ async function cloneStem(agent: Agent, stemUri: string): Promise<StemRef> {
   }
 
   // Fetch the blob and get duration from original stem record
-  const [blob, stem] = await Promise.all([
-    getStemBlob(agent, stemUri),
-    getStem(agent, stemUri),
-  ])
+  const [blob, stem] = await Promise.all([getStemBlob(agent, stemUri), getStem(agent, stemUri)])
 
   return createStemRecord(agent, blob, stem.value.duration)
 }
@@ -191,14 +193,14 @@ async function cloneStem(agent: Agent, stemUri: string): Promise<StemRef> {
 export async function publishProject(
   agent: Agent,
   project: Project,
-  clipBlobs: Map<string, { blob: Blob; duration: number }>
+  clipBlobs: Map<string, { blob: Blob; duration: number }>,
 ): Promise<RecordRef> {
   const myDid = agent.assertDid
   const stemRefs = new Map<string, StemRef>()
 
   // Collect all clips that need stem processing
-  const allClips = project.tracks.flatMap((track) =>
-    track.clips.map((clip) => ({ trackId: track.id, clip }))
+  const allClips = project.tracks.flatMap(track =>
+    track.clips.map(clip => ({ trackId: track.id, clip })),
   )
 
   // Process stems in parallel
@@ -224,16 +226,16 @@ export async function publishProject(
           stemRefs.set(clip.id, cloned)
         }
       }
-    })
+    }),
   )
 
   // Build tracks - only include clips with stems
   const tracks = project.tracks
-    .map((track) => ({
+    .map(track => ({
       id: track.id,
       clips: track.clips
-        .filter((clip) => stemRefs.has(clip.id))
-        .map((clip) => ({
+        .filter(clip => stemRefs.has(clip.id))
+        .map(clip => ({
           id: clip.id,
           stem: stemRefs.get(clip.id),
           offset: clip.offset,
@@ -241,7 +243,7 @@ export async function publishProject(
         })),
       audioPipeline: track.audioPipeline,
     }))
-    .filter((track) => track.clips.length > 0)
+    .filter(track => track.clips.length > 0)
 
   // Build and validate project record
   const record = v.parse(projectWireValidators.main, {
@@ -252,7 +254,7 @@ export async function publishProject(
       width: project.canvas.width,
       height: project.canvas.height,
     },
-    groups: project.groups.map((group) => ({
+    groups: project.groups.map(group => ({
       id: group.id,
       members: group.members,
       ...(group.layout && { layout: group.layout }),
@@ -301,15 +303,12 @@ export async function listStems(agent: Agent): Promise<string[]> {
     collection: 'app.klip.stem',
     limit: 100,
   })
-  return response.data.records.map((record) => record.uri)
+  return response.data.records.map(record => record.uri)
 }
 
 export async function deleteOrphanedStems(agent: Agent): Promise<string[]> {
   // Get all stems and projects
-  const [stemUris, projects] = await Promise.all([
-    listStems(agent),
-    listProjects(agent),
-  ])
+  const [stemUris, projects] = await Promise.all([listStems(agent), listProjects(agent)])
 
   // Collect all stem URIs referenced by projects
   const referencedStems = new Set<string>()
@@ -329,10 +328,10 @@ export async function deleteOrphanedStems(agent: Agent): Promise<string[]> {
   }
 
   // Find orphaned stems (not referenced by any project)
-  const orphanedStems = stemUris.filter((uri) => !referencedStems.has(uri))
+  const orphanedStems = stemUris.filter(uri => !referencedStems.has(uri))
 
   // Delete orphaned stems in parallel
-  await Promise.all(orphanedStems.map((uri) => deleteStem(agent, uri)))
+  await Promise.all(orphanedStems.map(uri => deleteStem(agent, uri)))
 
   return orphanedStems
 }

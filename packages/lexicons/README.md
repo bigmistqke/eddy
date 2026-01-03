@@ -45,11 +45,11 @@ Curves are first-class objects that define how values change over time. Each cur
 
 ### Curve Types
 
-| Type | Description |
-|------|-------------|
-| `keyframe` | Explicit points with bezier handles for full control |
-| `envelope` | ADSR generator with bezier curves per phase |
-| `lfo` | Low-frequency oscillator (sine, triangle, square, sawtooth) |
+| Type       | Description                                                 |
+| ---------- | ----------------------------------------------------------- |
+| `keyframe` | Explicit points with bezier handles for full control        |
+| `envelope` | ADSR generator with bezier curves per phase                 |
+| `lfo`      | Low-frequency oscillator (sine, triangle, square, sawtooth) |
 
 ### Keyframe Curves
 
@@ -69,6 +69,7 @@ Curves are first-class objects that define how values change over time. Each cur
 ```
 
 Each point has:
+
 - `t`: time in milliseconds
 - `v`: value (0-1 normalized)
 - `in`/`out`: bezier handles [x, y] relative to point
@@ -135,11 +136,13 @@ For continuous parameters like gain, opacity, position:
 ```
 
 **Static properties:**
+
 - `value`: the numeric value
 - `min`/`max`: constraints (default 0-1)
 - `default`: fallback value
 
 **Curve reference properties:**
+
 - `curve`: ID of curve to use (must match an id in project.curves)
 - `min`/`max`: output scaling (curve 0->min, curve 1->max)
 - `offset`: time offset in ms
@@ -179,29 +182,29 @@ For discrete values like zIndex:
 
 ### Audio Effects
 
-| Effect | Description |
-|--------|-------------|
-| `audio.gain` | Volume (0-1, where 1 = unity) |
-| `audio.pan` | Stereo position (0 = left, 0.5 = center, 1 = right) |
-| `audio.custom` | Third-party audio effects |
+| Effect         | Description                                         |
+| -------------- | --------------------------------------------------- |
+| `audio.gain`   | Volume (0-1, where 1 = unity)                       |
+| `audio.pan`    | Stereo position (0 = left, 0.5 = center, 1 = right) |
+| `audio.custom` | Third-party audio effects                           |
 
 ### Visual Effects
 
-| Effect | Description |
-|--------|-------------|
+| Effect             | Description                                    |
+| ------------------ | ---------------------------------------------- |
 | `visual.transform` | Position, scale, rotation (all 0-1 normalized) |
-| `visual.opacity` | Transparency (0-1) with blend modes |
-| `visual.custom` | Third-party visual effects |
+| `visual.opacity`   | Transparency (0-1) with blend modes            |
+| `visual.custom`    | Third-party visual effects                     |
 
 ## Groups
 
 Groups are typed by their layout strategy. Each group type has its own member type:
 
-| Group Type | Member Type | Description |
-|------------|-------------|-------------|
-| `group.absolute` | `member.absolute` | Free positioning with x/y/width/height |
-| `group.grid` | `member.grid` | CSS Grid-like cells with optional offset |
-| `group.custom` | `member.custom` | Third-party layouts with custom hints |
+| Group Type       | Member Type       | Description                              |
+| ---------------- | ----------------- | ---------------------------------------- |
+| `group.absolute` | `member.absolute` | Free positioning with x/y/width/height   |
+| `group.grid`     | `member.grid`     | CSS Grid-like cells with optional offset |
+| `group.custom`   | `member.custom`   | Third-party layouts with custom hints    |
 
 ### Absolute Group
 
@@ -210,7 +213,13 @@ Groups are typed by their layout strategy. Each group type has its own member ty
   "type": "absolute",
   "id": "main",
   "members": [
-    { "id": "t1", "x": { "value": 0 }, "y": { "value": 0 }, "width": { "value": 1 }, "height": { "value": 1 } }
+    {
+      "id": "t1",
+      "x": { "value": 0 },
+      "y": { "value": 0 },
+      "width": { "value": 1 },
+      "height": { "value": 1 }
+    }
   ],
   "pipeline": []
 }
@@ -268,12 +277,7 @@ Master Processing:
       "id": "main",
       "columns": 2,
       "rows": 2,
-      "members": [
-        { "id": "t1" },
-        { "id": "t2" },
-        { "id": "t3" },
-        { "id": "t4" }
-      ],
+      "members": [{ "id": "t1" }, { "id": "t2" }, { "id": "t3" }, { "id": "t4" }],
       "pipeline": []
     }
   ],
@@ -307,20 +311,24 @@ Master Processing:
       ]
     }
   ],
-  "tracks": [{
-    "id": "t1",
-    "clips": [{
-      "id": "c1",
-      "offset": 0,
-      "duration": 5000,
-      "videoPipeline": [
+  "tracks": [
+    {
+      "id": "t1",
+      "clips": [
         {
-          "type": "visual.opacity",
-          "value": { "curve": "fade-in" }
+          "id": "c1",
+          "offset": 0,
+          "duration": 5000,
+          "videoPipeline": [
+            {
+              "type": "visual.opacity",
+              "value": { "curve": "fade-in" }
+            }
+          ]
         }
       ]
-    }]
-  }]
+    }
+  ]
 }
 ```
 
@@ -370,11 +378,13 @@ Master Processing:
       "center": 0.7
     }
   ],
-  "tracks": [{
-    "audioPipeline": [
-      { "type": "audio.gain", "value": { "curve": "quarter-pulse", "min": 0.4, "max": 1.0 } }
-    ]
-  }]
+  "tracks": [
+    {
+      "audioPipeline": [
+        { "type": "audio.gain", "value": { "curve": "quarter-pulse", "min": 0.4, "max": 1.0 } }
+      ]
+    }
+  ]
 }
 ```
 
@@ -412,6 +422,7 @@ Both records include a `schemaVersion` field (default: 1) for future migration s
 ### Stem Chunking
 
 For stems exceeding the 50MB PDS blob limit, a chunking mechanism could allow:
+
 - Multiple blob references per stem
 - Client-side reassembly during playback
 - Streaming decode for large files
@@ -419,6 +430,7 @@ For stems exceeding the 50MB PDS blob limit, a chunking mechanism could allow:
 ### Transitions
 
 Clip transitions (crossfades, wipes) are not yet specified. Potential approaches:
+
 - Clip-level `fadeIn`/`fadeOut` with duration + curve
 - Separate transition objects between clips
 - Overlap-based blending

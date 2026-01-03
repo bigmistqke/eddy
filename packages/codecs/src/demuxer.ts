@@ -104,7 +104,11 @@ export interface Demuxer {
   destroy(): void
 }
 
-function packetToSample(packet: EncodedPacket, trackId: number, sampleNumber: number): DemuxedSample {
+function packetToSample(
+  packet: EncodedPacket,
+  trackId: number,
+  sampleNumber: number,
+): DemuxedSample {
   return {
     number: sampleNumber,
     trackId,
@@ -151,7 +155,10 @@ async function parseAudioTrack(track: InputAudioTrack, index: number): Promise<A
 }
 
 export async function createDemuxer(source: ArrayBuffer | Blob): Promise<Demuxer> {
-  log('createDemuxer', { sourceType: source instanceof Blob ? 'Blob' : 'ArrayBuffer', size: source instanceof Blob ? source.size : source.byteLength })
+  log('createDemuxer', {
+    sourceType: source instanceof Blob ? 'Blob' : 'ArrayBuffer',
+    size: source instanceof Blob ? source.size : source.byteLength,
+  })
 
   // Convert ArrayBuffer to Blob if needed
   const blob = source instanceof Blob ? source : new Blob([source])
@@ -167,10 +174,10 @@ export async function createDemuxer(source: ArrayBuffer | Blob): Promise<Demuxer
 
   // Parse track info
   const videoTrackInfos = await Promise.all(
-    videoTracks.map((track, index) => parseVideoTrack(track, index))
+    videoTracks.map((track, index) => parseVideoTrack(track, index)),
   )
   const audioTrackInfos = await Promise.all(
-    audioTracks.map((track, index) => parseAudioTrack(track, index))
+    audioTracks.map((track, index) => parseAudioTrack(track, index)),
   )
 
   // Compute overall duration
@@ -193,8 +200,8 @@ export async function createDemuxer(source: ArrayBuffer | Blob): Promise<Demuxer
   })
 
   // Build track lookup maps
-  const videoTrackMap = new Map<number, { track: InputVideoTrack, sink: EncodedPacketSink }>()
-  const audioTrackMap = new Map<number, { track: InputAudioTrack, sink: EncodedPacketSink }>()
+  const videoTrackMap = new Map<number, { track: InputVideoTrack; sink: EncodedPacketSink }>()
+  const audioTrackMap = new Map<number, { track: InputAudioTrack; sink: EncodedPacketSink }>()
 
   for (let i = 0; i < videoTracks.length; i++) {
     const track = videoTracks[i]
@@ -242,7 +249,11 @@ export async function createDemuxer(source: ArrayBuffer | Blob): Promise<Demuxer
       return config
     },
 
-    async getSamples(trackId: number, startTime: number, endTime: number): Promise<DemuxedSample[]> {
+    async getSamples(
+      trackId: number,
+      startTime: number,
+      endTime: number,
+    ): Promise<DemuxedSample[]> {
       const trackData = getTrackData(trackId)
       if (!trackData) {
         throw new Error(`Track ${trackId} not found`)

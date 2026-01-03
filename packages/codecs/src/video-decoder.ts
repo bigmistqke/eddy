@@ -59,7 +59,7 @@ export interface CreateVideoDecoderOptions {
 export async function createVideoDecoder(
   demuxer: Demuxer,
   _trackInfo: VideoTrackInfo,
-  options: CreateVideoDecoderOptions = {}
+  options: CreateVideoDecoderOptions = {},
 ): Promise<VideoDecoderHandle> {
   log('createVideoDecoder')
 
@@ -133,11 +133,11 @@ export async function createVideoDecoder(
       // Otherwise, wait for the frame
       return new Promise((resolve, reject) => {
         const originalErrorHandler = errorHandler
-        errorHandler = (error) => {
+        errorHandler = error => {
           errorHandler = originalErrorHandler
           reject(error)
         }
-        decodeResolvers.push((frame) => {
+        decodeResolvers.push(frame => {
           errorHandler = originalErrorHandler
           resolve(frame)
         })

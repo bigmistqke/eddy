@@ -14,8 +14,8 @@ Web Audio API mixer for multi-track audio output.
 import { createAudioPipeline, getMasterMixer } from '@klip/mixer'
 
 const pipeline = createAudioPipeline()
-pipeline.setVolume(0.8)  // 0-1
-pipeline.setPan(-0.5)    // -1 (left) to 1 (right)
+pipeline.setVolume(0.8) // 0-1
+pipeline.setPan(-0.5) // -1 (left) to 1 (right)
 pipeline.connect(audioElement)
 
 getMasterMixer().setMasterVolume(0.9)

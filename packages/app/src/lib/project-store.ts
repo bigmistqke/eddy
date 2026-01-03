@@ -31,12 +31,7 @@ function createDefaultProject(): Project {
     groups: [
       {
         id: 'main-grid',
-        members: [
-          { id: 'track-0' },
-          { id: 'track-1' },
-          { id: 'track-2' },
-          { id: 'track-3' },
-        ],
+        members: [{ id: 'track-0' }, { id: 'track-1' }, { id: 'track-2' }, { id: 'track-3' }],
         layout: {
           type: 'grid',
           columns: 2,
@@ -109,21 +104,21 @@ export function createProjectStore() {
       setStore(
         'project',
         'tracks',
-        (t) => t.id === trackId,
+        t => t.id === trackId,
         'audioPipeline',
         effectIndex,
-        (effect) => {
+        effect => {
           if ('value' in effect && effect.value && 'value' in effect.value) {
             return { ...effect, value: { ...effect.value, value: Math.round(value * 100) } }
           }
           return effect
-        }
+        },
       )
     },
 
     // Get effect value as float (0.0-1.0)
     getEffectValue(trackId: string, effectIndex: number): number {
-      const track = store.project.tracks.find((t) => t.id === trackId)
+      const track = store.project.tracks.find(t => t.id === trackId)
       const effect = track?.audioPipeline?.[effectIndex]
       if (effect && 'value' in effect && effect.value && 'value' in effect.value) {
         return effect.value.value / 100
@@ -133,7 +128,7 @@ export function createProjectStore() {
 
     // Get track's audio pipeline
     getTrackPipeline(trackId: string): AudioEffect[] {
-      const track = store.project.tracks.find((t) => t.id === trackId)
+      const track = store.project.tracks.find(t => t.id === trackId)
       return track?.audioPipeline ?? []
     },
 
@@ -145,7 +140,7 @@ export function createProjectStore() {
       setStore(
         'project',
         'tracks',
-        (t) => t.id === trackId,
+        t => t.id === trackId,
         produce((track: Track) => {
           track.clips = [
             {
@@ -154,7 +149,7 @@ export function createProjectStore() {
               duration: Math.round(duration),
             },
           ]
-        })
+        }),
       )
 
       // Store local blob reference by clipId
@@ -168,7 +163,7 @@ export function createProjectStore() {
 
     clearTrack(trackIndex: number) {
       const trackId = `track-${trackIndex}`
-      const track = store.project.tracks.find((t) => t.id === trackId)
+      const track = store.project.tracks.find(t => t.id === trackId)
 
       // Clear local blobs for all clips on this track
       if (track) {
@@ -180,10 +175,10 @@ export function createProjectStore() {
       setStore(
         'project',
         'tracks',
-        (t) => t.id === trackId,
+        t => t.id === trackId,
         produce((track: Track) => {
           track.clips = []
-        })
+        }),
       )
 
       setStore('project', 'updatedAt', new Date().toISOString())
@@ -200,10 +195,9 @@ export function createProjectStore() {
 
     hasRecording(trackIndex: number): boolean {
       const trackId = `track-${trackIndex}`
-      const track = store.project.tracks.find((t) => t.id === trackId)
+      const track = store.project.tracks.find(t => t.id === trackId)
       return (track?.clips.length ?? 0) > 0
     },
-
 
     // Get project ready for publishing (without local state)
     getProject(): Project {
@@ -220,11 +214,13 @@ export function createProjectStore() {
 
         // Fetch stem blobs in parallel
         const clipsWithStems = record.value.tracks
-          .flatMap((track) => track.clips)
-          .filter((clip): clip is typeof clip & { stem: NonNullable<typeof clip.stem> } => !!clip.stem)
+          .flatMap(track => track.clips)
+          .filter(
+            (clip): clip is typeof clip & { stem: NonNullable<typeof clip.stem> } => !!clip.stem,
+          )
 
         await Promise.all(
-          clipsWithStems.map(async (clip) => {
+          clipsWithStems.map(async clip => {
             try {
               const blob = await getStemBlob(agent, clip.stem.uri)
               setStore('local', 'clips', clip.id, {
@@ -234,7 +230,7 @@ export function createProjectStore() {
             } catch (err) {
               console.error(`Failed to fetch stem for clip ${clip.id}:`, err)
             }
-          })
+          }),
         )
       } finally {
         setStore('loading', false)
@@ -248,6 +244,5 @@ export function createProjectStore() {
 
   return { store, ...actions }
 }
-
 
 export type ProjectStoreActions = ReturnType<typeof createProjectStore>

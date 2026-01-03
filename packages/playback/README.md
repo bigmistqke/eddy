@@ -9,21 +9,21 @@ Synchronized A/V playback with frame buffering and audio scheduling.
 ## Usage
 
 ```ts
-import { createDemuxer } from "@klip/codecs";
-import { createPlayback } from "@klip/playback";
+import { createDemuxer } from '@klip/codecs'
+import { createPlayback } from '@klip/playback'
 
-const demuxer = await createDemuxer(blob);
-const playback = await createPlayback(demuxer);
+const demuxer = await createDemuxer(blob)
+const playback = await createPlayback(demuxer)
 
 playback.onFrame((frame, time) => {
   // Render frame to canvas
-});
+})
 
-await playback.play();
-playback.pause();
-await playback.seek(5.0);
-playback.stop();
-playback.destroy();
+await playback.play()
+playback.pause()
+await playback.seek(5.0)
+playback.stop()
+playback.destroy()
 ```
 
 ## Internal modules
