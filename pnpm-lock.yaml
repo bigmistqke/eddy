@@ -89,8 +89,8 @@ importers:
         specifier: ^0.6.0
         version: 0.6.0
       '@bigmistqke/lexicon-to-valibot':
-        specifier: ^0.1.6
-        version: 0.1.6(valibot@1.2.0(typescript@5.9.3))
+        specifier: ^0.1.7
+        version: 0.1.7(valibot@1.2.0(typescript@5.9.3))
       valibot:
         specifier: ^1.2.0
         version: 1.2.0(typescript@5.9.3)
@@ -254,8 +254,8 @@ packages:
     resolution: {integrity: sha512-qQ5m48eI/MFLQ5PxQj4PFaprjyCTLI37ElWMmNs0K8Lk3dVeOdNpB3ks8jc7yM5CDmVC73eMVk/trk3fgmrUpA==}
     engines: {node: '>=6.9.0'}
 
-  '@bigmistqke/lexicon-to-valibot@0.1.6':
-    resolution: {integrity: sha512-NgaeXZnf1FgDa8HcSyR4lm2YeKTfz+s7o9R2j+ploP/9wmn1VmOnfXDaFgwDVhDuvXx/eZ5xsXTaq9rVuJH5zg==}
+  '@bigmistqke/lexicon-to-valibot@0.1.7':
+    resolution: {integrity: sha512-iuwDL1xZf4bMuWEe9ysx9DXXFN1y3eJCGw7e8HdsV165Tiw2PJsEQYCvWf5Dt+MpS5focBugV+5VVspL9jUdsw==}
     peerDependencies:
       valibot: '>=1.0.0'
 
@@ -1313,7 +1313,7 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
 
-  '@bigmistqke/lexicon-to-valibot@0.1.6(valibot@1.2.0(typescript@5.9.3))':
+  '@bigmistqke/lexicon-to-valibot@0.1.7(valibot@1.2.0(typescript@5.9.3))':
     dependencies:
       valibot: 1.2.0(typescript@5.9.3)
 
