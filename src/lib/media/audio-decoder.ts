@@ -53,7 +53,7 @@ export async function createAudioDecoder(
   _trackInfo: AudioTrackInfo,
   options: CreateAudioDecoderOptions = {}
 ): Promise<AudioDecoderHandle> {
-  // Get config directly from web-demuxer
+  // Get config from demuxer
   const config = await demuxer.getAudioConfig()
 
   // Check if the codec is supported

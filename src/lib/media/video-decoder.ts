@@ -58,7 +58,7 @@ export async function createVideoDecoder(
   _trackInfo: VideoTrackInfo,
   options: CreateVideoDecoderOptions = {}
 ): Promise<VideoDecoderHandle> {
-  // Get config directly from web-demuxer
+  // Get config from demuxer
   const config = await demuxer.getVideoConfig()
 
   // Check if the codec is supported

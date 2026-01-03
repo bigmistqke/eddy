@@ -1,4 +1,12 @@
-import { WebDemuxer, AVMediaType, AVSeekFlag, type WebMediaInfo, type WebAVStream, type WebAVPacket } from 'web-demuxer'
+import {
+  Input,
+  BlobSource,
+  EncodedPacketSink,
+  ALL_FORMATS,
+  type InputVideoTrack,
+  type InputAudioTrack,
+  type EncodedPacket,
+} from 'mediabunny'
 
 export interface VideoTrackInfo {
   id: number
@@ -93,165 +101,137 @@ export interface Demuxer {
   destroy(): void
 }
 
-function parseSampleCount(nbFrames: string): number {
-  const count = parseInt(nbFrames)
-  // WebM containers often don't have valid nb_frames, return 0 for invalid values
-  if (!Number.isFinite(count) || count < 0) {
-    return 0
-  }
-  return count
-}
-
-function parseDuration(duration: number): number {
-  // MediaRecorder WebM files may have invalid duration (AV_NOPTS_VALUE)
-  if (!Number.isFinite(duration) || duration < 0) {
-    return 0
-  }
-  return duration
-}
-
-function parseVideoTrack(stream: WebAVStream, index: number): VideoTrackInfo {
-  return {
-    // Use index as id because stream.id is not unique across track types
-    // (both video and audio can have stream.id=0)
-    id: index,
-    index,
-    codec: stream.codec_string,
-    width: stream.width,
-    height: stream.height,
-    duration: parseDuration(stream.duration),
-    timescale: 1, // web-demuxer uses seconds directly
-    sampleCount: parseSampleCount(stream.nb_frames),
-    bitrate: parseInt(stream.bit_rate) || 0,
-  }
-}
-
-function parseAudioTrack(stream: WebAVStream, index: number): AudioTrackInfo {
-  return {
-    // Use index as id because stream.id is not unique across track types
-    // (both video and audio can have stream.id=0)
-    id: index,
-    index,
-    codec: stream.codec_string,
-    sampleRate: stream.sample_rate,
-    channelCount: stream.channels,
-    sampleSize: 16, // Default, web-demuxer doesn't expose this directly
-    duration: parseDuration(stream.duration),
-    timescale: 1, // web-demuxer uses seconds directly
-    sampleCount: parseSampleCount(stream.nb_frames),
-    bitrate: parseInt(stream.bit_rate) || 0,
-  }
-}
-
-function parseInfo(mediaInfo: WebMediaInfo): DemuxerInfo {
-  const videoTracks: VideoTrackInfo[] = []
-  const audioTracks: AudioTrackInfo[] = []
-
-  for (const stream of mediaInfo.streams) {
-    if (stream.codec_type === AVMediaType.AVMEDIA_TYPE_VIDEO) {
-      videoTracks.push(parseVideoTrack(stream, stream.index))
-    } else if (stream.codec_type === AVMediaType.AVMEDIA_TYPE_AUDIO) {
-      audioTracks.push(parseAudioTrack(stream, stream.index))
-    }
-  }
-
-  return {
-    duration: parseDuration(mediaInfo.duration),
-    timescale: 1, // web-demuxer uses seconds
-    isFragmented: false, // web-demuxer doesn't expose this
-    videoTracks,
-    audioTracks,
-  }
-}
-
-function packetToSample(packet: WebAVPacket, trackId: number, sampleNumber: number): DemuxedSample {
-  // web-demuxer returns timestamp and duration already in seconds
-  const pts = (packet as any).pts ?? packet.timestamp
-  const dts = (packet as any).dts ?? pts
-
+function packetToSample(packet: EncodedPacket, trackId: number, sampleNumber: number): DemuxedSample {
   return {
     number: sampleNumber,
     trackId,
-    pts, // Already in seconds
-    dts,
-    duration: packet.duration, // Already in seconds
-    isKeyframe: packet.keyframe === 1,
+    pts: packet.timestamp,
+    dts: packet.timestamp, // Mediabunny doesn't expose DTS separately
+    duration: packet.duration,
+    isKeyframe: packet.type === 'key',
     data: packet.data,
-    size: packet.size,
+    size: packet.data.byteLength,
   }
 }
 
-async function collectStream<T>(stream: ReadableStream<T>): Promise<T[]> {
-  const reader = stream.getReader()
-  const items: T[] = []
+async function parseVideoTrack(track: InputVideoTrack, index: number): Promise<VideoTrackInfo> {
+  const codecString = await track.getCodecParameterString()
 
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    items.push(value)
+  return {
+    id: track.id,
+    index,
+    codec: codecString ?? 'unknown',
+    width: track.codedWidth,
+    height: track.codedHeight,
+    duration: await track.computeDuration(),
+    timescale: 1, // Mediabunny uses seconds directly
+    sampleCount: 0, // Not easily available without iterating
+    bitrate: 0, // Not exposed directly
   }
-
-  return items
 }
 
-export async function createDemuxer(source: ArrayBuffer | File): Promise<Demuxer> {
-  const demuxer = new WebDemuxer({
-    // Use CDN for WASM file
-    wasmFilePath: 'https://cdn.jsdelivr.net/npm/web-demuxer@latest/dist/wasm-files/web-demuxer.wasm',
+async function parseAudioTrack(track: InputAudioTrack, index: number): Promise<AudioTrackInfo> {
+  const codecString = await track.getCodecParameterString()
+
+  return {
+    id: track.id,
+    index,
+    codec: codecString ?? 'unknown',
+    sampleRate: track.sampleRate,
+    channelCount: track.numberOfChannels,
+    sampleSize: 16, // Default, not exposed directly
+    duration: await track.computeDuration(),
+    timescale: 1, // Mediabunny uses seconds directly
+    sampleCount: 0, // Not easily available without iterating
+    bitrate: 0, // Not exposed directly
+  }
+}
+
+export async function createDemuxer(source: ArrayBuffer | Blob): Promise<Demuxer> {
+  // Convert ArrayBuffer to Blob if needed
+  const blob = source instanceof Blob ? source : new Blob([source])
+
+  const input = new Input({
+    source: new BlobSource(blob),
+    formats: ALL_FORMATS,
   })
 
-  // Convert ArrayBuffer to File if needed (web-demuxer only accepts File or URL)
-  let file: File
-  if (source instanceof ArrayBuffer) {
-    // Detect format from magic bytes
-    const view = new Uint8Array(source)
-    let mimeType = 'video/mp4' // default
+  // Get tracks
+  const videoTracks = await input.getVideoTracks()
+  const audioTracks = await input.getAudioTracks()
 
-    // WebM/MKV starts with EBML header: 0x1A 0x45 0xDF 0xA3
-    if (view[0] === 0x1A && view[1] === 0x45 && view[2] === 0xDF && view[3] === 0xA3) {
-      mimeType = 'video/webm'
-    }
+  // Parse track info
+  const videoTrackInfos = await Promise.all(
+    videoTracks.map((track, index) => parseVideoTrack(track, index))
+  )
+  const audioTrackInfos = await Promise.all(
+    audioTracks.map((track, index) => parseAudioTrack(track, index))
+  )
 
-    file = new File([source], 'video', { type: mimeType })
-  } else {
-    file = source
+  // Compute overall duration
+  const duration = await input.computeDuration()
+
+  const info: DemuxerInfo = {
+    duration,
+    timescale: 1,
+    isFragmented: false,
+    videoTracks: videoTrackInfos,
+    audioTracks: audioTrackInfos,
   }
 
-  await demuxer.load(file)
+  // Build track lookup maps
+  const videoTrackMap = new Map<number, { track: InputVideoTrack, sink: EncodedPacketSink }>()
+  const audioTrackMap = new Map<number, { track: InputAudioTrack, sink: EncodedPacketSink }>()
 
-  const mediaInfo = await demuxer.getMediaInfo()
-  const info = parseInfo(mediaInfo)
-
-  // Build track index mapping (trackId -> stream info)
-  // Since track.id is now set to track.index, this ensures unique keys
-  const trackMap = new Map<number, { type: 'video' | 'audio', index: number }>()
-  for (const track of info.videoTracks) {
-    trackMap.set(track.index, { type: 'video', index: track.index })
+  for (let i = 0; i < videoTracks.length; i++) {
+    const track = videoTracks[i]
+    videoTrackMap.set(track.id, {
+      track,
+      sink: new EncodedPacketSink(track),
+    })
   }
-  for (const track of info.audioTracks) {
-    trackMap.set(track.index, { type: 'audio', index: track.index })
+
+  for (let i = 0; i < audioTracks.length; i++) {
+    const track = audioTracks[i]
+    audioTrackMap.set(track.id, {
+      track,
+      sink: new EncodedPacketSink(track),
+    })
+  }
+
+  // Helper to get track and sink by ID
+  const getTrackData = (trackId: number) => {
+    return videoTrackMap.get(trackId) ?? audioTrackMap.get(trackId) ?? null
   }
 
   return {
     info,
 
     async getVideoConfig(): Promise<VideoDecoderConfig> {
-      if (info.videoTracks.length === 0) {
+      if (videoTracks.length === 0) {
         throw new Error('No video track available')
       }
-      return demuxer.getDecoderConfig('video')
+      const config = await videoTracks[0].getDecoderConfig()
+      if (!config) {
+        throw new Error('Could not get video decoder config')
+      }
+      return config
     },
 
     async getAudioConfig(): Promise<AudioDecoderConfig> {
-      if (info.audioTracks.length === 0) {
+      if (audioTracks.length === 0) {
         throw new Error('No audio track available')
       }
-      return demuxer.getDecoderConfig('audio')
+      const config = await audioTracks[0].getDecoderConfig()
+      if (!config) {
+        throw new Error('Could not get audio decoder config')
+      }
+      return config
     },
 
     async getSamples(trackId: number, startTime: number, endTime: number): Promise<DemuxedSample[]> {
-      const trackInfo = trackMap.get(trackId)
-      if (!trackInfo) {
+      const trackData = getTrackData(trackId)
+      if (!trackData) {
         throw new Error(`Track ${trackId} not found`)
       }
 
@@ -260,47 +240,62 @@ export async function createDemuxer(source: ArrayBuffer | File): Promise<Demuxer
         return []
       }
 
+      const { sink } = trackData
+      const samples: DemuxedSample[] = []
+
       try {
-        const stream = demuxer.readMediaPacket(trackInfo.type, startTime, endTime)
-        const packets = await collectStream(stream)
-        return packets.map((packet, i) => packetToSample(packet, trackId, i))
+        // Get the packet at or before startTime
+        let packet = await sink.getPacket(startTime)
+        if (!packet) {
+          // Try getting the first packet
+          packet = await sink.getFirstPacket()
+        }
+
+        let sampleNumber = 0
+        while (packet && packet.timestamp < endTime) {
+          if (packet.timestamp >= startTime - packet.duration) {
+            samples.push(packetToSample(packet, trackId, sampleNumber++))
+          }
+          packet = await sink.getNextPacket(packet)
+        }
       } catch {
-        // Silently return empty array - web-demuxer throws "Unknown Error" for various edge cases
-        return []
+        // Return what we have on error
       }
+
+      return samples
     },
 
     async getAllSamples(trackId: number): Promise<DemuxedSample[]> {
-      const trackInfo = trackMap.get(trackId)
-      if (!trackInfo) {
+      const trackData = getTrackData(trackId)
+      if (!trackData) {
         throw new Error(`Track ${trackId} not found`)
       }
 
+      const { sink } = trackData
+      const samples: DemuxedSample[] = []
+
       try {
-        // Use a large end time if duration is unknown (0)
-        const endTime = info.duration > 0 ? info.duration : 3600 // 1 hour max
-        const stream = demuxer.readMediaPacket(trackInfo.type, 0, endTime)
-        const packets = await collectStream(stream)
-        return packets.map((packet, i) => packetToSample(packet, trackId, i))
+        let sampleNumber = 0
+        for await (const packet of sink.packets()) {
+          samples.push(packetToSample(packet, trackId, sampleNumber++))
+        }
       } catch {
-        // Silently return empty array
-        return []
+        // Return what we have on error
       }
+
+      return samples
     },
 
     async getKeyframeBefore(trackId: number, time: number): Promise<DemuxedSample | null> {
-      const trackInfo = trackMap.get(trackId)
-      if (!trackInfo) {
+      const trackData = getTrackData(trackId)
+      if (!trackData) {
         throw new Error(`Track ${trackId} not found`)
       }
 
       try {
-        // Use seekMediaPacket which handles stream selection by type
-        // AVSEEK_FLAG_BACKWARD seeks to keyframe at or before time
-        const packet = await demuxer.seekMediaPacket(trackInfo.type, time, AVSeekFlag.AVSEEK_FLAG_BACKWARD)
-
+        const { sink } = trackData
+        const packet = await sink.getKeyPacket(time)
         if (!packet) return null
-
         return packetToSample(packet, trackId, 0)
       } catch {
         return null
@@ -308,7 +303,7 @@ export async function createDemuxer(source: ArrayBuffer | File): Promise<Demuxer
     },
 
     destroy() {
-      demuxer.destroy()
+      input[Symbol.dispose]?.()
     },
   }
 }
