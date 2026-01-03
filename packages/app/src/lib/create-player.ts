@@ -87,6 +87,25 @@ export async function createPlayer(width: number, height: number): Promise<Playe
   let clockStartTime = 0 // performance.now() when playback started
   let clockStartPosition = 0 // clockTime when playback started
 
+  // Track last sent frames to avoid redundant transfers
+  // After transfer, the frame is detached - we skip it on subsequent calls
+  const lastSentFrames: (VideoFrame | null)[] = [null, null, null, null]
+
+  // Track all transferred frames to avoid re-transferring detached frames
+  const transferredFrames = new WeakSet<VideoFrame>()
+
+  /**
+   * Check if a frame is still valid (not transferred/detached/closed)
+   */
+  function isFrameValid(frame: VideoFrame): boolean {
+    try {
+      // Accessing codedWidth throws if frame is detached or closed
+      return frame.codedWidth > 0
+    } catch {
+      return false
+    }
+  }
+
   /**
    * Calculate current clock time
    */
@@ -110,13 +129,24 @@ export async function createPlayer(width: number, height: number): Promise<Playe
       if (playback) {
         // Use tick() when playing, getFrameAt() when static
         const frame = isPlaying ? playback.tick(time) : playback.getFrameAt(time)
-        if (frame) {
-          // Clone frame before transferring (transfer moves ownership to worker)
-          const clonedFrame = frame.clone()
-          compositor.setFrame(i, clonedFrame)
-        } else {
+
+        // Skip if same as last sent
+        if (frame === lastSentFrames[i]) continue
+
+        // For null frames, just send to clear the slot
+        if (!frame) {
+          lastSentFrames[i] = null
           compositor.setFrame(i, null)
+          continue
         }
+
+        // Skip if frame was already transferred (would be detached) or is invalid
+        if (transferredFrames.has(frame) || !isFrameValid(frame)) continue
+
+        // Transfer the frame
+        transferredFrames.add(frame)
+        lastSentFrames[i] = frame
+        compositor.setFrame(i, frame)
       }
     }
 
@@ -210,7 +240,8 @@ export async function createPlayer(width: number, height: number): Promise<Playe
         slot.demuxer = null
       }
 
-      // Clear compositor source
+      // Reset frame tracking and clear compositor
+      lastSentFrames[trackIndex] = null
       compositor.setFrame(trackIndex, null)
     },
 
@@ -289,6 +320,8 @@ export async function createPlayer(width: number, height: number): Promise<Playe
         if (slot.playback) {
           seekPromises.push(slot.playback.seek(0))
         }
+        // Reset frame tracking - new frames after seek
+        lastSentFrames[i] = null
       }
       await Promise.all(seekPromises)
 
@@ -314,6 +347,8 @@ export async function createPlayer(width: number, height: number): Promise<Playe
         if (slot.playback) {
           seekPromises.push(slot.playback.seek(time))
         }
+        // Reset frame tracking - new frames after seek
+        lastSentFrames[i] = null
       }
       await Promise.all(seekPromises)
 
