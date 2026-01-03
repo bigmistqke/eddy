@@ -1,23 +1,19 @@
-/**
- * Playback Compositor
- * Wraps the WebGL compositor and connects Playback instances for rendering
- */
-
 import { createCompositor, type VideoSource } from "@klip/compositor";
 import type { Playback } from "@klip/playback";
+import { createComputed } from "solid-js";
 
-export interface PlaybackSlot {
+export interface PlayerSlot {
   playback: Playback;
   trackIndex: number;
   unsubscribe: () => void;
 }
 
-export interface PlaybackCompositor {
+export interface Player {
   /** The canvas element for rendering */
   readonly canvas: HTMLCanvasElement;
 
   /** Currently attached players */
-  readonly slots: ReadonlyArray<PlaybackSlot | null>;
+  readonly slots: ReadonlyArray<PlayerSlot | null>;
 
   /** Set a video source for a track (for preview) */
   setSource(trackIndex: number, source: VideoSource | null): void;
@@ -56,15 +52,13 @@ export function createPlayer(
   width: number,
   height: number,
   options: PlayerOptions = {}
-): PlaybackCompositor {
-  const autoStart = options.autoStart ?? true;
+): Player {
   const compositor = createCompositor(width, height);
-
-  const slots: (PlaybackSlot | null)[] = [null, null, null, null];
+  const slots: (PlayerSlot | null)[] = [null, null, null, null];
   let animationFrameId: number | null = null;
   let isRunning = false;
 
-  const renderLoop = () => {
+  function renderLoop() {
     if (!isRunning) return;
 
     // Update compositor with current frames from all players
@@ -79,7 +73,37 @@ export function createPlayer(
     animationFrameId = requestAnimationFrame(renderLoop);
   };
 
-  const instance: PlaybackCompositor = {
+
+  function start(): void {
+    if (isRunning) return;
+    isRunning = true;
+    animationFrameId = requestAnimationFrame(renderLoop);
+  }
+
+  function stop(): void {
+    isRunning = false;
+    if (animationFrameId !== null) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
+  }
+
+  function detach(trackIndex: number): void {
+    const slot = slots[trackIndex];
+    if (slot) {
+      slot.unsubscribe();
+      compositor.setFrame(trackIndex, null);
+      slots[trackIndex] = null;
+    }
+  }
+
+  createComputed(() => {
+    if (options.autoStart ?? true) {
+      start();
+    }
+  })
+
+  return {
     get canvas() {
       return compositor.canvas;
     },
@@ -88,13 +112,11 @@ export function createPlayer(
       return slots;
     },
 
-    setSource(trackIndex: number, source: VideoSource | null): void {
-      compositor.setSource(trackIndex, source);
-    },
-
-    setFrame(trackIndex: number, frame: VideoFrame | null): void {
-      compositor.setFrame(trackIndex, frame);
-    },
+    detach,
+    start,
+    stop,
+    setSource: compositor.setSource.bind(compositor),
+    setFrame: compositor.setFrame.bind(compositor),
 
     attach(trackIndex: number, playback: Playback): void {
       if (trackIndex < 0 || trackIndex > 3) {
@@ -103,7 +125,7 @@ export function createPlayer(
 
       // Detach existing if any
       if (slots[trackIndex]) {
-        this.detach(trackIndex);
+        detach(trackIndex);
       }
 
       const unsubscribe = playback.onFrame(() => {
@@ -117,29 +139,6 @@ export function createPlayer(
       };
     },
 
-    detach(trackIndex: number): void {
-      const slot = slots[trackIndex];
-      if (slot) {
-        slot.unsubscribe();
-        compositor.setFrame(trackIndex, null);
-        slots[trackIndex] = null;
-      }
-    },
-
-    start(): void {
-      if (isRunning) return;
-      isRunning = true;
-      animationFrameId = requestAnimationFrame(renderLoop);
-    },
-
-    stop(): void {
-      isRunning = false;
-      if (animationFrameId !== null) {
-        cancelAnimationFrame(animationFrameId);
-        animationFrameId = null;
-      }
-    },
-
     renderFrame(): void {
       for (const slot of slots) {
         if (slot) {
@@ -151,19 +150,13 @@ export function createPlayer(
     },
 
     destroy(): void {
-      this.stop();
+      stop();
       for (let i = 0; i < 4; i++) {
         if (slots[i]) {
-          this.detach(i);
+          detach(i);
         }
       }
       compositor.destroy();
     },
   };
-
-  if (autoStart) {
-    instance.start();
-  }
-
-  return instance;
 }
