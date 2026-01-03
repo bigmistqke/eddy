@@ -12,7 +12,8 @@ import {
 import { publishProject } from '~/lib/atproto/crud'
 import { createPlayer, type Player } from '~/lib/create-player'
 import { createProjectStore } from '~/lib/project-store'
-import { createRecorder, requestMediaAccess } from '~/lib/recorder'
+import { requestMediaAccess } from '~/lib/recorder'
+import { createRecorderWorker, type WorkerRecorder } from '~/workers'
 
 const log = debug('editor', true)
 
@@ -90,7 +91,7 @@ export function createEditor(options: CreateEditorOptions) {
 
   let previewVideo: HTMLVideoElement | null = null
   let stream: MediaStream | null = null
-  let recorder: ReturnType<typeof createRecorder> | null = null
+  let recorder: WorkerRecorder | null = null
 
   // Load project if rkey provided
   createEffect((projectLoaded?: boolean) => {
@@ -197,7 +198,7 @@ export function createEditor(options: CreateEditorOptions) {
       throw new Error('Cannot start recording without media stream')
     }
 
-    recorder = createRecorder(stream)
+    recorder = createRecorderWorker(stream)
     recorder.start()
 
     setIsRecording(true)
@@ -223,6 +224,7 @@ export function createEditor(options: CreateEditorOptions) {
       if (result) {
         log('stopRecording: got result', { blobSize: result.blob.size, duration: result.duration })
         result.firstFrame?.close() // We don't need it
+
         project.addRecording(track, result.blob, result.duration)
       }
 
