@@ -10,9 +10,12 @@
     "test": "pnpm -r test",
     "test:run": "pnpm -r test:run",
     "test:browser": "pnpm --filter @eddy/codecs test:browser",
-    "test:browser:run": "pnpm --filter @eddy/codecs test:browser:run"
+    "test:browser:run": "pnpm --filter @eddy/codecs test:browser:run",
+    "perf": "npx tsx scripts/perf-test.ts"
   },
   "devDependencies": {
+    "puppeteer": "^24.34.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.7.0"
   },
   "dependencies": {

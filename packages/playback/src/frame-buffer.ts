@@ -1,7 +1,9 @@
 import type { DemuxedSample, Demuxer, VideoTrackInfo } from '@eddy/codecs'
 import { createVideoDecoder } from '@eddy/codecs'
-import { debug } from '@eddy/utils'
+import { debug, getGlobalPerfMonitor } from '@eddy/utils'
 import { type FrameCache, getSharedFrameCache } from './frame-cache'
+
+const perf = getGlobalPerfMonitor()
 
 /** A decoded frame with timing information */
 export interface BufferedFrame {
@@ -208,7 +210,9 @@ export async function createFrameBuffer(
       }
 
       try {
+        perf.start('decode')
         const frame = await decoder.decode(sample)
+        perf.end('decode')
         if (destroyed) {
           frame.close()
           return
@@ -217,6 +221,7 @@ export async function createFrameBuffer(
         addFrame(frame, sample.pts, sample.duration)
         bufferPosition = sample.pts + sample.duration
         decodedCount++
+        perf.increment('frames-decoded')
       } catch (err) {
         errorCount++
         log('decodeAndBuffer error', { pts: sample.pts, isKeyframe: sample.isKeyframe, error: err })

@@ -1,10 +1,11 @@
 import type { Demuxer } from '@eddy/codecs'
 import { createAudioPipeline, type AudioPipeline } from '@eddy/mixer'
 import { createPlayback, type Playback } from '@eddy/playback'
-import { debug } from '@eddy/utils'
+import { debug, getGlobalPerfMonitor } from '@eddy/utils'
 import { createCompositorWorkerWrapper, createDemuxerWorker } from '~/workers'
 
 const log = debug('player', false)
+const perf = getGlobalPerfMonitor()
 
 export interface TrackSlot {
   playback: Playback | null
@@ -55,11 +56,22 @@ export interface Player {
   /** Current playback time */
   readonly currentTime: number
 
+  /** Log performance summary to console */
+  logPerf(): void
+
+  /** Reset performance counters */
+  resetPerf(): void
+
   /** Clean up all resources */
   destroy(): void
 }
 
 const NUM_TRACKS = 4
+
+// Expose perf monitor globally for console debugging
+if (typeof window !== 'undefined') {
+  ;(window as any).eddy = { perf }
+}
 
 /**
  * Create a player that manages compositor, playbacks, and audio pipelines
@@ -106,21 +118,27 @@ export async function createPlayer(width: number, height: number): Promise<Playe
    * Single render loop - drives everything
    */
   function renderLoop() {
+    perf.start('renderLoop')
+
     const time = getCurrentClockTime()
 
     // Update compositor with frames from all playbacks
+    perf.start('getFrames')
     for (let i = 0; i < NUM_TRACKS; i++) {
       const { playback } = slots[i]
       if (playback) {
         // Use tick() when playing, getFrameAt() when static
         // Note: With LRU cache, each call returns a NEW clone
+        perf.start(`tick-${i}`)
         const frame = isPlaying ? playback.tick(time) : playback.getFrameAt(time)
+        perf.end(`tick-${i}`)
 
-        // Handle null frames
+        // Handle null frames (cache miss or no playback)
         if (!frame) {
           if (lastSentTimestamp[i] !== null) {
             lastSentTimestamp[i] = null
             compositor.setFrame(i, null)
+            perf.increment(`frame-miss-${i}`)
           }
           continue
         }
@@ -131,20 +149,29 @@ export async function createPlayer(width: number, height: number): Promise<Playe
         if (frameTimestamp === lastSentTimestamp[i]) {
           // Same frame as before - close the clone, don't send
           frame.close()
+          perf.increment('frame-reused')
           continue
         }
 
         // New frame - transfer to compositor and update tracking
         lastSentTimestamp[i] = frameTimestamp
+        perf.start(`setFrame-${i}`)
         compositor.setFrame(i, frame)
+        perf.end(`setFrame-${i}`)
+        perf.increment('frame-sent')
       }
     }
+    perf.end('getFrames')
 
     // Render the compositor
+    perf.start('compositor.render')
     compositor.render()
+    perf.end('compositor.render')
 
     // Update stored clock time
     clockTime = time
+
+    perf.end('renderLoop')
 
     // Schedule next frame
     animationFrameId = requestAnimationFrame(renderLoop)
@@ -357,6 +384,14 @@ export async function createPlayer(width: number, height: number): Promise<Playe
 
     setPan(trackIndex: number, value: number): void {
       slots[trackIndex].audioPipeline.setPan(value)
+    },
+
+    logPerf(): void {
+      perf.logSummary()
+    },
+
+    resetPerf(): void {
+      perf.reset()
     },
 
     destroy(): void {

@@ -14,3 +14,12 @@ export function debug(title: string, enabled: boolean) {
     }
   }
 }
+
+// Performance monitoring
+export {
+  createPerfMonitor,
+  getGlobalPerfMonitor,
+  timed,
+  type PerfMonitor,
+  type PerfStats,
+} from './perf'

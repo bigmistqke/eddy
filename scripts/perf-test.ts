@@ -1,0 +1,319 @@
+#!/usr/bin/env npx tsx
+/**
+ * Performance test script using Puppeteer
+ *
+ * Usage:
+ *   1. Start the dev server: pnpm dev
+ *   2. Run this script: npx tsx scripts/perf-test.ts
+ *
+ * Options:
+ *   --url=<url>        App URL (default: http://127.0.0.1:5173)
+ *   --duration=<ms>    How long to run playback test (default: 10000)
+ *   --headless         Run in headless mode
+ *   --video=<path>     Path to test video file (will be loaded into all 4 tracks)
+ *   --tracks=<n>       Number of tracks to load (1-4, default: 4)
+ */
+
+import puppeteer, { type Browser, type Page } from 'puppeteer'
+import * as fs from 'fs'
+import * as path from 'path'
+
+// Parse CLI args
+const args = process.argv.slice(2)
+const getArg = (name: string, defaultValue: string): string => {
+  const arg = args.find(a => a.startsWith(`--${name}=`))
+  return arg ? arg.split('=')[1] : defaultValue
+}
+const hasFlag = (name: string): boolean => args.includes(`--${name}`)
+
+const APP_URL = getArg('url', 'http://127.0.0.1:5173')
+const DURATION = parseInt(getArg('duration', '10000'), 10)
+const HEADLESS = hasFlag('headless')
+const VIDEO_PATH = getArg('video', '')
+const NUM_TRACKS = Math.min(4, Math.max(1, parseInt(getArg('tracks', '4'), 10)))
+
+interface PerfStats {
+  samples: number
+  avg: number
+  max: number
+  min: number
+  overThreshold: number
+}
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function waitForSelector(page: Page, selector: string, timeout = 10000): Promise<void> {
+  await page.waitForSelector(selector, { timeout })
+}
+
+async function main() {
+  console.log('🚀 Starting performance test...')
+  console.log(`   URL: ${APP_URL}`)
+  console.log(`   Duration: ${DURATION}ms`)
+  console.log(`   Headless: ${HEADLESS}`)
+  console.log(`   Video: ${VIDEO_PATH || '(required - use --video=<path>)'}`)
+  console.log(`   Tracks: ${NUM_TRACKS}`)
+  console.log('')
+
+  if (!VIDEO_PATH || !fs.existsSync(VIDEO_PATH)) {
+    console.error('❌ Error: --video=<path> is required')
+    console.error('   Please provide a path to a test video file (WebM or MP4)')
+    console.error('')
+    console.error('   Example: pnpm perf --video=test-clip.webm')
+    process.exit(1)
+  }
+
+  let browser: Browser | null = null
+
+  try {
+    // Launch browser with permissions for camera/mic
+    browser = await puppeteer.launch({
+      headless: HEADLESS,
+      args: [
+        '--use-fake-ui-for-media-stream', // Auto-allow camera/mic
+        '--use-fake-device-for-media-stream', // Use fake video/audio
+        '--autoplay-policy=no-user-gesture-required',
+        '--disable-web-security', // For local testing
+        '--allow-file-access-from-files',
+      ],
+      defaultViewport: { width: 1280, height: 720 },
+    })
+
+    const page = await browser.newPage()
+
+    // Grant camera/microphone permissions
+    const context = browser.defaultBrowserContext()
+    await context.overridePermissions(APP_URL, [
+      'camera',
+      'microphone',
+    ])
+
+    // Enable console logging from the page
+    page.on('console', msg => {
+      if (msg.type() === 'log' || msg.type() === 'info') {
+        const text = msg.text()
+        if (text.includes('Performance') || text.includes('perf')) {
+          console.log(`[page] ${text}`)
+        }
+      }
+    })
+
+    // Navigate to editor
+    console.log('📍 Navigating to editor...')
+    await page.goto(`${APP_URL}/editor`, { waitUntil: 'networkidle0' })
+    await sleep(2000) // Wait for app to initialize
+
+    // Check if we're on the editor page
+    const editorExists = await page.$('[class*="compositorContainer"]')
+    if (!editorExists) {
+      console.log('⚠️  Editor not found - might need authentication')
+      console.log('   Navigate to the editor manually and try again')
+
+      // Wait for user to navigate
+      console.log('   Waiting 30s for manual navigation...')
+      await sleep(30000)
+    }
+
+    // Wait for player to initialize
+    console.log('⏳ Waiting for player to initialize...')
+    await page.waitForFunction(() => !!(window as any).__KLIP_DEBUG__?.player, { timeout: 10000 })
+
+    // Read video file and convert to base64
+    console.log('📼 Loading test video file...')
+    const videoBuffer = fs.readFileSync(VIDEO_PATH)
+    const videoBase64 = videoBuffer.toString('base64')
+    const mimeType = VIDEO_PATH.endsWith('.mp4') ? 'video/mp4' : 'video/webm'
+
+    // Load video into each track using the debug interface
+    console.log(`📥 Loading video into ${NUM_TRACKS} tracks...`)
+
+    for (let trackIndex = 0; trackIndex < NUM_TRACKS; trackIndex++) {
+      console.log(`   Track ${trackIndex + 1}/${NUM_TRACKS}...`)
+
+      await page.evaluate(
+        async (base64: string, mime: string, idx: number) => {
+          const binary = atob(base64)
+          const bytes = new Uint8Array(binary.length)
+          for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i)
+          }
+          const blob = new Blob([bytes], { type: mime })
+          const player = (window as any).__KLIP_DEBUG__?.player
+          if (player) {
+            await player.loadClip(idx, blob)
+          }
+        },
+        videoBase64,
+        mimeType,
+        trackIndex,
+      )
+
+      await sleep(500) // Wait for clip to load
+    }
+
+    console.log('✅ All clips loaded')
+
+    // Reset perf counters before test
+    console.log('🔄 Resetting perf counters...')
+    await page.evaluate(() => {
+      if ((window as any).eddy?.perf) {
+        ;(window as any).eddy.perf.reset()
+      }
+    })
+
+    // Start playback using debug interface
+    console.log('▶️  Starting playback...')
+    await page.evaluate(async () => {
+      const player = (window as any).__KLIP_DEBUG__?.player
+      if (player) {
+        await player.play(0)
+      }
+    })
+
+    // Let it play for the specified duration
+    console.log(`⏱️  Running for ${DURATION}ms...`)
+    await sleep(DURATION)
+
+    // Stop playback
+    console.log('⏹️  Stopping playback...')
+    await page.evaluate(async () => {
+      const player = (window as any).__KLIP_DEBUG__?.player
+      if (player) {
+        await player.stop()
+      }
+    })
+
+    // Collect perf stats
+    console.log('📊 Collecting performance stats...')
+    const stats = await page.evaluate(() => {
+      const perf = (window as any).eddy?.perf
+      if (!perf) return null
+
+      return {
+        stats: perf.getAllStats(),
+        counters: perf.getCounters(),
+      }
+    })
+
+    if (stats?.stats) {
+      console.log('')
+      console.log('═══════════════════════════════════════════════════════════════')
+      console.log('                    PERFORMANCE RESULTS')
+      console.log('═══════════════════════════════════════════════════════════════')
+      console.log('')
+
+      // Sort by average time (descending)
+      const sortedLabels = Object.keys(stats.stats).sort(
+        (a, b) => stats.stats[b].avg - stats.stats[a].avg
+      )
+
+      // Table header
+      console.log(
+        '  Label                        │ Avg (ms) │ Max (ms) │ Min (ms) │ Samples │ Slow  │ Slow %'
+      )
+      console.log(
+        '───────────────────────────────┼──────────┼──────────┼──────────┼─────────┼───────┼────────'
+      )
+
+      for (const label of sortedLabels) {
+        const s: PerfStats = stats.stats[label]
+        const slowPercent = ((s.overThreshold / s.samples) * 100).toFixed(1)
+        console.log(
+          `  ${label.padEnd(29)} │ ${s.avg.toFixed(2).padStart(8)} │ ${s.max.toFixed(2).padStart(8)} │ ${s.min.toFixed(2).padStart(8)} │ ${String(s.samples).padStart(7)} │ ${String(s.overThreshold).padStart(5)} │ ${slowPercent.padStart(5)}%`
+        )
+      }
+
+      console.log('')
+      console.log('═══════════════════════════════════════════════════════════════')
+
+      // Summary
+      const renderLoop = stats.stats['renderLoop']
+      if (renderLoop) {
+        const fps = 1000 / renderLoop.avg
+        const droppedPercent = (renderLoop.overThreshold / renderLoop.samples) * 100
+        console.log('')
+        console.log(`  📈 Effective FPS: ${fps.toFixed(1)}`)
+        console.log(`  ⚠️  Dropped frames: ${renderLoop.overThreshold} (${droppedPercent.toFixed(1)}%)`)
+        console.log(`  ⏱️  Avg frame time: ${renderLoop.avg.toFixed(2)}ms`)
+        console.log(`  📉 Worst frame: ${renderLoop.max.toFixed(2)}ms`)
+        console.log('')
+
+        if (droppedPercent > 10) {
+          console.log('  ❌ POOR: More than 10% dropped frames')
+        } else if (droppedPercent > 5) {
+          console.log('  ⚠️  FAIR: 5-10% dropped frames')
+        } else if (droppedPercent > 1) {
+          console.log('  ✅ GOOD: Less than 5% dropped frames')
+        } else {
+          console.log('  🎯 EXCELLENT: Less than 1% dropped frames')
+        }
+      }
+
+      // Display counters
+      if (stats.counters && Object.keys(stats.counters).length > 0) {
+        console.log('')
+        console.log('───────────────────────────────────────────────────────────────')
+        console.log('                         COUNTERS')
+        console.log('───────────────────────────────────────────────────────────────')
+        console.log('')
+
+        const counters = stats.counters as Record<string, number>
+        const sortedCounters = Object.entries(counters).sort((a, b) => b[1] - a[1])
+
+        for (const [label, value] of sortedCounters) {
+          console.log(`  ${label.padEnd(30)} │ ${String(value).padStart(8)}`)
+        }
+
+        // Calculate cache hit rate
+        const cacheHits = counters['cache-hit'] ?? 0
+        const cacheMisses = counters['cache-miss'] ?? 0
+        const totalCacheAccess = cacheHits + cacheMisses
+        if (totalCacheAccess > 0) {
+          const hitRate = (cacheHits / totalCacheAccess) * 100
+          console.log('')
+          console.log(`  📊 Cache hit rate: ${hitRate.toFixed(1)}% (${cacheHits}/${totalCacheAccess})`)
+
+          if (hitRate < 90) {
+            console.log('  ⚠️  Low cache hit rate - frames being evicted before use')
+          }
+        }
+
+        // Check per-track frame misses
+        const frameMisses: number[] = []
+        for (let i = 0; i < 4; i++) {
+          frameMisses.push(counters[`frame-miss-${i}`] ?? 0)
+        }
+        const totalMisses = frameMisses.reduce((a, b) => a + b, 0)
+        if (totalMisses > 0) {
+          console.log('')
+          console.log(`  🎬 Frame misses by track: [${frameMisses.join(', ')}]`)
+          console.log('  ⚠️  Frame misses cause visual jank!')
+        }
+      }
+    } else {
+      console.log('❌ Could not collect perf stats - window.eddy.perf not found')
+    }
+
+    // Also log to page console for the summary
+    await page.evaluate(() => {
+      if ((window as any).eddy?.perf) {
+        ;(window as any).eddy.perf.logSummary()
+      }
+    })
+
+  } catch (error) {
+    console.error('❌ Error:', error)
+    process.exit(1)
+  } finally {
+    if (browser) {
+      await browser.close()
+    }
+  }
+
+  console.log('')
+  console.log('✅ Performance test complete!')
+}
+
+main()

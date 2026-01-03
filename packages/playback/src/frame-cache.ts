@@ -1,6 +1,7 @@
-import { debug } from '@eddy/utils'
+import { debug, getGlobalPerfMonitor } from '@eddy/utils'
 
 const log = debug('frame-cache', false)
+const perf = getGlobalPerfMonitor()
 
 /** Unique key for a cached frame */
 export type FrameKey = `${number}:${number}` // trackId:pts
@@ -99,8 +100,11 @@ export function createFrameCache(maxFrames: number = 1024): FrameCache {
       const entry = cache.get(key)
 
       if (!entry) {
+        perf.increment('cache-miss')
         return null
       }
+
+      perf.increment('cache-hit')
 
       // Move to end (most recently used)
       cache.delete(key)
@@ -108,7 +112,10 @@ export function createFrameCache(maxFrames: number = 1024): FrameCache {
 
       // Return a clone so cache keeps original
       try {
-        return entry.frame.clone()
+        perf.start('frame-clone')
+        const clone = entry.frame.clone()
+        perf.end('frame-clone')
+        return clone
       } catch (e) {
         // Frame might be closed/invalid
         log('get: clone failed', { key, error: e })
@@ -220,7 +227,7 @@ let sharedCache: FrameCache | null = null
  * Get the shared frame cache instance.
  * Creates one if it doesn't exist.
  */
-export function getSharedFrameCache(maxFrames: number = 120): FrameCache {
+export function getSharedFrameCache(maxFrames: number = 512): FrameCache {
   if (!sharedCache) {
     sharedCache = createFrameCache(maxFrames)
   }

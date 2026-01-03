@@ -30,3 +30,7 @@ pnpm-debug.log*
 
 # TypeScript cache
 *.tsbuildinfo
+
+# Test assets
+scripts/*.webm
+scripts/*.mp4
