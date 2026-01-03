@@ -1,8 +1,9 @@
-import { createDemuxer, type Demuxer } from '@eddy/codecs'
+import type { Demuxer } from '@eddy/codecs'
 import { createCompositor, type VideoSource } from '@eddy/compositor'
 import { createAudioPipeline, type AudioPipeline } from '@eddy/mixer'
 import { createPlayback, type Playback } from '@eddy/playback'
 import { debug } from '@eddy/utils'
+import { createDemuxerWorker } from '~/workers'
 
 const log = debug('player', true)
 
@@ -174,9 +175,8 @@ export function createPlayer(width: number, height: number): Player {
         slot.demuxer = null
       }
 
-      // Create new demuxer and playback
-      const buffer = await blob.arrayBuffer()
-      const demuxer = await createDemuxer(buffer)
+      // Create new demuxer and playback (demuxing runs in worker)
+      const demuxer = await createDemuxerWorker(blob)
       const playback = await createPlayback(demuxer, {
         audioDestination: slot.audioPipeline.gain,
       })

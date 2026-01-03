@@ -14,5 +14,8 @@
   },
   "devDependencies": {
     "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "@bigmistqke/rpc": "^0.1.2"
   }
 }

@@ -6,3 +6,4 @@
 
 export * from './types'
 export * from './create-worker'
+export * from './create-demuxer-worker'
