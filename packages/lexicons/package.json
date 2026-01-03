@@ -1,0 +1,18 @@
+{
+  "name": "@klip/lexicons",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@atproto/lexicon": "^0.6.0",
+    "@bigmistqke/lexicon-to-valibot": "^0.1.6",
+    "valibot": "^1.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

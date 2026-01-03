@@ -10,9 +10,9 @@ import {
   Show,
 } from "solid-js";
 import { type AudioPipeline, createAudioPipeline } from "~/lib/audio/pipeline";
-import type { AudioEffect } from "~/lib/lexicons";
+import type { AudioEffect } from "@klip/lexicons";
 import { usePlayer } from "~/lib/media/usePlayer";
-import type { Player } from "~/lib/media/player";
+import type { Player } from "@klip/media";
 import { useProject } from "~/lib/project/context";
 import styles from "./Track.module.css";
 

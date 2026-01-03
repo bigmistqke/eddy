@@ -1,6 +1,6 @@
 import type { Agent } from '@atproto/api'
 import * as v from 'valibot'
-import { type Project, projectValidators, projectWireValidators, type Stem, type StemRef, stemValidators, stemWireValidators } from '../lexicons'
+import { type Project, projectValidators, projectWireValidators, type Stem, type StemRef, stemValidators, stemWireValidators } from '@klip/lexicons'
 
 export interface RecordRef {
   uri: string

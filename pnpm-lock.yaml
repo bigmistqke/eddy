@@ -7,25 +7,31 @@ settings:
 importers:
 
   .:
+    devDependencies:
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+
+  packages/app:
     dependencies:
       '@atproto/api':
         specifier: ^0.13.0
         version: 0.13.35
-      '@atproto/lexicon':
-        specifier: ^0.6.0
-        version: 0.6.0
       '@atproto/oauth-client-browser':
         specifier: ^0.3.0
         version: 0.3.38
-      '@bigmistqke/lexicon-to-valibot':
-        specifier: ^0.1.6
-        version: 0.1.6(valibot@1.2.0(typescript@5.9.3))
       '@bigmistqke/view.gl':
         specifier: ^0.1.9
         version: 0.1.9
       '@bigmistqke/worker-proxy':
         specifier: ^0.0.13
         version: 0.0.13
+      '@klip/lexicons':
+        specifier: workspace:*
+        version: link:../lexicons
+      '@klip/media':
+        specifier: workspace:*
+        version: link:../media
       '@solidjs/router':
         specifier: ^0.15.0
         version: 0.15.4(solid-js@1.9.10)
@@ -41,13 +47,42 @@ importers:
       solid-js:
         specifier: ^1.9.0
         version: 1.9.10
-      valibot:
-        specifier: ^1.2.0
-        version: 1.2.0(typescript@5.9.3)
     devDependencies:
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.3
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vite:
+        specifier: ^6.0.0
+        version: 6.4.1(@types/node@22.19.3)
+      vite-plugin-solid:
+        specifier: ^2.11.0
+        version: 2.11.10(solid-js@1.9.10)(vite@6.4.1(@types/node@22.19.3))
+
+  packages/lexicons:
+    dependencies:
+      '@atproto/lexicon':
+        specifier: ^0.6.0
+        version: 0.6.0
+      '@bigmistqke/lexicon-to-valibot':
+        specifier: ^0.1.6
+        version: 0.1.6(valibot@1.2.0(typescript@5.9.3))
+      valibot:
+        specifier: ^1.2.0
+        version: 1.2.0(typescript@5.9.3)
+    devDependencies:
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+
+  packages/media:
+    dependencies:
+      mediabunny:
+        specifier: ^1.27.3
+        version: 1.27.3
+    devDependencies:
       '@vitest/browser':
         specifier: ^4.0.16
         version: 4.0.16(vite@6.4.1(@types/node@22.19.3))(vitest@4.0.16)
@@ -60,12 +95,6 @@ importers:
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
-      vite:
-        specifier: ^6.0.0
-        version: 6.4.1(@types/node@22.19.3)
-      vite-plugin-solid:
-        specifier: ^2.11.0
-        version: 2.11.10(solid-js@1.9.10)(vite@6.4.1(@types/node@22.19.3))
       vitest:
         specifier: ^4.0.16
         version: 4.0.16(@types/node@22.19.3)(@vitest/browser-playwright@4.0.16)

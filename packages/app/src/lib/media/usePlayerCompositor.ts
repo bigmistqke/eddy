@@ -4,8 +4,7 @@
 
 import { onCleanup, onMount, type Accessor } from 'solid-js'
 import type { Compositor } from '../video/compositor'
-import type { Player } from './player'
-import { createPlayerCompositor, type PlayerCompositor } from './player-compositor'
+import { createPlayerCompositor, type PlayerCompositor, type Player } from '@klip/media'
 
 export interface UsePlayerCompositorOptions {
   /** Whether to start rendering immediately (default: true) */

@@ -1,6 +1,6 @@
 import type { Agent } from '@atproto/api'
 import { createStore, produce } from 'solid-js/store'
-import type { AudioEffect, Project, Track } from '~/lib/lexicons'
+import type { AudioEffect, Project, Track } from '@klip/lexicons'
 import { getProjectByRkey, getStemBlob } from '../atproto/records'
 
 // Local state extensions (not persisted to PDS)
