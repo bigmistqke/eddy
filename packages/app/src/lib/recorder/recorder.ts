@@ -1,10 +1,8 @@
 import {
-  Input,
-  ReadableStreamSource,
-  EncodedPacketSink,
   ALL_FORMATS,
-  type InputVideoTrack,
-  type EncodedPacket,
+  EncodedPacketSink,
+  Input,
+  ReadableStreamSource
 } from 'mediabunny'
 
 export interface RecordingResult {

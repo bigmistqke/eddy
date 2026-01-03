@@ -1,7 +1,7 @@
 import { Route, Router } from "@solidjs/router";
 import { lazy, type ParentProps, Suspense } from "solid-js";
 import { Header } from "~/components/layout/Header";
-import { AuthProvider } from "~/lib/atproto/AuthContext";
+import { AuthProvider } from "~/lib/atproto/auth-context";
 import styles from "./App.module.css";
 import "./index.css";
 

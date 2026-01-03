@@ -3,7 +3,7 @@ import { createDemuxer, type DemuxerInfo, type DemuxedSample } from '../demuxer'
 
 // Load test fixtures via fetch in the browser
 async function loadFixture(filename: string): Promise<ArrayBuffer> {
-  const response = await fetch(`/src/lib/media/__tests__/fixtures/${filename}`)
+  const response = await fetch(`/src/__tests__/fixtures/${filename}`)
   if (!response.ok) {
     throw new Error(`Failed to load fixture: ${filename}`)
   }

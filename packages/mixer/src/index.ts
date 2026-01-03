@@ -1,6 +1,10 @@
 import { getAudioContext } from './context'
 import { getMasterMixer } from './mixer'
 
+// Re-export context utilities
+export { getAudioContext, resumeAudioContext } from './context'
+export { getMasterMixer, type MasterMixer } from './mixer'
+
 export interface AudioPipeline {
   gain: GainNode
   pan: StereoPannerNode

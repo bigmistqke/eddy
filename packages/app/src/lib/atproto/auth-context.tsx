@@ -8,7 +8,7 @@ import {
   type ParentComponent,
   useContext,
 } from "solid-js";
-import { createAgent, signIn as doSignIn, initSession } from "./client";
+import { createAgent, signIn as doSignIn, initSession } from "./auth";
 
 const getSession = query(async () => {
   const session = await initSession();
@@ -39,8 +39,8 @@ export const AuthProvider: ParentComponent = (props) => {
   });
 
   const agent = createMemo(() => {
-    const s = activeSession();
-    return s ? createAgent(s) : null;
+    const _activeSession = activeSession();
+    return _activeSession ? createAgent(_activeSession) : null;
   });
 
   const loading = () => session() === undefined && !manualSignOut();

@@ -2,17 +2,17 @@
  * Synchronized A/V Player - Coordinates video frame buffer and audio scheduler
  */
 
-import type { Demuxer, VideoTrackInfo, AudioTrackInfo } from './demuxer'
-import type { FrameBuffer } from './frame-buffer'
+import type { AudioTrackInfo, Demuxer, VideoTrackInfo } from '@klip/codecs'
+import { createAudioDecoder, type AudioDecoderHandle } from '@klip/codecs'
 import type { AudioScheduler } from './audio-scheduler'
-import { createFrameBuffer } from './frame-buffer'
 import { createAudioScheduler } from './audio-scheduler'
-import { createAudioDecoder, type AudioDecoderHandle } from './audio-decoder'
+import type { FrameBuffer } from './frame-buffer'
+import { createFrameBuffer } from './frame-buffer'
 
-/** Player state */
-export type PlayerState = 'idle' | 'loading' | 'ready' | 'playing' | 'paused' | 'seeking' | 'ended'
+/** Playback state */
+export type PlaybackState = 'idle' | 'loading' | 'ready' | 'playing' | 'paused' | 'seeking' | 'ended'
 
-export interface PlayerOptions {
+export interface PlaybackOptions {
   /** How far ahead to buffer video frames (default: 2 seconds) */
   videoBufferAhead?: number
   /** How far ahead to buffer/schedule audio (default: 0.5 seconds) */
@@ -23,9 +23,9 @@ export interface PlayerOptions {
   audioContext?: AudioContext
 }
 
-export interface Player {
+export interface Playback {
   /** Current player state */
-  readonly state: PlayerState
+  readonly state: PlaybackState
 
   /** Current playback time in seconds */
   readonly currentTime: number
@@ -85,7 +85,7 @@ export interface Player {
    * @param callback - Function called when state changes
    * @returns Unsubscribe function
    */
-  onStateChange(callback: (state: PlayerState) => void): () => void
+  onStateChange(callback: (state: PlaybackState) => void): () => void
 
   /**
    * Clean up all resources
@@ -96,10 +96,10 @@ export interface Player {
 /**
  * Create a synchronized A/V player
  */
-export async function createPlayer(
+export async function createPlayback(
   demuxer: Demuxer,
-  options: PlayerOptions = {}
-): Promise<Player> {
+  options: PlaybackOptions = {}
+): Promise<Transport> {
   const videoBufferAhead = options.videoBufferAhead ?? 2
   const audioBufferAhead = options.audioBufferAhead ?? 0.5
   const maxVideoFrames = options.maxVideoFrames ?? 60
@@ -113,7 +113,7 @@ export async function createPlayer(
   }
 
   // State
-  let state: PlayerState = 'loading'
+  let state: PlaybackState = 'loading'
   let animationFrameId: number | null = null
   let lastFramePts = -1
 
@@ -123,9 +123,9 @@ export async function createPlayer(
 
   // Callbacks
   const frameCallbacks: Array<(frame: VideoFrame | null, time: number) => void> = []
-  const stateCallbacks: Array<(state: PlayerState) => void> = []
+  const stateCallbacks: Array<(state: PlaybackState) => void> = []
 
-  const setState = (newState: PlayerState) => {
+  const setState = (newState: PlaybackState) => {
     if (state !== newState) {
       state = newState
       for (const cb of stateCallbacks) {
@@ -425,7 +425,7 @@ export async function createPlayer(
       }
     },
 
-    onStateChange(callback: (state: PlayerState) => void): () => void {
+    onStateChange(callback: (state: PlaybackState) => void): () => void {
       stateCallbacks.push(callback)
       return () => {
         const index = stateCallbacks.indexOf(callback)

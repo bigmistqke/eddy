@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm --filter @klip/app dev",
-    "build": "pnpm --filter @klip/app build",
+    "build": "pnpm -r build",
     "preview": "pnpm --filter @klip/app preview",
     "test": "pnpm -r test",
     "test:run": "pnpm -r test:run",

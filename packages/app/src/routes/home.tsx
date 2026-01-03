@@ -1,8 +1,18 @@
 import { A } from "@solidjs/router";
 import { FiTrash2 } from "solid-icons/fi";
-import { createResource, createSignal, For, Show, useTransition } from "solid-js";
-import { useAuth } from "~/lib/atproto/AuthContext";
-import { deleteOrphanedStems, deleteProject, listProjects } from "~/lib/atproto/records";
+import {
+  createResource,
+  createSignal,
+  For,
+  Show,
+  useTransition,
+} from "solid-js";
+import { useAuth } from "~/lib/atproto/auth-context";
+import {
+  deleteOrphanedStems,
+  deleteProject,
+  listProjects,
+} from "~/lib/atproto/records";
 import styles from "./home.module.css";
 
 export default function Home() {
@@ -36,7 +46,9 @@ export default function Home() {
     setCleaningUp(true);
     try {
       const deleted = await deleteOrphanedStems(currentAgent);
-      alert(`Deleted ${deleted.length} orphaned stem${deleted.length !== 1 ? "s" : ""}`);
+      alert(
+        `Deleted ${deleted.length} orphaned stem${deleted.length !== 1 ? "s" : ""}`,
+      );
     } catch (error) {
       console.error("Cleanup failed:", error);
       alert(`Cleanup failed: ${error}`);
@@ -66,7 +78,10 @@ export default function Home() {
       <Show when={agent() && projects()?.length}>
         <div class={styles.projectList}>
           <h2 class={styles.projectListTitle}>Your Projects</h2>
-          <div class={styles.projectGrid} style={{ opacity: pending() ? 0.5 : 1 }}>
+          <div
+            class={styles.projectGrid}
+            style={{ opacity: pending() ? 0.5 : 1 }}
+          >
             <For each={projects()}>
               {(project) => (
                 <A href={`/editor/${project.rkey}`} class={styles.projectCard}>

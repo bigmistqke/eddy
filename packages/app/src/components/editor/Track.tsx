@@ -1,3 +1,6 @@
+import type { AudioEffect } from "@klip/lexicons";
+import { type AudioPipeline, createAudioPipeline } from "@klip/mixer";
+import type { Playback } from "@klip/playback";
 import clsx from "clsx";
 import { FiTrash2 } from "solid-icons/fi";
 import {
@@ -9,11 +12,8 @@ import {
   onMount,
   Show,
 } from "solid-js";
-import { type AudioPipeline, createAudioPipeline } from "~/lib/audio/pipeline";
-import type { AudioEffect } from "@klip/lexicons";
-import { usePlayer } from "~/lib/media/usePlayer";
-import type { Player } from "@klip/codecs";
-import { useProject } from "~/lib/project/context";
+import { usePlayback } from "~/lib/player/usePlayer";
+import { useProject } from "~/lib/project-store/project-store-context";
 import styles from "./Track.module.css";
 
 interface TrackProps {
@@ -25,7 +25,7 @@ interface TrackProps {
   currentTime?: number;
   onSelect?: () => void;
   /** Called when player is ready or cleared */
-  onPlayerChange?: (index: number, player: Player | null) => void;
+  onPlayerChange?: (index: number, player: Playback | null) => void;
   onClear?: () => void;
 }
 
@@ -34,7 +34,7 @@ export const Track: Component<TrackProps> = (props) => {
   const trackId = `track-${props.id}`;
 
   // WebCodecs-based player
-  const playerHook = usePlayer({
+  const playerHook = usePlayback({
     onFrame: (frame, time) => {
       // Frame updates handled by PlayerCompositor in Editor
     },
@@ -90,16 +90,19 @@ export const Track: Component<TrackProps> = (props) => {
   createEffect(() => {
     const blob = clipBlob();
     if (blob) {
-      playerHook.load(blob).then(async () => {
-        const player = playerHook.player();
-        if (player) {
-          // Seek to 0 to buffer and display the first frame
-          await playerHook.seek(0);
-          props.onPlayerChange?.(props.id, player);
-        }
-      }).catch((err) => {
-        console.error('Failed to load clip:', err);
-      });
+      playerHook
+        .load(blob)
+        .then(async () => {
+          const player = playerHook.player();
+          if (player) {
+            // Seek to 0 to buffer and display the first frame
+            await playerHook.seek(0);
+            props.onPlayerChange?.(props.id, player);
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to load clip:", err);
+        });
     } else {
       playerHook.unload();
       props.onPlayerChange?.(props.id, null);
@@ -119,7 +122,10 @@ export const Track: Component<TrackProps> = (props) => {
     const currentTime = props.currentTime;
 
     // Detect stop: was playing (or had a position), now not playing with currentTime=0
-    const isStop = !isPlaying && currentTime === 0 && (lastIsPlaying || lastCurrentTime !== 0);
+    const isStop =
+      !isPlaying &&
+      currentTime === 0 &&
+      (lastIsPlaying || lastCurrentTime !== 0);
 
     if (isStop) {
       // Call stop() which properly resets the player

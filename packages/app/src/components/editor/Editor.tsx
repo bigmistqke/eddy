@@ -1,3 +1,9 @@
+import { type Compositor, createCompositor } from "@klip/compositor";
+import {
+  createPlayerCompositor,
+  type PlayerCompositor,
+} from "~/lib/player-compositor/player-compositor";
+import type { Playback } from "@klip/playback";
 import { action, useAction, useNavigate, useSubmission } from "@solidjs/router";
 import {
   FiCircle,
@@ -17,16 +23,12 @@ import {
   onMount,
   Show,
 } from "solid-js";
-import { useAuth } from "~/lib/atproto/AuthContext";
+import { getMasterMixer, resumeAudioContext } from "@klip/mixer";
+import { useAuth } from "~/lib/atproto/auth-context";
 import { publishProject } from "~/lib/atproto/records";
-import { resumeAudioContext } from "~/lib/audio/context";
-import { getMasterMixer } from "~/lib/audio/mixer";
-import { createRecorder, requestMediaAccess } from "~/lib/audio/recorder";
-import { ProjectContext } from "~/lib/project/context";
-import { createProjectStore } from "~/lib/project/store";
-import { type Compositor, createCompositor } from "~/lib/video/compositor";
-import type { Player } from "@klip/codecs";
-import { createPlayerCompositor, type PlayerCompositor } from "@klip/codecs";
+import { createProjectStore } from "~/lib/project-store/project-store";
+import { StoreContext } from "~/lib/project-store/project-store-context";
+import { createRecorder, requestMediaAccess } from "~/lib/recorder/recorder";
 import styles from "./Editor.module.css";
 import { Track } from "./Track";
 
@@ -153,7 +155,9 @@ export const Editor: Component<EditorProps> = (props) => {
     }
 
     // If recording, can't switch tracks
-    if (isRecording()) return;
+    if (isRecording()) {
+      return;
+    }
 
     // Clear previous preview if no recording there
     const prevTrack = selectedTrack();
@@ -173,12 +177,13 @@ export const Editor: Component<EditorProps> = (props) => {
     const track = selectedTrack();
     if (track === null) return;
 
+    // Stop recording and playback
     if (isRecording()) {
-      // Stop recording and playback
       if (!recorder) {
         throw new Error("Recording state but no recorder instance");
       }
       const result = await stopRecording$(recorder);
+
       if (result) {
         // Display first frame immediately if available
         if (result.firstFrame) {
@@ -192,25 +197,30 @@ export const Editor: Component<EditorProps> = (props) => {
         }
         project.addRecording(track, result.blob, result.duration);
       }
+
       stopPreview();
       setIsRecording(false);
       setIsPlaying(false);
       setSelectedTrack(null);
-    } else {
-      // Start recording + play all existing clips from beginning
-      if (!stream) {
-        throw new Error("Cannot start recording without media stream");
-      }
-      recorder = createRecorder(stream);
-      recorder.start();
-      // Force seek by setting undefined first, then 0
-      setCurrentTime(undefined);
-      queueMicrotask(() => {
-        setCurrentTime(0); // Reset all clips to start
-        setIsRecording(true);
-        setIsPlaying(true); // Play existing clips while recording
-      });
+      return;
     }
+
+    // Start recording + play all existing clips from beginning
+    if (!stream) {
+      throw new Error("Cannot start recording without media stream");
+    }
+
+    recorder = createRecorder(stream);
+    recorder.start();
+
+    // Force seek by setting undefined first, then 0
+    setCurrentTime(undefined);
+
+    queueMicrotask(() => {
+      setCurrentTime(0); // Reset all clips to start
+      setIsRecording(true);
+      setIsPlaying(true); // Play existing clips while recording
+    });
   }
 
   async function handlePlayPause() {
@@ -234,7 +244,7 @@ export const Editor: Component<EditorProps> = (props) => {
     setCurrentTime(0);
   }
 
-  function handlePlayerChange(index: number, player: Player | null) {
+  function handlePlayerChange(index: number, player: Playback | null) {
     // Don't override preview video for selected track
     if (selectedTrack() === index && previewVideo) return;
     if (player) {
@@ -317,7 +327,7 @@ export const Editor: Component<EditorProps> = (props) => {
   }
 
   return (
-    <ProjectContext.Provider value={project}>
+    <StoreContext.Provider value={project}>
       <div class={styles.container}>
         <Show when={project.isLoading()}>
           <div class={styles.loadingOverlay}>Loading project...</div>
@@ -398,6 +408,6 @@ export const Editor: Component<EditorProps> = (props) => {
           </For>
         </div>
       </div>
-    </ProjectContext.Provider>
+    </StoreContext.Provider>
   );
 };

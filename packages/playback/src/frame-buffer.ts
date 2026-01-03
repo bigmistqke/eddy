@@ -1,6 +1,5 @@
-import type { Demuxer, DemuxedSample, VideoTrackInfo } from './demuxer'
-import type { VideoDecoderHandle } from './video-decoder'
-import { createVideoDecoder } from './video-decoder'
+import type { DemuxedSample, Demuxer, VideoTrackInfo } from '@klip/codecs'
+import { createVideoDecoder } from '@klip/codecs'
 
 /** A decoded frame with timing information */
 export interface BufferedFrame {

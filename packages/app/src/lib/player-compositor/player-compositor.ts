@@ -1,14 +1,14 @@
 /**
  * Player-Compositor Integration
- * Connects Player instances to the WebGL compositor for rendering
+ * Connects Playback instances to the WebGL compositor for rendering
  */
 
-import type { Player } from './player'
-import type { Compositor } from '../video/compositor'
+import type { Playback } from '@klip/playback'
+import type { Compositor } from '@klip/compositor'
 
 export interface PlayerSlot {
   /** The player instance */
-  player: Player
+  player: Playback
   /** Track index in the compositor (0-3) */
   trackIndex: number
   /** Unsubscribe function for frame callback */
@@ -27,7 +27,7 @@ export interface PlayerCompositor {
    * @param trackIndex - Track index (0-3)
    * @param player - Player instance to attach
    */
-  attach(trackIndex: number, player: Player): void
+  attach(trackIndex: number, player: Playback): void
 
   /**
    * Detach a player from a track
@@ -102,7 +102,7 @@ export function createPlayerCompositor(
       return slots
     },
 
-    attach(trackIndex: number, player: Player): void {
+    attach(trackIndex: number, player: Playback): void {
       if (trackIndex < 0 || trackIndex > 3) {
         throw new Error(`Track index must be 0-3, got ${trackIndex}`)
       }
@@ -177,68 +177,4 @@ export function createPlayerCompositor(
   }
 
   return instance
-}
-
-/**
- * Helper to create a multi-track player setup
- * Creates players for multiple tracks and attaches them to a compositor
- */
-export interface MultiTrackSetup {
-  /** All created players */
-  players: Player[]
-  /** The player-compositor integration */
-  playerCompositor: PlayerCompositor
-  /** Play all tracks synchronized */
-  playAll(time?: number): Promise<void>
-  /** Pause all tracks */
-  pauseAll(): void
-  /** Stop all tracks */
-  stopAll(): void
-  /** Seek all tracks to a time */
-  seekAll(time: number): Promise<void>
-  /** Clean up everything */
-  destroy(): void
-}
-
-/**
- * Create a multi-track player setup with synchronized playback
- */
-export function createMultiTrackSetup(
-  players: Player[],
-  compositor: Compositor
-): MultiTrackSetup {
-  const playerCompositor = createPlayerCompositor(compositor)
-
-  // Attach each player to a track
-  players.forEach((player, index) => {
-    if (index < 4) {
-      playerCompositor.attach(index, player)
-    }
-  })
-
-  return {
-    players,
-    playerCompositor,
-
-    async playAll(time?: number): Promise<void> {
-      await Promise.all(players.map((p) => p.play(time)))
-    },
-
-    pauseAll(): void {
-      players.forEach((p) => p.pause())
-    },
-
-    stopAll(): void {
-      players.forEach((p) => p.stop())
-    },
-
-    async seekAll(time: number): Promise<void> {
-      await Promise.all(players.map((p) => p.seek(time)))
-    },
-
-    destroy(): void {
-      playerCompositor.destroy()
-      players.forEach((p) => p.destroy())
-    },
-  }
 }

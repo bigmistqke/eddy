@@ -1,4 +1,4 @@
-import type { DemuxedSample, VideoTrackInfo, Demuxer } from './demuxer'
+import type { DemuxedSample, Demuxer, VideoTrackInfo } from './demuxer'
 
 export interface VideoDecoderHandle {
   readonly config: VideoDecoderConfig
@@ -207,7 +207,7 @@ export function isVideoDecoderSupported(): boolean {
 /**
  * Check if a specific codec is supported
  */
-export async function isCodecSupported(codec: string): Promise<boolean> {
+export async function isVideoCodecSupported(codec: string): Promise<boolean> {
   if (!isVideoDecoderSupported()) {
     return false
   }
