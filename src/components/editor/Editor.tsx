@@ -85,6 +85,8 @@ export const Editor: Component<EditorProps> = (props) => {
   let previewVideo: HTMLVideoElement | null = null;
   let stream: MediaStream | null = null;
   let recorder: ReturnType<typeof createRecorder> | null = null;
+  // Store first frames from recording to display immediately, before player loads
+  const pendingFirstFrames = new Map<number, VideoFrame>();
 
   onMount(() => {
     compositor = createCompositor(
@@ -103,6 +105,11 @@ export const Editor: Component<EditorProps> = (props) => {
     playerCompositor?.destroy();
     stopPreview();
     compositor?.destroy();
+    // Clean up any pending first frames
+    for (const frame of pendingFirstFrames.values()) {
+      frame.close();
+    }
+    pendingFirstFrames.clear();
   });
 
   function setupPreviewStream(mediaStream: MediaStream, trackIndex: number) {
@@ -173,6 +180,16 @@ export const Editor: Component<EditorProps> = (props) => {
       }
       const result = await stopRecording$(recorder);
       if (result) {
+        // Display first frame immediately if available
+        if (result.firstFrame) {
+          // Close any existing pending frame for this track
+          const existingFrame = pendingFirstFrames.get(track);
+          if (existingFrame) {
+            existingFrame.close();
+          }
+          pendingFirstFrames.set(track, result.firstFrame);
+          compositor?.setFrame(track, result.firstFrame);
+        }
         project.addRecording(track, result.blob, result.duration);
       }
       stopPreview();
@@ -221,6 +238,12 @@ export const Editor: Component<EditorProps> = (props) => {
     // Don't override preview video for selected track
     if (selectedTrack() === index && previewVideo) return;
     if (player) {
+      // Close any pending first frame since player will take over
+      const pendingFrame = pendingFirstFrames.get(index);
+      if (pendingFrame) {
+        pendingFrame.close();
+        pendingFirstFrames.delete(index);
+      }
       playerCompositor?.attach(index, player);
     } else {
       playerCompositor?.detach(index);
@@ -228,6 +251,12 @@ export const Editor: Component<EditorProps> = (props) => {
   }
 
   function handleClearRecording(index: number) {
+    // Close any pending first frame
+    const pendingFrame = pendingFirstFrames.get(index);
+    if (pendingFrame) {
+      pendingFrame.close();
+      pendingFirstFrames.delete(index);
+    }
     project.clearTrack(index);
     playerCompositor?.detach(index);
   }
