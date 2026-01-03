@@ -1,5 +1,5 @@
 import type { Agent } from '@atproto/api'
-import type { AudioEffect, Project, Track } from '@klip/lexicons'
+import type { AudioEffect, Project, Track } from '@eddy/lexicons'
 import { createStore, produce } from 'solid-js/store'
 import { getProjectByRkey, getStemBlob } from './atproto/crud'
 

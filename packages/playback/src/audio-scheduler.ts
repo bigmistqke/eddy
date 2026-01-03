@@ -2,7 +2,7 @@
  * Audio Scheduler - Schedules decoded AudioData for playback via Web Audio API
  */
 
-import { debug } from '@klip/utils'
+import { debug } from '@eddy/utils'
 
 const log = debug('audio-scheduler', true)
 

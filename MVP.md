@@ -1,4 +1,4 @@
-# Klip MVP
+# Eddy MVP
 
 Minimal viable product: a 4-track recorder for the AT Protocol era.
 
@@ -77,7 +77,7 @@ These come later. MVP ships without them.
 
 ### Flow 4: Post to Bluesky
 
-Critical for testing and buzz-building. Every Klip project can be rendered and posted as a native Bluesky video.
+Critical for testing and buzz-building. Every Eddy project can be rendered and posted as a native Bluesky video.
 
 ```
 ┌─────────────────────────────────────────┐
@@ -91,7 +91,7 @@ Critical for testing and buzz-building. Every Klip project can be rendered and p
 │  │                                  │   │
 │  └─────────────────────────────────┘   │
 │                                         │
-│  ☑ Include "Made with Klip" link       │
+│  ☑ Include "Made with Eddy" link       │
 │  ☑ Link to remixable project           │
 │                                         │
 │  [Cancel]              [Post to 🦋]    │
@@ -101,20 +101,20 @@ Critical for testing and buzz-building. Every Klip project can be rendered and p
 **The flow:**
 
 1. Tap "Share" on any project
-2. Klip renders composite video (all tracks mixed down)
+2. Eddy renders composite video (all tracks mixed down)
 3. Preview before posting
 4. Add caption (pre-filled with project title)
 5. Post uploads video to Bluesky's CDN
-6. Post text includes link back to Klip project
+6. Post text includes link back to Eddy project
 
 **Post format:**
 
 ```
 late night jam
 
-🔗 Remix this: https://klip.app/p/did:plc:xxx/rkey
+🔗 Remix this: https://eddy.app/p/did:plc:xxx/rkey
 
-Made with Klip
+Made with Eddy
 ```
 
 **Technical:**
@@ -122,8 +122,8 @@ Made with Klip
 - Render to MP4 (H.264 + AAC for max Bluesky compatibility)
 - Max 3 minutes, 720p (fits Bluesky limits)
 - Use `app.bsky.feed.post` with `app.bsky.embed.video`
-- Include facet link to Klip project URL
-- Klip project URL resolves to web player + "Open in Klip" button
+- Include facet link to Eddy project URL
+- Eddy project URL resolves to web player + "Open in Eddy" button
 
 ## Technical Scope
 
@@ -131,31 +131,31 @@ Made with Klip
 
 Full lexicon definitions in `lexicons/` directory:
 
-- `app.klip.project.json` - Project with groups, tracks, and effect pipelines
-- `app.klip.stem.json` - Reusable media stems
+- `app.eddy.project.json` - Project with groups, tracks, and effect pipelines
+- `app.eddy.stem.json` - Reusable media stems
 
 **Schema vs MVP UI:**
 
 The lexicons define a rich, future-proof data model. MVP uses a subset:
 
-| Feature | Schema Capacity | MVP Implementation |
-|---------|-----------------|-------------------|
-| Tracks | Up to 32 | 4 slots |
-| Clips per track | Up to 256 | 1 clip (start from t=0) |
-| Layout | Grid, stack, absolute effects | Grid 2x2 preset |
-| Audio effects | Full chain (EQ, reverb, etc.) | Gain + pan only |
-| Video effects | Transform, blur, color, etc. | None |
-| Groups | Nested hierarchy | Single root group |
+| Feature         | Schema Capacity               | MVP Implementation      |
+| --------------- | ----------------------------- | ----------------------- |
+| Tracks          | Up to 32                      | 4 slots                 |
+| Clips per track | Up to 256                     | 1 clip (start from t=0) |
+| Layout          | Grid, stack, absolute effects | Grid 2x2 preset         |
+| Audio effects   | Full chain (EQ, reverb, etc.) | Gain + pan only         |
+| Video effects   | Transform, blur, color, etc.  | None                    |
+| Groups          | Nested hierarchy              | Single root group       |
 
 **Type-Safe Values:**
 
 All runtime parameters use typed value unions that can be static or animated:
 
-| Type | Use Case | Static | Animated |
-|------|----------|--------|----------|
-| `#value` | Numeric (gain, opacity, position) | `{ "value": 0.8 }` | `{ "curve": "fade", "min": 0, "max": 1 }` |
-| `#booleanValue` | Toggles (enabled, muted, solo) | `{ "value": true }` | `{ "curve": "toggle", "threshold": 0.5 }` |
-| `#integerValue` | Discrete (zIndex) | `{ "value": 2 }` | `{ "curve": "layers", "min": 0, "max": 5 }` |
+| Type            | Use Case                          | Static              | Animated                                    |
+| --------------- | --------------------------------- | ------------------- | ------------------------------------------- |
+| `#value`        | Numeric (gain, opacity, position) | `{ "value": 0.8 }`  | `{ "curve": "fade", "min": 0, "max": 1 }`   |
+| `#booleanValue` | Toggles (enabled, muted, solo)    | `{ "value": true }` | `{ "curve": "toggle", "threshold": 0.5 }`   |
+| `#integerValue` | Discrete (zIndex)                 | `{ "value": 2 }`    | `{ "curve": "layers", "min": 0, "max": 5 }` |
 
 **Effect-Based Architecture:**
 
@@ -163,28 +163,25 @@ Everything is an effect. The schema stores layout algorithms, not just computed 
 
 ```json
 {
-  "groups": [{
-    "id": "main",
-    "members": [
-      { "id": "t1" },
-      { "id": "t2" },
-      { "id": "t3" },
-      { "id": "t4" }
-    ],
-    "pipeline": [
-      { "type": "group.layout.grid", "columns": 2, "rows": 2 }
-    ]
-  }],
-  "tracks": [{
-    "id": "t1",
-    "stem": { "uri": "at://...", "cid": "..." },
-    "clips": [{ "id": "c1", "offset": 0, "duration": 60000 }],
-    "audioPipeline": [
-      { "type": "audio.gain", "value": { "value": 1.0 } },
-      { "type": "audio.pan", "value": { "value": 0.5 } }
-    ],
-    "videoPipeline": []
-  }]
+  "groups": [
+    {
+      "id": "main",
+      "members": [{ "id": "t1" }, { "id": "t2" }, { "id": "t3" }, { "id": "t4" }],
+      "pipeline": [{ "type": "group.layout.grid", "columns": 2, "rows": 2 }]
+    }
+  ],
+  "tracks": [
+    {
+      "id": "t1",
+      "stem": { "uri": "at://...", "cid": "..." },
+      "clips": [{ "id": "c1", "offset": 0, "duration": 60000 }],
+      "audioPipeline": [
+        { "type": "audio.gain", "value": { "value": 1.0 } },
+        { "type": "audio.pan", "value": { "value": 0.5 } }
+      ],
+      "videoPipeline": []
+    }
+  ]
 }
 ```
 
@@ -354,7 +351,7 @@ This keeps MVP simple (pick a preset) while the schema preserves the layout inte
 
 ```
 ┌──────────────────────────────────────────┐
-│             Klip MVP                     │
+│             Eddy MVP                     │
 ├──────────────────────────────────────────┤
 │  SolidJS                                 │
 │  - Reactive, fast, small bundle          │
@@ -395,25 +392,25 @@ This keeps MVP simple (pick a preset) while the schema preserves the layout inte
 
 **Why these choices:**
 
-| Library | Role in Klip |
-|---------|--------------|
-| view.gl | Render video grid to canvas via WebGL, interpret layout effects, GPU-accelerated |
+| Library      | Role in Eddy                                                                       |
+| ------------ | ---------------------------------------------------------------------------------- |
+| view.gl      | Render video grid to canvas via WebGL, interpret layout effects, GPU-accelerated   |
 | worker-proxy | Heavy lifting (decode, encode, waveform gen) in workers without losing type safety |
-| mp4box.js | Your TS rewrite - parse/mux MP4, extract tracks, no native dependencies |
-| Web Audio | Real-time mixing, effects chain, recording |
-| WebCodecs | Frame-level video encode/decode, faster than MediaRecorder for export |
+| mp4box.js    | Your TS rewrite - parse/mux MP4, extract tracks, no native dependencies            |
+| Web Audio    | Real-time mixing, effects chain, recording                                         |
+| WebCodecs    | Frame-level video encode/decode, faster than MediaRecorder for export              |
 
 ### What We Skip for MVP
 
-| Feature | Why Skip |
-|---------|----------|
-| Effects | Complexity, CPU usage, can add later |
-| MIDI | Niche, requires synth engine |
-| Automation | Overkill for 4-track |
-| Offline sync | Just require internet for now |
-| Comments | Nice-to-have, not core |
-| Video transitions | Scope creep |
-| Waveform editing | Just drag whole clips |
+| Feature           | Why Skip                             |
+| ----------------- | ------------------------------------ |
+| Effects           | Complexity, CPU usage, can add later |
+| MIDI              | Niche, requires synth engine         |
+| Automation        | Overkill for 4-track                 |
+| Offline sync      | Just require internet for now        |
+| Comments          | Nice-to-have, not core               |
+| Video transitions | Scope creep                          |
+| Waveform editing  | Just drag whole clips                |
 
 ## UI Concept
 
@@ -421,7 +418,7 @@ Mobile-first. One hand operation where possible.
 
 ```
 ┌─────────────────────────────────┐
-│    Klip            [@handle  ]  |
+│    Eddy            [@handle  ]  |
 ├─────────────────────────────────┤
 │                                 │
 │  ┌─────────────────────────┐    │
@@ -488,17 +485,17 @@ No custom auth, no passwords to manage.
 
 **Domain:**
 
-- klip.audio? klip.fm? getklip.app?
+- eddy.audio? eddy.fm? geteddy.app?
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|------|------------|
-| PDS storage limits tighten | Compress aggressively, consider self-host PDS docs |
-| Bluesky OAuth changes | Follow their developer channels closely |
-| WebCodecs not supported | ffmpeg.wasm fallback (slower but works) |
-| Mobile browser audio quirks | Test heavily on iOS Safari, Chrome Android |
-| Copyright abuse | Clear remix attribution, respond to DMCA |
+| Risk                        | Mitigation                                         |
+| --------------------------- | -------------------------------------------------- |
+| PDS storage limits tighten  | Compress aggressively, consider self-host PDS docs |
+| Bluesky OAuth changes       | Follow their developer channels closely            |
+| WebCodecs not supported     | ffmpeg.wasm fallback (slower but works)            |
+| Mobile browser audio quirks | Test heavily on iOS Safari, Chrome Android         |
+| Copyright abuse             | Clear remix attribution, respond to DMCA           |
 
 ## Success Metrics
 
@@ -558,9 +555,9 @@ MVP is successful if:
 
 ### Phase 7: Web Player
 
-- [ ] Public URL for each project (klip.app/p/...)
+- [ ] Public URL for each project (eddy.app/p/...)
 - [ ] Embeddable player
-- [ ] "Remix in Klip" CTA
+- [ ] "Remix in Eddy" CTA
 - [ ] Open Graph tags for rich link previews
 
 ### Phase 8: Polish
@@ -585,7 +582,7 @@ MVP is successful if:
    - Compromise: support both, but optimize for audio-first workflow
 
 2. **Feed: build custom or use Bluesky's?**
-   - Could create custom feed generator for klip projects
+   - Could create custom feed generator for eddy projects
    - Or just query follows' projects directly
    - Start with direct queries, add feed generator later
 
@@ -595,6 +592,6 @@ MVP is successful if:
    - "Drafts" are just local (IndexedDB) until published
 
 4. **Web player for shared links?**
-   - Need a web view for when people click Klip links from Bluesky
-   - Simple player + "Remix in Klip" CTA
+   - Need a web view for when people click Eddy links from Bluesky
+   - Simple player + "Remix in Eddy" CTA
    - Could be same app or separate lightweight page

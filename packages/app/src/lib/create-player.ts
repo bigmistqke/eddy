@@ -1,8 +1,8 @@
-import { createDemuxer, type Demuxer } from '@klip/codecs'
-import { createCompositor, type VideoSource } from '@klip/compositor'
-import { createAudioPipeline, type AudioPipeline } from '@klip/mixer'
-import { createPlayback, type Playback } from '@klip/playback'
-import { debug } from '@klip/utils'
+import { createDemuxer, type Demuxer } from '@eddy/codecs'
+import { createCompositor, type VideoSource } from '@eddy/compositor'
+import { createAudioPipeline, type AudioPipeline } from '@eddy/mixer'
+import { createPlayback, type Playback } from '@eddy/playback'
+import { debug } from '@eddy/utils'
 
 const log = debug('player', true)
 

@@ -11,7 +11,7 @@ export const Header: Component = () => {
   return (
     <header class={styles.header}>
       <A href="/" class={styles.logo}>
-        Klip
+        Eddy
       </A>
       <div class={styles.actions}>
         <Show when={!auth.loading()} fallback={<span class={styles.loading}>...</span>}>

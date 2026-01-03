@@ -1,4 +1,4 @@
-import { debug } from '@klip/utils'
+import { debug } from '@eddy/utils'
 import type { DemuxedSample, Demuxer, VideoTrackInfo } from './demuxer'
 
 const log = debug('video-decoder', true)

@@ -1,5 +1,5 @@
 {
-  "name": "@klip/mixer",
+  "name": "@eddy/mixer",
   "version": "0.1.0",
   "type": "module",
   "main": "./src/index.ts",
@@ -8,7 +8,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@klip/utils": "workspace:*"
+    "@eddy/utils": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.7.0"

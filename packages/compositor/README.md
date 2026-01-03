@@ -1,4 +1,4 @@
-# @klip/compositor
+# @eddy/compositor
 
 WebGL video compositing for multi-track rendering.
 
@@ -9,7 +9,7 @@ WebGL video compositing for multi-track rendering.
 ## Usage
 
 ```ts
-import { createCompositor } from '@klip/compositor'
+import { createCompositor } from '@eddy/compositor'
 
 const compositor = createCompositor(1280, 720)
 document.body.appendChild(compositor.canvas)

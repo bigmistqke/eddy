@@ -1,17 +1,17 @@
-# Klip Lexicons
+# Eddy Lexicons
 
-AT Protocol lexicon definitions for Klip.
+AT Protocol lexicon definitions for Eddy.
 
 ## Records
 
-### `app.klip.project`
+### `app.eddy.project`
 
 The main project record containing groups, tracks, curves, and effect pipelines.
 
 - **Key**: `tid` (timestamp-based ID)
 - **Stored on**: User's PDS
 
-### `app.klip.stem`
+### `app.eddy.stem`
 
 A media stem (audio or video file) that can be used across multiple projects.
 
@@ -284,7 +284,7 @@ Master Processing:
   "tracks": [
     {
       "id": "t1",
-      "stem": { "uri": "at://did:plc:.../app.klip.stem/...", "cid": "..." },
+      "stem": { "uri": "at://did:plc:.../app.eddy.stem/...", "cid": "..." },
       "clips": [{ "id": "c1", "offset": 0, "duration": 60000 }],
       "audioPipeline": [
         { "type": "audio.gain", "value": { "value": 1.0 } },
@@ -394,14 +394,14 @@ Master Processing:
 
 ```typescript
 import { Lexicons } from '@atproto/lexicon'
-import projectLexicon from './app.klip.project.json'
-import stemLexicon from './app.klip.stem.json'
+import projectLexicon from './app.eddy.project.json'
+import stemLexicon from './app.eddy.stem.json'
 
 const lexicons = new Lexicons()
 lexicons.add(projectLexicon)
 lexicons.add(stemLexicon)
 
-lexicons.assertValidRecord('app.klip.project', projectData)
+lexicons.assertValidRecord('app.eddy.project', projectData)
 ```
 
 ### Runtime Validation

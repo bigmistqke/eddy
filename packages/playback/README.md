@@ -1,4 +1,4 @@
-# @klip/playback
+# @eddy/playback
 
 Synchronized A/V playback with frame buffering and audio scheduling.
 
@@ -9,8 +9,8 @@ Synchronized A/V playback with frame buffering and audio scheduling.
 ## Usage
 
 ```ts
-import { createDemuxer } from '@klip/codecs'
-import { createPlayback } from '@klip/playback'
+import { createDemuxer } from '@eddy/codecs'
+import { createPlayback } from '@eddy/playback'
 
 const demuxer = await createDemuxer(blob)
 const playback = await createPlayback(demuxer)
@@ -33,4 +33,4 @@ playback.destroy()
 
 ## Dependencies
 
-- `@klip/codecs` - Demuxer and decoder types
+- `@eddy/codecs` - Demuxer and decoder types

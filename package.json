@@ -1,16 +1,16 @@
 {
-  "name": "klip-monorepo",
+  "name": "eddy-monorepo",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm --filter @klip/app dev",
+    "dev": "pnpm --filter @eddy/app dev",
     "build": "pnpm -r build",
-    "preview": "pnpm --filter @klip/app preview",
+    "preview": "pnpm --filter @eddy/app preview",
     "test": "pnpm -r test",
     "test:run": "pnpm -r test:run",
-    "test:browser": "pnpm --filter @klip/codecs test:browser",
-    "test:browser:run": "pnpm --filter @klip/codecs test:browser:run"
+    "test:browser": "pnpm --filter @eddy/codecs test:browser",
+    "test:browser:run": "pnpm --filter @eddy/codecs test:browser:run"
   },
   "devDependencies": {
     "typescript": "^5.7.0"

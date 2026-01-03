@@ -1,7 +1,7 @@
 import { type AtprotoRefs, atprotoRefs, lexiconToValibot } from '@bigmistqke/lexicon-to-valibot'
 import type * as v from 'valibot'
-import projectLexicon from './app.klip.project'
-import stemLexicon from './app.klip.stem'
+import projectLexicon from './app.eddy.project'
+import stemLexicon from './app.eddy.stem'
 
 // SDK format validators for parsing incoming data from PDS
 const sdkOptions = { externalRefs: atprotoRefs, format: 'sdk' as const }

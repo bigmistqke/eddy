@@ -1,4 +1,4 @@
-import { debug } from '@klip/utils'
+import { debug } from '@eddy/utils'
 import type { DemuxedSample, AudioTrackInfo, Demuxer } from './demuxer'
 
 const log = debug('audio-decoder', true)

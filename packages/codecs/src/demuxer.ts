@@ -7,7 +7,7 @@ import {
   type InputAudioTrack,
   type EncodedPacket,
 } from 'mediabunny'
-import { debug } from '@klip/utils'
+import { debug } from '@eddy/utils'
 
 const log = debug('demuxer', true)
 

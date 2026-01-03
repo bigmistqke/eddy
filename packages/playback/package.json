@@ -1,5 +1,5 @@
 {
-  "name": "@klip/playback",
+  "name": "@eddy/playback",
   "version": "0.0.1",
   "type": "module",
   "main": "./src/index.ts",
@@ -12,8 +12,8 @@
     "test:browser:run": "vitest run --config vitest.browser.config.ts"
   },
   "dependencies": {
-    "@klip/codecs": "workspace:*",
-    "@klip/utils": "workspace:*"
+    "@eddy/codecs": "workspace:*",
+    "@eddy/utils": "workspace:*"
   },
   "devDependencies": {
     "@vitest/browser": "^4.0.16",

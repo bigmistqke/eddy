@@ -1,4 +1,4 @@
-# @klip/mixer
+# @eddy/mixer
 
 Web Audio API mixer for multi-track audio output.
 
@@ -11,7 +11,7 @@ Web Audio API mixer for multi-track audio output.
 ## Usage
 
 ```ts
-import { createAudioPipeline, getMasterMixer } from '@klip/mixer'
+import { createAudioPipeline, getMasterMixer } from '@eddy/mixer'
 
 const pipeline = createAudioPipeline()
 pipeline.setVolume(0.8) // 0-1

@@ -1,6 +1,6 @@
-import type { DemuxedSample, Demuxer, VideoTrackInfo } from '@klip/codecs'
-import { createVideoDecoder } from '@klip/codecs'
-import { debug } from '@klip/utils'
+import type { DemuxedSample, Demuxer, VideoTrackInfo } from '@eddy/codecs'
+import { createVideoDecoder } from '@eddy/codecs'
+import { debug } from '@eddy/utils'
 
 /** A decoded frame with timing information */
 export interface BufferedFrame {

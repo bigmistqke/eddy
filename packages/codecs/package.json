@@ -1,5 +1,5 @@
 {
-  "name": "@klip/codecs",
+  "name": "@eddy/codecs",
   "version": "0.0.1",
   "type": "module",
   "main": "./src/index.ts",
@@ -14,7 +14,7 @@
     "test:browser:run": "vitest run --config vitest.browser.config.ts"
   },
   "dependencies": {
-    "@klip/utils": "workspace:*",
+    "@eddy/utils": "workspace:*",
     "mediabunny": "^1.27.3"
   },
   "devDependencies": {

@@ -1,5 +1,5 @@
 import { ALL_FORMATS, EncodedPacketSink, Input, ReadableStreamSource } from 'mediabunny'
-import { debug } from '@klip/utils'
+import { debug } from '@eddy/utils'
 
 const log = debug('recorder', true)
 

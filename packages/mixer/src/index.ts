@@ -1,4 +1,4 @@
-import { debug } from '@klip/utils'
+import { debug } from '@eddy/utils'
 import { getAudioContext } from './context'
 import { getMasterMixer } from './mixer'
 

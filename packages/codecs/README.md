@@ -1,4 +1,4 @@
-# @klip/codecs
+# @eddy/codecs
 
 Container parsing and WebCodecs decoding for media files.
 
@@ -11,7 +11,7 @@ Container parsing and WebCodecs decoding for media files.
 ## Usage
 
 ```ts
-import { createDemuxer, createVideoDecoder } from '@klip/codecs'
+import { createDemuxer, createVideoDecoder } from '@eddy/codecs'
 
 const demuxer = await createDemuxer(arrayBuffer)
 const videoTrack = demuxer.info.videoTracks[0]

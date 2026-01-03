@@ -1,5 +1,5 @@
 import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
-import { debug } from '@klip/utils'
+import { debug } from '@eddy/utils'
 
 const log = debug('compositor', true)
 

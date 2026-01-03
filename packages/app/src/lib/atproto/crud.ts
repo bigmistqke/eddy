@@ -1,5 +1,4 @@
 import type { Agent } from '@atproto/api'
-import * as v from 'valibot'
 import {
   type Project,
   projectValidators,
@@ -8,7 +7,8 @@ import {
   type StemRef,
   stemValidators,
   stemWireValidators,
-} from '@klip/lexicons'
+} from '@eddy/lexicons'
+import * as v from 'valibot'
 
 export interface RecordRef {
   uri: string
@@ -77,7 +77,7 @@ export async function getProjectByRkey(
     did = agent.assertDid
   }
 
-  const uri = `at://${did}/app.klip.project/${rkey}`
+  const uri = `at://${did}/app.eddy.project/${rkey}`
   return getProject(agent, uri)
 }
 
@@ -117,7 +117,7 @@ export async function getStemBlob(agent: Agent, stemUri: string): Promise<Blob> 
 export async function listProjects(agent: Agent): Promise<ProjectListItem[]> {
   const response = await agent.com.atproto.repo.listRecords({
     repo: agent.assertDid,
-    collection: 'app.klip.project',
+    collection: 'app.eddy.project',
     limit: 50,
   })
 
@@ -150,7 +150,7 @@ export async function createStemRecord(
   const uploadedBlob = await uploadBlob(agent, blob)
 
   const record = v.parse(stemWireValidators.main, {
-    $type: 'app.klip.stem',
+    $type: 'app.eddy.stem',
     schemaVersion: 1,
     blob: uploadedBlob.toJSON(),
     type: 'video',
@@ -164,7 +164,7 @@ export async function createStemRecord(
 
   const response = await agent.com.atproto.repo.createRecord({
     repo: agent.assertDid,
-    collection: 'app.klip.stem',
+    collection: 'app.eddy.stem',
     record,
   })
 
@@ -247,7 +247,7 @@ export async function publishProject(
 
   // Build and validate project record
   const record = v.parse(projectWireValidators.main, {
-    $type: 'app.klip.project',
+    $type: 'app.eddy.project',
     schemaVersion: 1,
     title: project.title,
     canvas: {
@@ -267,7 +267,7 @@ export async function publishProject(
 
   const response = await agent.com.atproto.repo.createRecord({
     repo: agent.assertDid,
-    collection: 'app.klip.project',
+    collection: 'app.eddy.project',
     record,
   })
 
@@ -283,7 +283,7 @@ export async function deleteProject(agent: Agent, uri: string): Promise<void> {
   // Use deleteOrphanedStems() for cleanup
   await agent.com.atproto.repo.deleteRecord({
     repo,
-    collection: 'app.klip.project',
+    collection: 'app.eddy.project',
     rkey,
   })
 }
@@ -292,7 +292,7 @@ export async function deleteStem(agent: Agent, uri: string): Promise<void> {
   const { repo, rkey } = parseAtUri(uri)
   await agent.com.atproto.repo.deleteRecord({
     repo,
-    collection: 'app.klip.stem',
+    collection: 'app.eddy.stem',
     rkey,
   })
 }
@@ -300,7 +300,7 @@ export async function deleteStem(agent: Agent, uri: string): Promise<void> {
 export async function listStems(agent: Agent): Promise<string[]> {
   const response = await agent.com.atproto.repo.listRecords({
     repo: agent.assertDid,
-    collection: 'app.klip.stem',
+    collection: 'app.eddy.stem',
     limit: 100,
   })
   return response.data.records.map(record => record.uri)

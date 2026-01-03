@@ -1,6 +1,6 @@
 import type { Agent } from '@atproto/api'
-import { getMasterMixer, resumeAudioContext } from '@klip/mixer'
-import { debug } from '@klip/utils'
+import { getMasterMixer, resumeAudioContext } from '@eddy/mixer'
+import { debug } from '@eddy/utils'
 import {
   createEffect,
   createMemo,

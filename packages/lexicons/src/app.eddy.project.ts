@@ -2,11 +2,11 @@ import type { LexiconDoc } from '@atproto/lexicon'
 
 export default {
   lexicon: 1,
-  id: 'app.klip.project',
+  id: 'app.eddy.project',
   defs: {
     main: {
       type: 'record',
-      description: 'A Klip project containing groups, tracks, curves, and effect pipelines',
+      description: 'A Eddy project containing groups, tracks, curves, and effect pipelines',
       key: 'tid',
       record: {
         type: 'object',
@@ -495,7 +495,7 @@ export default {
         stem: {
           type: 'ref',
           ref: 'com.atproto.repo.strongRef',
-          description: 'Reference to app.klip.stem record',
+          description: 'Reference to app.eddy.stem record',
         },
         offset: {
           type: 'integer',

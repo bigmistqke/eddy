@@ -1,14 +1,14 @@
-# Klip
+# Eddy
 
 A mobile-first video editor with musical DAW capabilities, built on AT Protocol for decentralized creative collaboration.
 
 ## Vision
 
-We are in the age of slop—algorithmically optimized, soulless content flooding every platform. Klip is a counterweight: a tool for spontaneous, genuine musical collaboration. By building on AT Protocol, we inherit a social graph and decentralized infrastructure that makes sharing, remixing, and attribution native to the platform rather than an afterthought.
+We are in the age of slop—algorithmically optimized, soulless content flooding every platform. Eddy is a counterweight: a tool for spontaneous, genuine musical collaboration. By building on AT Protocol, we inherit a social graph and decentralized infrastructure that makes sharing, remixing, and attribution native to the platform rather than an afterthought.
 
 ## Core Concept
 
-Klip treats every project as a **remixable stem collection**. When you create a video with audio, you're not just exporting a flattened file—you're publishing a recoverable multitrack session that others can fork, remix, and build upon. The AT Protocol social graph becomes a creative collaboration graph.
+Eddy treats every project as a **remixable stem collection**. When you create a video with audio, you're not just exporting a flattened file—you're publishing a recoverable multitrack session that others can fork, remix, and build upon. The AT Protocol social graph becomes a creative collaboration graph.
 
 ## Key Principles
 
@@ -21,6 +21,7 @@ Klip treats every project as a **remixable stem collection**. When you create a 
 ## Feature Set
 
 ### Video Editing
+
 - Timeline-based multitrack video editing
 - Clip trimming, splitting, layering
 - Basic transitions and effects
@@ -28,6 +29,7 @@ Klip treats every project as a **remixable stem collection**. When you create a 
 - Export to common formats (MP4, WebM)
 
 ### DAW Capabilities
+
 - Multitrack audio timeline (synced with video)
 - Audio recording (voice, instruments via input)
 - Basic effects (EQ, compression, reverb, delay)
@@ -37,6 +39,7 @@ Klip treats every project as a **remixable stem collection**. When you create a 
 - Simple synthesis/sampling
 
 ### Collaboration via AT Protocol
+
 - **Publish projects** as AT Protocol records (custom lexicon)
 - **Fork/remix** - Clone someone's project with full stem access
 - **Attribution chain** - Automatic credit linking back through remix history
@@ -49,15 +52,16 @@ Klip treats every project as a **remixable stem collection**. When you create a 
 
 Full schemas in `lexicons/` directory. Core records:
 
-| Lexicon | Purpose |
-|---------|---------|
-| `app.klip.project` | Project with groups, tracks, effect pipelines, and remix attribution |
-| `app.klip.stem` | Reusable media files (audio/video) with metadata and waveforms |
+| Lexicon            | Purpose                                                              |
+| ------------------ | -------------------------------------------------------------------- |
+| `app.eddy.project` | Project with groups, tracks, effect pipelines, and remix attribution |
+| `app.eddy.stem`    | Reusable media files (audio/video) with metadata and waveforms       |
 
 **Future lexicons (not yet defined):**
-- `app.klip.comment` - Timestamped comments on projects
-- `app.klip.like` - Engagement (or use Bluesky's native like?)
-- `app.klip.collection` - Playlists/albums
+
+- `app.eddy.comment` - Timestamped comments on projects
+- `app.eddy.like` - Engagement (or use Bluesky's native like?)
+- `app.eddy.collection` - Playlists/albums
 
 ### Data Architecture
 
@@ -71,7 +75,7 @@ project
 │   ├── members[]             # Track/group references + position hints
 │   └── pipeline[]            # Effects: layout, visual
 ├── tracks[]                  # Media tracks
-│   ├── stem                  # Reference to app.klip.stem record
+│   ├── stem                  # Reference to app.eddy.stem record
 │   ├── clips[]               # Timeline regions
 │   │   ├── audioPipeline[]   # Clip-level audio effects
 │   │   └── videoPipeline[]   # Clip-level video effects
@@ -82,6 +86,7 @@ project
 ```
 
 **Effect Categories (MVP):**
+
 - `audio.*` - Gain, pan (+ custom for third-party)
 - `visual.*` - Transform, opacity (+ custom for third-party)
 - `group.layout.*` - Grid, absolute (+ custom for third-party)
@@ -89,6 +94,7 @@ project
 **Value Types:**
 
 All animatable parameters use typed value unions:
+
 - `#value` - Numeric (gain, opacity, position, etc.)
 - `#booleanValue` - Toggles (enabled, muted, solo, reverse)
 - `#integerValue` - Discrete (zIndex)
@@ -130,7 +136,7 @@ Each can be static (`{ "value": 0.8 }`) or animated via curve reference (`{ "cur
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      Klip Application                        │
+│                      Eddy Application                        │
 ├──────────────────┬──────────────────┬───────────────────────┤
 │   UI Framework   │   Media Engine   │   AT Protocol Client  │
 │   (SolidJS?)     │                  │   (@atproto/api)      │
@@ -174,7 +180,7 @@ Each can be static (`{ "value": 0.8 }`) or animated via curve reference (`{ "cur
 
 ### Creating a Project
 
-1. Open Klip, tap "New Project"
+1. Open Eddy, tap "New Project"
 2. Import video from camera roll or record directly
 3. Add audio tracks (record, import, or sample)
 4. Arrange on timeline with touch gestures
@@ -199,6 +205,7 @@ Each can be static (`{ "value": 0.8 }`) or animated via curve reference (`{ "cur
 ## Challenges & Considerations
 
 ### Storage & Bandwidth
+
 - Stems can be large; need efficient compression (Opus for audio, H.264/VP9 for video)
 - PDS blob limit: 50MB per blob (configurable, may increase to 100MB)
 - Total account storage: currently unlimited, but quotas may come
@@ -206,16 +213,19 @@ Each can be static (`{ "value": 0.8 }`) or animated via curve reference (`{ "cur
 - Consider tiered quality (preview vs. full stems) if limits tighten
 
 ### Licensing & Attribution
+
 - Need clear license selection for published projects
 - Attribution chain must be tamper-evident
 - Consider Creative Commons integration
 
 ### Mobile Performance
+
 - Audio/video processing is CPU-intensive
 - WebCodecs helps but not universally supported
 - May need to offload some processing (optional cloud render)
 
 ### Moderation
+
 - Inherit AT Protocol's moderation infrastructure
 - Need to handle DMCA/copyright issues
 - Consider audio fingerprinting for samples
@@ -230,7 +240,7 @@ Each can be static (`{ "value": 0.8 }`) or animated via curve reference (`{ "cur
 
 ## Name
 
-"Klip" - short, memorable, suggests both video clips and audio clipping. Works as a verb ("klip that") and noun ("make a klip").
+"Eddy" - short, memorable, suggests both video clips and audio clipping. Works as a verb ("eddy that") and noun ("make a eddy").
 
 ## Next Steps
 

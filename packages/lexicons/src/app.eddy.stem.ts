@@ -2,7 +2,7 @@ import type { LexiconDoc } from '@atproto/lexicon'
 
 export default {
   lexicon: 1,
-  id: 'app.klip.stem',
+  id: 'app.eddy.stem',
   defs: {
     main: {
       type: 'record',
