@@ -2,7 +2,7 @@ import type { DemuxedSample, Demuxer, VideoTrackInfo } from '@eddy/codecs'
 import { createVideoDecoder } from '@eddy/codecs'
 import { debug } from '@eddy/utils'
 
-const log = debug('frame-buffer', false)
+const log = debug('frame-buffer', true)
 
 /** Raw frame data stored as ArrayBuffer */
 export interface FrameData {
@@ -88,7 +88,7 @@ export async function createFrameBuffer(
   options: FrameBufferOptions = {},
 ): Promise<FrameBuffer> {
   const bufferId = frameBufferIdCounter++
-  const bufferLog = debug(`frame-buffer-${bufferId}`, false)
+  const bufferLog = debug(`frame-buffer-${bufferId}`, true)
   bufferLog('createFrameBuffer', { trackId: trackInfo.id, duration: trackInfo.duration })
 
   const bufferAhead = options.bufferAhead ?? 0.5
@@ -115,6 +115,9 @@ export async function createFrameBuffer(
   // Lock for buffering
   let isBuffering = false
 
+  // Track last accessed time for smart trimming
+  let lastAccessedTime = 0
+
   // Track duration (fallback for unknown)
   const trackDuration = trackInfo.duration > 0 ? trackInfo.duration : 3600
 
@@ -134,11 +137,13 @@ export async function createFrameBuffer(
     }
   }
 
-  /** Convert VideoFrame to raw FrameData */
-  const frameToData = async (frame: VideoFrame): Promise<FrameData> => {
+  /** Convert VideoFrame to raw FrameData, using sample timestamps (more reliable than frame.timestamp) */
+  const frameToData = async (frame: VideoFrame, sample: DemuxedSample): Promise<FrameData> => {
     const buffer = new ArrayBuffer(frame.allocationSize())
     await frame.copyTo(buffer)
 
+    // Use sample.pts/duration instead of frame.timestamp/duration
+    // because the decoder's pendingFrames queue can cause misalignment
     const data: FrameData = {
       buffer,
       format: frame.format!,
@@ -146,8 +151,8 @@ export async function createFrameBuffer(
       codedHeight: frame.codedHeight,
       displayWidth: frame.displayWidth,
       displayHeight: frame.displayHeight,
-      timestamp: frame.timestamp,
-      duration: frame.duration ?? 0,
+      timestamp: sample.pts * 1_000_000, // Convert seconds to microseconds
+      duration: sample.duration * 1_000_000,
     }
 
     frame.close()
@@ -186,9 +191,11 @@ export async function createFrameBuffer(
     return best ?? frames[0]
   }
 
-  /** Decode samples and store as raw buffers */
-  const decodeAndBuffer = async (samples: DemuxedSample[]) => {
-    bufferLog('decodeAndBuffer', { sampleCount: samples.length })
+  /** Decode samples and store as raw buffers
+   * @param flush - Whether to flush the decoder after decoding (clears reference frames, use only for seeking)
+   */
+  const decodeAndBuffer = async (samples: DemuxedSample[], flush = false) => {
+    bufferLog('decodeAndBuffer', { sampleCount: samples.length, flush })
 
     if (samples.length === 0 || destroyed) return
 
@@ -207,8 +214,18 @@ export async function createFrameBuffer(
         const videoFrame = await decoder.decode(sample)
         decoderReady = true
 
-        // Convert to raw buffer immediately
-        const data = await frameToData(videoFrame)
+        // Capture frame timestamp before it gets closed
+        const decoderTimestamp = videoFrame.timestamp
+
+        // Convert to raw buffer immediately, using sample timestamps
+        const data = await frameToData(videoFrame, sample)
+
+        bufferLog('decoded frame', {
+          samplePts: sample.pts,
+          samplePtsUs: sample.pts * 1_000_000,
+          assignedTimestamp: data.timestamp,
+          decoderTimestamp,
+        })
 
         // Insert in sorted order by timestamp
         const insertIndex = frames.findIndex(f => f.timestamp > data.timestamp)
@@ -220,8 +237,10 @@ export async function createFrameBuffer(
 
         bufferPosition = sample.pts + sample.duration
 
-        // Trim if over max
-        while (frames.length > maxFrames) {
+        // Trim frames that are behind the playback position (with 100ms margin)
+        // Only trim if over maxFrames to avoid unnecessary work
+        const trimThreshold = (lastAccessedTime - 0.1) * 1_000_000
+        while (frames.length > maxFrames && frames[0].timestamp < trimThreshold) {
           frames.shift()
         }
       } catch (err) {
@@ -238,8 +257,9 @@ export async function createFrameBuffer(
       }
     }
 
-    // Flush decoder
-    if (!destroyed && decoder.decoder.state !== 'closed') {
+    // Only flush when explicitly requested (e.g., after seeking)
+    // Flushing clears the decoder's reference frames, requiring a keyframe for subsequent decodes
+    if (flush && !destroyed && decoder.decoder.state !== 'closed') {
       await decoder.flush()
       decoderReady = false
     }
@@ -261,14 +281,30 @@ export async function createFrameBuffer(
     },
 
     getFrame(time: number): VideoFrame | null {
+      // Track accessed time for smart trimming
+      lastAccessedTime = time
+
       const data = findFrameData(time)
-      if (!data) return null
+      if (!data) {
+        bufferLog('getFrame: no data', { time, frameCount: frames.length })
+        return null
+      }
+
+      // Log buffer range occasionally
+      if (frames.length > 0) {
+        const first = frames[0].timestamp / 1_000_000
+        const last = frames[frames.length - 1].timestamp / 1_000_000
+        bufferLog('getFrame', { time, foundTs: data.timestamp / 1_000_000, bufferRange: `${first.toFixed(2)}-${last.toFixed(2)}` })
+      }
 
       // Create VideoFrame from buffer - caller takes ownership
       return dataToFrame(data)
     },
 
     getFrameTimestamp(time: number): number | null {
+      // Track accessed time for smart trimming
+      lastAccessedTime = time
+
       const data = findFrameData(time)
       return data?.timestamp ?? null
     },
@@ -288,6 +324,7 @@ export async function createFrameBuffer(
 
         // Clear buffer
         frames = []
+        lastAccessedTime = time  // Reset accessed time to seek target
 
         // Reset decoder
         if (decoder.decoder.state === 'closed') {
@@ -301,7 +338,7 @@ export async function createFrameBuffer(
         const keyframe = await demuxer.getKeyframeBefore(trackInfo.id, time)
         bufferPosition = keyframe?.pts ?? 0
 
-        // Get samples and decode
+        // Get samples and decode (don't flush - decoder.reset() already cleared state)
         const targetEnd = Math.min(time + bufferAhead, trackDuration)
         const samples = await demuxer.getSamples(trackInfo.id, bufferPosition, targetEnd)
         await decodeAndBuffer(samples)
@@ -315,7 +352,10 @@ export async function createFrameBuffer(
     },
 
     async bufferMore(): Promise<void> {
-      if (destroyed || state === 'ended' || isBuffering) return
+      if (destroyed || state === 'ended' || isBuffering) {
+        bufferLog('bufferMore: skipped', { destroyed, state, isBuffering })
+        return
+      }
 
       isBuffering = true
 
@@ -323,18 +363,28 @@ export async function createFrameBuffer(
         state = 'buffering'
 
         const targetEnd = Math.min(bufferPosition + bufferAhead, trackDuration)
+        bufferLog('bufferMore', { bufferPosition, targetEnd, trackDuration })
+
         if (bufferPosition >= targetEnd) {
           state = bufferPosition >= trackDuration ? 'ended' : 'ready'
+          bufferLog('bufferMore: position past target', { state })
           return
         }
 
         const samples = await demuxer.getSamples(trackInfo.id, bufferPosition, targetEnd)
+        bufferLog('bufferMore: got samples', {
+          count: samples.length,
+          firstPts: samples[0]?.pts,
+          lastPts: samples[samples.length - 1]?.pts
+        })
+
         if (samples.length === 0) {
           state = bufferPosition >= trackDuration ? 'ended' : 'ready'
           return
         }
 
         await decodeAndBuffer(samples)
+        bufferLog('bufferMore complete', { newBufferPosition: bufferPosition })
         state = bufferPosition >= trackDuration ? 'ended' : 'ready'
       } finally {
         isBuffering = false
@@ -353,6 +403,7 @@ export async function createFrameBuffer(
       bufferLog('clear')
       frames = []
       bufferPosition = 0
+      lastAccessedTime = 0
       decoderReady = false
       isBuffering = false
       state = 'idle'
