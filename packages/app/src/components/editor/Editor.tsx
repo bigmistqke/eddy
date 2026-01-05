@@ -31,17 +31,17 @@ export const Editor: Component<EditorProps> = props => {
   // Helper to get track volume/pan from project store
   const getTrackVolume = (id: number) => {
     const trackId = `track-${id}`
-    const pipeline = editor.project.getTrackPipeline(trackId)
-    const gainIndex = pipeline.findIndex(e => e.type === 'audio.gain')
-    return gainIndex !== -1 ? editor.project.getEffectValue(trackId, gainIndex) : 1
+    const pipeline = editor.getTrackPipeline(trackId)
+    const gainIndex = pipeline.findIndex((e: { type: string }) => e.type === 'audio.gain')
+    return gainIndex !== -1 ? editor.getEffectValue(trackId, gainIndex) : 1
   }
 
   const getTrackPan = (id: number) => {
     const trackId = `track-${id}`
-    const pipeline = editor.project.getTrackPipeline(trackId)
-    const panIndex = pipeline.findIndex(e => e.type === 'audio.pan')
+    const pipeline = editor.getTrackPipeline(trackId)
+    const panIndex = pipeline.findIndex((e: { type: string }) => e.type === 'audio.pan')
     // Convert 0-1 (store) to -1..1 (display)
-    const value = panIndex !== -1 ? editor.project.getEffectValue(trackId, panIndex) : 0.5
+    const value = panIndex !== -1 ? editor.getEffectValue(trackId, panIndex) : 0.5
     return (value - 0.5) * 2
   }
 

@@ -1,8 +1,10 @@
 import type { Agent } from '@atproto/api'
+import type { AudioEffect, Project, Track } from '@eddy/lexicons'
 import { every, whenEffect, whenMemo } from '@bigmistqke/solid-whenever'
 import { getMasterMixer, resumeAudioContext } from '@eddy/mixer'
 import { debug } from '@eddy/utils'
 import {
+  createEffect,
   createMemo,
   createResource,
   createSelector,
@@ -11,14 +13,89 @@ import {
   onCleanup,
   type Accessor,
 } from 'solid-js'
+import { createStore, produce } from 'solid-js/store'
 import { getProjectByRkey, getStemBlob, publishProject } from '~/lib/atproto/crud'
 import { createAction } from '~/lib/create-action'
 import { createDebugInfo } from '~/lib/create-debug-info'
-import { createProjectStore } from '~/lib/project-store'
 import { createRecorder, requestMediaAccess } from '~/lib/recorder'
 import { createPlayer } from './create-player'
 
 const log = debug('editor', false)
+
+// Local state extensions (not persisted to PDS)
+interface LocalClipState {
+  blob?: Blob
+  duration?: number
+}
+
+interface EditorStore {
+  project: Project
+  local: {
+    clips: Record<string, LocalClipState>
+  }
+  remoteUri: string | null
+}
+
+function createDefaultProject(): Project {
+  return {
+    schemaVersion: 1,
+    title: 'Untitled Project',
+    canvas: {
+      width: 640,
+      height: 360,
+    },
+    groups: [
+      {
+        id: 'main-grid',
+        members: [{ id: 'track-0' }, { id: 'track-1' }, { id: 'track-2' }, { id: 'track-3' }],
+        layout: {
+          type: 'grid',
+          columns: 2,
+          rows: 2,
+        },
+      },
+    ],
+    tracks: [
+      {
+        id: 'track-0',
+        name: 'Track 1',
+        clips: [],
+        audioPipeline: [
+          { type: 'audio.gain', value: { value: 100 } },
+          { type: 'audio.pan', value: { value: 50 } },
+        ],
+      },
+      {
+        id: 'track-1',
+        name: 'Track 2',
+        clips: [],
+        audioPipeline: [
+          { type: 'audio.gain', value: { value: 100 } },
+          { type: 'audio.pan', value: { value: 50 } },
+        ],
+      },
+      {
+        id: 'track-2',
+        name: 'Track 3',
+        clips: [],
+        audioPipeline: [
+          { type: 'audio.gain', value: { value: 100 } },
+          { type: 'audio.pan', value: { value: 50 } },
+        ],
+      },
+      {
+        id: 'track-3',
+        name: 'Track 4',
+        clips: [],
+        audioPipeline: [
+          { type: 'audio.gain', value: { value: 100 } },
+          { type: 'audio.pan', value: { value: 50 } },
+        ],
+      },
+    ],
+    createdAt: new Date().toISOString(),
+  }
+}
 
 export interface CreateEditorOptions {
   agent: Accessor<Agent | null>
@@ -28,30 +105,124 @@ export interface CreateEditorOptions {
 }
 
 export function createEditor(options: CreateEditorOptions) {
-  const project = createProjectStore()
+  // Project store (inlined)
+  const [store, setStore] = createStore<EditorStore>({
+    project: createDefaultProject(),
+    local: { clips: {} },
+    remoteUri: null,
+  })
 
   // Core UI state
   const [selectedTrackIndex, setSelectedTrack] = createSignal<number | null>(null)
   const [masterVolume, setMasterVolume] = createSignal(1)
 
   const isSelectedTrack = createSelector(selectedTrackIndex)
+  const isRecording = () => startRecordingAction.result() !== null
 
-  // Create player as a resource (cleanup via onCleanup inside fetcher)
+  // Project store actions
+  function setTitle(title: string) {
+    setStore('project', 'title', title)
+    setStore('project', 'updatedAt', new Date().toISOString())
+  }
+
+  function setEffectValue(trackId: string, effectIndex: number, value: number) {
+    setStore(
+      'project',
+      'tracks',
+      t => t.id === trackId,
+      'audioPipeline',
+      effectIndex,
+      effect => {
+        if ('value' in effect && effect.value && 'value' in effect.value) {
+          return { ...effect, value: { ...effect.value, value: Math.round(value * 100) } }
+        }
+        return effect
+      },
+    )
+  }
+
+  function getEffectValue(trackId: string, effectIndex: number): number {
+    const track = store.project.tracks.find(t => t.id === trackId)
+    const effect = track?.audioPipeline?.[effectIndex]
+    if (effect && 'value' in effect && effect.value && 'value' in effect.value) {
+      return effect.value.value / 100
+    }
+    return 1
+  }
+
+  function getTrackPipeline(trackId: string): AudioEffect[] {
+    const track = store.project.tracks.find(t => t.id === trackId)
+    return track?.audioPipeline ?? []
+  }
+
+  function addRecording(trackIndex: number, blob: Blob, duration: number) {
+    const trackId = `track-${trackIndex}`
+    const clipId = `clip-${trackIndex}-${Date.now()}`
+
+    setStore(
+      'project',
+      'tracks',
+      t => t.id === trackId,
+      produce((track: Track) => {
+        track.clips = [
+          {
+            id: clipId,
+            offset: 0,
+            duration: Math.round(duration),
+          },
+        ]
+      }),
+    )
+
+    setStore('local', 'clips', clipId, { blob, duration })
+    setStore('project', 'updatedAt', new Date().toISOString())
+  }
+
+  function clearTrack(trackIndex: number) {
+    const trackId = `track-${trackIndex}`
+    const track = store.project.tracks.find(t => t.id === trackId)
+
+    if (track) {
+      for (const clip of track.clips) {
+        setStore('local', 'clips', clip.id, undefined!)
+      }
+    }
+
+    setStore(
+      'project',
+      'tracks',
+      t => t.id === trackId,
+      produce((track: Track) => {
+        track.clips = []
+      }),
+    )
+
+    setStore('project', 'updatedAt', new Date().toISOString())
+  }
+
+  function getLocalClipBlob(clipId: string): Blob | undefined {
+    return store.local.clips[clipId]?.blob
+  }
+
+  // Create player as a resource
   const [player] = createResource(
-    () => ({ width: project.store.project.canvas.width, height: project.store.project.canvas.height }),
+    () => ({
+      width: store.project.canvas.width,
+      height: store.project.canvas.height,
+    }),
     async ({ width, height }) => {
       const _player = await createPlayer(width, height)
       options.container.appendChild(_player.canvas)
-        ; (window as any).__EDDY_DEBUG__ = createDebugInfo(_player)
+      ;(window as any).__EDDY_DEBUG__ = createDebugInfo(_player)
 
       onCleanup(() => {
         _player.destroy()
-        stopPreview()
+        previewAction.clear()
         delete (window as any).__EDDY_DEBUG__
       })
 
       return _player
-    }
+    },
   )
 
   // Resource: Load project record when rkey is provided
@@ -59,10 +230,10 @@ export function createEditor(options: CreateEditorOptions) {
     every(options.agent, () => options.rkey),
     async ([agent, rkey]) => {
       const record = await getProjectByRkey(agent, rkey, options.handle)
-      project.setProject(record.value)
-      project.setRemoteUri(record.uri)
+      setStore('project', record.value)
+      setStore('remoteUri', record.uri)
       return record
-    }
+    },
   )
 
   // Derive clips that have stems from project record
@@ -72,81 +243,95 @@ export function createEditor(options: CreateEditorOptions) {
       record.value.tracks
         .flatMap(track => track.clips)
         .filter(
-          (clip): clip is typeof clip & { stem: NonNullable<typeof clip.stem> } => !!clip.stem
+          (clip): clip is typeof clip & { stem: NonNullable<typeof clip.stem> } => !!clip.stem,
         ),
-    () => []
+    () => [],
   )
 
   // Derive blob resource for each clip (chained async derivation)
-  const stemBlobResources = mapArray(clipsWithStems, clip => {
-    const [blob] = createResource(
-      every(options.agent, () => clip.stem.uri),
-      async ([agent, stemUri]) => {
-        try {
-          return await getStemBlob(agent, stemUri)
-        } catch (err) {
-          console.error(`Failed to fetch stem for clip ${clip.id}:`, err)
-          return null
+  const stemBlobResources = createMemo(
+    mapArray(clipsWithStems, clip => {
+      const [blob] = createResource(
+        every(options.agent, () => clip.stem.uri),
+        ([agent, stemUri]) => {
+          try {
+            return getStemBlob(agent, stemUri)
+          } catch (err) {
+            console.error(`Failed to fetch stem for clip ${clip.id}:`, err)
+            return null
+          }
+        },
+      )
+      return { clipId: clip.id, blob, duration: clip.duration }
+    }),
+  )
+
+  // Derived state
+  const hasAnyRecording = whenMemo(
+    player,
+    player => {
+      for (let i = 0; i < 4; i++) {
+        if (player.hasClip(i)) return true
+      }
+      return false
+    },
+    () => false,
+  )
+
+  whenEffect(player, player => {
+    createEffect(() => {
+      // Load clips into player when project store changes
+      const tracks = store.project.tracks
+      log('effect: checking clips to load', { numTracks: tracks.length })
+
+      for (let i = 0; i < 4; i++) {
+        const trackId = `track-${i}`
+        const track = tracks.find(t => t.id === trackId)
+        const clip = track?.clips[0]
+
+        if (clip) {
+          const blob = getClipBlob(clip.id)
+          if (blob && !player.hasClip(i)) {
+            log('effect: loading clip into player', { trackIndex: i, clipId: clip.id })
+            player.loadClip(i, blob).catch(err => {
+              console.error(`Failed to load clip for track ${i}:`, err)
+            })
+          }
+        } else if (player.hasClip(i)) {
+          log('effect: clearing clip from player', { trackIndex: i })
+          player.clearClip(i)
         }
       }
-    )
-    return { clipId: clip.id, blob, duration: clip.duration }
+
+      // Initialize volume/pan from project store
+      createEffect(() => {
+        for (let i = 0; i < 4; i++) {
+          const trackId = `track-${i}`
+          const pipeline = getTrackPipeline(trackId)
+
+          for (let j = 0; j < pipeline.length; j++) {
+            const effect = pipeline[j]
+            const value = getEffectValue(trackId, j)
+
+            if (effect.type === 'audio.gain') {
+              player.setVolume(i, value)
+            } else if (effect.type === 'audio.pan') {
+              player.setPan(i, (value - 0.5) * 2)
+            }
+          }
+        }
+      })
+    })
   })
 
   // Helper to get blob by clipId (from remote stems or local recordings)
-  const getClipBlob = (clipId: string): Blob | undefined => {
-    // Check remote stems first
+  function getClipBlob(clipId: string): Blob | undefined {
     const stemResource = stemBlobResources().find(r => r.clipId === clipId)
     if (stemResource) {
       return stemResource.blob() ?? undefined
     }
-    // Fall back to local recordings
-    return project.getClipBlob(clipId)
+    return getLocalClipBlob(clipId)
   }
-
-  // Load clips into player when project store changes
-  whenEffect(player, player => {
-    const tracks = project.store.project.tracks
-    log('effect: checking clips to load', { numTracks: tracks.length })
-
-    for (let i = 0; i < 4; i++) {
-      const trackId = `track-${i}`
-      const track = tracks.find(t => t.id === trackId)
-      const clip = track?.clips[0]
-
-      if (clip) {
-        const blob = getClipBlob(clip.id)
-        if (blob && !player.hasClip(i)) {
-          log('effect: loading clip into player', { trackIndex: i, clipId: clip.id })
-          player.loadClip(i, blob).catch(err => {
-            console.error(`Failed to load clip for track ${i}:`, err)
-          })
-        }
-      } else if (player.hasClip(i)) {
-        log('effect: clearing clip from player', { trackIndex: i })
-        player.clearClip(i)
-      }
-    }
-  })
-
-  // Initialize volume/pan from project store
-  whenEffect(player, player => {
-    for (let i = 0; i < 4; i++) {
-      const trackId = `track-${i}`
-      const pipeline = project.getTrackPipeline(trackId)
-
-      for (let j = 0; j < pipeline.length; j++) {
-        const effect = pipeline[j]
-        const value = project.getEffectValue(trackId, j)
-
-        if (effect.type === 'audio.gain') {
-          player.setVolume(i, value)
-        } else if (effect.type === 'audio.pan') {
-          player.setPan(i, (value - 0.5) * 2)
-        }
-      }
-    }
-  })
 
   // Preview action - requests media access and sets up preview stream
   const previewAction = createAction(async (trackIndex: number) => {
@@ -155,7 +340,6 @@ export function createEditor(options: CreateEditorOptions) {
     if (stream) {
       player()?.setPreviewSource(trackIndex, stream)
 
-      // Cleanup when action is cleared, cancelled, or replaced
       onCleanup(() => {
         stream.getTracks().forEach(t => t.stop())
         player()?.setPreviewSource(trackIndex, null)
@@ -163,10 +347,6 @@ export function createEditor(options: CreateEditorOptions) {
     }
     return stream
   })
-
-  function stopPreview() {
-    previewAction.clear()
-  }
 
   // Start recording action - creates recorder and starts playback
   const startRecordingAction = createAction(async (trackIndex: number) => {
@@ -190,9 +370,6 @@ export function createEditor(options: CreateEditorOptions) {
     return { recorder, trackIndex }
   })
 
-  // Derive isRecording from whether startRecordingAction has a result
-  const isRecording = () => startRecordingAction.result() !== null
-
   // Stop recording action - stops recorder, processes result, triggers pre-render
   const stopRecordingAction = createAction(async () => {
     const recordingState = startRecordingAction.result()
@@ -210,17 +387,15 @@ export function createEditor(options: CreateEditorOptions) {
     if (result) {
       log('stopRecording: got result', { blobSize: result.blob.size, duration: result.duration })
       result.firstFrame?.close()
-      project.addRecording(trackIndex, result.blob, result.duration)
+      addRecording(trackIndex, result.blob, result.duration)
     }
 
-    // Clear the recording state
     startRecordingAction.clear()
-    stopPreview()
+    previewAction.clear()
     setSelectedTrack(null)
 
     await _player?.stop()
 
-    // Trigger pre-render after clip loads
     if (_player) {
       _player.preRenderer.invalidate()
 
@@ -240,9 +415,8 @@ export function createEditor(options: CreateEditorOptions) {
       throw new Error('Please sign in to publish')
     }
 
-    // Collect clip blobs
     const clipBlobs = new Map<string, { blob: Blob; duration: number }>()
-    for (const track of project.store.project.tracks) {
+    for (const track of store.project.tracks) {
       for (const clip of track.clips) {
         const blob = getClipBlob(clip.id)
         const duration = clip.duration
@@ -256,28 +430,14 @@ export function createEditor(options: CreateEditorOptions) {
       throw new Error('No recordings to publish')
     }
 
-    const result = await publishProject(currentAgent, project.store.project, clipBlobs)
-    // Extract rkey from AT URI: at://did/collection/rkey
+    const result = await publishProject(currentAgent, store.project, clipBlobs)
     return result.uri.split('/').pop()
   })
 
-  // Derived state
-  const hasAnyRecording = whenMemo(
-    player,
-    player => {
-      for (let i = 0; i < 4; i++) {
-        if (player.hasClip(i)) return true
-      }
-      return false
-    },
-    () => false,
-  )
-
-  const canPublish = createMemo(() => {
-    const _player = player()
+  const canPublish = whenMemo(player, player => {
     return (
       !isRecording() &&
-      !_player?.isPlaying() &&
+      !player.isPlaying() &&
       !publishAction.pending() &&
       hasAnyRecording() &&
       !!options.agent()
@@ -285,8 +445,8 @@ export function createEditor(options: CreateEditorOptions) {
   })
 
   return {
-    // Project store
-    project,
+    // Store (read-only access)
+    store,
 
     // Player
     player,
@@ -299,10 +459,9 @@ export function createEditor(options: CreateEditorOptions) {
     hasAnyRecording,
     canPublish,
 
-    // Loading states (from resources)
+    // Loading states
     isPlayerLoading: () => player.loading,
-    isProjectLoading: () =>
-      projectRecord.loading || stemBlobResources().some(r => r.blob.loading),
+    isProjectLoading: () => projectRecord.loading || stemBlobResources().some(r => r.blob.loading),
 
     // Action states
     previewPending: previewAction.pending,
@@ -310,14 +469,20 @@ export function createEditor(options: CreateEditorOptions) {
     isPublishing: publishAction.pending,
     publishError: publishAction.error,
 
-    // Pre-render state (from player)
+    // Pre-render state
     isPreRendering: () => player()?.preRenderer.isRendering() ?? false,
     preRenderProgress: () => player()?.preRenderer.progress() ?? 0,
 
-    // Loop state (from player clock)
+    // Loop state
     loopEnabled: () => player()?.loop() ?? false,
 
+    // Project helpers
+    getTrackPipeline,
+    getEffectValue,
+
     // Actions
+    setTitle,
+
     async stop() {
       await player()?.stop()
     },
@@ -327,18 +492,18 @@ export function createEditor(options: CreateEditorOptions) {
       const _player = player()
 
       if (isSelectedTrack(trackIndex)) {
-        stopPreview()
+        previewAction.clear()
         setSelectedTrack(null)
         return
       }
 
       if (isRecording()) return
 
-      stopPreview()
+      previewAction.clear()
 
       if (_player && !_player.hasClip(trackIndex)) {
         setSelectedTrack(trackIndex)
-        previewAction(trackIndex).catch(() => { })
+        previewAction(trackIndex).catch(() => {})
       }
     },
 
@@ -348,9 +513,9 @@ export function createEditor(options: CreateEditorOptions) {
       if (startRecordingAction.pending() || stopRecordingAction.pending()) return
 
       if (isRecording()) {
-        stopRecordingAction().catch(() => { })
+        stopRecordingAction().catch(() => {})
       } else {
-        startRecordingAction(trackIndex).catch(() => { })
+        startRecordingAction(trackIndex).catch(() => {})
       }
     },
 
@@ -359,7 +524,7 @@ export function createEditor(options: CreateEditorOptions) {
       if (!_player) return
 
       if (selectedTrackIndex() !== null && !isRecording()) {
-        stopPreview()
+        previewAction.clear()
         setSelectedTrack(null)
       }
 
@@ -373,7 +538,7 @@ export function createEditor(options: CreateEditorOptions) {
     },
 
     clearRecording(index: number) {
-      project.clearTrack(index)
+      clearTrack(index)
       const _player = player()
       if (_player) {
         _player.clearClip(index)
@@ -383,20 +548,20 @@ export function createEditor(options: CreateEditorOptions) {
 
     setTrackVolume(index: number, value: number) {
       const trackId = `track-${index}`
-      const pipeline = project.getTrackPipeline(trackId)
+      const pipeline = getTrackPipeline(trackId)
       const gainIndex = pipeline.findIndex(e => e.type === 'audio.gain')
       if (gainIndex !== -1) {
-        project.setEffectValue(trackId, gainIndex, value)
+        setEffectValue(trackId, gainIndex, value)
       }
       player()?.setVolume(index, value)
     },
 
     setTrackPan(index: number, value: number) {
       const trackId = `track-${index}`
-      const pipeline = project.getTrackPipeline(trackId)
+      const pipeline = getTrackPipeline(trackId)
       const panIndex = pipeline.findIndex(e => e.type === 'audio.pan')
       if (panIndex !== -1) {
-        project.setEffectValue(trackId, panIndex, (value + 1) / 2)
+        setEffectValue(trackId, panIndex, (value + 1) / 2)
       }
       player()?.setPan(index, value)
     },
