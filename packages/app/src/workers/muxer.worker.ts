@@ -12,7 +12,7 @@
  */
 
 import { expose } from '@bigmistqke/rpc/messenger'
-import { createMuxer, type Muxer, type VideoFrameData } from '@eddy/codecs'
+import { createMuxer, type AudioFrameData, type Muxer, type VideoFrameData } from '@eddy/codecs'
 import { debug } from '@eddy/utils'
 
 const log = debug('muxer-worker', false)
@@ -25,16 +25,20 @@ export interface MuxerWorkerMethods {
   setCapturePort(port: MessagePort): void
 
   /**
-   * Pre-initialize the muxer (creates VP9 encoder).
+   * Pre-initialize the muxer (creates VP9 encoder + Opus encoder).
    * Call this before recording to avoid startup delay.
    */
   preInit(): Promise<void>
 
   /**
    * Add a video frame to be encoded.
-   * Frames are queued and processed as fast as possible.
    */
   addVideoFrame(data: VideoFrameData): void
+
+  /**
+   * Add audio samples to be encoded.
+   */
+  addAudioFrame(data: AudioFrameData): void
 
   /**
    * Signal end of stream and finalize the output.
@@ -57,6 +61,7 @@ const methods: MuxerWorkerMethods = {
     expose(
       {
         addVideoFrame: methods.addVideoFrame,
+        addAudioFrame: methods.addAudioFrame,
         captureEnded: (frameCount: number) => {
           capturedFrameCount = frameCount
           log('capture ended', { frameCount: capturedFrameCount })
@@ -69,18 +74,26 @@ const methods: MuxerWorkerMethods = {
   async preInit() {
     if (muxer?.isReady) return
 
-    log('pre-initializing VP9 encoder...')
-    muxer = createMuxer({ videoCodec: 'vp9', videoBitrate: 2_000_000 })
+    log('pre-initializing VP9 + Opus encoders...')
+    muxer = createMuxer({ videoCodec: 'vp9', videoBitrate: 2_000_000, audio: true })
     await muxer.init()
     log('pre-initialization complete')
   },
 
   addVideoFrame(data: VideoFrameData) {
     if (!muxer) {
-      log('not initialized, dropping frame')
+      log('not initialized, dropping video frame')
       return
     }
     muxer.addVideoFrame(data)
+  },
+
+  addAudioFrame(data: AudioFrameData) {
+    if (!muxer) {
+      log('not initialized, dropping audio frame')
+      return
+    }
+    muxer.addAudioFrame(data)
   },
 
   async finalize() {

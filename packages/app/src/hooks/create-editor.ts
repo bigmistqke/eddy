@@ -305,12 +305,21 @@ export function createEditor(options: CreateEditorOptions) {
     const videoTrack = stream.getVideoTracks()[0]
     if (!videoTrack) throw new Error('No video track')
 
-    const processor = new MediaStreamTrackProcessor({ track: videoTrack })
+    const videoProcessor = new MediaStreamTrackProcessor({ track: videoTrack })
+
+    // Get audio track and create processor (if available)
+    const audioTrack = stream.getAudioTracks()[0]
+    const audioProcessor = audioTrack
+      ? new MediaStreamTrackProcessor({ track: audioTrack })
+      : null
 
     // Start capture (runs until cancelled)
     const startTime = performance.now()
     const capturePromise = _workers.capture
-      .start(transfer(processor.readable as ReadableStream<VideoFrame>))
+      .start(
+        transfer(videoProcessor.readable),
+        audioProcessor ? transfer(audioProcessor.readable) : undefined,
+      )
       .catch((err: unknown) => log('capture error:', err))
 
     onCleanup(async () => {
