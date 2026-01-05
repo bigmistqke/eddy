@@ -5,7 +5,6 @@ import { getMasterMixer, resumeAudioContext } from '@eddy/mixer'
 import { debug } from '@eddy/utils'
 import {
   createEffect,
-  createMemo,
   createResource,
   createSelector,
   createSignal,
@@ -92,7 +91,7 @@ function createDefaultProject(): Project {
 
 export interface CreateEditorOptions {
   agent: Accessor<Agent | null>
-  container: HTMLDivElement
+  canvas: Accessor<HTMLCanvasElement | undefined>
   handle?: string
   rkey?: string
 }
@@ -112,17 +111,18 @@ export function createEditor(options: CreateEditorOptions) {
   const isSelectedTrack = createSelector(selectedTrackIndex)
   const isRecording = () => !!startRecordingAction.result()
 
-  // Create player as a resource
+  // Create player as a resource (waits for canvas to be available)
   const [player] = createResource(
-    () => ({
-      width: project.canvas.width,
-      height: project.canvas.height,
-    }),
-    async ({ width, height }) => {
-      const _player = await createPlayer(width, height)
-      options.container.appendChild(_player.canvas)
+    every(
+      () => options.canvas(),
+      () => project.canvas.width,
+      () => project.canvas.height,
+    ),
+    async ([canvas, width, height]) => {
+      const _player = await createPlayer(canvas, width, height)
       ;(window as any).__EDDY_DEBUG__ = createDebugInfo(_player)
 
+      // NOTE: this onCleanup will not run as expected
       onCleanup(() => {
         _player.destroy()
         previewAction.clear()

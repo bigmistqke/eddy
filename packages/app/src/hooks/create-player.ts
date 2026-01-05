@@ -6,7 +6,7 @@ import { createClock, type Clock } from './create-clock'
 import { createPreRenderer, type PreRenderer } from './create-pre-renderer'
 import { createSlot, type Slot } from './create-slot'
 
-const log = debug('player', true)
+const log = debug('player', false)
 const perf = getGlobalPerfMonitor()
 
 export interface PlayerState {
@@ -69,22 +69,24 @@ const NUM_TRACKS = 4
 
 // Expose perf monitor globally for console debugging
 if (typeof window !== 'undefined') {
-  ; (window as any).eddy = { perf }
+  ;(window as any).eddy = { perf }
 }
 
 /**
  * Create a player that manages compositor, playbacks, and audio pipelines
  */
-export async function createPlayer(width: number, height: number): Promise<Player> {
+export async function createPlayer(
+  canvas: HTMLCanvasElement,
+  width: number,
+  height: number,
+): Promise<Player> {
   log('createPlayer', { width, height })
 
   // Create compositor in worker
-  const compositor = await createCompositorWorkerWrapper(width, height)
+  const compositor = await createCompositorWorkerWrapper(canvas, width, height)
 
   // Create slots
-  const slots = Array.from({ length: NUM_TRACKS }, (_, index) =>
-    createSlot({ index, compositor })
-  )
+  const slots = Array.from({ length: NUM_TRACKS }, (_, index) => createSlot({ index, compositor }))
 
   // Derived max duration from slots
   const maxDuration = createMemo(() => {
@@ -184,83 +186,6 @@ export async function createPlayer(width: number, height: number): Promise<Playe
     compositor.destroy()
   }
 
-  async function play(time?: number): Promise<void> {
-    const startTime = time ?? clock.time()
-    log('play', { startTime })
-
-    // Prepare all playbacks
-    await Promise.all([
-      ...slots.map(slot => slot.prepareToPlay(startTime)),
-      preRenderer.playback()?.prepareToPlay(startTime)
-    ])
-
-    // Start audio
-    for (const slot of slots) {
-      slot.startAudio(startTime)
-    }
-
-    clock.play(startTime)
-  }
-
-  function pause() {
-    if (!clock.isPlaying()) return
-
-    for (const slot of slots) {
-      slot.pause()
-    }
-
-    clock.pause()
-  }
-
-  async function stop(): Promise<void> {
-    clock.stop()
-
-    for (const slot of slots) {
-      slot.stop()
-    }
-
-    // Seek to 0
-    await Promise.all(slots.map(slot => slot.seek(0)))
-  }
-
-  async function seek(time: number): Promise<void> {
-    const wasPlaying = clock.isPlaying()
-
-    if (wasPlaying) {
-      clock.pause()
-    }
-
-    await Promise.all(slots.map(slot => slot.seek(time)))
-
-    clock.seek(time)
-
-    if (wasPlaying) {
-      clock.play(time)
-    }
-  }
-
-  async function loadClip(trackIndex: number, blob: Blob): Promise<void> {
-    log('loadClip', { trackIndex, blobSize: blob.size })
-    await slots[trackIndex].load(blob)
-    log('loadClip complete', { trackIndex })
-  }
-
-  function clearClip(trackIndex: number): void {
-    slots[trackIndex].clear()
-  }
-
-  function hasClip(trackIndex: number): boolean {
-    return slots[trackIndex].hasClip()
-  }
-
-  function isLoading(trackIndex: number): boolean {
-    return slots[trackIndex].isLoading()
-  }
-
-  function setPreviewSource(trackIndex: number, stream: MediaStream | null): void {
-    slots[trackIndex].setPreviewSource(stream)
-  }
-
   // Start render loop
   startRenderLoop()
 
@@ -281,16 +206,75 @@ export async function createPlayer(width: number, height: number): Promise<Playe
     maxDuration,
 
     // Actions
-    play,
-    pause,
-    stop,
-    seek,
+    async play(time?: number): Promise<void> {
+      const startTime = time ?? clock.time()
+      log('play', { startTime })
+
+      // Prepare all playbacks
+      await Promise.all([
+        ...slots.map(slot => slot.prepareToPlay(startTime)),
+        preRenderer.playback()?.prepareToPlay(startTime),
+      ])
+
+      // Start audio
+      for (const slot of slots) {
+        slot.startAudio(startTime)
+      }
+
+      clock.play(startTime)
+    },
+    pause() {
+      if (!clock.isPlaying()) return
+
+      for (const slot of slots) {
+        slot.pause()
+      }
+
+      clock.pause()
+    },
+    async stop(): Promise<void> {
+      clock.stop()
+
+      for (const slot of slots) {
+        slot.stop()
+      }
+
+      // Seek to 0
+      await Promise.all(slots.map(slot => slot.seek(0)))
+    },
+    async seek(time: number): Promise<void> {
+      const wasPlaying = clock.isPlaying()
+
+      if (wasPlaying) {
+        clock.pause()
+      }
+
+      await Promise.all(slots.map(slot => slot.seek(time)))
+
+      clock.seek(time)
+
+      if (wasPlaying) {
+        clock.play(time)
+      }
+    },
     setLoop: clock.setLoop,
-    loadClip,
-    clearClip,
-    hasClip,
-    isLoading,
-    setPreviewSource,
+    async loadClip(trackIndex: number, blob: Blob): Promise<void> {
+      log('loadClip', { trackIndex, blobSize: blob.size })
+      await slots[trackIndex].load(blob)
+      log('loadClip complete', { trackIndex })
+    },
+    clearClip(trackIndex: number): void {
+      slots[trackIndex].clear()
+    },
+    hasClip(trackIndex: number): boolean {
+      return slots[trackIndex].hasClip()
+    },
+    isLoading(trackIndex: number): boolean {
+      return slots[trackIndex].isLoading()
+    },
+    setPreviewSource(trackIndex: number, stream: MediaStream | null): void {
+      slots[trackIndex].setPreviewSource(stream)
+    },
     setVolume: (trackIndex, value) => slots[trackIndex].setVolume(value),
     setPan: (trackIndex, value) => slots[trackIndex].setPan(value),
     destroy,

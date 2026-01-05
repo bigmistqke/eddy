@@ -41,18 +41,19 @@ export interface WorkerCompositor {
 /**
  * Create a compositor that runs WebGL rendering in a Web Worker.
  *
+ * @param canvas - The canvas element to render to
  * @param width - Canvas width
  * @param height - Canvas height
  * @returns WorkerCompositor interface
  */
 export async function createCompositorWorkerWrapper(
+  canvas: HTMLCanvasElement,
   width: number,
-  height: number
+  height: number,
 ): Promise<WorkerCompositor> {
   log('createCompositorWorkerWrapper', { width, height })
 
-  // Create canvas and transfer to worker
-  const canvas = document.createElement('canvas')
+  // Set canvas size and transfer to worker
   canvas.width = width
   canvas.height = height
 
@@ -62,15 +63,16 @@ export async function createCompositorWorkerWrapper(
   const handle: WorkerHandle<CompositorWorkerMethods> = createCompositorWorker()
 
   log('initializing worker with OffscreenCanvas')
-  await handle.rpc.init(
-    transfer(offscreen) as unknown as OffscreenCanvas,
-    width,
-    height
-  )
+  await handle.rpc.init(transfer(offscreen), width, height)
   log('worker initialized')
 
   // Track active preview processors so we can clean them up
-  const previewProcessors: (MediaStreamTrackProcessor<VideoFrame> | null)[] = [null, null, null, null]
+  const previewProcessors: (MediaStreamTrackProcessor<VideoFrame> | null)[] = [
+    null,
+    null,
+    null,
+    null,
+  ]
 
   return {
     get canvas() {
@@ -94,7 +96,7 @@ export async function createCompositorWorkerWrapper(
 
           handle.rpc.setPreviewStream(
             index,
-            transfer(processor.readable) as unknown as ReadableStream<VideoFrame>
+            transfer(processor.readable) as unknown as ReadableStream<VideoFrame>,
           )
         }
       } else {

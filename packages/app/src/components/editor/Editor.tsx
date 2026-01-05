@@ -1,5 +1,5 @@
 import { FiCircle, FiPause, FiPlay, FiRepeat, FiSquare, FiUpload, FiVolume2 } from 'solid-icons/fi'
-import { type Component, For, Show } from 'solid-js'
+import { type Component, createSignal, For, onMount, Show } from 'solid-js'
 import { createEditor } from '~/hooks'
 import { useAuth } from '~/lib/atproto/auth-context'
 import styles from './Editor.module.css'
@@ -15,11 +15,11 @@ const TRACK_IDS = [0, 1, 2, 3] as const
 export const Editor: Component<EditorProps> = props => {
   const { agent } = useAuth()
 
-  const container = (<div class={styles.compositorContainer} />) as HTMLDivElement
+  const [canvas, setCanvas] = createSignal<HTMLCanvasElement>()
 
   const editor = createEditor({
     agent,
-    container,
+    canvas,
     get handle() {
       return props.handle
     },
@@ -59,7 +59,12 @@ export const Editor: Component<EditorProps> = props => {
       <Show when={editor.isProjectLoading()}>
         <div class={styles.loadingOverlay}>Loading project...</div>
       </Show>
-      {container}
+      <div class={styles.compositorContainer}>
+        <canvas
+          ref={element => onMount(() => setCanvas(element))}
+          class={styles.compositorCanvas}
+        />
+      </div>
       <div class={styles.transport}>
         <button
           type="button"

@@ -61,7 +61,7 @@ function getCellViewport(
   cols: number,
   rows: number,
   canvasWidth: number,
-  canvasHeight: number
+  canvasHeight: number,
 ): { x: number; y: number; width: number; height: number } {
   const col = index % cols
   const row = Math.floor(index / cols)
@@ -264,7 +264,14 @@ const methods: CompositorWorkerMethods = {
     captureGl.bindTexture(captureGl.TEXTURE_2D, captureTextures[index])
 
     if (frame) {
-      captureGl.texImage2D(captureGl.TEXTURE_2D, 0, captureGl.RGBA, captureGl.RGBA, captureGl.UNSIGNED_BYTE, frame)
+      captureGl.texImage2D(
+        captureGl.TEXTURE_2D,
+        0,
+        captureGl.RGBA,
+        captureGl.RGBA,
+        captureGl.UNSIGNED_BYTE,
+        frame,
+      )
       frame.close() // Close after upload
     }
   },
