@@ -1,6 +1,7 @@
 import { A } from '@solidjs/router'
 import { FiTrash2 } from 'solid-icons/fi'
-import { createResource, createSignal, For, Show, useTransition } from 'solid-js'
+import { createResource, For, Show, useTransition } from 'solid-js'
+import { createAction } from '~/lib/create-action'
 import { useAuth } from '~/lib/atproto/auth-context'
 import { deleteOrphanedStems, deleteProject, listProjects } from '~/lib/atproto/crud'
 import styles from './home.module.css'
@@ -28,22 +29,13 @@ export default function Home() {
     startTransition(() => refetch())
   }
 
-  const [cleaningUp, setCleaningUp] = createSignal(false)
-
-  async function handleCleanupStems() {
+  const cleanupAction = createAction(async (_: void) => {
     const currentAgent = agent()
-    if (!currentAgent) return
-    setCleaningUp(true)
-    try {
-      const deleted = await deleteOrphanedStems(currentAgent)
-      alert(`Deleted ${deleted.length} orphaned stem${deleted.length !== 1 ? 's' : ''}`)
-    } catch (error) {
-      console.error('Cleanup failed:', error)
-      alert(`Cleanup failed: ${error}`)
-    } finally {
-      setCleaningUp(false)
-    }
-  }
+    if (!currentAgent) return null
+    const deleted = await deleteOrphanedStems(currentAgent)
+    alert(`Deleted ${deleted.length} orphaned stem${deleted.length !== 1 ? 's' : ''}`)
+    return deleted
+  })
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return ''
@@ -91,10 +83,10 @@ export default function Home() {
         <button
           type="button"
           class={styles.cleanupButton}
-          onClick={handleCleanupStems}
-          disabled={cleaningUp()}
+          onClick={() => cleanupAction.submit()}
+          disabled={cleanupAction.pending()}
         >
-          {cleaningUp() ? 'Cleaning up...' : 'Cleanup orphaned stems'}
+          {cleanupAction.pending() ? 'Cleaning up...' : 'Cleanup orphaned stems'}
         </button>
       </Show>
     </div>

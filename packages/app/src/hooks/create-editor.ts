@@ -2,7 +2,6 @@ import type { Agent } from '@atproto/api'
 import { every, whenEffect, whenMemo } from '@bigmistqke/solid-whenever'
 import { getMasterMixer, resumeAudioContext } from '@eddy/mixer'
 import { debug } from '@eddy/utils'
-import { action, useSubmission } from '@solidjs/router'
 import {
   createMemo,
   createResource,
@@ -12,6 +11,7 @@ import {
   onCleanup,
   type Accessor,
 } from 'solid-js'
+import { createAction } from '~/lib/create-action'
 import { getProjectByRkey, getStemBlob, publishProject } from '~/lib/atproto/crud'
 import { createDebugInfo } from '~/lib/create-debug-info'
 import { createProjectStore } from '~/lib/project-store'
@@ -35,41 +35,7 @@ export function createEditor(options: CreateEditorOptions) {
   const [selectedTrackIndex, setSelectedTrack] = createSignal<number | null>(null)
   const [masterVolume, setMasterVolume] = createSignal(1)
 
-  // Preview stream state
-  const [previewPending, setPreviewPending] = createSignal(false)
-  const [stopRecordingPending, setStopRecordingPending] = createSignal(false)
-
   const isSelectedTrack = createSelector(selectedTrackIndex)
-
-  // Publish action using Solid's action/useSubmission
-  const publishAction = action(async () => {
-    const currentAgent = options.agent()
-    if (!currentAgent) {
-      throw new Error('Please sign in to publish')
-    }
-
-    // Collect clip blobs
-    const clipBlobs = new Map<string, { blob: Blob; duration: number }>()
-    for (const track of project.store.project.tracks) {
-      for (const clip of track.clips) {
-        const blob = getClipBlob(clip.id)
-        const duration = clip.duration
-        if (blob && duration) {
-          clipBlobs.set(clip.id, { blob, duration })
-        }
-      }
-    }
-
-    if (clipBlobs.size === 0) {
-      throw new Error('No recordings to publish')
-    }
-
-    const result = await publishProject(currentAgent, project.store.project, clipBlobs)
-    // Extract rkey from AT URI: at://did/collection/rkey
-    return result.uri.split('/').pop()
-  })
-
-  const publishSubmission = useSubmission(publishAction)
 
   // Create player as a resource (cleanup via onCleanup inside fetcher)
   const [player] = createResource(
@@ -186,24 +152,6 @@ export function createEditor(options: CreateEditorOptions) {
     }
   })
 
-  function setupPreviewStream(mediaStream: MediaStream, trackIndex: number) {
-    setStream(mediaStream)
-    player()?.setPreviewSource(trackIndex, mediaStream)
-  }
-
-  async function startPreview(trackIndex: number) {
-    setPreviewPending(true)
-    try {
-      await resumeAudioContext()
-      const result = await requestMediaAccess(true)
-      if (result) {
-        setupPreviewStream(result, trackIndex)
-      }
-    } finally {
-      setPreviewPending(false)
-    }
-  }
-
   function stopPreview() {
     const track = selectedTrackIndex()
     if (track !== null) {
@@ -212,6 +160,82 @@ export function createEditor(options: CreateEditorOptions) {
     stream()?.getTracks().forEach(t => t.stop())
     setStream(null)
   }
+
+  // Preview action - requests media access and sets up preview stream
+  const previewAction = createAction(async (trackIndex: number) => {
+    await resumeAudioContext()
+    const result = await requestMediaAccess(true)
+    if (result) {
+      setStream(result)
+      player()?.setPreviewSource(trackIndex, result)
+    }
+    return result
+  })
+
+  // Stop recording action - stops recorder, processes result, triggers pre-render
+  const stopRecordingAction = createAction(async (track: number) => {
+    log('stopRecording', { track })
+    const _player = player()
+    const _recorder = recorder()
+    if (!_recorder) {
+      throw new Error('Recording state but no recorder instance')
+    }
+
+    const result = await _recorder.stop()
+    setRecorder(null)
+
+    if (result) {
+      log('stopRecording: got result', { blobSize: result.blob.size, duration: result.duration })
+      result.firstFrame?.close()
+      project.addRecording(track, result.blob, result.duration)
+    }
+
+    stopPreview()
+    setIsRecording(false)
+    setSelectedTrack(null)
+
+    await _player?.stop()
+
+    // Trigger pre-render after clip loads
+    if (_player) {
+      _player.preRenderer.invalidate()
+
+      setTimeout(() => {
+        const playbacks = [0, 1, 2, 3].map(i => _player.getSlot(i).playback())
+        _player.preRenderer.render(playbacks, _player.compositor)
+      }, 500)
+    }
+
+    return result
+  })
+
+  // Publish action - uploads clips and publishes project
+  const publishAction = createAction(async (_: void) => {
+    const currentAgent = options.agent()
+    if (!currentAgent) {
+      throw new Error('Please sign in to publish')
+    }
+
+    // Collect clip blobs
+    const clipBlobs = new Map<string, { blob: Blob; duration: number }>()
+    for (const track of project.store.project.tracks) {
+      for (const clip of track.clips) {
+        const blob = getClipBlob(clip.id)
+        const duration = clip.duration
+        if (blob && duration) {
+          clipBlobs.set(clip.id, { blob, duration })
+        }
+      }
+    }
+
+    if (clipBlobs.size === 0) {
+      throw new Error('No recordings to publish')
+    }
+
+    const result = await publishProject(currentAgent, project.store.project, clipBlobs)
+    // Extract rkey from AT URI: at://did/collection/rkey
+    return result.uri.split('/').pop()
+  })
 
   async function startRecording() {
     log('startRecording')
@@ -233,47 +257,6 @@ export function createEditor(options: CreateEditorOptions) {
     await _player.play(0)
   }
 
-  async function stopRecording(track: number) {
-    log('stopRecording', { track })
-    const _player = player()
-    const _recorder = recorder()
-    if (!_recorder) {
-      throw new Error('Recording state but no recorder instance')
-    }
-
-    setStopRecordingPending(true)
-
-    try {
-      const result = await _recorder.stop()
-      setRecorder(null)
-
-      if (result) {
-        log('stopRecording: got result', { blobSize: result.blob.size, duration: result.duration })
-        result.firstFrame?.close()
-
-        project.addRecording(track, result.blob, result.duration)
-      }
-
-      stopPreview()
-      setIsRecording(false)
-      setSelectedTrack(null)
-
-      await _player?.stop()
-
-      // Trigger pre-render after clip loads
-      if (_player) {
-        _player.preRenderer.invalidate()
-
-        setTimeout(() => {
-          const playbacks = [0, 1, 2, 3].map(i => _player.getSlot(i).playback())
-          _player.preRenderer.render(playbacks, _player.compositor)
-        }, 500)
-      }
-    } finally {
-      setStopRecordingPending(false)
-    }
-  }
-
   // Derived state
   const hasAnyRecording = whenMemo(
     player,
@@ -291,7 +274,7 @@ export function createEditor(options: CreateEditorOptions) {
     return (
       !isRecording() &&
       !(_player?.isPlaying() ?? false) &&
-      !publishSubmission.pending &&
+      !publishAction.pending() &&
       hasAnyRecording() &&
       !!options.agent()
     )
@@ -309,8 +292,6 @@ export function createEditor(options: CreateEditorOptions) {
     selectedTrack: selectedTrackIndex,
     masterVolume,
     isSelectedTrack,
-    previewPending,
-    stopRecordingPending,
     hasAnyRecording,
     canPublish,
 
@@ -319,13 +300,15 @@ export function createEditor(options: CreateEditorOptions) {
     isProjectLoading: () =>
       projectRecord.loading || stemBlobResources().some(r => r.blob.loading),
 
+    // Action states
+    previewPending: previewAction.pending,
+    stopRecordingPending: stopRecordingAction.pending,
+    isPublishing: publishAction.pending,
+    publishError: publishAction.error,
+
     // Pre-render state (from player)
     isPreRendering: () => player()?.preRenderer.isRendering() ?? false,
     preRenderProgress: () => player()?.preRenderer.progress() ?? 0,
-
-    // Publish state (from submission)
-    isPublishing: () => publishSubmission.pending,
-    publishError: () => publishSubmission.error,
 
     // Loop state (from player clock)
     loopEnabled: () => player()?.loop() ?? false,
@@ -335,7 +318,7 @@ export function createEditor(options: CreateEditorOptions) {
       await player()?.stop()
     },
 
-    async selectTrack(trackIndex: number) {
+    selectTrack(trackIndex: number) {
       log('selectTrack', { trackIndex })
       const _player = player()
 
@@ -351,17 +334,17 @@ export function createEditor(options: CreateEditorOptions) {
 
       if (_player && !_player.hasClip(trackIndex)) {
         setSelectedTrack(trackIndex)
-        await startPreview(trackIndex)
+        previewAction.submit(trackIndex)
       }
     },
 
-    async toggleRecording() {
+    toggleRecording() {
       const trackIndex = selectedTrackIndex()
       if (trackIndex === null) return
-      if (stopRecordingPending()) return
+      if (stopRecordingAction.pending()) return
 
       if (isRecording()) {
-        stopRecording(trackIndex)
+        stopRecordingAction.submit(trackIndex)
       } else {
         startRecording()
       }
@@ -419,7 +402,9 @@ export function createEditor(options: CreateEditorOptions) {
       getMasterMixer().setMasterVolume(value)
     },
 
-    publish: publishAction,
+    publish() {
+      publishAction.submit()
+    },
 
     toggleLoop() {
       const _player = player()
