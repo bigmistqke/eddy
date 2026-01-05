@@ -18,12 +18,13 @@ export function createDebugInfo(player: Player): DebugInfo {
       const states = []
       for (let i = 0; i < 4; i++) {
         const slot = player.getSlot(i)
-        if (slot.playback) {
+        const playback = slot.playback()
+        if (playback) {
           states.push({
             trackIndex: i,
-            state: slot.playback.state,
+            state: playback.state,
             currentTime: player.time(),
-            hasFrame: slot.playback.getFrameAt(player.time()) !== null,
+            hasFrame: playback.getFrameAt(player.time()) !== null,
           })
         }
       }
