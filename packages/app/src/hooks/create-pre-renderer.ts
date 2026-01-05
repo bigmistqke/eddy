@@ -4,6 +4,7 @@
  * Manages all pre-render state with signals and handles the pre-rendered playback lifecycle.
  */
 
+import { every } from '@bigmistqke/solid-whenever'
 import type { Demuxer } from '@eddy/codecs'
 import type { Playback } from '@eddy/playback'
 import { createPlayback } from '@eddy/playback'
@@ -21,6 +22,8 @@ export interface PreRenderOptions {
   fps?: number
   /** Video bitrate in bps (default: 4_000_000) */
   bitrate?: number
+  /** External duration accessor (reactive) */
+  duration?: Accessor<number>
 }
 
 interface RenderParams {
@@ -69,6 +72,7 @@ export function createPreRenderer(options: PreRenderOptions = {}): PreRenderer {
   const fps = options.fps ?? 30
   const bitrate = options.bitrate ?? 4_000_000
   const frameDuration = 1 / fps
+  const duration = options.duration ?? (() => 0)
 
   // Render params signal - setting this triggers the resource
   const [renderParams, setRenderParams] = createSignal<RenderParams | null>(null)
@@ -79,38 +83,22 @@ export function createPreRenderer(options: PreRenderOptions = {}): PreRenderer {
   // Frame tracking for tick()
   let lastSentTimestamp: number | null = null
 
-  // Source: only trigger when params exist and have content
-  const renderSource = () => {
-    const params = renderParams()
-    if (!params) return null
-    const hasContent = params.playbacks.some(playback => playback !== null)
-    if (!hasContent) return null
-    return params
-  }
 
   // The render resource with automatic abort management
   const [result, { mutate, cancel }] = createCancellableResource(
-    renderSource,
-    async (params, { signal }): Promise<RenderResult | null> => {
+    every(
+      renderParams,
+      () => renderParams()?.playbacks.some(playback => playback !== null),
+      () => duration() > 0
+    ),
+    async ([params], { signal }): Promise<RenderResult | null> => {
       const { playbacks, compositor } = params
-
-      // Find max duration
-      let duration = 0
-      for (const playback of playbacks) {
-        if (playback) {
-          duration = Math.max(duration, playback.duration)
-        }
-      }
-
-      if (duration <= 0) {
-        log('render: no duration')
-        return null
-      }
 
       setProgress(0)
 
-      const totalFrames = Math.ceil(duration * fps)
-      log('starting', { duration, fps, totalFrames, bitrate })
+      const currentDuration = duration()
+      const totalFrames = Math.ceil(currentDuration * fps)
+      log('starting', { duration: currentDuration, fps, totalFrames, bitrate })
 
       // Setup encoder
       const bufferTarget = new BufferTarget()

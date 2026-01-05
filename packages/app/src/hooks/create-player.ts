@@ -79,9 +79,6 @@ export async function createPlayer(width: number, height: number): Promise<Playe
   // Create compositor in worker
   const compositor = await createCompositorWorkerWrapper(width, height)
 
-  // Create pre-renderer hook
-  const preRenderer = createPreRenderer()
-
   // Create slots
   const slots = Array.from({ length: NUM_TRACKS }, (_, index) =>
     createSlot({ index, compositor })
@@ -101,6 +98,9 @@ export async function createPlayer(width: number, height: number): Promise<Playe
 
   // Create clock for time management (reads maxDuration reactively)
   const clock = createClock({ duration: maxDuration })
+
+  // Create pre-renderer hook (reads maxDuration reactively)
+  const preRenderer = createPreRenderer({ duration: maxDuration })
 
   // Render loop state
   let animationFrameId: number | null = null
