@@ -11,7 +11,7 @@
 
 import { $MESSENGER, rpc, transfer } from '@bigmistqke/rpc/messenger'
 import { createSignal, Match, Switch } from 'solid-js'
-import { action } from '~/hooks/action'
+import { action, defer } from '~/hooks/action'
 import { resource } from '~/hooks/resource'
 import type { CaptureWorkerMethods } from '~/workers/debug-capture.worker'
 import DebugCaptureWorker from '~/workers/debug-capture.worker?worker'
@@ -56,26 +56,29 @@ export default function Debug() {
     return { capture, muxer }
   })
 
-  const getUserMedia = action(async (_: undefined, { signal, onCleanup, cancellation }) => {
+  const getUserMedia = action(function* (_: undefined, { onCleanup }) {
     addLog('requesting camera')
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user', width: 640, height: 480 },
-      audio: false,
-    })
-
-    onCleanup(() => {
-      stream.getTracks().forEach(t => t.stop())
-    })
-
-    return stream
+    const media = yield* defer(
+      navigator.mediaDevices
+        .getUserMedia({
+          video: { facingMode: 'user', width: 640, height: 480 },
+          audio: false,
+        })
+        .then(stream => {
+          onCleanup(() => stream.getTracks().forEach(track => track.stop()))
+          return stream
+        }),
+    )
+    return media
   })
 
-  // Recording action
-  const record = action(async (_: undefined, { signal, onCleanup, cancellation }) => {
+  // Recording action - uses yield* to compose with getUserMedia
+  const record = action(function* (_: undefined, { onCleanup, cancellation }) {
     const _workers = workers()
     if (!_workers) throw new Error('Workers not ready')
 
-    const stream = await getUserMedia()
+    // Compose with getUserMedia action
+    const stream = yield* defer(getUserMedia())
 
     const videoTrack = stream.getVideoTracks()[0]
     const settings = videoTrack?.getSettings()
@@ -87,7 +90,7 @@ export default function Debug() {
 
     // Start capture (runs until cancelled)
     const capturePromise = _workers.capture
-      .start(transfer(processor.readable))
+      .start(transfer(processor.readable as ReadableStream<VideoFrame>))
       .then(() => addLog('capture completed'))
       .catch((err: unknown) => addLog(`capture error: ${err}`))
 
@@ -100,7 +103,7 @@ export default function Debug() {
     addLog('recording...')
 
     // Wait until cancelled
-    await cancellation
+    yield cancellation
   })
 
   // Finalize and download

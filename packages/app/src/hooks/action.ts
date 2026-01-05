@@ -15,7 +15,31 @@ export interface ActionContext {
   readonly cancellation: Promise<void>
 }
 
-export type ActionFetcher<T, R> = (args: T, context: ActionContext) => Promise<R>
+/** Generator that yields promises and returns R */
+export type ActionGenerator<R> = Generator<Promise<unknown>, R, unknown>
+
+/**
+ * Wrap a promise for use with yield* in generator actions.
+ * Provides proper typing for the resolved value.
+ *
+ * @example
+ * const data = yield* defer(fetch('/api').then(r => r.json()))
+ * const stream = yield* defer(getUserMedia())
+ */
+export function* defer<T>(
+  promise: Promise<T>,
+): Generator<Promise<NoInfer<T>>, NoInfer<T>, NoInfer<T>> {
+  return (yield promise) as T
+}
+
+/** Async function fetcher */
+export type AsyncFetcher<T, R> = (args: T, context: ActionContext) => Promise<R>
+
+/** Generator function fetcher - yields promises, runner awaits with abort checks */
+export type GeneratorFetcher<T, R> = (args: T, context: ActionContext) => ActionGenerator<R>
+
+/** Either async or generator fetcher */
+export type ActionFetcher<T, R> = AsyncFetcher<T, R> | GeneratorFetcher<T, R>
 
 export type ActionFn<T, R> = [T] extends [undefined] ? () => Promise<R> : (args: T) => Promise<R>
 
@@ -38,13 +62,52 @@ export type Action<T, R> = ActionFn<T, R> & {
   try: TryFn<T, R>
 }
 
+/** Check if a function is a generator function */
+function isGeneratorFunction(fn: Function): fn is (...args: any[]) => Generator {
+  return fn.constructor.name === 'GeneratorFunction'
+}
+
+/** Run a generator with abort checks between yields */
+async function runGenerator<R>(gen: ActionGenerator<R>, signal: AbortSignal): Promise<R> {
+  let result = gen.next()
+
+  while (!result.done) {
+    // Check abort before awaiting
+    if (signal.aborted) {
+      throw new CancelledError()
+    }
+
+    // Await the yielded promise
+    const value = await result.value
+
+    // Check abort after awaiting
+    if (signal.aborted) {
+      throw new CancelledError()
+    }
+
+    // Send result back to generator
+    result = gen.next(value)
+  }
+
+  return result.value
+}
+
 /**
  * Creates an async action that can be called directly and awaited.
  *
- * - Calling while pending automatically cancels the previous invocation
- * - Cancelled calls reject with CancelledError
- * - Provides `pending`, `result`, and `error` state
- * - Pass `signal` to the fetcher for cancellation support
+ * Supports two styles:
+ * 1. Async function: `action(async (args, ctx) => { ... })`
+ * 2. Generator function: `action(function* (args, ctx) { yield promise; ... })`
+ *
+ * Generator style automatically checks for abort between yields.
+ * Use `yield* defer(promise)` for typed yields:
+ *
+ * ```ts
+ * const fetchUser = action(function* () {
+ *   const response = yield* defer(fetch('/api/user'))
+ *   return yield* defer(response.json())
+ * })
+ * ```
  */
 export function action<T = undefined, R = void>(fetcher: ActionFetcher<T, R>): Action<T, R> {
   const [pending, setPending] = createSignal(false)
@@ -54,12 +117,13 @@ export function action<T = undefined, R = void>(fetcher: ActionFetcher<T, R>): A
   let abortController: AbortController | null = null
   let cleanupFns: (() => void)[] = []
 
+  const isGenerator = isGeneratorFunction(fetcher)
+
   function registerCleanup(fn: () => void) {
     cleanupFns.push(fn)
   }
 
   function cleanup() {
-    // Call registered cleanup functions
     for (const fn of cleanupFns) {
       try {
         fn()
@@ -85,20 +149,9 @@ export function action<T = undefined, R = void>(fetcher: ActionFetcher<T, R>): A
     setError(undefined)
   }
 
-  async function action(args?: T): Promise<R> {
-    // Cleanup any ongoing invocation
-    cleanup()
-
-    // Create new abort controller
-    abortController = new AbortController()
-    const { signal } = abortController
-
-    setPending(true)
-    setError(undefined)
-
-    // Context with lazy cached cancellation promise
+  function createContext(signal: AbortSignal): ActionContext {
     let cancellationPromise: Promise<void> | null = null
-    const context: ActionContext = {
+    return {
       signal,
       onCleanup: registerCleanup,
       get cancellation() {
@@ -107,9 +160,33 @@ export function action<T = undefined, R = void>(fetcher: ActionFetcher<T, R>): A
         }))
       },
     }
+  }
+
+  /** Create a bound generator from args and context */
+  function createGenerator(args: T, context: ActionContext): ActionGenerator<R> {
+    if (isGenerator) {
+      return (fetcher as GeneratorFetcher<T, R>)(args, context)
+    } else {
+      // Wrap async function as single-yield generator
+      return (function* () {
+        return (yield (fetcher as AsyncFetcher<T, R>)(args, context)) as R
+      })()
+    }
+  }
+
+  async function actionFn(args?: T): Promise<R> {
+    cleanup()
+
+    abortController = new AbortController()
+    const { signal } = abortController
+    const context = createContext(signal)
+
+    setPending(true)
+    setError(undefined)
 
     try {
-      const value = await fetcher(args as T, context)
+      const gen = createGenerator(args as T, context)
+      const value = await runGenerator(gen, signal)
 
       if (signal.aborted) {
         throw new CancelledError()
@@ -130,13 +207,13 @@ export function action<T = undefined, R = void>(fetcher: ActionFetcher<T, R>): A
 
   async function tryAction(args?: T): Promise<R | undefined> {
     try {
-      return await action(args)
+      return await actionFn(args)
     } catch {
       return undefined
     }
   }
 
-  return Object.assign(action, {
+  return Object.assign(actionFn, {
     pending,
     result,
     error,
