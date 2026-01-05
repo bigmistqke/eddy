@@ -5,155 +5,208 @@
  * Main Thread: MediaStreamTrackProcessor.readable → transfer → Capture Worker
  * Capture Worker: VideoFrame → copyTo(buffer) → RPC → Muxer Worker
  * Muxer Worker: queue → recreate VideoFrame → VideoSample → mux
+ *
+ * Workers are pre-initialized on mount to avoid startup delay during recording.
  */
 
-import { createSignal, onCleanup, Show } from 'solid-js'
 import { transfer } from '@bigmistqke/rpc/messenger'
-import {
-  createDebugCaptureWorker,
-  createDebugMuxerWorker,
-  type WorkerHandle,
-} from '../workers/create-worker'
-import type { CaptureWorkerMethods, MuxerWorkerMethods } from '../workers/debug-types'
+import { createSignal, Match, Show, Switch } from 'solid-js'
+import { action } from '~/hooks/action'
+import { resource } from '~/hooks/resource'
+import { createDebugCaptureWorker, createDebugMuxerWorker } from '../workers/create-worker'
 
 export default function Debug() {
-  const [status, setStatus] = createSignal<string>('idle')
-  const [isRecording, setIsRecording] = createSignal(false)
   const [log, setLog] = createSignal<string[]>([])
-
-  let stream: MediaStream | null = null
-  let captureWorker: WorkerHandle<CaptureWorkerMethods> | null = null
-  let muxerWorker: WorkerHandle<MuxerWorkerMethods> | null = null
 
   const addLog = (msg: string) => {
     console.log(`[debug] ${msg}`)
     setLog(prev => [...prev, `${new Date().toISOString().slice(11, 23)} ${msg}`])
   }
 
-  async function startRecording() {
-    try {
-      setStatus('requesting camera...')
-      addLog('requesting camera')
+  // Pre-initialize workers on mount
+  const [workers] = resource(async ({ onCleanup }) => {
+    addLog('creating workers...')
+    const capture = createDebugCaptureWorker()
+    const muxer = createDebugMuxerWorker()
 
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: 640, height: 480 },
-        audio: false,
-      })
+    // Create MessageChannel to connect capture → muxer
+    const channel = new MessageChannel()
 
-      const videoTrack = stream.getVideoTracks()[0]
-      const settings = videoTrack?.getSettings()
-      addLog(`camera: ${settings?.width}x${settings?.height} @ ${settings?.frameRate}fps`)
+    // Set up ports via RPC
+    addLog('setting up worker ports...')
+    await muxer.rpc.setCapturePort(transfer(channel.port2))
+    await capture.rpc.setMuxerPort(transfer(channel.port1))
+    addLog('ports configured')
 
-      // Create workers using factory functions (RPC-enabled)
-      addLog('creating workers...')
-      captureWorker = createDebugCaptureWorker()
-      muxerWorker = createDebugMuxerWorker()
-      addLog('workers created')
+    // Pre-initialize VP9 encoder (avoids ~2s startup during recording)
+    addLog('pre-initializing VP9 encoder...')
+    await muxer.rpc.preInit()
+    addLog('workers ready')
 
-      // Create MessageChannel to connect capture → muxer
-      const channel = new MessageChannel()
+    onCleanup(() => {
+      capture.terminate()
+      muxer.terminate()
+    })
 
-      // Set up ports via RPC
-      addLog('setting up worker ports...')
-      await muxerWorker.rpc.setCapturePort(transfer(channel.port2) as unknown as MessagePort)
-      await captureWorker.rpc.setMuxerPort(transfer(channel.port1) as unknown as MessagePort)
-      addLog('ports configured')
+    return { capture, muxer }
+  })
 
-      // Create processor and start capture
-      addLog('creating processor and starting capture...')
-      const processor = new MediaStreamTrackProcessor({ track: videoTrack })
+  // Recording action
+  const record = action(async (_: undefined, { signal, onCleanup }) => {
+    const w = workers()
+    if (!w) throw new Error('Workers not ready')
 
-      // Start capture (don't await - it runs until stop is called)
-      captureWorker.rpc.start(transfer(processor.readable) as unknown as ReadableStream<VideoFrame>)
-        .then(() => addLog('capture completed'))
-        .catch(err => addLog(`capture error: ${err}`))
+    addLog('requesting camera')
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: 640, height: 480 },
+      audio: false,
+    })
 
-      setIsRecording(true)
-      setStatus('recording...')
-      addLog('recording started')
-    } catch (e) {
-      addLog(`error: ${e}`)
-      setStatus(`error: ${e}`)
-      cleanup()
-    }
-  }
+    onCleanup(() => {
+      stream.getTracks().forEach(t => t.stop())
+    })
 
-  async function stopRecording() {
-    setStatus('stopping...')
-    addLog('stopping')
+    const videoTrack = stream.getVideoTracks()[0]
+    const settings = videoTrack?.getSettings()
+    addLog(`camera: ${settings?.width}x${settings?.height} @ ${settings?.frameRate}fps`)
 
-    // Tell capture worker to stop
-    await captureWorker?.rpc.stop()
+    // Create processor and start capture
+    addLog('starting capture...')
+    const processor = new MediaStreamTrackProcessor({ track: videoTrack })
 
-    // Stop camera
-    stream?.getTracks().forEach(t => t.stop())
-    stream = null
+    // Start capture (runs until cancelled)
+    const capturePromise = w.capture.rpc
+      .start(transfer(processor.readable))
+      .then(() => addLog('capture completed'))
+      .catch(err => addLog(`capture error: ${err}`))
 
-    setIsRecording(false)
+    onCleanup(async () => {
+      addLog('stopping capture...')
+      await w.capture.rpc.stop()
+      await capturePromise
+    })
 
-    // Finalize muxer and get blob
+    addLog('recording...')
+
+    // Wait until cancelled via abort signal
+    await new Promise<void>((_, reject) => {
+      signal.addEventListener('abort', () => reject(new Error('cancelled')), { once: true })
+    })
+  })
+
+  // Finalize and download
+  async function finalize() {
+    const w = workers()
+    if (!w) return
+
     addLog('finalizing...')
     try {
-      const result = await muxerWorker?.rpc.finalize()
-      if (result) {
-        const { blob, frameCount } = result
-        addLog(`finalized: ${frameCount} frames, ${blob.size} bytes`)
+      const result = await w.muxer.rpc.finalize()
+      const { blob, frameCount } = result
+      addLog(`finalized: ${frameCount} frames, ${blob.size} bytes`)
 
-        if (blob.size > 0) {
-          const url = URL.createObjectURL(blob)
-          const a = document.createElement('a')
-          a.href = url
-          a.download = `debug-${Date.now()}.webm`
-          a.click()
-          URL.revokeObjectURL(url)
-          setStatus(`done! ${frameCount} frames, ${blob.size} bytes`)
-        } else {
-          setStatus('done (no data)')
-        }
+      if (blob.size > 0) {
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `debug-${Date.now()}.webm`
+        a.click()
+        URL.revokeObjectURL(url)
       }
+
+      // Reset muxer for next recording
+      await w.muxer.rpc.reset()
+      await w.muxer.rpc.preInit()
+      addLog('ready for next recording')
     } catch (e) {
       addLog(`finalize error: ${e}`)
-      setStatus(`error: ${e}`)
     }
-
-    cleanup()
   }
 
-  function cleanup() {
-    captureWorker?.terminate()
-    muxerWorker?.terminate()
-    captureWorker = null
-    muxerWorker = null
-    stream?.getTracks().forEach(t => t.stop())
-    stream = null
-    setIsRecording(false)
+  async function handleStop() {
+    record.cancel()
+    await finalize()
   }
 
-  onCleanup(cleanup)
+  const status = () => {
+    if (workers.loading) return 'initializing workers...'
+    if (workers.error) return `error: ${workers.error}`
+    if (record.pending()) return 'recording...'
+    return 'ready'
+  }
 
   return (
     <div style={{ padding: '20px', 'font-family': 'monospace' }}>
       <h1>Video Muxing Debug (Workers + RPC)</h1>
 
-      <div style={{ 'margin-bottom': '20px', display: 'flex', gap: '20px', 'align-items': 'center' }}>
-        <Show
-          when={!isRecording()}
-          fallback={
-            <button onClick={stopRecording} style={{ padding: '20px 40px', 'font-size': '18px', background: '#c00', color: 'white', border: 'none', cursor: 'pointer' }}>
+      <div
+        style={{ 'margin-bottom': '20px', display: 'flex', gap: '20px', 'align-items': 'center' }}
+      >
+        <Switch>
+          <Match when={workers.loading}>
+            <button
+              disabled
+              style={{
+                padding: '20px 40px',
+                'font-size': '18px',
+                background: '#666',
+                color: 'white',
+                border: 'none',
+              }}
+            >
+              Initializing...
+            </button>
+          </Match>
+          <Match when={record.pending()}>
+            <button
+              onClick={handleStop}
+              style={{
+                padding: '20px 40px',
+                'font-size': '18px',
+                background: '#c00',
+                color: 'white',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
               Stop
             </button>
-          }
-        >
-          <button onClick={startRecording} style={{ padding: '20px 40px', 'font-size': '18px', background: '#0a0', color: 'white', border: 'none', cursor: 'pointer' }}>
-            Record
-          </button>
-        </Show>
+          </Match>
+          <Match when={workers()}>
+            <button
+              onClick={() => record()}
+              style={{
+                padding: '20px 40px',
+                'font-size': '18px',
+                background: '#0a0',
+                color: 'white',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              Record
+            </button>
+          </Match>
+        </Switch>
       </div>
 
-      <div style={{ 'margin-bottom': '10px' }}><strong>Status:</strong> {status()}</div>
+      <div style={{ 'margin-bottom': '10px' }}>
+        <strong>Status:</strong> {status()}
+      </div>
 
-      <div style={{ background: '#111', color: '#0f0', padding: '10px', height: '400px', 'overflow-y': 'auto', 'font-size': '11px' }}>
-        {log().map(line => <div>{line}</div>)}
+      <div
+        style={{
+          background: '#111',
+          color: '#0f0',
+          padding: '10px',
+          height: '400px',
+          'overflow-y': 'auto',
+          'font-size': '11px',
+        }}
+      >
+        {log().map(line => (
+          <div>{line}</div>
+        ))}
       </div>
     </div>
   )

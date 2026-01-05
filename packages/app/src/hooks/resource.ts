@@ -52,7 +52,7 @@ export type InitializedManagedResourceReturn<T, S> = [
 ]
 
 /** Simple fetcher type for source-less resources */
-export type SimpleFetcher<T> = (info?: ResourceFetcherInfo<true>) => T | Promise<T>
+export type SimpleFetcher<T> = (info: ResourceFetcherInfo<true>) => T | Promise<T>
 
 /**
  * Creates a resource with proper cleanup and abort support.
@@ -70,8 +70,10 @@ export type SimpleFetcher<T> = (info?: ResourceFetcherInfo<true>) => T | Promise
  * )
  *
  * // Without source
- * const [data] = resource(async ({ signal }) => {
- *   return fetch('/api/data', { signal })
+ * const [data] = resource(async ({ signal, onCleanup }) => {
+ *   const result = await fetch('/api/data', { signal })
+ *   onCleanup(() => console.log('cleaned up'))
+ *   return result
  * })
  * ```
  */

@@ -110,9 +110,7 @@ export function action<T = undefined, R = void>(fetcher: ActionFetcher<T, R>): A
       setError(err)
       throw err
     } finally {
-      if (!signal.aborted) {
-        setPending(false)
-      }
+      setPending(false)
     }
   }
 
