@@ -1,10 +1,17 @@
 /**
- * Muxer Worker: Receives frame buffers, queues them, muxes to WebM.
+ * Debug Muxer Worker
  *
- * This worker processes frames at whatever speed it can. Blocking is fine here
- * since it doesn't affect capture rate (that happens in the capture worker).
+ * Handles video encoding and muxing off the main thread.
+ * Uses mediabunny for VP9 encoding to WebM format.
+ *
+ * Communication:
+ * - Main thread: RPC via @bigmistqke/rpc (preInit, finalize, reset)
+ * - Capture worker: Raw messages via transferred MessagePort (init, frame, end)
+ *
+ * Supports pre-initialization to avoid ~2s encoder startup during recording.
  */
 
+import { expose } from '@bigmistqke/rpc/messenger'
 import {
   BufferTarget,
   Output,
@@ -12,47 +19,17 @@ import {
   VideoSampleSource,
   WebMOutputFormat,
 } from 'mediabunny'
+import type { MuxerFrameData, MuxerInitConfig, MuxerWorkerMethods } from './debug-types'
 
-interface MuxerInitMessage {
-  type: 'init'
-  format: VideoPixelFormat
-  codedWidth: number
-  codedHeight: number
-}
-
-interface MuxerFrameMessage {
-  type: 'frame'
-  buffer: ArrayBuffer
-  format: VideoPixelFormat
-  codedWidth: number
-  codedHeight: number
-  timestampSec: number
-}
-
-interface MuxerEndMessage {
-  type: 'end'
-  frameCount: number
-}
-
-type MuxerMessage = MuxerInitMessage | MuxerFrameMessage | MuxerEndMessage
-
-interface QueuedFrame {
-  buffer: ArrayBuffer
-  format: VideoPixelFormat
-  codedWidth: number
-  codedHeight: number
-  timestampSec: number
-}
-
+// Worker state
 let output: Output | null = null
 let bufferTarget: BufferTarget | null = null
 let videoSource: VideoSampleSource | null = null
-let frameQueue: QueuedFrame[] = []
+let frameQueue: MuxerFrameData[] = []
 let isProcessing = false
-let streamEnded = false
 let encodedCount = 0
-
-let lastTimestamp = -1
+let isPreInitialized = false
+let capturedFrameCount = 0
 
 async function processQueue() {
   if (isProcessing || !videoSource) return
@@ -61,18 +38,7 @@ async function processQueue() {
   while (frameQueue.length > 0) {
     const { buffer, format, codedWidth, codedHeight, timestampSec } = frameQueue.shift()!
 
-    // Log first few frames and any timestamp gaps
-    const gap = lastTimestamp >= 0 ? timestampSec - lastTimestamp : 0
-    if (encodedCount < 5 || gap > 0.1) {
-      self.postMessage({
-        type: 'debug',
-        message: `frame ${encodedCount}: ts=${timestampSec.toFixed(3)}s, gap=${(gap * 1000).toFixed(0)}ms`
-      })
-    }
-    lastTimestamp = timestampSec
-
     try {
-      // Recreate VideoFrame from buffer with original timestamp and format
       const frame = new VideoFrame(buffer, {
         format,
         codedWidth,
@@ -87,98 +53,107 @@ async function processQueue() {
       frame.close()
 
       encodedCount++
-
-      // Report progress periodically
-      if (encodedCount % 30 === 0) {
-        self.postMessage({ type: 'progress', encoded: encodedCount, queued: frameQueue.length })
-      }
     } catch (err) {
-      self.postMessage({ type: 'error', error: String(err) })
+      console.error('[debug-muxer] encode error:', err)
     }
   }
 
   isProcessing = false
-
-  // If stream ended and queue is empty, finalize
-  if (streamEnded && frameQueue.length === 0) {
-    await finalize()
-  }
 }
 
-async function finalize() {
-  if (!output || !bufferTarget) return
+// Methods exposed to main thread via RPC
+const methods: MuxerWorkerMethods = {
+  setCapturePort(port: MessagePort) {
+    console.log('[debug-muxer] received capture port, exposing methods on it')
+    // Expose a subset of methods on this port for capture worker to call via RPC
+    expose(
+      {
+        init: methods.init,
+        addFrame: methods.addFrame,
+        captureEnded: (frameCount: number) => {
+          capturedFrameCount = frameCount
+          console.log('[debug-muxer] capture ended, frameCount:', capturedFrameCount)
+        },
+      },
+      { to: port },
+    )
+  },
 
-  try {
-    if (videoSource) await videoSource.close()
-    await output.finalize()
+  async preInit() {
+    if (isPreInitialized) return
 
-    const buffer = bufferTarget.buffer
-    if (buffer && buffer.byteLength > 0) {
-      // Transfer the final buffer back to main thread
-      postMessage({ type: 'complete', buffer, encodedCount }, { transfer: [buffer] })
-    } else {
-      self.postMessage({ type: 'error', error: 'No output data' })
-    }
-  } catch (err) {
-    self.postMessage({ type: 'error', error: String(err) })
-  }
+    console.log('[debug-muxer] pre-initializing VP9 encoder...')
 
-  output = null
-  bufferTarget = null
-  videoSource = null
-}
-
-let capturePort: MessagePort | null = null
-
-// Handle messages from capture worker via MessagePort
-async function handleCaptureMessage(msg: MuxerMessage) {
-  if (msg.type === 'init') {
-    // Initialize muxer on first frame info
     bufferTarget = new BufferTarget()
     output = new Output({ format: new WebMOutputFormat(), target: bufferTarget })
     videoSource = new VideoSampleSource({ codec: 'vp9', bitrate: 2_000_000 })
     output.addVideoTrack(videoSource)
     await output.start()
 
-    self.postMessage({ type: 'started', queued: frameQueue.length })
+    isPreInitialized = true
+    console.log('[debug-muxer] pre-initialization complete')
+  },
 
-    // Process any frames that queued during initialization
-    processQueue()
-  }
-
-  if (msg.type === 'frame') {
-    frameQueue.push({
-      buffer: msg.buffer,
-      format: msg.format,
-      codedWidth: msg.codedWidth,
-      codedHeight: msg.codedHeight,
-      timestampSec: msg.timestampSec,
-    })
-    processQueue()
-  }
-
-  if (msg.type === 'end') {
-    streamEnded = true
-    self.postMessage({ type: 'draining', queued: frameQueue.length, captured: msg.frameCount })
-    // If queue is already empty, finalize now
-    if (frameQueue.length === 0 && !isProcessing) {
-      finalize()
+  async init(config: MuxerInitConfig) {
+    // If not pre-initialized, do full init now
+    if (!isPreInitialized) {
+      console.log('[debug-muxer] initializing (not pre-initialized)...')
+      bufferTarget = new BufferTarget()
+      output = new Output({ format: new WebMOutputFormat(), target: bufferTarget })
+      videoSource = new VideoSampleSource({ codec: 'vp9', bitrate: 2_000_000 })
+      output.addVideoTrack(videoSource)
+      await output.start()
     }
-  }
-}
 
-// Main thread sends us the MessagePort to receive from capture worker
-self.onmessage = (e: MessageEvent) => {
-  if (e.data.type === 'port') {
-    capturePort = e.data.port as MessagePort
-    capturePort.onmessage = (ev: MessageEvent<MuxerMessage>) => handleCaptureMessage(ev.data)
-  }
+    console.log('[debug-muxer] init complete, format:', config.format, config.codedWidth, 'x', config.codedHeight)
+  },
 
-  if (e.data.type === 'reset') {
+  addFrame(data: MuxerFrameData) {
+    frameQueue.push(data)
+    processQueue()
+  },
+
+  async finalize() {
+    console.log('[debug-muxer] finalizing, queue:', frameQueue.length, 'captured:', capturedFrameCount)
+
+    // Drain queue
+    while (frameQueue.length > 0 || isProcessing) {
+      if (frameQueue.length > 0 && !isProcessing) {
+        await processQueue()
+      }
+      await new Promise(r => setTimeout(r, 10))
+    }
+
+    let blob: Blob
+    if (output && bufferTarget) {
+      if (videoSource) await videoSource.close()
+      await output.finalize()
+
+      const buffer = bufferTarget.buffer
+      blob = buffer && buffer.byteLength > 0
+        ? new Blob([buffer], { type: 'video/webm' })
+        : new Blob()
+    } else {
+      blob = new Blob()
+    }
+
+    const frameCount = encodedCount
+    console.log('[debug-muxer] finalized:', frameCount, 'frames,', blob.size, 'bytes')
+
+    return { blob, frameCount }
+  },
+
+  reset() {
     frameQueue = []
-    streamEnded = false
     encodedCount = 0
+    capturedFrameCount = 0
     isProcessing = false
-    lastTimestamp = -1
-  }
+    isPreInitialized = false
+    output = null
+    bufferTarget = null
+    videoSource = null
+  },
 }
+
+// Expose RPC methods to main thread
+expose(methods)

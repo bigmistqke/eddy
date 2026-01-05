@@ -1,29 +1,29 @@
 /**
- * Capture Worker: Reads VideoFrames from camera stream, copies to ArrayBuffer, transfers to muxer.
+ * Debug Capture Worker
  *
- * This worker's only job is to capture frames as fast as possible and release
+ * Reads VideoFrames from camera stream, copies to ArrayBuffer, transfers to muxer.
+ *
+ * Communication:
+ * - Main thread: RPC via @bigmistqke/rpc (setMuxerPort, start, stop)
+ * - Muxer worker: RPC via @bigmistqke/rpc on transferred MessagePort
+ *
+ * This worker's job is to capture frames as fast as possible and release
  * VideoFrame hardware resources immediately. It does NOT wait for muxer - just queues everything.
  */
 
-interface CaptureStartMessage {
-  type: 'start'
-  readable: ReadableStream<VideoFrame>
-}
+import { expose, rpc } from '@bigmistqke/rpc/messenger'
+import type { CaptureWorkerMethods, MuxerFrameData, MuxerInitConfig } from './debug-types'
 
-interface CapturePingMessage {
-  type: 'ping'
-  muxerPort: MessagePort
+/** Methods exposed by muxer on the capture port */
+interface MuxerPortMethods {
+  init(config: MuxerInitConfig): void
+  addFrame(data: MuxerFrameData): void
+  captureEnded(frameCount: number): void
 }
-
-interface CaptureStopMessage {
-  type: 'stop'
-}
-
-type CaptureMessage = CaptureStartMessage | CapturePingMessage | CaptureStopMessage
 
 let capturing = false
 let reader: ReadableStreamDefaultReader<VideoFrame> | null = null
-let muxerPort: MessagePort | null = null
+let muxer: ReturnType<typeof rpc<MuxerPortMethods>> | null = null
 
 async function copyFrameToBuffer(frame: VideoFrame): Promise<{
   buffer: ArrayBuffer
@@ -40,26 +40,21 @@ async function copyFrameToBuffer(frame: VideoFrame): Promise<{
   return { buffer, format, codedWidth, codedHeight }
 }
 
-self.onmessage = async (e: MessageEvent<CaptureMessage>) => {
-  const msg = e.data
+const methods: CaptureWorkerMethods = {
+  setMuxerPort(port: MessagePort) {
+    port.start()
+    muxer = rpc<MuxerPortMethods>(port)
+    console.log('[debug-capture] received muxer port, created RPC proxy')
+  },
 
-  // Ping message - worker is ready, store muxer port and respond
-  if (msg.type === 'ping') {
-    muxerPort = msg.muxerPort
-    self.postMessage({ type: 'ready' })
-    return
-  }
-
-  if (msg.type === 'start') {
-    if (!muxerPort) {
-      self.postMessage({ type: 'error', error: 'No muxer port - call ping first' })
-      return
+  async start(readable: ReadableStream<VideoFrame>) {
+    if (!muxer) {
+      throw new Error('No muxer - call setMuxerPort first')
     }
 
-    self.postMessage({ type: 'debug', message: 'start received, beginning capture' })
+    console.log('[debug-capture] start received, beginning capture')
 
     capturing = true
-    const { readable } = msg
 
     reader = readable.getReader()
 
@@ -70,8 +65,7 @@ self.onmessage = async (e: MessageEvent<CaptureMessage>) => {
       // Read first frame
       const { done: done1, value: frame1 } = await reader.read()
       if (done1 || !frame1) {
-        self.postMessage({ type: 'error', error: 'No frames available' })
-        return
+        throw new Error('No frames available')
       }
 
       // Read second frame to check for staleness
@@ -80,38 +74,37 @@ self.onmessage = async (e: MessageEvent<CaptureMessage>) => {
         // Only got one frame, use it
         firstTimestamp = frame1.timestamp
         const data = await copyFrameToBuffer(frame1)
-        muxerPort.postMessage({ type: 'init', format: data.format, codedWidth: data.codedWidth, codedHeight: data.codedHeight })
-        muxerPort.postMessage({ type: 'frame', ...data, timestampSec: 0 }, [data.buffer])
+        muxer.init({ format: data.format, codedWidth: data.codedWidth, codedHeight: data.codedHeight })
+        muxer.addFrame({ ...data, timestampSec: 0 })
         frameCount++
-        self.postMessage({ type: 'capturing', message: 'Capturing frames' })
+        console.log('[debug-capture] capturing frames')
       } else {
         // Check gap between frame1 and frame2
         const gap = (frame2.timestamp - frame1.timestamp) / 1_000_000
 
         if (gap > 0.5) {
           // Frame1 is stale - discard it, use frame2 as first
-          self.postMessage({ type: 'debug', message: `discarding stale frame, gap=${gap.toFixed(3)}s` })
+          console.log(`[debug-capture] discarding stale frame, gap=${gap.toFixed(3)}s`)
           frame1.close()
           firstTimestamp = frame2.timestamp
           const data = await copyFrameToBuffer(frame2)
-          muxerPort.postMessage({ type: 'init', format: data.format, codedWidth: data.codedWidth, codedHeight: data.codedHeight })
-          muxerPort.postMessage({ type: 'frame', ...data, timestampSec: 0 }, [data.buffer])
+          muxer.init({ format: data.format, codedWidth: data.codedWidth, codedHeight: data.codedHeight })
+          muxer.addFrame({ ...data, timestampSec: 0 })
           frameCount++
         } else {
           // Frame1 is valid - use it as first, then process frame2
           firstTimestamp = frame1.timestamp
           const data1 = await copyFrameToBuffer(frame1)
-          muxerPort.postMessage({ type: 'init', format: data1.format, codedWidth: data1.codedWidth, codedHeight: data1.codedHeight })
-          muxerPort.postMessage({ type: 'frame', ...data1, timestampSec: 0 }, [data1.buffer])
+          muxer.init({ format: data1.format, codedWidth: data1.codedWidth, codedHeight: data1.codedHeight })
+          muxer.addFrame({ ...data1, timestampSec: 0 })
           frameCount++
 
           const timestampSec2 = (frame2.timestamp - firstTimestamp) / 1_000_000
           const data2 = await copyFrameToBuffer(frame2)
-          muxerPort.postMessage({ type: 'frame', ...data2, timestampSec: timestampSec2 }, [data2.buffer])
+          muxer.addFrame({ ...data2, timestampSec: timestampSec2 })
           frameCount++
         }
-        self.postMessage({ type: 'debug', message: `first frame ts=${(firstTimestamp/1_000_000).toFixed(3)}s` })
-        self.postMessage({ type: 'capturing', message: 'Capturing frames' })
+        console.log(`[debug-capture] first frame ts=${(firstTimestamp/1_000_000).toFixed(3)}s, capturing...`)
       }
 
       // Continue with remaining frames
@@ -121,20 +114,24 @@ self.onmessage = async (e: MessageEvent<CaptureMessage>) => {
 
         const timestampSec = (frame.timestamp - firstTimestamp) / 1_000_000
         const data = await copyFrameToBuffer(frame)
-        muxerPort.postMessage({ type: 'frame', ...data, timestampSec }, [data.buffer])
+        muxer.addFrame({ ...data, timestampSec })
         frameCount++
       }
     } catch (err) {
-      self.postMessage({ type: 'error', error: String(err) })
+      console.error('[debug-capture] error:', err)
+      throw err
     }
 
     // Signal end of stream
-    muxerPort.postMessage({ type: 'end', frameCount })
-    self.postMessage({ type: 'done', frameCount })
-  }
+    muxer.captureEnded(frameCount)
+    console.log(`[debug-capture] done, ${frameCount} frames captured`)
+  },
 
-  if (msg.type === 'stop') {
+  stop() {
     capturing = false
     reader?.cancel().catch(() => {})
-  }
+    console.log('[debug-capture] stop received')
+  },
 }
+
+expose(methods)

@@ -8,11 +8,14 @@ import type {
   DemuxWorkerMethods,
   RecordingWorkerMethods,
 } from './types'
+import type { CaptureWorkerMethods, MuxerWorkerMethods } from './debug-types'
 
 // Import workers as URLs for Vite
 import DemuxWorkerUrl from './demux.worker.ts?worker&url'
 import RecordingWorkerUrl from './recording.worker.ts?worker&url'
 import CompositorWorkerUrl from './compositor.worker.ts?worker&url'
+import DebugCaptureWorkerUrl from './debug-capture.worker.ts?worker&url'
+import DebugMuxerWorkerUrl from './debug-muxer.worker.ts?worker&url'
 
 /** RPC wrapper type - all methods return Promises */
 type RpcMethods<T extends object> = {
@@ -56,4 +59,14 @@ export function createRecordingWorker(): WorkerHandle<RecordingWorkerMethods> {
 /** Create a compositor worker */
 export function createCompositorWorker(): WorkerHandle<CompositorWorkerMethods> {
   return createWorkerHandle<CompositorWorkerMethods>(CompositorWorkerUrl)
+}
+
+/** Create a debug capture worker */
+export function createDebugCaptureWorker(): WorkerHandle<CaptureWorkerMethods> {
+  return createWorkerHandle<CaptureWorkerMethods>(DebugCaptureWorkerUrl)
+}
+
+/** Create a debug muxer worker */
+export function createDebugMuxerWorker(): WorkerHandle<MuxerWorkerMethods> {
+  return createWorkerHandle<MuxerWorkerMethods>(DebugMuxerWorkerUrl)
 }
