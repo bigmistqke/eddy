@@ -1,25 +1,27 @@
 /**
- * Debug route for testing video muxing in isolation with worker-based pipeline.
+ * Debug route for testing video muxing and playback in isolation.
  *
- * Architecture:
- * Main Thread: MediaStreamTrackProcessor.readable → transfer → Capture Worker
- * Capture Worker: VideoFrame → copyTo(buffer) → RPC → Muxer Worker
- * Muxer Worker: queue → recreate VideoFrame → VideoSample → mux
- *
- * Workers are pre-initialized on mount to avoid startup delay during recording.
+ * 1. Record camera to webm (working)
+ * 2. Play back the webm on a canvas (testing)
  */
 
 import { $MESSENGER, rpc, transfer } from '@bigmistqke/rpc/messenger'
-import { createSignal, Match, Switch } from 'solid-js'
+import type { Demuxer } from '@eddy/codecs'
+import { createPlayback } from '@eddy/playback'
+import { createSignal, Match, onCleanup, Show, Switch } from 'solid-js'
 import { action, defer, hold } from '~/hooks/action'
 import { resource } from '~/hooks/resource'
 import type { CaptureWorkerMethods } from '~/workers/debug-capture.worker'
 import DebugCaptureWorker from '~/workers/debug-capture.worker?worker'
 import type { MuxerWorkerMethods } from '~/workers/debug-muxer.worker'
 import DebugMuxerWorker from '~/workers/debug-muxer.worker?worker'
+import type { DemuxWorkerMethods } from '~/workers/demux.worker'
+import DemuxWorker from '~/workers/demux.worker?worker'
 
 export default function Debug() {
   const [log, setLog] = createSignal<string[]>([])
+  const [recordedBlob, setRecordedBlob] = createSignal<Blob | null>(null)
+  let canvasRef: HTMLCanvasElement | undefined
 
   const addLog = (msg: string) => {
     console.log(`[debug] ${msg}`)
@@ -32,19 +34,12 @@ export default function Debug() {
     const capture = rpc<CaptureWorkerMethods>(new DebugCaptureWorker())
     const muxer = rpc<MuxerWorkerMethods>(new DebugMuxerWorker())
 
-    // Create MessageChannel to connect capture → muxer
     const channel = new MessageChannel()
-
-    // Set up ports via RPC
-    addLog('setting up worker ports...')
     await Promise.all([
       muxer.setCapturePort(transfer(channel.port2)),
       capture.setMuxerPort(transfer(channel.port1)),
     ])
-    addLog('ports configured')
 
-    // Pre-initialize VP9 encoder (avoids ~2s startup during recording)
-    addLog('pre-initializing VP9 encoder...')
     await muxer.preInit()
     addLog('workers ready')
 
@@ -66,23 +61,16 @@ export default function Debug() {
     return stream
   })
 
-  // Recording action - uses yield* to compose with getUserMedia
   const record = action(function* (_: undefined, { onCleanup }) {
     const _workers = workers()
     if (!_workers) throw new Error('Workers not ready')
 
-    // Compose with getUserMedia action
     const stream = yield* defer(getUserMedia())
-
     const videoTrack = stream.getVideoTracks()[0]
     const settings = videoTrack?.getSettings()
     addLog(`camera: ${settings?.width}x${settings?.height} @ ${settings?.frameRate}fps`)
 
-    // Create processor and start capture
-    addLog('starting capture...')
     const processor = new MediaStreamTrackProcessor({ track: videoTrack })
-
-    // Start capture (runs until cancelled)
     const capturePromise = _workers.capture
       .start(transfer(processor.readable as ReadableStream<VideoFrame>))
       .then(() => addLog('capture completed'))
@@ -92,42 +80,28 @@ export default function Debug() {
       addLog('stopping capture...')
       await _workers.capture.stop()
       await capturePromise
-      addLog('stopping capture completed')
     })
 
     addLog('recording...')
-
-    // Hold until cancelled
     return hold()
   })
 
-  // Finalize and download
   const finalize = action(async () => {
     const _workers = workers()
-    if (!_workers) return
+    if (!_workers) return null
 
     addLog('finalizing...')
-    try {
-      const result = await _workers.muxer.finalize()
-      const { blob, frameCount } = result
-      addLog(`finalized: ${frameCount} frames, ${blob.size} bytes`)
+    const result = await _workers.muxer.finalize()
+    addLog(`finalized: ${result.frameCount} frames, ${result.blob.size} bytes`)
 
-      if (blob.size > 0) {
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `debug-${Date.now()}.webm`
-        a.click()
-        URL.revokeObjectURL(url)
-      }
+    await _workers.muxer.reset()
+    await _workers.muxer.preInit()
 
-      // Reset muxer for next recording
-      await _workers.muxer.reset()
-      await _workers.muxer.preInit()
-      addLog('ready for next recording')
-    } catch (e) {
-      addLog(`finalize error: ${e}`)
+    if (result.blob.size > 0) {
+      setRecordedBlob(result.blob)
+      return result.blob
     }
+    return null
   })
 
   async function handleStop() {
@@ -135,93 +109,153 @@ export default function Debug() {
     await finalize()
   }
 
+  // Playback action - demux and play the recorded blob on canvas
+  const playback = action(async (blob: Blob, { onCleanup }) => {
+    if (!canvasRef) throw new Error('No canvas')
+
+    addLog('creating demuxer...')
+    const demuxWorker = rpc<DemuxWorkerMethods>(new DemuxWorker())
+    const buffer = await blob.arrayBuffer()
+    const info = await demuxWorker.init(buffer)
+    addLog(`demuxed: ${info.duration.toFixed(2)}s, ${info.videoTrackId !== null ? 'has video' : 'no video'}`)
+
+    const demuxer: Demuxer = {
+      info,
+      getVideoConfig: () => demuxWorker.getVideoConfig(),
+      getAudioConfig: () => demuxWorker.getAudioConfig(),
+      getSamples: (trackId, startTime, endTime) => demuxWorker.getSamples(trackId, startTime, endTime),
+      getAllSamples: trackId => demuxWorker.getAllSamples(trackId),
+      getKeyframeBefore: (trackId, time) => demuxWorker.getKeyframeBefore(trackId, time),
+      destroy() {
+        demuxWorker.destroy()
+        demuxWorker[$MESSENGER].terminate()
+      },
+    }
+
+    addLog('creating playback...')
+    const pb = await createPlayback(demuxer, {})
+    await pb.prepareToPlay(0)
+    pb.startAudio(0)  // Sets state to 'playing' so tick() will buffer
+    addLog(`playback ready, duration: ${pb.duration.toFixed(2)}s`)
+
+    onCleanup(() => {
+      pb.destroy()
+      demuxer.destroy()
+    })
+
+    // Set up canvas
+    const ctx = canvasRef.getContext('2d')!
+    canvasRef.width = 640
+    canvasRef.height = 480
+
+    // Simple render loop
+    let animationId: number | null = null
+    let startTime = performance.now()
+    let frameCount = 0
+
+    let noFrameCount = 0
+    function render() {
+      const elapsed = (performance.now() - startTime) / 1000
+
+      // Tick playback
+      pb.tick(elapsed)
+
+      // Get frame timestamp first
+      const timestamp = pb.getFrameTimestamp(elapsed)
+
+      // Get frame
+      const frame = pb.getFrameAt(elapsed)
+
+      if (frame) {
+        ctx.drawImage(frame, 0, 0, canvasRef!.width, canvasRef!.height)
+        frame.close()
+        frameCount++
+        noFrameCount = 0
+        if (frameCount % 30 === 0) {
+          addLog(`rendered ${frameCount} frames, time: ${elapsed.toFixed(2)}s, ts: ${timestamp}`)
+        }
+      } else {
+        noFrameCount++
+        if (noFrameCount % 60 === 1) {
+          addLog(`no frame at time: ${elapsed.toFixed(2)}s, timestamp: ${timestamp}, noFrameCount: ${noFrameCount}`)
+        }
+      }
+
+      if (elapsed < pb.duration) {
+        animationId = requestAnimationFrame(render)
+      } else {
+        addLog(`playback complete: ${frameCount} frames rendered`)
+      }
+    }
+
+    addLog('starting playback...')
+    render()
+
+    onCleanup(() => {
+      if (animationId) cancelAnimationFrame(animationId)
+    })
+
+    return pb
+  })
+
   const status = () => {
     if (workers.loading) return 'initializing workers...'
     if (workers.error) return `error: ${workers.error}`
     if (record.pending()) return 'recording...'
+    if (playback.pending()) return 'playing...'
     return 'ready'
   }
 
   return (
     <div style={{ padding: '20px', 'font-family': 'monospace' }}>
-      <h1>Video Muxing Debug (Workers + RPC)</h1>
+      <h1>Debug: Record → Playback</h1>
 
-      <div
-        style={{ 'margin-bottom': '20px', display: 'flex', gap: '20px', 'align-items': 'center' }}
-      >
+      <div style={{ 'margin-bottom': '20px', display: 'flex', gap: '10px' }}>
         <Switch>
           <Match when={workers.loading}>
-            <button
-              disabled
-              style={{
-                padding: '20px 40px',
-                'font-size': '18px',
-                background: '#666',
-                color: 'white',
-                border: 'none',
-              }}
-            >
-              Initializing...
-            </button>
-          </Match>
-          <Match when={getUserMedia.pending()}>
-            <button
-              onClick={handleStop}
-              style={{
-                padding: '20px 40px',
-                'font-size': '18px',
-                background: '#c00',
-                color: 'white',
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              Initialize Camera...
-            </button>
+            <button disabled style={{ padding: '10px 20px' }}>Initializing...</button>
           </Match>
           <Match when={record.pending()}>
-            <button
-              onClick={handleStop}
-              style={{
-                padding: '20px 40px',
-                'font-size': '18px',
-                background: '#c00',
-                color: 'white',
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              Stop
+            <button onClick={handleStop} style={{ padding: '10px 20px', background: '#c00', color: 'white' }}>
+              Stop Recording
             </button>
           </Match>
           <Match when={workers()}>
-            <button
-              onClick={() => record.try()}
-              style={{
-                padding: '20px 40px',
-                'font-size': '18px',
-                background: '#0a0',
-                color: 'white',
-                border: 'none',
-                cursor: 'pointer',
-              }}
-            >
+            <button onClick={() => record.try()} style={{ padding: '10px 20px', background: '#0a0', color: 'white' }}>
               Record
             </button>
           </Match>
         </Switch>
+
+        <Show when={recordedBlob() && !playback.pending()}>
+          <button
+            onClick={() => playback(recordedBlob()!)}
+            style={{ padding: '10px 20px', background: '#00a', color: 'white' }}
+          >
+            Play on Canvas
+          </button>
+        </Show>
       </div>
 
       <div style={{ 'margin-bottom': '10px' }}>
         <strong>Status:</strong> {status()}
       </div>
 
+      {/* Canvas for playback */}
+      <canvas
+        ref={canvasRef}
+        width={640}
+        height={480}
+        style={{ background: '#222', 'margin-bottom': '20px', display: 'block' }}
+      />
+
+      {/* Log output */}
       <div
         style={{
           background: '#111',
           color: '#0f0',
           padding: '10px',
-          height: '400px',
+          height: '200px',
           'overflow-y': 'auto',
           'font-size': '11px',
         }}
