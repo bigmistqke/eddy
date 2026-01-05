@@ -8,6 +8,7 @@ import './index.css'
 const Home = lazy(() => import('~/routes/home'))
 const Editor = lazy(() => import('~/routes/editor'))
 const Callback = lazy(() => import('~/routes/callback'))
+const Debug = lazy(() => import('~/routes/debug'))
 
 function Root(props: ParentProps) {
   return (
@@ -32,6 +33,7 @@ export function App() {
       <Route path="/editor/:rkey" component={Editor} />
       <Route path="/editor/:handle/:rkey" component={Editor} />
       <Route path="/callback" component={Callback} />
+      <Route path="/debug" component={Debug} />
     </Router>
   )
 }
