@@ -1,7 +1,7 @@
-import type { Demuxer } from '@eddy/codecs'
 import { createAudioPipeline, type AudioPipeline } from '@eddy/mixer'
 import { createPlayback, type Playback } from '@eddy/playback'
-import { createSignal, type Accessor } from 'solid-js'
+import { onCleanup, type Accessor } from 'solid-js'
+import { createAction } from '~/lib/create-action'
 import { createDemuxerWorker } from '~/workers'
 import type { WorkerCompositor } from '~/workers/create-compositor-worker'
 
@@ -47,39 +47,39 @@ export function createSlot(options: CreateSlotOptions): Slot {
   const { index, compositor } = options
 
   const audioPipeline = createAudioPipeline()
-  const [playback, setPlayback] = createSignal<Playback | null>(null)
-
-  let demuxer: Demuxer | null = null
   let lastSentTimestamp: number | null = null
 
-  async function load(blob: Blob): Promise<void> {
-    // Clean up existing
-    playback()?.destroy()
-    demuxer?.destroy()
-
-    // Create new demuxer and playback
-    demuxer = await createDemuxerWorker(blob)
+  // Load action - manages demuxer and playback lifecycle
+  const loadAction = createAction(async (blob: Blob) => {
+    const demuxer = await createDemuxerWorker(blob)
     const newPlayback = await createPlayback(demuxer, {
       audioDestination: audioPipeline.gain,
     })
     await newPlayback.seek(0)
 
-    setPlayback(newPlayback)
+    // Cleanup when action is cleared, cancelled, or replaced
+    onCleanup(() => {
+      newPlayback.destroy()
+      demuxer.destroy()
+      compositor.setFrame(index, null)
+    })
+
+    return newPlayback
+  })
+
+  const playback = () => loadAction.result() ?? null
+
+  async function load(blob: Blob): Promise<void> {
+    await loadAction(blob)
   }
 
   function clear(): void {
-    playback()?.destroy()
-    demuxer?.destroy()
-
-    demuxer = null
+    loadAction.clear()
     lastSentTimestamp = null
-
-    compositor.setFrame(index, null)
-    setPlayback(null)
   }
 
   function hasClip(): boolean {
-    return playback() !== null
+    return loadAction.result() !== null
   }
 
   function setPreviewSource(stream: MediaStream | null): void {
@@ -156,8 +156,7 @@ export function createSlot(options: CreateSlotOptions): Slot {
   }
 
   function destroy(): void {
-    playback()?.destroy()
-    demuxer?.destroy()
+    loadAction.clear()
     audioPipeline.disconnect()
   }
 

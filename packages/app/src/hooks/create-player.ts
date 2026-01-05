@@ -173,13 +173,14 @@ export async function createPlayer(width: number, height: number): Promise<Playe
     }
   }
 
-  // Start render loop
-  startRenderLoop()
-
-  // Cleanup
-  onCleanup(() => {
-    destroy()
-  })
+  function destroy(): void {
+    stopRenderLoop()
+    preRenderer.cancel()
+    for (const slot of slots) {
+      slot.destroy()
+    }
+    compositor.destroy()
+  }
 
   async function play(time?: number): Promise<void> {
     const startTime = time ?? clock.time()
@@ -254,14 +255,11 @@ export async function createPlayer(width: number, height: number): Promise<Playe
     slots[trackIndex].setPreviewSource(stream)
   }
 
-  function destroy(): void {
-    stopRenderLoop()
-    preRenderer.cancel()
-    for (const slot of slots) {
-      slot.destroy()
-    }
-    compositor.destroy()
-  }
+  // Start render loop
+  startRenderLoop()
+
+  // Cleanup
+  onCleanup(destroy)
 
   return {
     // Canvas

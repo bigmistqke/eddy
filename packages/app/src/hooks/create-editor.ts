@@ -11,8 +11,8 @@ import {
   onCleanup,
   type Accessor,
 } from 'solid-js'
-import { createAction } from '~/lib/create-action'
 import { getProjectByRkey, getStemBlob, publishProject } from '~/lib/atproto/crud'
+import { createAction } from '~/lib/create-action'
 import { createDebugInfo } from '~/lib/create-debug-info'
 import { createProjectStore } from '~/lib/project-store'
 import { createRecorder, requestMediaAccess } from '~/lib/recorder'
@@ -31,7 +31,6 @@ export function createEditor(options: CreateEditorOptions) {
   const project = createProjectStore()
 
   // Core UI state
-  const [isRecording, setIsRecording] = createSignal(false)
   const [selectedTrackIndex, setSelectedTrack] = createSignal<number | null>(null)
   const [masterVolume, setMasterVolume] = createSignal(1)
 
@@ -43,7 +42,7 @@ export function createEditor(options: CreateEditorOptions) {
     async ({ width, height }) => {
       const _player = await createPlayer(width, height)
       options.container.appendChild(_player.canvas)
-      ;(window as any).__EDDY_DEBUG__ = createDebugInfo(_player)
+        ; (window as any).__EDDY_DEBUG__ = createDebugInfo(_player)
 
       onCleanup(() => {
         _player.destroy()
@@ -54,9 +53,6 @@ export function createEditor(options: CreateEditorOptions) {
       return _player
     }
   )
-
-  const [stream, setStream] = createSignal<MediaStream | null>(null)
-  const [recorder, setRecorder] = createSignal<ReturnType<typeof createRecorder> | null>(null)
 
   // Resource: Load project record when rkey is provided
   const [projectRecord] = createResource(
@@ -152,46 +148,74 @@ export function createEditor(options: CreateEditorOptions) {
     }
   })
 
-  function stopPreview() {
-    const track = selectedTrackIndex()
-    if (track !== null) {
-      player()?.setPreviewSource(track, null)
-    }
-    stream()?.getTracks().forEach(t => t.stop())
-    setStream(null)
-  }
-
   // Preview action - requests media access and sets up preview stream
   const previewAction = createAction(async (trackIndex: number) => {
     await resumeAudioContext()
-    const result = await requestMediaAccess(true)
-    if (result) {
-      setStream(result)
-      player()?.setPreviewSource(trackIndex, result)
+    const stream = await requestMediaAccess(true)
+    if (stream) {
+      player()?.setPreviewSource(trackIndex, stream)
+
+      // Cleanup when action is cleared, cancelled, or replaced
+      onCleanup(() => {
+        stream.getTracks().forEach(t => t.stop())
+        player()?.setPreviewSource(trackIndex, null)
+      })
     }
-    return result
+    return stream
   })
 
-  // Stop recording action - stops recorder, processes result, triggers pre-render
-  const stopRecordingAction = createAction(async (track: number) => {
-    log('stopRecording', { track })
+  function stopPreview() {
+    previewAction.clear()
+  }
+
+  // Start recording action - creates recorder and starts playback
+  const startRecordingAction = createAction(async (trackIndex: number) => {
+    log('startRecording', { trackIndex })
     const _player = player()
-    const _recorder = recorder()
-    if (!_recorder) {
-      throw new Error('Recording state but no recorder instance')
+    if (!_player) {
+      throw new Error('No player available')
     }
 
-    const result = await _recorder.stop()
-    setRecorder(null)
+    const stream = previewAction.result()
+    if (!stream) {
+      throw new Error('Cannot start recording without media stream')
+    }
+
+    const recorder = createRecorder(stream)
+    recorder.start()
+
+    log('startRecording: calling player.play(0)')
+    await _player.play(0)
+
+    return { recorder, trackIndex }
+  })
+
+  // Derive isRecording from whether startRecordingAction has a result
+  const isRecording = () => startRecordingAction.result() !== null
+
+  // Stop recording action - stops recorder, processes result, triggers pre-render
+  const stopRecordingAction = createAction(async () => {
+    const recordingState = startRecordingAction.result()
+    if (!recordingState) {
+      throw new Error('No active recording')
+    }
+
+    const { recorder, trackIndex } = recordingState
+    log('stopRecording', { trackIndex })
+
+    const _player = player()
+
+    const result = await recorder.stop()
 
     if (result) {
       log('stopRecording: got result', { blobSize: result.blob.size, duration: result.duration })
       result.firstFrame?.close()
-      project.addRecording(track, result.blob, result.duration)
+      project.addRecording(trackIndex, result.blob, result.duration)
     }
 
+    // Clear the recording state
+    startRecordingAction.clear()
     stopPreview()
-    setIsRecording(false)
     setSelectedTrack(null)
 
     await _player?.stop()
@@ -237,26 +261,6 @@ export function createEditor(options: CreateEditorOptions) {
     return result.uri.split('/').pop()
   })
 
-  async function startRecording() {
-    log('startRecording')
-    const _player = player()
-    if (!_player) return
-
-    const _stream = stream()
-    if (!_stream) {
-      throw new Error('Cannot start recording without media stream')
-    }
-
-    const _recorder = createRecorder(_stream)
-    _recorder.start()
-    setRecorder(_recorder)
-
-    setIsRecording(true)
-
-    log('startRecording: calling player.play(0)')
-    await _player.play(0)
-  }
-
   // Derived state
   const hasAnyRecording = whenMemo(
     player,
@@ -273,7 +277,7 @@ export function createEditor(options: CreateEditorOptions) {
     const _player = player()
     return (
       !isRecording() &&
-      !(_player?.isPlaying() ?? false) &&
+      !_player?.isPlaying() &&
       !publishAction.pending() &&
       hasAnyRecording() &&
       !!options.agent()
@@ -334,19 +338,19 @@ export function createEditor(options: CreateEditorOptions) {
 
       if (_player && !_player.hasClip(trackIndex)) {
         setSelectedTrack(trackIndex)
-        previewAction(trackIndex).catch(() => {})
+        previewAction(trackIndex).catch(() => { })
       }
     },
 
     toggleRecording() {
       const trackIndex = selectedTrackIndex()
       if (trackIndex === null) return
-      if (stopRecordingAction.pending()) return
+      if (startRecordingAction.pending() || stopRecordingAction.pending()) return
 
       if (isRecording()) {
-        stopRecordingAction(trackIndex).catch(() => {})
+        stopRecordingAction().catch(() => { })
       } else {
-        startRecording()
+        startRecordingAction(trackIndex).catch(() => { })
       }
     },
 
