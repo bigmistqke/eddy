@@ -177,7 +177,7 @@ export default function Debug() {
           </Match>
           <Match when={workers()}>
             <button
-              onClick={() => record()}
+              onClick={() => record.try()}
               style={{
                 padding: '20px 40px',
                 'font-size': '18px',
