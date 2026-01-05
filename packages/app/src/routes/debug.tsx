@@ -37,8 +37,10 @@ export default function Debug() {
 
     // Set up ports via RPC
     addLog('setting up worker ports...')
-    await muxer.setCapturePort(transfer(channel.port2))
-    await capture.setMuxerPort(transfer(channel.port1))
+    await Promise.all([
+      muxer.setCapturePort(transfer(channel.port2)),
+      capture.setMuxerPort(transfer(channel.port1)),
+    ])
     addLog('ports configured')
 
     // Pre-initialize VP9 encoder (avoids ~2s startup during recording)
@@ -54,11 +56,7 @@ export default function Debug() {
     return { capture, muxer }
   })
 
-  // Recording action
-  const record = action(async (_: undefined, { signal, onCleanup, cancellation }) => {
-    const _workers = workers()
-    if (!_workers) throw new Error('Workers not ready')
-
+  const getUserMedia = action(async (_: undefined, { signal, onCleanup, cancellation }) => {
     addLog('requesting camera')
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'user', width: 640, height: 480 },
@@ -68,6 +66,16 @@ export default function Debug() {
     onCleanup(() => {
       stream.getTracks().forEach(t => t.stop())
     })
+
+    return stream
+  })
+
+  // Recording action
+  const record = action(async (_: undefined, { signal, onCleanup, cancellation }) => {
+    const _workers = workers()
+    if (!_workers) throw new Error('Workers not ready')
+
+    const stream = await getUserMedia()
 
     const videoTrack = stream.getVideoTracks()[0]
     const settings = videoTrack?.getSettings()
@@ -96,13 +104,13 @@ export default function Debug() {
   })
 
   // Finalize and download
-  async function finalize() {
-    const w = workers()
-    if (!w) return
+  const finalize = action(async () => {
+    const _workers = workers()
+    if (!_workers) return
 
     addLog('finalizing...')
     try {
-      const result = await w.muxer.finalize()
+      const result = await _workers.muxer.finalize()
       const { blob, frameCount } = result
       addLog(`finalized: ${frameCount} frames, ${blob.size} bytes`)
 
@@ -116,13 +124,13 @@ export default function Debug() {
       }
 
       // Reset muxer for next recording
-      await w.muxer.reset()
-      await w.muxer.preInit()
+      await _workers.muxer.reset()
+      await _workers.muxer.preInit()
       addLog('ready for next recording')
     } catch (e) {
       addLog(`finalize error: ${e}`)
     }
-  }
+  })
 
   async function handleStop() {
     record.cancel()
@@ -156,6 +164,21 @@ export default function Debug() {
               }}
             >
               Initializing...
+            </button>
+          </Match>
+          <Match when={getUserMedia.pending()}>
+            <button
+              onClick={handleStop}
+              style={{
+                padding: '20px 40px',
+                'font-size': '18px',
+                background: '#c00',
+                color: 'white',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              Initialize Camera...
             </button>
           </Match>
           <Match when={record.pending()}>
