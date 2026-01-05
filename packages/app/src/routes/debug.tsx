@@ -9,11 +9,14 @@
  * Workers are pre-initialized on mount to avoid startup delay during recording.
  */
 
-import { transfer } from '@bigmistqke/rpc/messenger'
+import { $MESSENGER, rpc, transfer } from '@bigmistqke/rpc/messenger'
 import { createSignal, Match, Switch } from 'solid-js'
 import { action } from '~/hooks/action'
 import { resource } from '~/hooks/resource'
-import { createDebugCaptureWorker, createDebugMuxerWorker } from '../workers/create-worker'
+import type { CaptureWorkerMethods } from '~/workers/debug-capture.worker'
+import DebugCaptureWorkerUrl from '~/workers/debug-capture.worker?worker&url'
+import type { MuxerWorkerMethods } from '~/workers/debug-muxer.worker'
+import DebugMuxerWorkerUrl from '~/workers/debug-muxer.worker?worker&url'
 
 export default function Debug() {
   const [log, setLog] = createSignal<string[]>([])
@@ -26,26 +29,26 @@ export default function Debug() {
   // Pre-initialize workers on mount
   const [workers] = resource(async ({ onCleanup }) => {
     addLog('creating workers...')
-    const capture = createDebugCaptureWorker()
-    const muxer = createDebugMuxerWorker()
+    const capture = rpc<CaptureWorkerMethods>(new Worker(DebugCaptureWorkerUrl, { type: 'module' }))
+    const muxer = rpc<MuxerWorkerMethods>(new Worker(DebugMuxerWorkerUrl, { type: 'module' }))
 
     // Create MessageChannel to connect capture → muxer
     const channel = new MessageChannel()
 
     // Set up ports via RPC
     addLog('setting up worker ports...')
-    await muxer.rpc.setCapturePort(transfer(channel.port2))
-    await capture.rpc.setMuxerPort(transfer(channel.port1))
+    await muxer.setCapturePort(transfer(channel.port2))
+    await capture.setMuxerPort(transfer(channel.port1))
     addLog('ports configured')
 
     // Pre-initialize VP9 encoder (avoids ~2s startup during recording)
     addLog('pre-initializing VP9 encoder...')
-    await muxer.rpc.preInit()
+    await muxer.preInit()
     addLog('workers ready')
 
     onCleanup(() => {
-      capture.terminate()
-      muxer.terminate()
+      capture[$MESSENGER].terminate()
+      muxer[$MESSENGER].terminate()
     })
 
     return { capture, muxer }
@@ -75,14 +78,14 @@ export default function Debug() {
     const processor = new MediaStreamTrackProcessor({ track: videoTrack })
 
     // Start capture (runs until cancelled)
-    const capturePromise = _workers.capture.rpc
+    const capturePromise = _workers.capture
       .start(transfer(processor.readable))
       .then(() => addLog('capture completed'))
-      .catch(err => addLog(`capture error: ${err}`))
+      .catch((err: unknown) => addLog(`capture error: ${err}`))
 
     onCleanup(async () => {
       addLog('stopping capture...')
-      await _workers.capture.rpc.stop()
+      await _workers.capture.stop()
       await capturePromise
     })
 
@@ -101,7 +104,7 @@ export default function Debug() {
 
     addLog('finalizing...')
     try {
-      const result = await w.muxer.rpc.finalize()
+      const result = await w.muxer.finalize()
       const { blob, frameCount } = result
       addLog(`finalized: ${frameCount} frames, ${blob.size} bytes`)
 
@@ -115,8 +118,8 @@ export default function Debug() {
       }
 
       // Reset muxer for next recording
-      await w.muxer.rpc.reset()
-      await w.muxer.rpc.preInit()
+      await w.muxer.reset()
+      await w.muxer.preInit()
       addLog('ready for next recording')
     } catch (e) {
       addLog(`finalize error: ${e}`)
