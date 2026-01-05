@@ -12,7 +12,21 @@
  */
 
 import { expose, rpc } from '@bigmistqke/rpc/messenger'
-import type { CaptureWorkerMethods, MuxerFrameData, MuxerInitConfig } from './debug-types'
+import type { MuxerFrameData, MuxerInitConfig } from './debug-muxer.worker'
+
+export interface CaptureWorkerMethods {
+  /** Set the muxer port for forwarding frames (called before start) */
+  setMuxerPort(port: MessagePort): void
+
+  /**
+   * Start capturing frames from a video stream.
+   * Frames are forwarded to the muxer via MessagePort.
+   */
+  start(readable: ReadableStream<VideoFrame>): Promise<void>
+
+  /** Stop capturing */
+  stop(): void
+}
 
 /** Methods exposed by muxer on the capture port */
 interface MuxerPortMethods {
@@ -74,7 +88,11 @@ const methods: CaptureWorkerMethods = {
         // Only got one frame, use it
         firstTimestamp = frame1.timestamp
         const data = await copyFrameToBuffer(frame1)
-        muxer.init({ format: data.format, codedWidth: data.codedWidth, codedHeight: data.codedHeight })
+        muxer.init({
+          format: data.format,
+          codedWidth: data.codedWidth,
+          codedHeight: data.codedHeight,
+        })
         muxer.addFrame({ ...data, timestampSec: 0 })
         frameCount++
         console.log('[debug-capture] capturing frames')
@@ -88,14 +106,22 @@ const methods: CaptureWorkerMethods = {
           frame1.close()
           firstTimestamp = frame2.timestamp
           const data = await copyFrameToBuffer(frame2)
-          muxer.init({ format: data.format, codedWidth: data.codedWidth, codedHeight: data.codedHeight })
+          muxer.init({
+            format: data.format,
+            codedWidth: data.codedWidth,
+            codedHeight: data.codedHeight,
+          })
           muxer.addFrame({ ...data, timestampSec: 0 })
           frameCount++
         } else {
           // Frame1 is valid - use it as first, then process frame2
           firstTimestamp = frame1.timestamp
           const data1 = await copyFrameToBuffer(frame1)
-          muxer.init({ format: data1.format, codedWidth: data1.codedWidth, codedHeight: data1.codedHeight })
+          muxer.init({
+            format: data1.format,
+            codedWidth: data1.codedWidth,
+            codedHeight: data1.codedHeight,
+          })
           muxer.addFrame({ ...data1, timestampSec: 0 })
           frameCount++
 
@@ -104,7 +130,9 @@ const methods: CaptureWorkerMethods = {
           muxer.addFrame({ ...data2, timestampSec: timestampSec2 })
           frameCount++
         }
-        console.log(`[debug-capture] first frame ts=${(firstTimestamp/1_000_000).toFixed(3)}s, capturing...`)
+        console.log(
+          `[debug-capture] first frame ts=${(firstTimestamp / 1_000_000).toFixed(3)}s, capturing...`,
+        )
       }
 
       // Continue with remaining frames

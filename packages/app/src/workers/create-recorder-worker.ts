@@ -5,8 +5,8 @@
 
 import { transfer } from '@bigmistqke/rpc/messenger'
 import { debug } from '@eddy/utils'
-import { createRecordingWorker, type RecordingWorkerMethods, type WorkerHandle } from './index'
-import type { RecordingResult } from './types'
+import { createRecordingWorker, type WorkerHandle } from './index'
+import type { RecordingResult, RecordingWorkerMethods } from './recording.worker'
 
 const log = debug('recorder-worker', false)
 

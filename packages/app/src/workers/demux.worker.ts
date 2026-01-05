@@ -16,7 +16,29 @@ import {
   type EncodedPacket,
 } from 'mediabunny'
 import type { DemuxedSample, DemuxerInfo, VideoTrackInfo, AudioTrackInfo } from '@eddy/codecs'
-import type { DemuxWorkerMethods } from './types'
+
+export interface DemuxWorkerMethods {
+  /** Initialize demuxer with file data */
+  init(buffer: ArrayBuffer): Promise<DemuxerInfo>
+
+  /** Get WebCodecs VideoDecoderConfig */
+  getVideoConfig(): Promise<VideoDecoderConfig>
+
+  /** Get WebCodecs AudioDecoderConfig */
+  getAudioConfig(): Promise<AudioDecoderConfig>
+
+  /** Get samples in time range */
+  getSamples(trackId: number, startTime: number, endTime: number): Promise<DemuxedSample[]>
+
+  /** Get all samples from track */
+  getAllSamples(trackId: number): Promise<DemuxedSample[]>
+
+  /** Find keyframe at or before time */
+  getKeyframeBefore(trackId: number, time: number): Promise<DemuxedSample | null>
+
+  /** Clean up resources */
+  destroy(): void
+}
 
 // Worker state
 let input: Input | null = null

@@ -10,7 +10,7 @@
  */
 
 import { transfer } from '@bigmistqke/rpc/messenger'
-import { createSignal, Match, Show, Switch } from 'solid-js'
+import { createSignal, Match, Switch } from 'solid-js'
 import { action } from '~/hooks/action'
 import { resource } from '~/hooks/resource'
 import { createDebugCaptureWorker, createDebugMuxerWorker } from '../workers/create-worker'
@@ -53,8 +53,8 @@ export default function Debug() {
 
   // Recording action
   const record = action(async (_: undefined, { signal, onCleanup }) => {
-    const w = workers()
-    if (!w) throw new Error('Workers not ready')
+    const _workers = workers()
+    if (!_workers) throw new Error('Workers not ready')
 
     addLog('requesting camera')
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -75,14 +75,14 @@ export default function Debug() {
     const processor = new MediaStreamTrackProcessor({ track: videoTrack })
 
     // Start capture (runs until cancelled)
-    const capturePromise = w.capture.rpc
+    const capturePromise = _workers.capture.rpc
       .start(transfer(processor.readable))
       .then(() => addLog('capture completed'))
       .catch(err => addLog(`capture error: ${err}`))
 
     onCleanup(async () => {
       addLog('stopping capture...')
-      await w.capture.rpc.stop()
+      await _workers.capture.rpc.stop()
       await capturePromise
     })
 

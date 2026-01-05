@@ -5,10 +5,38 @@
  * Renders video tracks as individual quads in a grid layout.
  */
 
-import { expose, transfer } from '@bigmistqke/rpc/messenger'
+import { expose, transfer, type Transferred } from '@bigmistqke/rpc/messenger'
 import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
 import { debug } from '@eddy/utils'
-import type { CompositorWorkerMethods } from './types'
+
+export interface CompositorWorkerMethods {
+  /** Initialize with OffscreenCanvas */
+  init(canvas: OffscreenCanvas, width: number, height: number): Promise<void>
+
+  /** Set a preview stream for a track slot (continuously reads latest frame) */
+  setPreviewStream(index: number, stream: ReadableStream<VideoFrame> | null): void
+
+  /** Set a playback frame for a track slot (for time-synced playback) */
+  setFrame(index: number, frame: VideoFrame | null): void
+
+  /** Set grid layout (1x1 = full-screen single video, 2x2 = quad view) */
+  setGrid(cols: number, rows: number): void
+
+  /** Render current state to visible canvas */
+  render(): void
+
+  /** Set a frame on capture canvas (for pre-rendering, doesn't affect visible canvas) */
+  setCaptureFrame(index: number, frame: Transferred<VideoFrame> | null): void
+
+  /** Render to capture canvas (for pre-rendering, doesn't affect visible canvas) */
+  renderCapture(activeSlots: [number, number, number, number]): void
+
+  /** Capture frame from capture canvas as VideoFrame */
+  captureFrame(timestamp: number): VideoFrame | null
+
+  /** Clean up resources */
+  destroy(): void
+}
 
 const log = debug('compositor-worker', false)
 

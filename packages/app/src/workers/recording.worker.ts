@@ -16,7 +16,44 @@ import {
   VideoSampleSource,
   WebMOutputFormat,
 } from 'mediabunny'
-import type { RecordingStartConfig, RecordingWorkerMethods } from './types'
+
+export interface RecordingStartConfig {
+  /** Video stream from MediaStreamTrackProcessor (use transfer()) */
+  videoStream?: ReadableStream<VideoFrame>
+  /** Audio stream from MediaStreamTrackProcessor (use transfer()) */
+  audioStream?: ReadableStream<AudioData>
+  /** Output video width */
+  width: number
+  /** Output video height */
+  height: number
+}
+
+export interface RecordingResult {
+  /** Encoded video/audio blob (WebM format) */
+  blob: Blob
+  /** Recording duration in milliseconds */
+  duration: number
+}
+
+export interface RecordingWorkerMethods {
+  /**
+   * Start recording with video/audio streams.
+   * Streams should be wrapped with transfer() for zero-copy transfer.
+   */
+  start(config: RecordingStartConfig): Promise<void>
+
+  /**
+   * Stop recording and get the result.
+   * Returns encoded blob and duration.
+   */
+  stop(): Promise<RecordingResult>
+
+  /**
+   * Get first captured frame for preview.
+   * Available shortly after recording starts.
+   */
+  getFirstFrame(): Promise<VideoFrame | null>
+}
 
 import { debug } from '@eddy/utils'
 

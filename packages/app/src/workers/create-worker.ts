@@ -3,19 +3,18 @@
  */
 
 import { rpc } from '@bigmistqke/rpc/messenger'
-import type {
-  CompositorWorkerMethods,
-  DemuxWorkerMethods,
-  RecordingWorkerMethods,
-} from './types'
-import type { CaptureWorkerMethods, MuxerWorkerMethods } from './debug-types'
+import type { CompositorWorkerMethods } from './compositor.worker'
+import type { CaptureWorkerMethods } from './debug-capture.worker'
+import type { MuxerWorkerMethods } from './debug-muxer.worker'
+import type { DemuxWorkerMethods } from './demux.worker'
+import type { RecordingWorkerMethods } from './recording.worker'
 
 // Import workers as URLs for Vite
-import DemuxWorkerUrl from './demux.worker.ts?worker&url'
-import RecordingWorkerUrl from './recording.worker.ts?worker&url'
 import CompositorWorkerUrl from './compositor.worker.ts?worker&url'
 import DebugCaptureWorkerUrl from './debug-capture.worker.ts?worker&url'
 import DebugMuxerWorkerUrl from './debug-muxer.worker.ts?worker&url'
+import DemuxWorkerUrl from './demux.worker.ts?worker&url'
+import RecordingWorkerUrl from './recording.worker.ts?worker&url'
 
 /** RPC wrapper type - all methods return Promises */
 type RpcMethods<T extends object> = {

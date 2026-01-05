@@ -12,14 +12,56 @@
  */
 
 import { expose } from '@bigmistqke/rpc/messenger'
-import {
-  BufferTarget,
-  Output,
-  VideoSample,
-  VideoSampleSource,
-  WebMOutputFormat,
-} from 'mediabunny'
-import type { MuxerFrameData, MuxerInitConfig, MuxerWorkerMethods } from './debug-types'
+import { BufferTarget, Output, VideoSample, VideoSampleSource, WebMOutputFormat } from 'mediabunny'
+
+export interface MuxerInitConfig {
+  format: VideoPixelFormat
+  codedWidth: number
+  codedHeight: number
+}
+
+export interface MuxerFrameData {
+  buffer: ArrayBuffer
+  format: VideoPixelFormat
+  codedWidth: number
+  codedHeight: number
+  timestampSec: number
+}
+
+export interface MuxerWorkerMethods {
+  /**
+   * Set the capture port for receiving frames from capture worker.
+   * Call this before recording.
+   */
+  setCapturePort(port: MessagePort): void
+
+  /**
+   * Pre-initialize the muxer (creates VP9 encoder).
+   * Call this before recording to avoid startup delay.
+   */
+  preInit(): Promise<void>
+
+  /**
+   * Initialize with format info from first frame.
+   * If preInit was called, this just stores the format.
+   */
+  init(config: MuxerInitConfig): Promise<void>
+
+  /**
+   * Add a frame to be encoded.
+   * Frames are queued and processed as fast as possible.
+   */
+  addFrame(data: MuxerFrameData): void
+
+  /**
+   * Signal end of stream and finalize the output.
+   * Returns the encoded WebM blob.
+   */
+  finalize(): Promise<{ blob: Blob; frameCount: number }>
+
+  /** Reset state for next recording */
+  reset(): void
+}
 
 // Worker state
 let output: Output | null = null
@@ -105,7 +147,13 @@ const methods: MuxerWorkerMethods = {
       await output.start()
     }
 
-    console.log('[debug-muxer] init complete, format:', config.format, config.codedWidth, 'x', config.codedHeight)
+    console.log(
+      '[debug-muxer] init complete, format:',
+      config.format,
+      config.codedWidth,
+      'x',
+      config.codedHeight,
+    )
   },
 
   addFrame(data: MuxerFrameData) {
@@ -114,7 +162,12 @@ const methods: MuxerWorkerMethods = {
   },
 
   async finalize() {
-    console.log('[debug-muxer] finalizing, queue:', frameQueue.length, 'captured:', capturedFrameCount)
+    console.log(
+      '[debug-muxer] finalizing, queue:',
+      frameQueue.length,
+      'captured:',
+      capturedFrameCount,
+    )
 
     // Drain queue
     while (frameQueue.length > 0 || isProcessing) {
@@ -130,9 +183,8 @@ const methods: MuxerWorkerMethods = {
       await output.finalize()
 
       const buffer = bufferTarget.buffer
-      blob = buffer && buffer.byteLength > 0
-        ? new Blob([buffer], { type: 'video/webm' })
-        : new Blob()
+      blob =
+        buffer && buffer.byteLength > 0 ? new Blob([buffer], { type: 'video/webm' }) : new Blob()
     } else {
       blob = new Blob()
     }
