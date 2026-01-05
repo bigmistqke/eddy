@@ -1,33 +1,30 @@
 /**
- * Audio Scheduler - Schedules decoded AudioData for playback via Web Audio API
+ * Audio Scheduler - Ring buffer based audio playback via AudioWorklet
+ *
+ * Uses a SharedArrayBuffer ring buffer for lock-free audio streaming.
+ * The AudioWorkletProcessor pulls samples at the exact audio rate,
+ * eliminating gaps and overlaps from chunk scheduling.
  */
 
 import { debug } from '@eddy/utils'
+import { createAudioRingBuffer } from './audio-ring-buffer'
 
 const log = debug('audio-scheduler', false)
 
 /** Playback state */
 export type AudioSchedulerState = 'stopped' | 'playing' | 'paused'
 
-/** A scheduled audio chunk */
-interface ScheduledChunk {
-  /** The AudioBufferSourceNode for this chunk */
-  source: AudioBufferSourceNode
-  /** Start time in the audio context timeline */
-  contextStartTime: number
-  /** Media time this chunk starts at */
-  mediaStartTime: number
-  /** Duration in seconds */
-  duration: number
-}
-
 export interface AudioSchedulerOptions {
-  /** How far ahead to schedule audio (default: 0.5 seconds) */
-  scheduleAhead?: number
+  /** How far ahead to buffer audio in seconds (default: 0.5) */
+  bufferAhead?: number
   /** Audio context to use (creates one if not provided) */
   audioContext?: AudioContext
   /** Destination node for audio output (defaults to audioContext.destination) */
   destination?: AudioNode
+  /** Sample rate (default: 48000) */
+  sampleRate?: number
+  /** Number of channels (default: 2 for stereo) */
+  channels?: number
 }
 
 export interface AudioScheduler {
@@ -67,13 +64,13 @@ export interface AudioScheduler {
   stop(): void
 
   /**
-   * Seek to a new position (clears scheduled audio)
+   * Seek to a new position (clears buffer)
    * @param time - Media time to seek to
    */
   seek(time: number): void
 
   /**
-   * Clear all scheduled audio chunks
+   * Clear all buffered audio
    */
   clearScheduled(): void
 
@@ -84,85 +81,287 @@ export interface AudioScheduler {
 }
 
 /**
- * Convert AudioData to AudioBuffer for Web Audio API
+ * AudioWorkletProcessor code as a string (will be loaded via Blob URL)
  */
-function audioDataToBuffer(audioData: AudioData, audioContext: AudioContext): AudioBuffer {
-  const numberOfChannels = audioData.numberOfChannels
-  const numberOfFrames = audioData.numberOfFrames
-  const sampleRate = audioData.sampleRate
+const workletProcessorCode = `
+const WRITE_PTR = 0
+const READ_PTR = 1
+const CHANNELS = 2
+const PLAYING = 3
 
-  // Create an AudioBuffer
-  const audioBuffer = audioContext.createBuffer(numberOfChannels, numberOfFrames, sampleRate)
+class RingBufferProcessor extends AudioWorkletProcessor {
+  constructor() {
+    super()
+    this.samples = null
+    this.control = null
+    this.capacity = 0
+    this.channels = 2
 
-  // Copy data from AudioData to AudioBuffer
-  // AudioData uses planar float32 format when we copy to it
-  for (let channel = 0; channel < numberOfChannels; channel++) {
-    const channelData = audioBuffer.getChannelData(channel)
-    audioData.copyTo(channelData, { planeIndex: channel, format: 'f32-planar' })
+    this.port.onmessage = (event) => {
+      if (event.data.type === 'init') {
+        this.samples = new Float32Array(event.data.sampleBuffer)
+        this.control = new Int32Array(event.data.controlBuffer)
+        this.channels = Atomics.load(this.control, CHANNELS)
+        this.capacity = this.samples.length / this.channels
+      }
+    }
   }
 
-  return audioBuffer
+  process(inputs, outputs, parameters) {
+    const output = outputs[0]
+    if (!output || output.length === 0) return true
+    if (!this.samples || !this.control) return true
+
+    const playing = Atomics.load(this.control, PLAYING)
+    if (!playing) {
+      // Output silence when not playing
+      for (const channel of output) {
+        channel.fill(0)
+      }
+      return true
+    }
+
+    const frameCount = output[0].length
+    const writePtr = Atomics.load(this.control, WRITE_PTR)
+    const readPtr = Atomics.load(this.control, READ_PTR)
+
+    // Calculate available samples
+    let available
+    if (writePtr >= readPtr) {
+      available = writePtr - readPtr
+    } else {
+      available = this.capacity - readPtr + writePtr
+    }
+
+    const toRead = Math.min(frameCount, available)
+
+    // Read samples from ring buffer
+    for (let frame = 0; frame < toRead; frame++) {
+      const bufferIndex = ((readPtr + frame) % this.capacity) * this.channels
+      for (let ch = 0; ch < output.length; ch++) {
+        const sourceChannel = Math.min(ch, this.channels - 1)
+        output[ch][frame] = this.samples[bufferIndex + sourceChannel]
+      }
+    }
+
+    // Fill remaining with silence if underrun
+    if (toRead < frameCount) {
+      for (let frame = toRead; frame < frameCount; frame++) {
+        for (const channel of output) {
+          channel[frame] = 0
+        }
+      }
+    }
+
+    // Update read pointer
+    if (toRead > 0) {
+      Atomics.store(this.control, READ_PTR, (readPtr + toRead) % this.capacity)
+    }
+
+    return true
+  }
+}
+
+registerProcessor('ring-buffer-processor', RingBufferProcessor)
+`
+
+/** Extract samples from AudioData to Float32Array per channel */
+function extractAudioSamples(audioData: AudioData): Float32Array[] {
+  const numberOfChannels = audioData.numberOfChannels
+  const numberOfFrames = audioData.numberOfFrames
+  const format = audioData.format
+
+  const channels: Float32Array[] = []
+
+  if (format === 'f32-planar') {
+    // Planar format: each channel is a separate plane
+    for (let ch = 0; ch < numberOfChannels; ch++) {
+      const channelData = new Float32Array(numberOfFrames)
+      audioData.copyTo(channelData, { planeIndex: ch })
+      channels.push(channelData)
+    }
+  } else {
+    // Interleaved formats: all channels in plane 0
+    const byteSize = audioData.allocationSize({ planeIndex: 0 })
+    const tempBuffer = new ArrayBuffer(byteSize)
+    audioData.copyTo(tempBuffer, { planeIndex: 0 })
+
+    if (format === 'f32') {
+      const interleaved = new Float32Array(tempBuffer)
+      for (let ch = 0; ch < numberOfChannels; ch++) {
+        const channelData = new Float32Array(numberOfFrames)
+        for (let i = 0; i < numberOfFrames; i++) {
+          channelData[i] = interleaved[i * numberOfChannels + ch]
+        }
+        channels.push(channelData)
+      }
+    } else if (format === 's16') {
+      const interleaved = new Int16Array(tempBuffer)
+      for (let ch = 0; ch < numberOfChannels; ch++) {
+        const channelData = new Float32Array(numberOfFrames)
+        for (let i = 0; i < numberOfFrames; i++) {
+          channelData[i] = interleaved[i * numberOfChannels + ch] / 32768
+        }
+        channels.push(channelData)
+      }
+    } else {
+      // Fallback: try format conversion
+      for (let ch = 0; ch < numberOfChannels; ch++) {
+        const channelData = new Float32Array(numberOfFrames)
+        try {
+          audioData.copyTo(channelData, { planeIndex: ch, format: 'f32-planar' })
+        } catch {
+          channelData.fill(0)
+        }
+        channels.push(channelData)
+      }
+    }
+  }
+
+  return channels
 }
 
 /**
- * Create an audio scheduler for Web Audio API playback
+ * Create an audio scheduler using ring buffer and AudioWorklet
  */
-export function createAudioScheduler(options: AudioSchedulerOptions = {}): AudioScheduler {
+export async function createAudioScheduler(
+  options: AudioSchedulerOptions = {},
+): Promise<AudioScheduler> {
   log('createAudioScheduler')
-  const scheduleAhead = options.scheduleAhead ?? 0.5
-  // Use the destination's context if available, otherwise use provided context or create new
+
+  const channels = options.channels ?? 2
+  const bufferAhead = options.bufferAhead ?? 0.5
+  const sourceSampleRate = options.sampleRate ?? 48000
+
+  // Create audio context - let browser choose sample rate for best compatibility
   const audioContext =
     (options.destination?.context as AudioContext) ?? options.audioContext ?? new AudioContext()
   const destination = options.destination ?? audioContext.destination
 
-  // Scheduled chunks
-  let scheduledChunks: ScheduledChunk[] = []
+  // Use the actual AudioContext sample rate
+  const actualSampleRate = audioContext.sampleRate
+  log('sample rates', { source: sourceSampleRate, context: actualSampleRate })
 
-  // Playback state
+  // Ring buffer size: enough for bufferAhead seconds plus some extra
+  const bufferCapacity = Math.ceil(actualSampleRate * (bufferAhead + 1))
+
+  // Create ring buffer
+  const ringBuffer = createAudioRingBuffer(bufferCapacity, channels)
+
+  // Load worklet processor
+  const blob = new Blob([workletProcessorCode], { type: 'application/javascript' })
+  const workletUrl = URL.createObjectURL(blob)
+  await audioContext.audioWorklet.addModule(workletUrl)
+  URL.revokeObjectURL(workletUrl)
+
+  // Create worklet node
+  const workletNode = new AudioWorkletNode(audioContext, 'ring-buffer-processor', {
+    outputChannelCount: [channels],
+  })
+  workletNode.connect(destination)
+
+  // Send buffers to worklet
+  workletNode.port.postMessage({
+    type: 'init',
+    sampleBuffer: ringBuffer.sampleBuffer,
+    controlBuffer: ringBuffer.controlBuffer,
+  })
+
+  // State
   let state: AudioSchedulerState = 'stopped'
-
-  // The context time when playback started
   let playbackStartContextTime = 0
-
-  // The media time when playback started
   let playbackStartMediaTime = 0
-
-  // Paused media time (for resuming)
   let pausedMediaTime = 0
 
-  /** Get current media time based on audio context time */
+  // Track how many samples we've written to ring buffer (for media time calculation)
+  let samplesWrittenToBuffer = 0
+  let bufferStartMediaTime = 0
+
+  // Track the last scheduled media time to prevent duplicates
+  let lastScheduledMediaTime = -1
+
+  // Pending audio samples sorted by media time
+  const pendingSamples: Array<{
+    mediaTime: number
+    channels: Float32Array[]
+    sampleRate: number
+  }> = []
+
+  /** Get current media time */
   const getCurrentMediaTime = (): number => {
-    if (state === 'stopped') {
-      return 0
-    }
-    if (state === 'paused') {
-      return pausedMediaTime
-    }
-    // Playing: calculate based on context time
+    if (state === 'stopped') return 0
+    if (state === 'paused') return pausedMediaTime
     const elapsed = audioContext.currentTime - playbackStartContextTime
     return playbackStartMediaTime + elapsed
   }
 
-  /** Clear all scheduled chunks */
-  const clearAllScheduled = () => {
-    for (const chunk of scheduledChunks) {
-      try {
-        chunk.source.stop()
-        chunk.source.disconnect()
-      } catch {
-        // May already be stopped
-      }
+  /** Simple linear interpolation resampling */
+  const resample = (input: Float32Array, inputRate: number, outputRate: number): Float32Array => {
+    if (inputRate === outputRate) return input
+
+    const ratio = inputRate / outputRate
+    const outputLength = Math.floor(input.length / ratio)
+    const output = new Float32Array(outputLength)
+
+    for (let i = 0; i < outputLength; i++) {
+      const srcIndex = i * ratio
+      const srcIndexFloor = Math.floor(srcIndex)
+      const srcIndexCeil = Math.min(srcIndexFloor + 1, input.length - 1)
+      const t = srcIndex - srcIndexFloor
+      output[i] = input[srcIndexFloor] * (1 - t) + input[srcIndexCeil] * t
     }
-    scheduledChunks = []
+
+    return output
   }
 
-  /** Remove chunks that have finished playing */
-  const pruneFinishedChunks = () => {
-    const now = audioContext.currentTime
-    scheduledChunks = scheduledChunks.filter(chunk => {
-      const endTime = chunk.contextStartTime + chunk.duration
-      return endTime > now
-    })
+  /** Flush pending samples to ring buffer up to current time + buffer ahead */
+  const flushPendingSamples = () => {
+    if (state !== 'playing') return
+
+    const currentMedia = getCurrentMediaTime()
+    const targetTime = currentMedia + bufferAhead
+
+    while (pendingSamples.length > 0) {
+      const sample = pendingSamples[0]
+      const sampleDuration = sample.channels[0].length / sample.sampleRate
+
+      // Skip samples in the past
+      if (sample.mediaTime + sampleDuration < currentMedia) {
+        pendingSamples.shift()
+        continue
+      }
+
+      // Stop if we've buffered enough
+      if (sample.mediaTime > targetTime) break
+
+      // Resample if needed
+      let channelsToWrite = sample.channels
+      if (sample.sampleRate !== actualSampleRate) {
+        channelsToWrite = sample.channels.map(ch =>
+          resample(ch, sample.sampleRate, actualSampleRate),
+        )
+      }
+
+      // Try to write to ring buffer
+      const written = ringBuffer.write(channelsToWrite, channelsToWrite[0].length)
+      if (written === channelsToWrite[0].length) {
+        samplesWrittenToBuffer += written
+        pendingSamples.shift()
+      } else if (written > 0) {
+        samplesWrittenToBuffer += written
+        // Partial write - trim the sample (from original, not resampled)
+        const originalWritten = Math.floor(
+          (written / channelsToWrite[0].length) * sample.channels[0].length,
+        )
+        for (let ch = 0; ch < sample.channels.length; ch++) {
+          sample.channels[ch] = sample.channels[ch].slice(originalWritten)
+        }
+        sample.mediaTime += originalWritten / sample.sampleRate
+        break // Buffer is full
+      } else {
+        break // Buffer is full
+      }
+    }
   }
 
   return {
@@ -179,53 +378,35 @@ export function createAudioScheduler(options: AudioSchedulerOptions = {}): Audio
     },
 
     get destination() {
-      return audioContext.destination
+      return destination
     },
 
     schedule(audioData: AudioData, mediaTime: number): void {
-      if (state !== 'playing') {
-        // Don't schedule if not playing
-        return
+      // Extract samples from AudioData
+      const extractedChannels = extractAudioSamples(audioData)
+      const sampleRate = audioData.sampleRate
+
+      // Add to pending queue (keep sorted by media time)
+      const sample = { mediaTime, channels: extractedChannels, sampleRate }
+      let inserted = false
+      for (let i = 0; i < pendingSamples.length; i++) {
+        if (mediaTime < pendingSamples[i].mediaTime) {
+          pendingSamples.splice(i, 0, sample)
+          inserted = true
+          break
+        }
+      }
+      if (!inserted) {
+        pendingSamples.push(sample)
       }
 
-      // Prune old chunks first
-      pruneFinishedChunks()
-
-      // Convert AudioData to AudioBuffer
-      const audioBuffer = audioDataToBuffer(audioData, audioContext)
-
-      // Calculate when this should play in context time
-      const mediaOffset = mediaTime - playbackStartMediaTime
-      const contextPlayTime = playbackStartContextTime + mediaOffset
-
-      // Don't schedule if it's in the past
-      if (contextPlayTime + audioBuffer.duration < audioContext.currentTime) {
-        return
-      }
-
-      // Create and schedule the source
-      const source = audioContext.createBufferSource()
-      source.buffer = audioBuffer
-      source.connect(destination)
-
-      // Schedule playback
-      const startTime = Math.max(contextPlayTime, audioContext.currentTime)
-      source.start(startTime)
-
-      // Track the scheduled chunk
-      scheduledChunks.push({
-        source,
-        contextStartTime: startTime,
-        mediaStartTime: mediaTime,
-        duration: audioBuffer.duration,
-      })
+      // Flush to ring buffer
+      flushPendingSamples()
     },
 
     play(startTime: number = 0): void {
       log('play', { startTime, currentState: state })
-      if (state === 'playing') {
-        return
-      }
+      if (state === 'playing') return
 
       // Resume audio context if suspended
       if (audioContext.state === 'suspended') {
@@ -233,36 +414,38 @@ export function createAudioScheduler(options: AudioSchedulerOptions = {}): Audio
       }
 
       if (state === 'paused') {
-        // Resume from paused position
         playbackStartContextTime = audioContext.currentTime
         playbackStartMediaTime = pausedMediaTime
       } else {
-        // Start fresh
         playbackStartContextTime = audioContext.currentTime
         playbackStartMediaTime = startTime
+        bufferStartMediaTime = startTime
+        samplesWrittenToBuffer = 0
       }
 
+      ringBuffer.setPlaying(true)
       state = 'playing'
+
+      // Flush pending samples
+      flushPendingSamples()
     },
 
     pause(): void {
       log('pause', { currentState: state })
-      if (state !== 'playing') {
-        return
-      }
+      if (state !== 'playing') return
 
-      // Save current position
       pausedMediaTime = getCurrentMediaTime()
-
-      // Stop all scheduled audio
-      clearAllScheduled()
-
+      ringBuffer.setPlaying(false)
       state = 'paused'
     },
 
     stop(): void {
       log('stop', { currentState: state })
-      clearAllScheduled()
+      ringBuffer.setPlaying(false)
+      ringBuffer.clear()
+      pendingSamples.length = 0
+      samplesWrittenToBuffer = 0
+      bufferStartMediaTime = 0
       state = 'stopped'
       playbackStartContextTime = 0
       playbackStartMediaTime = 0
@@ -273,10 +456,12 @@ export function createAudioScheduler(options: AudioSchedulerOptions = {}): Audio
       log('seek', { time, currentState: state })
       const wasPlaying = state === 'playing'
 
-      // Clear all scheduled audio
-      clearAllScheduled()
+      // Clear buffer and pending samples
+      ringBuffer.clear()
+      pendingSamples.length = 0
+      samplesWrittenToBuffer = 0
+      bufferStartMediaTime = time
 
-      // Update position
       if (wasPlaying) {
         playbackStartContextTime = audioContext.currentTime
         playbackStartMediaTime = time
@@ -286,13 +471,17 @@ export function createAudioScheduler(options: AudioSchedulerOptions = {}): Audio
     },
 
     clearScheduled(): void {
-      clearAllScheduled()
+      ringBuffer.clear()
+      pendingSamples.length = 0
+      samplesWrittenToBuffer = 0
     },
 
     destroy(): void {
-      clearAllScheduled()
+      ringBuffer.setPlaying(false)
+      ringBuffer.clear()
+      workletNode.disconnect()
+      pendingSamples.length = 0
       state = 'stopped'
-      // Only close if we created the context
       if (!options.audioContext) {
         audioContext.close()
       }
@@ -301,8 +490,8 @@ export function createAudioScheduler(options: AudioSchedulerOptions = {}): Audio
 }
 
 /**
- * Check if Web Audio API is available
+ * Check if Web Audio API with AudioWorklet is available
  */
 export function isWebAudioSupported(): boolean {
-  return typeof AudioContext !== 'undefined'
+  return typeof AudioContext !== 'undefined' && typeof AudioWorkletNode !== 'undefined'
 }

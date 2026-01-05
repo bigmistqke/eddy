@@ -142,6 +142,7 @@ export async function createPlayback(
   let state: PlaybackState = 'loading'
   let lastFramePts = -1
   let lastTickTime = -1
+  let lastScheduledAudioPts = -1 // Track last scheduled audio to prevent duplicates
 
   // Callbacks
   const stateCallbacks: Array<(state: PlaybackState) => void> = []
@@ -169,10 +170,12 @@ export async function createPlayback(
   let audioScheduler: AudioScheduler | null = null
   let audioDecoder: AudioDecoderHandle | null = null
   if (audioTrack) {
-    audioScheduler = createAudioScheduler({
-      scheduleAhead: audioBufferAhead,
+    audioScheduler = await createAudioScheduler({
+      bufferAhead: audioBufferAhead,
       audioContext: options.audioContext,
       destination: options.audioDestination,
+      sampleRate: audioTrack.sampleRate,
+      channels: audioTrack.channelCount,
     })
     audioDecoder = await createAudioDecoder(demuxer, audioTrack)
   }
@@ -182,15 +185,20 @@ export async function createPlayback(
 
   /** Buffer and schedule audio for a time range */
   const bufferAudio = async (startTime: number, endTime: number) => {
+    console.log('bufferAudio', { startTime, endTime })
     if (!audioTrack || !audioDecoder || !audioScheduler) return
 
     const samples = await demuxer.getSamples(audioTrack.id, startTime, endTime)
     if (samples.length === 0) return
 
     for (const sample of samples) {
+      // Skip already-scheduled samples (prevents duplicates at time boundaries)
+      if (sample.pts <= lastScheduledAudioPts) continue
+
       try {
         const audioData = await audioDecoder.decode(sample)
         audioScheduler.schedule(audioData, sample.pts)
+        lastScheduledAudioPts = sample.pts
         audioData.close()
       } catch (err) {
         // Skip failed samples
@@ -256,13 +264,14 @@ export async function createPlayback(
         audioScheduler.seek(startTime)
       }
 
-      // Buffer initial audio
-      if (audioTrack && audioDecoder && audioScheduler) {
-        await bufferAudio(startTime, startTime + audioBufferAhead)
-      }
+      // // Buffer initial audio
+      // if (audioTrack && audioDecoder && audioScheduler) {
+      //   await bufferAudio(startTime, startTime + audioBufferAhead)
+      // }
 
       lastFramePts = -1
       lastTickTime = startTime
+      lastScheduledAudioPts = -1
       setState('ready')
       log('prepareToPlay complete')
     },
@@ -280,6 +289,7 @@ export async function createPlayback(
       // Reset internal timing state
       lastFramePts = -1
       lastTickTime = time
+      lastScheduledAudioPts = -1
 
       // Reset audio scheduler for new position
       if (audioScheduler) {
@@ -316,6 +326,7 @@ export async function createPlayback(
 
       lastFramePts = -1
       lastTickTime = -1
+      lastScheduledAudioPts = -1
       setState('ready')
     },
 
@@ -342,10 +353,12 @@ export async function createPlayback(
 
       lastFramePts = -1
       lastTickTime = time
+      lastScheduledAudioPts = -1
 
       if (wasPlaying) {
         // Buffer audio and resume
         if (audioTrack && audioDecoder && audioScheduler) {
+          console.log('seek -> bufferAdui', { time, audioBufferAhead })
           await bufferAudio(time, time + audioBufferAhead)
           audioScheduler.play(time)
         }
@@ -369,7 +382,11 @@ export async function createPlayback(
       }
 
       // Buffer more video if needed
-      if (bufferVideo && frameBuffer && !frameBuffer.isBufferedAt(clockTime + videoBufferAhead / 2)) {
+      if (
+        bufferVideo &&
+        frameBuffer &&
+        !frameBuffer.isBufferedAt(clockTime + videoBufferAhead / 2)
+      ) {
         frameBuffer.bufferMore()
       }
 
@@ -377,8 +394,9 @@ export async function createPlayback(
       if (audioScheduler && audioTrack && state === 'playing') {
         const audioEnd = clockTime + audioBufferAhead
         if (audioEnd > lastTickTime + audioBufferAhead / 2) {
+          console.log('tick', { lastTickTime, audioEnd })
           bufferAudio(lastTickTime, audioEnd)
-          lastTickTime = clockTime
+          lastTickTime = audioEnd // Track where we buffered TO, not current time
         }
       }
     },

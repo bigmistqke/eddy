@@ -309,9 +309,7 @@ export function createEditor(options: CreateEditorOptions) {
 
     // Get audio track and create processor (if available)
     const audioTrack = stream.getAudioTracks()[0]
-    const audioProcessor = audioTrack
-      ? new MediaStreamTrackProcessor({ track: audioTrack })
-      : null
+    const audioProcessor = audioTrack ? new MediaStreamTrackProcessor({ track: audioTrack }) : null
 
     // Start capture (runs until cancelled)
     const startTime = performance.now()
@@ -353,6 +351,7 @@ export function createEditor(options: CreateEditorOptions) {
           frameCount: result.frameCount,
           duration,
         })
+
         addRecording(trackIndex, result.blob, duration)
       }
 

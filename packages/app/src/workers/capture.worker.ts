@@ -131,52 +131,16 @@ const methods: CaptureWorkerMethods = {
     videoReader = videoStream.getReader()
 
     try {
-      // Read first frame
-      const { done: done1, value: frame1 } = await videoReader.read()
-      if (done1 || !frame1) {
-        throw new Error('No frames available')
-      }
-
-      // Read second frame to check for staleness
-      const { done: done2, value: frame2 } = await videoReader.read()
-      if (done2 || !frame2) {
-        // Only got one frame, use it
-        firstVideoTimestamp = frame1.timestamp
-        const data = await copyVideoFrameToBuffer(frame1)
-        muxer.addVideoFrame({ ...data, timestamp: 0 })
-        videoFrameCount++
-      } else {
-        // Check gap between frame1 and frame2
-        const gap = (frame2.timestamp - frame1.timestamp) / 1_000_000
-
-        if (gap > 0.5) {
-          // Frame1 is stale - discard it, use frame2 as first
-          log('discarding stale frame', { gap: gap.toFixed(3) })
-          frame1.close()
-          firstVideoTimestamp = frame2.timestamp
-          const data = await copyVideoFrameToBuffer(frame2)
-          muxer.addVideoFrame({ ...data, timestamp: 0 })
-          videoFrameCount++
-        } else {
-          // Frame1 is valid - use both
-          firstVideoTimestamp = frame1.timestamp
-          const data1 = await copyVideoFrameToBuffer(frame1)
-          muxer.addVideoFrame({ ...data1, timestamp: 0 })
-          videoFrameCount++
-
-          const timestamp2 = (frame2.timestamp - firstVideoTimestamp) / 1_000_000
-          const data2 = await copyVideoFrameToBuffer(frame2)
-          muxer.addVideoFrame({ ...data2, timestamp: timestamp2 })
-          videoFrameCount++
-        }
-      }
-
-      // Continue with remaining frames
       while (capturing) {
         const { done, value: frame } = await videoReader.read()
         if (done || !frame) break
 
-        const timestamp = (frame.timestamp - firstVideoTimestamp!) / 1_000_000
+        // Use first frame's timestamp as reference
+        if (firstVideoTimestamp === null) {
+          firstVideoTimestamp = frame.timestamp
+        }
+
+        const timestamp = (frame.timestamp - firstVideoTimestamp) / 1_000_000
         const data = await copyVideoFrameToBuffer(frame)
         muxer.addVideoFrame({ ...data, timestamp })
         videoFrameCount++

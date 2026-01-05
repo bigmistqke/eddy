@@ -17,5 +17,10 @@ export default defineConfig({
   server: {
     // AT Protocol OAuth requires accessing via 127.0.0.1 for loopback clients
     host: '127.0.0.1',
+    headers: {
+      // Required for SharedArrayBuffer (used by audio ring buffer)
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+    },
   },
 })
