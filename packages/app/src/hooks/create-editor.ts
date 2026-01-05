@@ -1,15 +1,16 @@
 import type { Agent } from '@atproto/api'
-import { every, whenEffect, whenMemo } from '@bigmistqke/solid-whenever'
+import { every, whenEffect } from '@bigmistqke/solid-whenever'
 import type { AudioEffect, Project, Track } from '@eddy/lexicons'
 import { getMasterMixer, resumeAudioContext } from '@eddy/mixer'
 import { debug } from '@eddy/utils'
-import { createEffect, createSelector, createSignal, mapArray, type Accessor } from 'solid-js'
+import { createEffect, createMemo, createSelector, createSignal, mapArray, type Accessor } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
 import { getProjectByRkey, getStemBlob, publishProject } from '~/lib/atproto/crud'
 import { createAction } from '~/lib/create-action'
 import { createDebugInfo as initDebugInfo } from '~/lib/create-debug-info'
 import { createRecorder, requestMediaAccess } from '~/lib/create-recorder'
 import { createResourceMap } from '~/lib/create-resource-map'
+import { deepResource } from '~/lib/deep-resource'
 import { resource } from '~/lib/resource'
 import { createPlayer } from './create-player'
 
@@ -90,12 +91,18 @@ export interface CreateEditorOptions {
 }
 
 export function createEditor(options: CreateEditorOptions) {
-  // Project store
-  const [project, setProject] = createStore<Project>(createDefaultProject())
+  // Project store - synced from remote when rkey provided, editable locally
+  const [project, setProject, projectRecord] = deepResource(
+    every(options.agent, () => options.rkey),
+    async ([agent, rkey]) => getProjectByRkey(agent, rkey, options.handle),
+    {
+      initialValue: createDefaultProject(),
+      select: record => record.value,
+    },
+  )
 
   // Local state (not persisted)
   const [localClips, setLocalClips] = createStore<Record<string, LocalClipState>>({})
-  const [remoteUri, setRemoteUri] = createSignal<string | null>(null)
 
   // Core UI state
   const [selectedTrackIndex, setSelectedTrack] = createSignal<number | null>(null)
@@ -124,27 +131,11 @@ export function createEditor(options: CreateEditorOptions) {
     },
   )
 
-  // Resource: Load project record when rkey is provided
-  const [projectRecord] = resource(
-    every(options.agent, () => options.rkey),
-    async ([agent, rkey]) => {
-      const record = await getProjectByRkey(agent, rkey, options.handle)
-      setProject(record.value)
-      setRemoteUri(record.uri)
-      return record
-    },
-  )
-
-  // Derive clips that have stems from project record
-  const clipsWithStems = whenMemo(
-    projectRecord,
-    record =>
-      record.value.tracks
-        .flatMap(track => track.clips)
-        .filter(
-          (clip): clip is typeof clip & { stem: NonNullable<typeof clip.stem> } => !!clip.stem,
-        ),
-    () => [],
+  // Derive clips that have stems from project store
+  const clipsWithStems = createMemo(() =>
+    project.tracks
+      .flatMap(track => track.clips)
+      .filter((clip): clip is typeof clip & { stem: NonNullable<typeof clip.stem> } => !!clip.stem),
   )
 
   // Resource map for stem blobs - fine-grained reactivity per clipId
