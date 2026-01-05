@@ -1,5 +1,10 @@
 import { createSignal, type Accessor } from 'solid-js'
 
+export interface ClockOptions {
+  /** External duration accessor (reactive) */
+  duration?: Accessor<number>
+}
+
 export interface Clock {
   /** Current time in seconds */
   time: Accessor<number>
@@ -19,8 +24,6 @@ export interface Clock {
   seek: (time: number) => void
   /** Set loop enabled */
   setLoop: (enabled: boolean) => void
-  /** Set duration for loop boundary */
-  setDuration: (duration: number) => void
   /** Tick the clock (call from render loop) */
   tick: () => number
 }
@@ -29,11 +32,11 @@ export interface Clock {
  * Creates a clock for managing playback time
  * The clock maintains its own time state and can be ticked from a render loop
  */
-export function createClock(): Clock {
+export function createClock(options: ClockOptions = {}): Clock {
   const [isPlaying, setIsPlaying] = createSignal(false)
   const [time, setTime] = createSignal(0)
   const [loop, setLoop] = createSignal(false)
-  const [duration, setDuration] = createSignal(0)
+  const duration = options.duration ?? (() => 0)
 
   // Internal state for high-precision timing
   let clockStartTime = 0 // performance.now() when playback started
@@ -113,7 +116,6 @@ export function createClock(): Clock {
     stop,
     seek,
     setLoop,
-    setDuration,
     tick,
   }
 }

@@ -1,34 +1,24 @@
 import type { Agent } from '@atproto/api'
-import { whenEffect, whenMemo } from '@bigmistqke/solid-whenever'
+import { every, whenEffect, whenMemo } from '@bigmistqke/solid-whenever'
 import { getMasterMixer, resumeAudioContext } from '@eddy/mixer'
 import { debug } from '@eddy/utils'
 import { action, useSubmission } from '@solidjs/router'
 import {
-  createEffect,
   createMemo,
+  createResource,
   createSelector,
   createSignal,
+  mapArray,
   onCleanup,
   type Accessor,
 } from 'solid-js'
-import { publishProject } from '~/lib/atproto/crud'
+import { getProjectByRkey, getStemBlob, publishProject } from '~/lib/atproto/crud'
+import { createDebugInfo } from '~/lib/create-debug-info'
 import { createProjectStore } from '~/lib/project-store'
 import { createRecorder, requestMediaAccess } from '~/lib/recorder'
-import { createPlayer, type Player } from './create-player'
+import { createPlayer } from './create-player'
 
 const log = debug('editor', false)
-
-// Debug interface for E2E tests
-interface DebugInfo {
-  player: Player
-  getPlaybackStates: () => Array<{
-    trackIndex: number
-    state: string
-    currentTime: number
-    hasFrame: boolean
-  }>
-  downloadPreRender: () => void
-}
 
 export interface CreateEditorOptions {
   agent: Accessor<Agent | null>
@@ -51,9 +41,6 @@ export function createEditor(options: CreateEditorOptions) {
 
   const isSelectedTrack = createSelector(selectedTrackIndex)
 
-  // Player signal - set after async initialization
-  const [player, setPlayer] = createSignal<Player | null>(null)
-
   // Publish action using Solid's action/useSubmission
   const publishAction = action(async () => {
     const currentAgent = options.agent()
@@ -65,8 +52,8 @@ export function createEditor(options: CreateEditorOptions) {
     const clipBlobs = new Map<string, { blob: Blob; duration: number }>()
     for (const track of project.store.project.tracks) {
       for (const clip of track.clips) {
-        const blob = project.getClipBlob(clip.id)
-        const duration = project.getClipDuration(clip.id)
+        const blob = getClipBlob(clip.id)
+        const duration = clip.duration
         if (blob && duration) {
           clipBlobs.set(clip.id, { blob, duration })
         }
@@ -84,72 +71,76 @@ export function createEditor(options: CreateEditorOptions) {
 
   const publishSubmission = useSubmission(publishAction)
 
-  // Create player asynchronously
-  createEffect(() => {
-    const width = project.store.project.canvas.width
-    const height = project.store.project.canvas.height
-
-    createPlayer(width, height).then(p => {
-      options.container.appendChild(p.canvas)
-
-      // Expose debug info for E2E tests
-      const debugInfo: DebugInfo = {
-        player: p,
-        getPlaybackStates: () => {
-          const states = []
-          for (let i = 0; i < 4; i++) {
-            const slot = p.getSlot(i)
-            if (slot.playback) {
-              states.push({
-                trackIndex: i,
-                state: slot.playback.state,
-                currentTime: p.time(),
-                hasFrame: slot.playback.getFrameAt(p.time()) !== null,
-              })
-            }
-          }
-          return states
-        },
-        downloadPreRender: () => {
-          const blob = p.preRenderer.blob()
-          if (!blob) {
-            console.log('No pre-rendered video available')
-            return
-          }
-          const url = URL.createObjectURL(blob)
-          const link = document.createElement('a')
-          link.href = url
-          link.download = 'prerender.webm'
-          link.click()
-          URL.revokeObjectURL(url)
-          console.log('Downloaded prerender.webm', { size: blob.size })
-        },
-      }
-      ;(window as any).__EDDY_DEBUG__ = debugInfo
-
-      setPlayer(p)
+  // Create player as a resource (cleanup via onCleanup inside fetcher)
+  const [player] = createResource(
+    () => ({ width: project.store.project.canvas.width, height: project.store.project.canvas.height }),
+    async ({ width, height }) => {
+      const _player = await createPlayer(width, height)
+      options.container.appendChild(_player.canvas)
+      ;(window as any).__EDDY_DEBUG__ = createDebugInfo(_player)
 
       onCleanup(() => {
-        p.destroy()
+        _player.destroy()
         stopPreview()
         delete (window as any).__EDDY_DEBUG__
       })
-    })
-  })
+
+      return _player
+    }
+  )
 
   const [stream, setStream] = createSignal<MediaStream | null>(null)
   const [recorder, setRecorder] = createSignal<ReturnType<typeof createRecorder> | null>(null)
 
-  // Load project if rkey provided
-  createEffect((projectLoaded?: boolean) => {
-    if (projectLoaded) return
+  // Resource: Load project record when rkey is provided
+  const [projectRecord] = createResource(
+    every(options.agent, () => options.rkey),
+    async ([agent, rkey]) => {
+      const record = await getProjectByRkey(agent, rkey, options.handle)
+      project.setProject(record.value)
+      project.setRemoteUri(record.uri)
+      return record
+    }
+  )
 
-    const currentAgent = options.agent()
-    if (!currentAgent || !options.rkey) return
+  // Derive clips that have stems from project record
+  const clipsWithStems = whenMemo(
+    projectRecord,
+    record =>
+      record.value.tracks
+        .flatMap(track => track.clips)
+        .filter(
+          (clip): clip is typeof clip & { stem: NonNullable<typeof clip.stem> } => !!clip.stem
+        ),
+    () => []
+  )
 
-    project.loadProject(currentAgent, options.handle, options.rkey)
-    return true
+  // Derive blob resource for each clip (chained async derivation)
+  const stemBlobResources = mapArray(clipsWithStems, clip => {
+    const [blob] = createResource(
+      every(options.agent, () => clip.stem.uri),
+      async ([agent, stemUri]) => {
+        try {
+          return await getStemBlob(agent, stemUri)
+        } catch (err) {
+          console.error(`Failed to fetch stem for clip ${clip.id}:`, err)
+          return null
+        }
+      }
+    )
+    return { clipId: clip.id, blob, duration: clip.duration }
   })
+
+  // Helper to get blob by clipId (from remote stems or local recordings)
+  const getClipBlob = (clipId: string): Blob | undefined => {
+    // Check remote stems first
+    const stemResource = stemBlobResources().find(r => r.clipId === clipId)
+    if (stemResource) {
+      return stemResource.blob() ?? undefined
+    }
+    // Fall back to local recordings
+    return project.getClipBlob(clipId)
+  }
 
   // Load clips into player when project store changes
   whenEffect(player, player => {
@@ -162,7 +153,7 @@ export function createEditor(options: CreateEditorOptions) {
       const clip = track?.clips[0]
 
       if (clip) {
-        const blob = project.getClipBlob(clip.id)
+        const blob = getClipBlob(clip.id)
         if (blob && !player.hasClip(i)) {
           log('effect: loading clip into player', { trackIndex: i, clipId: clip.id })
           player.loadClip(i, blob).catch(err => {
@@ -322,6 +313,11 @@ export function createEditor(options: CreateEditorOptions) {
     stopRecordingPending,
     hasAnyRecording,
     canPublish,
+
+    // Loading states (from resources)
+    isPlayerLoading: () => player.loading,
+    isProjectLoading: () =>
+      projectRecord.loading || stemBlobResources().some(r => r.blob.loading),
 
     // Pre-render state (from player)
     isPreRendering: () => player()?.preRenderer.isRendering() ?? false,

@@ -56,7 +56,7 @@ export const Editor: Component<EditorProps> = props => {
           />
         </div>
       </Show>
-      <Show when={editor.project.isLoading()}>
+      <Show when={editor.isProjectLoading()}>
         <div class={styles.loadingOverlay}>Loading project...</div>
       </Show>
       {container}

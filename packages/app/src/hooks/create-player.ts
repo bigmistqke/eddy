@@ -2,7 +2,7 @@ import type { Demuxer } from '@eddy/codecs'
 import { createAudioPipeline, type AudioPipeline } from '@eddy/mixer'
 import { createPlayback, type Playback } from '@eddy/playback'
 import { debug, getGlobalPerfMonitor } from '@eddy/utils'
-import { createSignal, onCleanup, type Accessor } from 'solid-js'
+import { createMemo, onCleanup, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import { createCompositorWorkerWrapper, createDemuxerWorker } from '~/workers'
 import type { WorkerCompositor } from '~/workers/create-compositor-worker'
@@ -88,9 +88,6 @@ export async function createPlayer(width: number, height: number): Promise<Playe
   // Create compositor in worker
   const compositor = await createCompositorWorkerWrapper(width, height)
 
-  // Create clock for time management
-  const clock = createClock()
-
   // Create pre-renderer hook
   const preRenderer = createPreRenderer()
 
@@ -103,8 +100,19 @@ export async function createPlayer(width: number, height: number): Promise<Playe
     })),
   )
 
-  // Reactive state
-  const [maxDuration, setMaxDuration] = createSignal(0)
+  // Derived max duration from slots
+  const maxDuration = createMemo(() => {
+    let max = 0
+    for (const slot of slots) {
+      if (slot.playback) {
+        max = Math.max(max, slot.playback.duration)
+      }
+    }
+    return max
+  })
+
+  // Create clock for time management (reads maxDuration reactively)
+  const clock = createClock({ duration: maxDuration })
 
   // Render loop state
   let animationFrameId: number | null = null
@@ -114,18 +122,6 @@ export async function createPlayer(width: number, height: number): Promise<Playe
 
   // Frame tracking for optimization
   const lastSentTimestamp: (number | null)[] = [null, null, null, null]
-
-  // Compute max duration from slots
-  function updateMaxDuration() {
-    let max = 0
-    for (const slot of slots) {
-      if (slot.playback) {
-        max = Math.max(max, slot.playback.duration)
-      }
-    }
-    setMaxDuration(max)
-    clock.setDuration(max)
-  }
 
   /**
    * Single render loop - drives everything
@@ -321,12 +317,8 @@ export async function createPlayer(width: number, height: number): Promise<Playe
     const slot = slots[trackIndex]
 
     // Clean up existing
-    if (slot.playback) {
-      slot.playback.destroy()
-    }
-    if (slot.demuxer) {
-      slot.demuxer.destroy()
-    }
+    slot.playback?.destroy()
+    slot.demuxer?.destroy()
 
     // Create new playback
     const demuxer = await createDemuxerWorker(blob)
@@ -336,9 +328,8 @@ export async function createPlayer(width: number, height: number): Promise<Playe
 
     await playback.seek(0)
 
-    // Update store reactively
+    // Update store reactively (maxDuration derives automatically)
     setSlots(trackIndex, { demuxer, playback })
-    updateMaxDuration()
 
     log('loadClip complete', { trackIndex })
   }
@@ -346,19 +337,14 @@ export async function createPlayer(width: number, height: number): Promise<Playe
   function clearClip(trackIndex: number): void {
     const slot = slots[trackIndex]
 
-    if (slot.playback) {
-      slot.playback.destroy()
-    }
-    if (slot.demuxer) {
-      slot.demuxer.destroy()
-    }
+    slot.playback?.destroy()
+    slot.demuxer?.destroy()
 
     lastSentTimestamp[trackIndex] = null
     compositor.setFrame(trackIndex, null)
 
-    // Update store reactively
+    // Update store reactively (maxDuration derives automatically)
     setSlots(trackIndex, { demuxer: null, playback: null })
-    updateMaxDuration()
   }
 
   function hasClip(trackIndex: number): boolean {
@@ -376,12 +362,8 @@ export async function createPlayer(width: number, height: number): Promise<Playe
     preRenderer.cancel()
 
     for (const slot of slots) {
-      if (slot.playback) {
-        slot.playback.destroy()
-      }
-      if (slot.demuxer) {
-        slot.demuxer.destroy()
-      }
+      slot.playback?.destroy()
+      slot.demuxer?.destroy()
       slot.audioPipeline.disconnect()
     }
 

@@ -1,7 +1,5 @@
-import type { Agent } from '@atproto/api'
 import type { AudioEffect, Project, Track } from '@eddy/lexicons'
 import { createStore, produce } from 'solid-js/store'
-import { getProjectByRkey, getStemBlob } from './atproto/crud'
 
 // Local state extensions (not persisted to PDS)
 interface LocalClipState {
@@ -16,7 +14,6 @@ export interface ProjectStore {
   local: {
     clips: Record<string, LocalClipState>
   }
-  loading: boolean
   remoteUri: string | null
 }
 
@@ -88,7 +85,6 @@ export function createProjectStore() {
     local: {
       clips: {},
     },
-    loading: false,
     remoteUri: null,
   })
 
@@ -204,41 +200,17 @@ export function createProjectStore() {
       return store.project
     },
 
-    // Load a project by rkey (and optional handle)
-    async loadProject(agent: Agent, handle: string | undefined, rkey: string) {
-      setStore('loading', true)
-      try {
-        const record = await getProjectByRkey(agent, rkey, handle)
-        setStore('project', record.value)
-        setStore('remoteUri', record.uri)
-
-        // Fetch stem blobs in parallel
-        const clipsWithStems = record.value.tracks
-          .flatMap(track => track.clips)
-          .filter(
-            (clip): clip is typeof clip & { stem: NonNullable<typeof clip.stem> } => !!clip.stem,
-          )
-
-        await Promise.all(
-          clipsWithStems.map(async clip => {
-            try {
-              const blob = await getStemBlob(agent, clip.stem.uri)
-              setStore('local', 'clips', clip.id, {
-                blob,
-                duration: clip.duration,
-              })
-            } catch (err) {
-              console.error(`Failed to fetch stem for clip ${clip.id}:`, err)
-            }
-          }),
-        )
-      } finally {
-        setStore('loading', false)
-      }
+    // Setters for loading remote projects
+    setProject(project: Project) {
+      setStore('project', project)
     },
 
-    isLoading(): boolean {
-      return store.loading
+    setRemoteUri(uri: string) {
+      setStore('remoteUri', uri)
+    },
+
+    setClipBlob(clipId: string, blob: Blob, duration: number) {
+      setStore('local', 'clips', clipId, { blob, duration })
     },
   }
 
