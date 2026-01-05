@@ -1,17 +1,21 @@
 import type { Agent } from '@atproto/api'
+import { $MESSENGER, rpc, transfer } from '@bigmistqke/rpc/messenger'
 import { every, whenEffect, whenMemo } from '@bigmistqke/solid-whenever'
 import type { AudioEffect, Project, Track } from '@eddy/lexicons'
 import { getMasterMixer, resumeAudioContext } from '@eddy/mixer'
 import { debug } from '@eddy/utils'
 import { createEffect, createSelector, createSignal, mapArray, type Accessor } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
-import { action } from '~/hooks/action'
+import { action, defer, hold } from '~/hooks/action'
 import { deepResource } from '~/hooks/deep-resource'
 import { resource } from '~/hooks/resource'
 import { getProjectByRkey, getStemBlob, publishProject } from '~/lib/atproto/crud'
 import { createDebugInfo as initDebugInfo } from '~/lib/create-debug-info'
-import { createRecorder, requestMediaAccess } from '~/lib/create-recorder'
 import { createResourceMap } from '~/lib/create-resource-map'
+import type { CaptureWorkerMethods } from '~/workers/capture.worker'
+import CaptureWorker from '~/workers/capture.worker?worker'
+import type { MuxerWorkerMethods } from '~/workers/muxer.worker'
+import MuxerWorker from '~/workers/muxer.worker?worker'
 import { createPlayer } from './create-player'
 
 const log = debug('editor', false)
@@ -124,12 +128,39 @@ export function createEditor(options: CreateEditorOptions) {
     },
   )
 
+  // Pre-initialize capture and muxer workers
+  const [workers] = resource(async ({ onCleanup }) => {
+    log('creating workers...')
+    const capture = rpc<CaptureWorkerMethods>(new CaptureWorker())
+    const muxer = rpc<MuxerWorkerMethods>(new MuxerWorker())
+
+    // Create MessageChannel to connect capture → muxer
+    const channel = new MessageChannel()
+
+    // Set up ports via RPC
+    await Promise.all([
+      muxer.setCapturePort(transfer(channel.port2)),
+      capture.setMuxerPort(transfer(channel.port1)),
+    ])
+
+    // Pre-initialize VP9 encoder (avoids ~2s startup during recording)
+    await muxer.preInit()
+    log('workers ready')
+
+    onCleanup(() => {
+      capture[$MESSENGER].terminate()
+      muxer[$MESSENGER].terminate()
+    })
+
+    return { capture, muxer }
+  })
+
   const [localClips, setLocalClips] = createStore<Record<string, LocalClipState>>({})
   const [selectedTrackIndex, setSelectedTrack] = createSignal<number | null>(null)
   const [masterVolume, setMasterVolume] = createSignal(1)
 
   const isSelectedTrack = createSelector(selectedTrackIndex)
-  const isRecording = () => !!startRecordingAction.result()
+  const isRecording = () => recordAction.pending()
 
   // Resource map for stem blobs - fine-grained reactivity per clipId
   const stemBlobs = createResourceMap(
@@ -165,12 +196,6 @@ export function createEditor(options: CreateEditorOptions) {
     },
     () => false,
   )
-
-  // Project store actions
-  function setTitle(title: string) {
-    setProject('title', title)
-    setProject('updatedAt', new Date().toISOString())
-  }
 
   function setEffectValue(trackId: string, effectIndex: number, value: number) {
     setProject(
@@ -249,68 +274,89 @@ export function createEditor(options: CreateEditorOptions) {
   // Preview action - requests media access and sets up preview stream
   const previewAction = action(async (trackIndex: number, { onCleanup }) => {
     await resumeAudioContext()
-    const stream = await requestMediaAccess(true)
-    if (stream) {
-      player()?.setPreviewSource(trackIndex, stream)
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: { facingMode: 'user' },
+    })
+    player()?.setPreviewSource(trackIndex, stream)
 
-      onCleanup(() => {
-        stream.getTracks().forEach(t => t.stop())
-        player()?.setPreviewSource(trackIndex, null)
-      })
-    }
+    onCleanup(() => {
+      stream.getTracks().forEach(t => t.stop())
+      player()?.setPreviewSource(trackIndex, null)
+    })
+
     return stream
   })
 
-  // Start recording action - creates recorder and starts playback
-  const startRecordingAction = action(async (trackIndex: number) => {
-    log('startRecording', { trackIndex })
+  // Recording action - uses generator pattern for clean async composition
+  const recordAction = action(function* (trackIndex: number, { onCleanup }) {
+    log('record', { trackIndex })
+
+    const _workers = workers()
+    if (!_workers) throw new Error('Workers not ready')
+
     const _player = player()
-    if (!_player) {
-      throw new Error('No player available')
-    }
+    if (!_player) throw new Error('No player available')
 
     const stream = previewAction.result()
-    if (!stream) {
-      throw new Error('Cannot start recording without media stream')
-    }
+    if (!stream) throw new Error('Cannot start recording without media stream')
 
-    const recorder = createRecorder(stream)
-    recorder.start()
+    // Get video track and create processor
+    const videoTrack = stream.getVideoTracks()[0]
+    if (!videoTrack) throw new Error('No video track')
 
-    log('startRecording: calling player.play(0)')
-    await _player.play(0)
+    const processor = new MediaStreamTrackProcessor({ track: videoTrack })
 
-    return { recorder, trackIndex }
+    // Start capture (runs until cancelled)
+    const startTime = performance.now()
+    const capturePromise = _workers.capture
+      .start(transfer(processor.readable as ReadableStream<VideoFrame>))
+      .catch((err: unknown) => log('capture error:', err))
+
+    onCleanup(async () => {
+      log('stopping capture...')
+      await _workers.capture.stop()
+      await capturePromise
+    })
+
+    // Start playback of other tracks
+    yield* defer(_player.play(0))
+
+    log('recording started')
+
+    // Hold until cancelled, then return recording info for finalization
+    return hold(() => ({ trackIndex, startTime }))
   })
 
-  // Stop recording action - stops recorder, processes result, triggers pre-render
-  const stopRecordingAction = action(async () => {
-    const recordingState = startRecordingAction.result()
-    if (!recordingState) {
-      throw new Error('No active recording')
-    }
+  // Finalize recording and add to track
+  const finalizeRecordingAction = action(
+    async ({ trackIndex, startTime }: { trackIndex: number; startTime: number }) => {
+      const _workers = workers()
+      if (!_workers) return
 
-    const { recorder, trackIndex } = recordingState
-    log('stopRecording', { trackIndex })
+      log('finalizing recording...')
+      const result = await _workers.muxer.finalize()
+      const duration = performance.now() - startTime
 
-    const _player = player()
+      if (result.blob.size > 0) {
+        log('recording finalized', {
+          blobSize: result.blob.size,
+          frameCount: result.frameCount,
+          duration,
+        })
+        addRecording(trackIndex, result.blob, duration)
+      }
 
-    const result = await recorder.stop()
+      // Reset muxer for next recording
+      await _workers.muxer.reset()
+      await _workers.muxer.preInit()
 
-    if (result) {
-      log('stopRecording: got result', { blobSize: result.blob.size, duration: result.duration })
-      result.firstFrame?.close()
-      addRecording(trackIndex, result.blob, result.duration)
-    }
+      const _player = player()
+      await _player?.stop()
 
-    startRecordingAction.clear()
-    previewAction.clear()
-    setSelectedTrack(null)
-
-    await _player?.stop()
-
-    return result
-  })
+      return result
+    },
+  )
 
   // Publish action - uploads clips and publishes project
   const publishAction = action(async () => {
@@ -426,8 +472,12 @@ export function createEditor(options: CreateEditorOptions) {
     publishError: publishAction.error,
     selectedTrack: selectedTrackIndex,
     setMasterVolume,
-    setTitle,
-    stopRecordingPending: stopRecordingAction.pending,
+    // Project store actions
+    setTitle(title: string) {
+      setProject('title', title)
+      setProject('updatedAt', new Date().toISOString())
+    },
+    finalizingRecording: finalizeRecordingAction.pending,
     project: project,
 
     publish() {
@@ -458,15 +508,26 @@ export function createEditor(options: CreateEditorOptions) {
       }
     },
 
-    toggleRecording() {
+    async toggleRecording() {
       const trackIndex = selectedTrackIndex()
       if (trackIndex === null) return
-      if (startRecordingAction.pending() || stopRecordingAction.pending()) return
+      if (finalizeRecordingAction.pending()) return
 
       if (isRecording()) {
-        stopRecordingAction.try()
+        // Stop recording - cancel triggers hold to resolve
+        recordAction.cancel()
+
+        // Await the result
+        const result = await recordAction.resolve()
+
+        previewAction.clear()
+        setSelectedTrack(null)
+
+        if (result) {
+          await finalizeRecordingAction(result)
+        }
       } else {
-        startRecordingAction.try(trackIndex)
+        recordAction.try(trackIndex)
       }
     },
 

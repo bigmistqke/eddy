@@ -11,7 +11,7 @@
 
 import { $MESSENGER, rpc, transfer } from '@bigmistqke/rpc/messenger'
 import { createSignal, Match, Switch } from 'solid-js'
-import { action, defer } from '~/hooks/action'
+import { action, defer, hold } from '~/hooks/action'
 import { resource } from '~/hooks/resource'
 import type { CaptureWorkerMethods } from '~/workers/debug-capture.worker'
 import DebugCaptureWorker from '~/workers/debug-capture.worker?worker'
@@ -67,7 +67,7 @@ export default function Debug() {
   })
 
   // Recording action - uses yield* to compose with getUserMedia
-  const record = action(function* (_: undefined, { onCleanup, cancellation }) {
+  const record = action(function* (_: undefined, { onCleanup }) {
     const _workers = workers()
     if (!_workers) throw new Error('Workers not ready')
 
@@ -97,8 +97,8 @@ export default function Debug() {
 
     addLog('recording...')
 
-    // Wait until cancelled
-    yield cancellation
+    // Hold until cancelled
+    return hold()
   })
 
   // Finalize and download

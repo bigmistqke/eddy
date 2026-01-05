@@ -25,3 +25,12 @@ export {
   type AudioDecoderHandle,
   type CreateAudioDecoderOptions,
 } from './audio-decoder'
+
+// Muxer
+export {
+  createMuxer,
+  type AudioFrameData,
+  type Muxer,
+  type MuxerOptions,
+  type VideoFrameData,
+} from './muxer'

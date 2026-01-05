@@ -7,16 +7,23 @@ export class CancelledError extends Error {
   }
 }
 
+/** Symbol to identify hold marker */
+const HOLD = Symbol('hold')
+
+/** Hold marker type */
+interface HoldMarker<T> {
+  [HOLD]: true
+  getValue: () => T
+}
+
 export interface ActionContext {
   signal: AbortSignal
   /** Register a cleanup function to be called when action is cancelled/cleared/replaced */
   onCleanup: (fn: () => void) => void
-  /** Promise that resolves when the action is cancelled - useful for "run until cancelled" actions */
-  readonly cancellation: Promise<void>
 }
 
-/** Generator that yields promises and returns R */
-export type ActionGenerator<R> = Generator<Promise<unknown>, R, unknown>
+/** Generator that yields promises and returns R (or HoldMarker<R>) */
+export type ActionGenerator<R> = Generator<Promise<unknown>, R | HoldMarker<R>, unknown>
 
 /**
  * Wrap a promise for use with yield* in generator actions.
@@ -26,10 +33,24 @@ export type ActionGenerator<R> = Generator<Promise<unknown>, R, unknown>
  * const data = yield* defer(fetch('/api').then(r => r.json()))
  * const stream = yield* defer(getUserMedia())
  */
-export function* defer<T>(
-  promise: Promise<T>,
-): Generator<Promise<NoInfer<T>>, NoInfer<T>, NoInfer<T>> {
+export function* defer<T>(promise: Promise<T>): Generator<Promise<T>, T, T> {
   return (yield promise) as T
+}
+
+/**
+ * Hold until the action is cancelled, then return the value.
+ * Use this for "run until cancelled" actions that should resolve (not throw) on cancel.
+ * Always the last statement - no code runs after cancellation.
+ *
+ * @example
+ * // With return value
+ * return hold(() => ({ trackIndex, duration }))
+ *
+ * // Void action (no return value)
+ * return hold()
+ */
+export function hold<T = void>(getValue?: () => T): HoldMarker<T> {
+  return { [HOLD]: true, getValue: getValue ?? (() => undefined as T) }
 }
 
 /** Async function fetcher */
@@ -60,11 +81,18 @@ export type Action<T, R> = ActionFn<T, R> & {
   clear: () => void
   /** Call the action without throwing - returns undefined on error */
   try: TryFn<T, R>
+  /** Await the result - waits for completion if pending, returns current result otherwise */
+  resolve: () => Promise<R | undefined>
 }
 
 /** Check if a function is a generator function */
 function isGeneratorFunction(fn: Function): fn is (...args: any[]) => Generator {
   return fn.constructor.name === 'GeneratorFunction'
+}
+
+/** Check if a value is a hold marker */
+function isHoldMarker(value: unknown): value is HoldMarker<unknown> {
+  return value !== null && typeof value === 'object' && HOLD in value
 }
 
 /** Run a generator with abort checks between yields */
@@ -77,7 +105,7 @@ async function runGenerator<R>(gen: ActionGenerator<R>, signal: AbortSignal): Pr
       throw new CancelledError()
     }
 
-    // Await the yielded promise
+    // Normal promise - await it
     const value = await result.value
 
     // Check abort after awaiting
@@ -85,8 +113,15 @@ async function runGenerator<R>(gen: ActionGenerator<R>, signal: AbortSignal): Pr
       throw new CancelledError()
     }
 
-    // Send result back to generator
     result = gen.next(value)
+  }
+
+  // Check if return value is a hold marker
+  if (isHoldMarker(result.value)) {
+    await new Promise<void>(resolve => {
+      signal.addEventListener('abort', () => resolve(), { once: true })
+    })
+    return result.value.getValue() as R
   }
 
   return result.value
@@ -116,6 +151,7 @@ export function action<T = undefined, R = void>(fetcher: ActionFetcher<T, R>): A
 
   let abortController: AbortController | null = null
   let cleanupFns: (() => void)[] = []
+  let currentPromise: Promise<R> | null = null
 
   const isGenerator = isGeneratorFunction(fetcher)
 
@@ -152,15 +188,9 @@ export function action<T = undefined, R = void>(fetcher: ActionFetcher<T, R>): A
   }
 
   function createContext(signal: AbortSignal): ActionContext {
-    let cancellationPromise: Promise<void> | null = null
     return {
       signal,
       onCleanup: registerCleanup,
-      get cancellation() {
-        return (cancellationPromise ??= new Promise<void>(resolve => {
-          signal.addEventListener('abort', () => resolve(), { once: true })
-        }))
-      },
     }
   }
 
@@ -186,25 +216,30 @@ export function action<T = undefined, R = void>(fetcher: ActionFetcher<T, R>): A
     setPending(true)
     setError(undefined)
 
-    try {
-      const gen = createGenerator(args as T, context)
-      const value = await runGenerator(gen, signal)
+    const promise = (async () => {
+      try {
+        const gen = createGenerator(args as T, context)
+        const value = await runGenerator(gen, signal)
 
-      if (signal.aborted) {
-        throw new CancelledError()
+        // If runGenerator completed, the generator finished successfully
+        // (either normally, or via hold)
+        setResult(() => value)
+        return value
+      } catch (err) {
+        // If runGenerator threw CancelledError, re-throw it
+        if (err instanceof CancelledError) {
+          throw err
+        }
+        setError(err)
+        throw err
+      } finally {
+        setPending(false)
+        currentPromise = null
       }
+    })()
 
-      setResult(() => value)
-      return value
-    } catch (err) {
-      if (signal.aborted) {
-        throw new CancelledError()
-      }
-      setError(err)
-      throw err
-    } finally {
-      setPending(false)
-    }
+    currentPromise = promise
+    return promise
   }
 
   async function tryAction(args?: T): Promise<R | undefined> {
@@ -215,6 +250,17 @@ export function action<T = undefined, R = void>(fetcher: ActionFetcher<T, R>): A
     }
   }
 
+  async function resolve(): Promise<R | undefined> {
+    if (currentPromise) {
+      try {
+        return await currentPromise
+      } catch {
+        return undefined
+      }
+    }
+    return result()
+  }
+
   return Object.assign(actionFn, {
     pending,
     result,
@@ -222,5 +268,6 @@ export function action<T = undefined, R = void>(fetcher: ActionFetcher<T, R>): A
     cancel,
     clear,
     try: tryAction,
+    resolve,
   }) as Action<T, R>
 }

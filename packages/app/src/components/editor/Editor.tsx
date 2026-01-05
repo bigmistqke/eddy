@@ -75,7 +75,7 @@ export const Editor: Component<EditorProps> = props => {
           disabled={
             editor.selectedTrack() === null ||
             editor.previewPending() ||
-            editor.stopRecordingPending()
+            editor.finalizingRecording()
           }
         >
           {editor.isRecording() ? <FiSquare size={20} /> : <FiCircle size={20} />}
