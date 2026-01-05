@@ -24,7 +24,7 @@ export interface ResourceMap<V> {
  */
 export function createResourceMap<K extends string, E, V>(
   entries: Accessor<[K, E][]>,
-  fetcher: (key: K, entry: E) => Promise<V | null>,
+  fetcher: (key: K, entry: E) => Promise<V | null> | null | V,
 ): ResourceMap<V> {
   const [store, setStore] = createStore<Record<string, ResourceEntry<V>>>({})
 

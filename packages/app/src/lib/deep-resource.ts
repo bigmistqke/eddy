@@ -5,21 +5,13 @@
  * reactivity. The store can be locally mutated while still receiving updates from refetches.
  */
 
-import { createComputed, type Resource, type ResourceSource } from 'solid-js'
+import { type InitializedResource, type ResourceSource } from 'solid-js'
 import { createStore, reconcile, type SetStoreFunction, type Store } from 'solid-js/store'
-import {
-  resource,
-  type ManagedResourceReturn,
-  type ResourceFetcher,
-  type ManagedResourceOptions,
-} from './resource'
+import { resource, type ManagedResourceReturn, type ResourceFetcher } from './resource'
 
-type DeepResourceOptions<T extends object, R, S> = Omit<ManagedResourceOptions<R, S>, 'initialValue'> & {
-  initialValue: T
-  select?: (result: R) => T
+interface DeepResourceActions<T, U> extends Omit<ManagedResourceReturn<T, U>[1], 'mutate'> {
+  mutate: SetStoreFunction<Awaited<T>>
 }
-
-type DeepResourceActions<R, S> = ManagedResourceReturn<R, S>[1]
 
 /**
  * Creates a resource that syncs to a store with fine-grained reactivity.
@@ -46,23 +38,28 @@ type DeepResourceActions<R, S> = ManagedResourceReturn<R, S>[1]
  * const uri = () => res()?.uri
  * ```
  */
-export function deepResource<T extends object, S, R = T>(
+export function deepResource<T extends Promise<object> | object, S>(
   source: ResourceSource<S>,
-  fetcher: ResourceFetcher<S, R>,
-  options: DeepResourceOptions<T, R, S>,
-): [Store<T>, SetStoreFunction<T>, Resource<R>, DeepResourceActions<R, S>] {
-  const { initialValue, select, ...resourceOptions } = options
+  fetcher: ResourceFetcher<S, NoInfer<T>>,
+  options: { initialValue: Awaited<T> },
+): [InitializedResource<Store<T>>, DeepResourceActions<T, S>] {
+  const [store, setStore] = createStore(options.initialValue)
 
-  const [store, setStore] = createStore<T>(initialValue)
-  const [res, actions] = resource(source, fetcher, resourceOptions as ManagedResourceOptions<R, S>)
+  const [result, actions] = resource(
+    source,
+    async (source, info) => {
+      const result = await fetcher(source, info)
+      setStore(reconcile(result))
+      return store
+    },
+    options,
+  )
 
-  createComputed(() => {
-    const result = res()
-    if (result !== undefined) {
-      const value = select ? select(result) : (result as unknown as T)
-      setStore(reconcile(value))
-    }
-  })
-
-  return [store, setStore, res, actions]
+  return [
+    result,
+    {
+      ...actions,
+      mutate: setStore,
+    },
+  ] as const
 }

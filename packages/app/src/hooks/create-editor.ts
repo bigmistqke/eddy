@@ -1,9 +1,9 @@
 import type { Agent } from '@atproto/api'
-import { every, whenEffect } from '@bigmistqke/solid-whenever'
+import { every, whenEffect, whenMemo } from '@bigmistqke/solid-whenever'
 import type { AudioEffect, Project, Track } from '@eddy/lexicons'
 import { getMasterMixer, resumeAudioContext } from '@eddy/mixer'
 import { debug } from '@eddy/utils'
-import { createEffect, createMemo, createSelector, createSignal, mapArray, type Accessor } from 'solid-js'
+import { createEffect, createSelector, createSignal, mapArray, type Accessor } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
 import { getProjectByRkey, getStemBlob, publishProject } from '~/lib/atproto/crud'
 import { createAction } from '~/lib/create-action'
@@ -92,31 +92,24 @@ export interface CreateEditorOptions {
 
 export function createEditor(options: CreateEditorOptions) {
   // Project store - synced from remote when rkey provided, editable locally
-  const [project, setProject, projectRecord] = deepResource(
-    every(options.agent, () => options.rkey),
-    async ([agent, rkey]) => getProjectByRkey(agent, rkey, options.handle),
+  const [project, { mutate: setProject }] = deepResource(
+    every(
+      () => options.agent(),
+      () => options.rkey,
+    ),
+    ([agent, rkey]) =>
+      getProjectByRkey(agent, rkey, options.handle).then(projectRecord => projectRecord.value),
     {
       initialValue: createDefaultProject(),
-      select: record => record.value,
     },
   )
-
-  // Local state (not persisted)
-  const [localClips, setLocalClips] = createStore<Record<string, LocalClipState>>({})
-
-  // Core UI state
-  const [selectedTrackIndex, setSelectedTrack] = createSignal<number | null>(null)
-  const [masterVolume, setMasterVolume] = createSignal(1)
-
-  const isSelectedTrack = createSelector(selectedTrackIndex)
-  const isRecording = () => !!startRecordingAction.result()
 
   // Create player as a resource (waits for canvas to be available)
   const [player] = resource(
     every(
       () => options.canvas(),
-      () => project.canvas.width,
-      () => project.canvas.height,
+      () => project().canvas.width,
+      () => project().canvas.height,
     ),
     async ([canvas, width, height], { onCleanup }) => {
       const result = await createPlayer(canvas, width, height)
@@ -131,19 +124,27 @@ export function createEditor(options: CreateEditorOptions) {
     },
   )
 
-  // Derive clips that have stems from project store
-  const clipsWithStems = createMemo(() =>
-    project.tracks
-      .flatMap(track => track.clips)
-      .filter((clip): clip is typeof clip & { stem: NonNullable<typeof clip.stem> } => !!clip.stem),
-  )
+  const [localClips, setLocalClips] = createStore<Record<string, LocalClipState>>({})
+  const [selectedTrackIndex, setSelectedTrack] = createSignal<number | null>(null)
+  const [masterVolume, setMasterVolume] = createSignal(1)
+
+  const isSelectedTrack = createSelector(selectedTrackIndex)
+  const isRecording = () => !!startRecordingAction.result()
 
   // Resource map for stem blobs - fine-grained reactivity per clipId
   const stemBlobs = createResourceMap(
-    () => clipsWithStems().map(clip => [clip.id, clip] as const),
+    // Derive clips that have stems from project store
+    () =>
+      project()
+        .tracks.flatMap(track => track.clips)
+        .filter(
+          (clip): clip is typeof clip & { stem: NonNullable<typeof clip.stem> } => !!clip.stem,
+        )
+        .map(clip => [clip.id, clip] as const),
     async (clipId, clip) => {
       const agent = options.agent()
       if (!agent) return null
+
       try {
         return await getStemBlob(agent, clip.stem.uri)
       } catch (err) {
@@ -187,7 +188,7 @@ export function createEditor(options: CreateEditorOptions) {
   }
 
   function getEffectValue(trackId: string, effectIndex: number): number {
-    const track = project.tracks.find(t => t.id === trackId)
+    const track = project().tracks.find(t => t.id === trackId)
     const effect = track?.audioPipeline?.[effectIndex]
     if (effect && 'value' in effect && effect.value && 'value' in effect.value) {
       return effect.value.value / 100
@@ -196,7 +197,7 @@ export function createEditor(options: CreateEditorOptions) {
   }
 
   function getTrackPipeline(trackId: string): AudioEffect[] {
-    const track = project.tracks.find(t => t.id === trackId)
+    const track = project().tracks.find(t => t.id === trackId)
     return track?.audioPipeline ?? []
   }
 
@@ -224,7 +225,7 @@ export function createEditor(options: CreateEditorOptions) {
 
   function clearTrack(trackIndex: number) {
     const trackId = `track-${trackIndex}`
-    const track = project.tracks.find(t => t.id === trackId)
+    const track = project().tracks.find(t => t.id === trackId)
 
     if (track) {
       for (const clip of track.clips) {
@@ -241,10 +242,6 @@ export function createEditor(options: CreateEditorOptions) {
     )
 
     setProject('updatedAt', new Date().toISOString())
-  }
-
-  function getLocalClipBlob(clipId: string): Blob | undefined {
-    return localClips[clipId]?.blob
   }
 
   // Helper to get blob by clipId (from remote stems or local recordings)
@@ -336,7 +333,7 @@ export function createEditor(options: CreateEditorOptions) {
     }
 
     const clipBlobs = new Map<string, { blob: Blob; duration: number }>()
-    for (const track of project.tracks) {
+    for (const track of project().tracks) {
       for (const clip of track.clips) {
         const blob = getClipBlob(clip.id)
         const duration = clip.duration
@@ -350,7 +347,7 @@ export function createEditor(options: CreateEditorOptions) {
       throw new Error('No recordings to publish')
     }
 
-    const result = await publishProject(currentAgent, project, clipBlobs)
+    const result = await publishProject(currentAgent, project(), clipBlobs)
     return result.uri.split('/').pop()
   })
 
@@ -366,7 +363,7 @@ export function createEditor(options: CreateEditorOptions) {
 
           // Effect for loading/clearing clips
           createEffect(() => {
-            const track = project.tracks.find(t => t.id === trackId)
+            const track = project().tracks.find(t => t.id === trackId)
             const clip = track?.clips[0]
 
             if (clip) {
@@ -420,7 +417,7 @@ export function createEditor(options: CreateEditorOptions) {
     hasAnyRecording,
     isPlayerLoading: () => player.loading,
     isPreRendering: () => player()?.preRenderer.isRendering() ?? false,
-    isProjectLoading: () => projectRecord.loading || stemBlobs.loading(),
+    isProjectLoading: () => project.loading || stemBlobs.loading(),
     isPublishing: publishAction.pending,
     isRecording,
     isSelectedTrack,
@@ -434,7 +431,7 @@ export function createEditor(options: CreateEditorOptions) {
     setMasterVolume,
     setTitle,
     stopRecordingPending: stopRecordingAction.pending,
-    project,
+    project: project,
 
     publish() {
       return publishAction()
