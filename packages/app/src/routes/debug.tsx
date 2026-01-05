@@ -153,42 +153,25 @@ export default function Debug() {
     let startTime = performance.now()
     let frameCount = 0
 
-    let noFrameCount = 0
     function render() {
       const elapsed = (performance.now() - startTime) / 1000
 
-      // Tick playback
       pb.tick(elapsed)
 
-      // Get frame timestamp first
-      const timestamp = pb.getFrameTimestamp(elapsed)
-
-      // Get frame
       const frame = pb.getFrameAt(elapsed)
-
       if (frame) {
         ctx.drawImage(frame, 0, 0, canvasRef!.width, canvasRef!.height)
         frame.close()
         frameCount++
-        noFrameCount = 0
-        if (frameCount % 30 === 0) {
-          addLog(`rendered ${frameCount} frames, time: ${elapsed.toFixed(2)}s, ts: ${timestamp}`)
-        }
-      } else {
-        noFrameCount++
-        if (noFrameCount % 60 === 1) {
-          addLog(`no frame at time: ${elapsed.toFixed(2)}s, timestamp: ${timestamp}, noFrameCount: ${noFrameCount}`)
-        }
       }
 
       if (elapsed < pb.duration) {
         animationId = requestAnimationFrame(render)
       } else {
-        addLog(`playback complete: ${frameCount} frames rendered`)
+        addLog(`playback complete: ${frameCount} frames`)
       }
     }
 
-    addLog('starting playback...')
     render()
 
     onCleanup(() => {
