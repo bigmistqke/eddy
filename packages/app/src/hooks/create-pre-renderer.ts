@@ -9,7 +9,7 @@ import { createPlayback } from '@eddy/playback'
 import { debug } from '@eddy/utils'
 import { BufferTarget, Output, VideoSample, VideoSampleSource, WebMOutputFormat } from 'mediabunny'
 import { createSignal, type Accessor } from 'solid-js'
-import { createAction } from '~/lib/create-action'
+import { action } from '~/hooks/action'
 import { createDemuxerWorker } from '~/workers'
 import type { WorkerCompositor } from '~/workers/create-compositor-worker'
 
@@ -78,7 +78,7 @@ export function createPreRenderer(options: PreRenderOptions = {}): PreRenderer {
   let lastSentTimestamp: number | null = null
 
   // The render action
-  const renderAction = createAction<RenderParams, RenderResult | null>(
+  const renderAction = action<RenderParams, RenderResult | null>(
     async ({ playbacks, compositor }, { signal, onCleanup }) => {
       // Track resources for cleanup
       let cleanupFn: (() => void) | null = null
@@ -162,7 +162,7 @@ export function createPreRenderer(options: PreRenderOptions = {}): PreRenderer {
                 await compositor.setCaptureFrame(i, frame)
                 activeSlots[i] = 1
               }
-            })
+            }),
           )
 
           // Render to capture canvas
@@ -216,7 +216,7 @@ export function createPreRenderer(options: PreRenderOptions = {}): PreRenderer {
         log('error', { error: err })
         throw err
       }
-    }
+    },
   )
 
   // Derived state from action

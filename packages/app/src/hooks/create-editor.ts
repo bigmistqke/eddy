@@ -5,13 +5,13 @@ import { getMasterMixer, resumeAudioContext } from '@eddy/mixer'
 import { debug } from '@eddy/utils'
 import { createEffect, createSelector, createSignal, mapArray, type Accessor } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
+import { action } from '~/hooks/action'
+import { deepResource } from '~/hooks/deep-resource'
+import { resource } from '~/hooks/resource'
 import { getProjectByRkey, getStemBlob, publishProject } from '~/lib/atproto/crud'
-import { createAction } from '~/lib/create-action'
 import { createDebugInfo as initDebugInfo } from '~/lib/create-debug-info'
 import { createRecorder, requestMediaAccess } from '~/lib/create-recorder'
 import { createResourceMap } from '~/lib/create-resource-map'
-import { deepResource } from '~/lib/deep-resource'
-import { resource } from '~/lib/resource'
 import { createPlayer } from './create-player'
 
 const log = debug('editor', false)
@@ -251,7 +251,7 @@ export function createEditor(options: CreateEditorOptions) {
   }
 
   // Preview action - requests media access and sets up preview stream
-  const previewAction = createAction(async (trackIndex: number, { onCleanup }) => {
+  const previewAction = action(async (trackIndex: number, { onCleanup }) => {
     await resumeAudioContext()
     const stream = await requestMediaAccess(true)
     if (stream) {
@@ -266,7 +266,7 @@ export function createEditor(options: CreateEditorOptions) {
   })
 
   // Start recording action - creates recorder and starts playback
-  const startRecordingAction = createAction(async (trackIndex: number) => {
+  const startRecordingAction = action(async (trackIndex: number) => {
     log('startRecording', { trackIndex })
     const _player = player()
     if (!_player) {
@@ -288,7 +288,7 @@ export function createEditor(options: CreateEditorOptions) {
   })
 
   // Stop recording action - stops recorder, processes result, triggers pre-render
-  const stopRecordingAction = createAction(async () => {
+  const stopRecordingAction = action(async () => {
     const recordingState = startRecordingAction.result()
     if (!recordingState) {
       throw new Error('No active recording')
@@ -326,7 +326,7 @@ export function createEditor(options: CreateEditorOptions) {
   })
 
   // Publish action - uploads clips and publishes project
-  const publishAction = createAction(async () => {
+  const publishAction = action(async () => {
     const currentAgent = options.agent()
     if (!currentAgent) {
       throw new Error('Please sign in to publish')

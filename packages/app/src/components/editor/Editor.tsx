@@ -1,6 +1,6 @@
 import { FiCircle, FiPause, FiPlay, FiRepeat, FiSquare, FiUpload, FiVolume2 } from 'solid-icons/fi'
 import { type Component, createSignal, For, onMount, Show } from 'solid-js'
-import { createEditor } from '~/hooks'
+import { createEditor } from '~/hooks/create-editor'
 import { useAuth } from '~/lib/atproto/auth-context'
 import styles from './Editor.module.css'
 import { Track } from './Track'

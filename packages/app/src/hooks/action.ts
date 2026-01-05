@@ -15,9 +15,7 @@ export interface ActionContext {
 
 export type ActionFetcher<T, R> = (args: T, context: ActionContext) => Promise<R>
 
-export type ActionFn<T, R> = [T] extends [undefined]
-  ? () => Promise<R>
-  : (args: T) => Promise<R>
+export type ActionFn<T, R> = [T] extends [undefined] ? () => Promise<R> : (args: T) => Promise<R>
 
 export type TryFn<T, R> = [T] extends [undefined]
   ? () => Promise<R | undefined>
@@ -46,9 +44,7 @@ export type Action<T, R> = ActionFn<T, R> & {
  * - Provides `pending`, `result`, and `error` state
  * - Pass `signal` to the fetcher for cancellation support
  */
-export function createAction<T = undefined, R = void>(
-  fetcher: ActionFetcher<T, R>
-): Action<T, R> {
+export function action<T = undefined, R = void>(fetcher: ActionFetcher<T, R>): Action<T, R> {
   const [pending, setPending] = createSignal(false)
   const [result, setResult] = createSignal<R | undefined>(undefined)
   const [error, setError] = createSignal<unknown>(undefined)

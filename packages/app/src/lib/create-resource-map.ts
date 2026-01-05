@@ -1,6 +1,6 @@
 import { createEffect, type Accessor, type Resource } from 'solid-js'
 import { createStore } from 'solid-js/store'
-import { resource } from './resource'
+import { resource } from '../hooks/resource'
 
 interface ResourceEntry<V> {
   resource: Resource<V | null>

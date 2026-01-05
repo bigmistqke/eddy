@@ -1,10 +1,10 @@
 import { A } from '@solidjs/router'
 import { FiTrash2 } from 'solid-icons/fi'
 import { For, Show, useTransition } from 'solid-js'
+import { action } from '~/hooks/action'
+import { resource } from '~/hooks/resource'
 import { useAuth } from '~/lib/atproto/auth-context'
 import { deleteOrphanedStems, deleteProject, listProjects } from '~/lib/atproto/crud'
-import { createAction } from '~/lib/create-action'
-import { resource } from '~/lib/resource'
 import styles from './home.module.css'
 
 export default function Home() {
@@ -30,7 +30,7 @@ export default function Home() {
     startTransition(() => refetch())
   }
 
-  const cleanupAction = createAction(async () => {
+  const cleanupAction = action(async () => {
     const currentAgent = agent()
     if (!currentAgent) return null
     const deleted = await deleteOrphanedStems(currentAgent)

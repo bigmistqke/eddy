@@ -1,7 +1,7 @@
 import { createAudioPipeline, type AudioPipeline } from '@eddy/mixer'
 import { createPlayback, type Playback } from '@eddy/playback'
 import type { Accessor } from 'solid-js'
-import { createAction } from '~/lib/create-action'
+import { action } from '~/hooks/action'
 import { createDemuxerWorker } from '~/workers'
 import type { WorkerCompositor } from '~/workers/create-compositor-worker'
 
@@ -51,7 +51,7 @@ export function createSlot(options: CreateSlotOptions): Slot {
   let lastSentTimestamp: number | null = null
 
   // Load action - manages demuxer and playback lifecycle
-  const loadAction = createAction(async (blob: Blob, { onCleanup }) => {
+  const loadAction = action(async (blob: Blob, { onCleanup }) => {
     const demuxer = await createDemuxerWorker(blob)
     const newPlayback = await createPlayback(demuxer, {
       audioDestination: audioPipeline.gain,
