@@ -1,10 +1,11 @@
-import { $MESSENGER, rpc, transfer, type RPC } from '@bigmistqke/rpc/messenger'
+import { rpc, transfer, type RPC } from '@bigmistqke/rpc/messenger'
 import type { Project } from '@eddy/lexicons'
 import { createAudioPipeline, type AudioPipeline } from '@eddy/mixer'
 import { debug, getGlobalPerfMonitor } from '@eddy/utils'
-import { createEffect, createMemo, createSignal, on, type Accessor } from 'solid-js'
-import type { LayoutTimeline } from '~/lib/layout-types'
+import { createEffect, createMemo, on, type Accessor } from 'solid-js'
+import { createStore } from 'solid-js/store'
 import { compileLayoutTimeline } from '~/lib/layout-resolver'
+import type { LayoutTimeline } from '~/lib/layout-types'
 import type { CompositorWorkerMethods } from '~/workers/compositor.worker'
 import CompositorWorker from '~/workers/compositor.worker?worker'
 import type { PlaybackWorkerMethods } from '~/workers/playback.worker'
@@ -117,7 +118,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
   // Create compositor worker
   const compositorWorker = new CompositorWorker()
   const compositorRpc = rpc<CompositorWorkerMethods>(compositorWorker)
-  await compositorRpc.init(transfer(offscreen) as unknown as OffscreenCanvas, width, height)
+  await compositorRpc.init(transfer(offscreen), width, height)
 
   // Track preview processors for cleanup
   const previewProcessors = new Map<string, MediaStreamTrackProcessor<VideoFrame>>()
@@ -145,10 +146,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
         if (videoTrack) {
           const processor = new MediaStreamTrackProcessor({ track: videoTrack })
           previewProcessors.set(trackId, processor)
-          compositorRpc.setPreviewStream(
-            trackId,
-            transfer(processor.readable) as unknown as ReadableStream<VideoFrame>,
-          )
+          compositorRpc.setPreviewStream(trackId, transfer(processor.readable))
         }
       } else {
         compositorRpc.setPreviewStream(trackId, null)
@@ -163,20 +161,14 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
   }
 
   // Compile layout timeline from project (reactive)
-  const timeline = createMemo(() => {
-    const currentProject = project()
-    return compileLayoutTimeline(currentProject, { width, height })
-  })
+  const timeline = createMemo(() => compileLayoutTimeline(project(), { width, height }))
 
   // Track entries - keyed by trackId
-  const tracks = new Map<string, TrackEntry>()
-
-  // Reactive signal for track count changes (triggers maxDuration recalc)
-  const [trackVersion, setTrackVersion] = createSignal(0)
+  const [tracks, setTracks] = createStore<Record<string, TrackEntry>>({})
 
   /** Get or create a track entry */
   function getOrCreateTrack(trackId: string): TrackEntry {
-    let track = tracks.get(trackId)
+    let track = tracks[trackId]
     if (!track) {
       log('creating track entry', { trackId })
 
@@ -191,13 +183,10 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
       const channel = new MessageChannel()
 
       // Send port1 to compositor (compositor listens)
-      compositorRpc.connectPlaybackWorker(
-        trackId,
-        transfer(channel.port1) as unknown as MessagePort,
-      )
+      compositorRpc.connectPlaybackWorker(trackId, transfer(channel.port1))
 
       // Send port2 to playback worker (playback worker sends)
-      playbackRpc.connectToCompositor(transfer(channel.port2) as unknown as MessagePort, trackId)
+      playbackRpc.connectToCompositor(transfer(channel.port2), trackId)
 
       track = {
         trackId,
@@ -207,15 +196,14 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
         duration: 0,
         state: 'idle',
       }
-      tracks.set(trackId, track)
-      setTrackVersion(v => v + 1)
+      setTracks(trackId, track)
     }
     return track
   }
 
   /** Remove a track entry */
   function removeTrack(trackId: string): void {
-    const track = tracks.get(trackId)
+    const track = tracks[trackId]
     if (!track) return
 
     log('removing track entry', { trackId })
@@ -230,8 +218,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
     // Disconnect audio pipeline
     track.audioPipeline.disconnect()
 
-    tracks.delete(trackId)
-    setTrackVersion(v => v + 1)
+    setTracks(trackId, undefined!)
   }
 
   // Sync timeline with compositor when project changes
@@ -244,7 +231,6 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
   // Derived max duration from timeline or playback workers
   const maxDuration = createMemo(() => {
     // Track version to trigger recalc when tracks change
-    trackVersion()
 
     // First check timeline duration
     const timelineDuration = timeline().duration
@@ -252,7 +238,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
 
     // Fall back to playback durations
     let max = 0
-    for (const track of tracks.values()) {
+    for (const track of Object.values(tracks)) {
       max = Math.max(max, track.duration)
     }
     return max
@@ -278,7 +264,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
     if (playing && clock.loop() && maxDuration() > 0 && time >= maxDuration()) {
       log('loop reset')
       // Reset all playback workers to start
-      for (const track of tracks.values()) {
+      for (const track of Object.values(tracks)) {
         if (track.state === 'playing') {
           track.rpc.seek(0).then(() => {
             track.rpc.play(0)
@@ -311,7 +297,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
     stopRenderLoop()
 
     // Remove all tracks
-    for (const trackId of tracks.keys()) {
+    for (const trackId of Object.keys(tracks)) {
       removeTrack(trackId)
     }
 
@@ -327,12 +313,11 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
     compositor,
     clock,
     timeline,
-
-    // State (reactive)
+    maxDuration,
+    destroy,
     isPlaying: clock.isPlaying,
     time: clock.time,
     loop: clock.loop,
-    maxDuration,
 
     // Actions
     async play(time?: number): Promise<void> {
@@ -340,7 +325,9 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
       log('play', { startTime })
 
       // Wait for any loading tracks to finish (with timeout)
-      const loadingTracks = Array.from(tracks.values()).filter(track => track.state === 'loading')
+      const loadingTracks = Array.from(Object.values(tracks)).filter(
+        track => track.state === 'loading',
+      )
       if (loadingTracks.length > 0) {
         log('waiting for loading tracks', { count: loadingTracks.length })
         // Poll for loading completion with timeout
@@ -356,7 +343,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
       }
 
       // Seek all tracks to start time first
-      const tracksWithClips = Array.from(tracks.values()).filter(
+      const tracksWithClips = Array.from(Object.values(tracks)).filter(
         track => track.state === 'ready' || track.state === 'paused',
       )
 
@@ -378,7 +365,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
       log('pause')
 
       // Pause all playback workers
-      for (const track of tracks.values()) {
+      for (const track of Object.values(tracks)) {
         if (track.state === 'playing') {
           track.rpc.pause()
           track.state = 'paused'
@@ -393,7 +380,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
       clock.stop()
 
       // Pause and seek all playback workers to 0
-      for (const track of tracks.values()) {
+      for (const track of Object.values(tracks)) {
         if (track.state === 'playing') {
           track.rpc.pause()
         }
@@ -411,7 +398,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
       if (wasPlaying) {
         clock.pause()
         // Pause all playback workers
-        for (const track of tracks.values()) {
+        for (const track of Object.values(tracks)) {
           if (track.state === 'playing') {
             track.rpc.pause()
             track.state = 'paused'
@@ -421,7 +408,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
 
       // Seek all tracks in parallel
       await Promise.all(
-        Array.from(tracks.values())
+        Array.from(Object.values(tracks))
           .filter(track => track.state !== 'idle' && track.state !== 'loading')
           .map(track => track.rpc.seek(time)),
       )
@@ -430,7 +417,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
 
       if (wasPlaying) {
         // Resume playback
-        for (const track of tracks.values()) {
+        for (const track of Object.values(tracks)) {
           if (track.state === 'paused') {
             track.rpc.play(time)
             track.state = 'playing'
@@ -460,7 +447,6 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
       await track.rpc.seek(currentTime)
 
       // Trigger duration recalc
-      setTrackVersion(v => v + 1)
 
       log('loadClip complete', { trackId, duration })
     },
@@ -472,15 +458,13 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
 
     hasClip(trackId: string): boolean {
       // Subscribe to trackVersion for reactivity
-      trackVersion()
-      const track = tracks.get(trackId)
+      const track = tracks[trackId]
       return track?.state === 'ready' || track?.state === 'playing' || track?.state === 'paused'
     },
 
     isLoading(trackId: string): boolean {
       // Subscribe to trackVersion for reactivity
-      trackVersion()
-      return tracks.get(trackId)?.state === 'loading'
+      return tracks[trackId]?.state === 'loading'
     },
 
     setPreviewSource(trackId: string, stream: MediaStream | null): void {
@@ -488,17 +472,15 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
     },
 
     setVolume(trackId: string, value: number): void {
-      tracks.get(trackId)?.audioPipeline.setVolume(value)
+      tracks[trackId]?.audioPipeline.setVolume(value)
     },
 
     setPan(trackId: string, value: number): void {
-      tracks.get(trackId)?.audioPipeline.setPan(value)
+      tracks[trackId]?.audioPipeline.setPan(value)
     },
 
-    destroy,
-
     // Utilities
-    getAudioPipeline: (trackId: string) => tracks.get(trackId)?.audioPipeline,
+    getAudioPipeline: (trackId: string) => tracks[trackId]?.audioPipeline,
     logPerf: () => perf.logSummary(),
     resetPerf: () => perf.reset(),
   }
