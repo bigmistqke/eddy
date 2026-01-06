@@ -1,21 +1,14 @@
-/**
- * Demux Worker
- *
- * Handles video/audio demuxing off the main thread using mediabunny.
- * Exposes RPC methods for the main thread to call.
- */
-
 import { expose } from '@bigmistqke/rpc/messenger'
+import type { AudioTrackInfo, DemuxedSample, DemuxerInfo, VideoTrackInfo } from '@eddy/codecs'
 import {
-  Input,
+  ALL_FORMATS,
   BlobSource,
   EncodedPacketSink,
-  ALL_FORMATS,
-  type InputVideoTrack,
-  type InputAudioTrack,
+  Input,
   type EncodedPacket,
+  type InputAudioTrack,
+  type InputVideoTrack,
 } from 'mediabunny'
-import type { DemuxedSample, DemuxerInfo, VideoTrackInfo, AudioTrackInfo } from '@eddy/codecs'
 
 export interface DemuxWorkerMethods {
   /** Initialize demuxer with file data */
@@ -175,11 +168,7 @@ const methods: DemuxWorkerMethods = {
     return config
   },
 
-  async getSamples(
-    trackId: number,
-    startTime: number,
-    endTime: number,
-  ): Promise<DemuxedSample[]> {
+  async getSamples(trackId: number, startTime: number, endTime: number): Promise<DemuxedSample[]> {
     const trackData = getTrackData(trackId)
     if (!trackData) {
       throw new Error(`Track ${trackId} not found`)

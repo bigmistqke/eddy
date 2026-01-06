@@ -1,16 +1,3 @@
-/**
- * Debug Muxer Worker
- *
- * Handles video encoding and muxing off the main thread.
- * Uses mediabunny for VP9 encoding to WebM format.
- *
- * Communication:
- * - Main thread: RPC via @bigmistqke/rpc (preInit, finalize, reset)
- * - Capture worker: Raw messages via transferred MessagePort (init, frame, end)
- *
- * Supports pre-initialization to avoid ~2s encoder startup during recording.
- */
-
 import { expose } from '@bigmistqke/rpc/messenger'
 import { BufferTarget, Output, VideoSample, VideoSampleSource, WebMOutputFormat } from 'mediabunny'
 

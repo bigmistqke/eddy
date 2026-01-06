@@ -1,16 +1,3 @@
-/**
- * Muxer Worker
- *
- * Handles video encoding and muxing off the main thread.
- * Uses @eddy/codecs muxer for VP9 encoding to WebM format.
- *
- * Communication:
- * - Main thread: RPC via @bigmistqke/rpc (preInit, finalize, reset)
- * - Capture worker: Raw messages via transferred MessagePort (addVideoFrame, captureEnded)
- *
- * Supports pre-initialization to avoid ~2s encoder startup during recording.
- */
-
 import { expose } from '@bigmistqke/rpc/messenger'
 import { createMuxer, type AudioFrameData, type Muxer, type VideoFrameData } from '@eddy/codecs'
 import { debug } from '@eddy/utils'

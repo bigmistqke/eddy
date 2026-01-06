@@ -1,11 +1,3 @@
-/**
- * Recording Worker
- *
- * Handles video/audio encoding and muxing off the main thread.
- * Receives MediaStreamTrackProcessor streams and encodes with mediabunny.
- * Outputs WebM format.
- */
-
 import { expose, transfer } from '@bigmistqke/rpc/messenger'
 import {
   AudioSample,
@@ -190,7 +182,12 @@ async function processAudioStream(stream: ReadableStream<AudioData>) {
 const methods: RecordingWorkerMethods = {
   async start(config: RecordingStartConfig) {
     const { videoStream, audioStream, width, height } = config
-    log('start called', { hasVideoStream: !!videoStream, hasAudioStream: !!audioStream, width, height })
+    log('start called', {
+      hasVideoStream: !!videoStream,
+      hasAudioStream: !!audioStream,
+      width,
+      height,
+    })
 
     isRecording = true
     startTime = performance.now()

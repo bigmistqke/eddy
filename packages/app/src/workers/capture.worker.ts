@@ -1,14 +1,3 @@
-/**
- * Capture Worker
- *
- * Reads VideoFrames and AudioData from camera/mic streams, copies to ArrayBuffer, transfers to muxer.
- * Designed to release hardware resources immediately.
- *
- * Communication:
- * - Main thread: RPC via @bigmistqke/rpc (setMuxerPort, start, stop)
- * - Muxer worker: RPC via @bigmistqke/rpc on transferred MessagePort
- */
-
 import { expose, rpc } from '@bigmistqke/rpc/messenger'
 import type { AudioFrameData, VideoFrameData } from '@eddy/codecs'
 import { debug } from '@eddy/utils'
@@ -60,10 +49,7 @@ async function copyVideoFrameToBuffer(frame: VideoFrame): Promise<{
 }
 
 /** Convert AudioData to AudioFrameData format expected by muxer */
-function audioDataToFrameData(
-  audioData: AudioData,
-  firstTimestamp: number,
-): AudioFrameData {
+function audioDataToFrameData(audioData: AudioData, firstTimestamp: number): AudioFrameData {
   const numberOfChannels = audioData.numberOfChannels
   const numberOfFrames = audioData.numberOfFrames
   const sampleRate = audioData.sampleRate
@@ -89,10 +75,7 @@ const methods: CaptureWorkerMethods = {
     log('received muxer port')
   },
 
-  async start(
-    videoStream: ReadableStream<VideoFrame>,
-    audioStream?: ReadableStream<AudioData>,
-  ) {
+  async start(videoStream: ReadableStream<VideoFrame>, audioStream?: ReadableStream<AudioData>) {
     if (!muxer) {
       throw new Error('No muxer - call setMuxerPort first')
     }

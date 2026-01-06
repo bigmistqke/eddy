@@ -1,16 +1,3 @@
-/**
- * Debug Capture Worker
- *
- * Reads VideoFrames from camera stream, copies to ArrayBuffer, transfers to muxer.
- *
- * Communication:
- * - Main thread: RPC via @bigmistqke/rpc (setMuxerPort, start, stop)
- * - Muxer worker: RPC via @bigmistqke/rpc on transferred MessagePort
- *
- * This worker's job is to capture frames as fast as possible and release
- * VideoFrame hardware resources immediately. It does NOT wait for muxer - just queues everything.
- */
-
 import { expose, rpc } from '@bigmistqke/rpc/messenger'
 import type { MuxerFrameData, MuxerInitConfig } from './debug-muxer.worker'
 

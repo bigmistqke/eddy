@@ -1,10 +1,3 @@
-/**
- * Compositor Worker
- *
- * Handles WebGL video compositing off the main thread using OffscreenCanvas.
- * Renders video tracks as individual quads in a grid layout.
- */
-
 import { expose, transfer, type Transferred } from '@bigmistqke/rpc/messenger'
 import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
 import { debug } from '@eddy/utils'
