@@ -396,6 +396,9 @@ export function createEditor(options: CreateEditorOptions) {
     const clipBlobs = new Map<string, { blob: Blob; duration: number }>()
     for (const track of project().tracks) {
       for (const clip of track.clips) {
+        // Skip clips that already have a stem source - they don't need to be re-uploaded
+        if (clip.source?.type === 'stem') continue
+
         const blob = getClipBlob(clip.id)
         const duration = clip.duration
         if (blob && duration) {
@@ -404,7 +407,13 @@ export function createEditor(options: CreateEditorOptions) {
       }
     }
 
-    if (clipBlobs.size === 0) {
+    // Check if there's anything to publish (either new recordings or existing stems)
+    const hasNewRecordings = clipBlobs.size > 0
+    const hasExistingStems = project().tracks.some(track =>
+      track.clips.some(clip => clip.source?.type === 'stem'),
+    )
+
+    if (!hasNewRecordings && !hasExistingStems) {
       throw new Error('No recordings to publish')
     }
 

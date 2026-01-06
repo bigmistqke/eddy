@@ -220,7 +220,7 @@ export function getActiveSegments(timeline: LayoutTimeline, time: number): Activ
         const timeInSegment = time - segment.startTime
         let localTime: number
 
-        if (segment.source.type === 'stem') {
+        if (segment.source.type === 'clip') {
           // Account for source offset and speed
           localTime = segment.source.in + timeInSegment * segment.source.speed
         } else {
