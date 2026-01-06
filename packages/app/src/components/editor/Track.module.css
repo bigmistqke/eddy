@@ -84,12 +84,13 @@
 
 .controls {
   display: grid;
-  grid-template-columns: auto;
+  grid-template-columns: auto auto;
   justify-content: center;
   gap: 8px;
 }
 
-.clearButton {
+.clearButton,
+.downloadButton {
   display: grid;
   place-items: center;
   width: 32px;
@@ -102,8 +103,17 @@
   transition: background 0.2s;
 }
 
-.clearButton:hover {
+.clearButton:hover,
+.downloadButton:hover {
   background: #444;
+}
+
+.downloadButton {
+  background: #2563eb;
+}
+
+.downloadButton:hover {
+  background: #3b82f6;
 }
 
 .error {

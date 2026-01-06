@@ -588,6 +588,27 @@ export function createEditor(options: CreateEditorOptions) {
         _player.setLoop(!_player.loop())
       }
     },
+
+    downloadClip(trackIndex: number) {
+      const trackId = `track-${trackIndex}`
+      const track = project().tracks.find(t => t.id === trackId)
+      if (!track || track.clips.length === 0) {
+        console.warn('No clip found for track', trackIndex)
+        return
+      }
+      const clipId = track.clips[0].id
+      const blob = getClipBlob(clipId)
+      if (!blob) {
+        console.warn('No blob found for clip', clipId)
+        return
+      }
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `track-${trackIndex + 1}.webm`
+      link.click()
+      URL.revokeObjectURL(url)
+    },
   }
 }
 

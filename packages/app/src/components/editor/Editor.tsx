@@ -141,6 +141,7 @@ export const Editor: Component<EditorProps> = props => {
               onVolumeChange={value => editor.setTrackVolume(id, value)}
               onPanChange={value => editor.setTrackPan(id, value)}
               onClear={() => editor.clearRecording(id)}
+              onDownload={() => editor.downloadClip(id)}
             />
           )}
         </For>

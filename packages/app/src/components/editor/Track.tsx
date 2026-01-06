@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { FiTrash2 } from 'solid-icons/fi'
+import { FiDownload, FiTrash2 } from 'solid-icons/fi'
 import { type Component, Show } from 'solid-js'
 import styles from './Track.module.css'
 
@@ -16,6 +16,7 @@ interface TrackProps {
   onVolumeChange: (value: number) => void
   onPanChange: (value: number) => void
   onClear: () => void
+  onDownload: () => void
 }
 
 export const Track: Component<TrackProps> = props => {
@@ -77,11 +78,23 @@ export const Track: Component<TrackProps> = props => {
         <div class={styles.controls}>
           <button
             type="button"
+            class={styles.downloadButton}
+            onClick={e => {
+              e.stopPropagation()
+              props.onDownload()
+            }}
+            title="Download clip"
+          >
+            <FiDownload size={14} />
+          </button>
+          <button
+            type="button"
             class={styles.clearButton}
             onClick={e => {
               e.stopPropagation()
               props.onClear()
             }}
+            title="Clear clip"
           >
             <FiTrash2 size={14} />
           </button>
