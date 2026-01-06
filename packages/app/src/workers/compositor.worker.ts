@@ -17,6 +17,12 @@ export interface CompositorWorkerMethods {
   /** Set a playback frame for a track (for time-synced playback) */
   setFrame(trackId: string, frame: Transferred<VideoFrame> | null): void
 
+  /** Connect a playback worker via MessagePort (for direct worker-to-worker frame transfer) */
+  connectPlaybackWorker(trackId: string, port: MessagePort): void
+
+  /** Disconnect a playback worker */
+  disconnectPlaybackWorker(trackId: string): void
+
   /** Render at time T (queries timeline internally) */
   render(time: number): void
 
@@ -79,6 +85,9 @@ let timeline: LayoutTimeline | null = null
 const previewFrames = new Map<string, VideoFrame>()
 const playbackFrames = new Map<string, VideoFrame>()
 const previewReaders = new Map<string, ReadableStreamDefaultReader<VideoFrame>>()
+
+// Playback worker connections - keyed by trackId
+const playbackWorkerPorts = new Map<string, MessagePort>()
 
 // Dynamic texture pool - keyed by trackId
 const textures = new Map<string, WebGLTexture>()
@@ -225,6 +234,46 @@ const methods: CompositorWorkerMethods = {
     if (frame) {
       playbackFrames.set(trackId, frame)
     } else {
+      playbackFrames.delete(trackId)
+    }
+  },
+
+  connectPlaybackWorker(trackId: string, port: MessagePort) {
+    log('connectPlaybackWorker', { trackId })
+
+    // Disconnect existing port for this track
+    const existingPort = playbackWorkerPorts.get(trackId)
+    if (existingPort) {
+      existingPort.close()
+    }
+
+    // Store the port
+    playbackWorkerPorts.set(trackId, port)
+
+    // Expose setFrame method on this port for playback worker to call
+    expose(
+      {
+        setFrame: (receivedTrackId: string, frame: Transferred<VideoFrame> | null) => {
+          methods.setFrame(receivedTrackId, frame)
+        },
+      },
+      { to: port },
+    )
+  },
+
+  disconnectPlaybackWorker(trackId: string) {
+    log('disconnectPlaybackWorker', { trackId })
+
+    const port = playbackWorkerPorts.get(trackId)
+    if (port) {
+      port.close()
+      playbackWorkerPorts.delete(trackId)
+    }
+
+    // Close any remaining frame for this track
+    const frame = playbackFrames.get(trackId)
+    if (frame) {
+      frame.close()
       playbackFrames.delete(trackId)
     }
   },
@@ -377,6 +426,12 @@ const methods: CompositorWorkerMethods = {
       frame.close()
     }
     playbackFrames.clear()
+
+    // Close all playback worker ports
+    for (const port of playbackWorkerPorts.values()) {
+      port.close()
+    }
+    playbackWorkerPorts.clear()
 
     // Clean up main canvas WebGL resources
     if (gl) {

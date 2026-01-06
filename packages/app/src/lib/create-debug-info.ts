@@ -2,34 +2,22 @@ import type { Player } from '~/hooks/create-player'
 
 export interface DebugInfo {
   player: Player
-  getPlaybackStates: () => Array<{
-    trackId: string
-    state: string
+  getState: () => {
+    isPlaying: boolean
     currentTime: number
-    hasFrame: boolean
-  }>
+    maxDuration: number
+    loop: boolean
+  }
 }
 
 export function createDebugInfo(player: Player) {
   ;(window as any).__EDDY_DEBUG__ = {
     player,
-    getPlaybackStates: () => {
-      const states = []
-      for (let i = 0; i < 4; i++) {
-        const trackId = `track-${i}`
-        const slot = player.getSlot(trackId)
-        if (!slot) continue
-        const playback = slot.playback()
-        if (playback) {
-          states.push({
-            trackId,
-            state: playback.state,
-            currentTime: player.time(),
-            hasFrame: playback.getFrameAt(player.time()) !== null,
-          })
-        }
-      }
-      return states
-    },
+    getState: () => ({
+      isPlaying: player.isPlaying(),
+      currentTime: player.time(),
+      maxDuration: player.maxDuration(),
+      loop: player.loop(),
+    }),
   }
 }
