@@ -14,6 +14,7 @@
     "perf": "npx tsx scripts/perf-test.ts"
   },
   "devDependencies": {
+    "@types/audioworklet": "^0.0.92",
     "puppeteer": "^24.34.0",
     "tsx": "^4.21.0",
     "typescript": "^5.7.0"

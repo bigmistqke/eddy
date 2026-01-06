@@ -6,8 +6,11 @@
  * eliminating gaps and overlaps from chunk scheduling.
  */
 
+import { rpc } from '@bigmistqke/rpc/messenger'
 import { debug } from '@eddy/utils'
 import { createAudioRingBuffer } from './audio-ring-buffer'
+import { RingBufferProcessorMethods } from './audio-ring-buffer-processor'
+import workletURL from './audio-ring-buffer-processor?worker&url'
 
 const log = debug('audio-scheduler', false)
 
@@ -80,91 +83,6 @@ export interface AudioScheduler {
   destroy(): void
 }
 
-/**
- * AudioWorkletProcessor code as a string (will be loaded via Blob URL)
- */
-const workletProcessorCode = `
-const WRITE_PTR = 0
-const READ_PTR = 1
-const CHANNELS = 2
-const PLAYING = 3
-
-class RingBufferProcessor extends AudioWorkletProcessor {
-  constructor() {
-    super()
-    this.samples = null
-    this.control = null
-    this.capacity = 0
-    this.channels = 2
-
-    this.port.onmessage = (event) => {
-      if (event.data.type === 'init') {
-        this.samples = new Float32Array(event.data.sampleBuffer)
-        this.control = new Int32Array(event.data.controlBuffer)
-        this.channels = Atomics.load(this.control, CHANNELS)
-        this.capacity = this.samples.length / this.channels
-      }
-    }
-  }
-
-  process(inputs, outputs, parameters) {
-    const output = outputs[0]
-    if (!output || output.length === 0) return true
-    if (!this.samples || !this.control) return true
-
-    const playing = Atomics.load(this.control, PLAYING)
-    if (!playing) {
-      // Output silence when not playing
-      for (const channel of output) {
-        channel.fill(0)
-      }
-      return true
-    }
-
-    const frameCount = output[0].length
-    const writePtr = Atomics.load(this.control, WRITE_PTR)
-    const readPtr = Atomics.load(this.control, READ_PTR)
-
-    // Calculate available samples
-    let available
-    if (writePtr >= readPtr) {
-      available = writePtr - readPtr
-    } else {
-      available = this.capacity - readPtr + writePtr
-    }
-
-    const toRead = Math.min(frameCount, available)
-
-    // Read samples from ring buffer
-    for (let frame = 0; frame < toRead; frame++) {
-      const bufferIndex = ((readPtr + frame) % this.capacity) * this.channels
-      for (let ch = 0; ch < output.length; ch++) {
-        const sourceChannel = Math.min(ch, this.channels - 1)
-        output[ch][frame] = this.samples[bufferIndex + sourceChannel]
-      }
-    }
-
-    // Fill remaining with silence if underrun
-    if (toRead < frameCount) {
-      for (let frame = toRead; frame < frameCount; frame++) {
-        for (const channel of output) {
-          channel[frame] = 0
-        }
-      }
-    }
-
-    // Update read pointer
-    if (toRead > 0) {
-      Atomics.store(this.control, READ_PTR, (readPtr + toRead) % this.capacity)
-    }
-
-    return true
-  }
-}
-
-registerProcessor('ring-buffer-processor', RingBufferProcessor)
-`
-
 /** Extract samples from AudioData to Float32Array per channel */
 function extractAudioSamples(audioData: AudioData): Float32Array[] {
   const numberOfChannels = audioData.numberOfChannels
@@ -230,7 +148,7 @@ export async function createAudioScheduler(
   log('createAudioScheduler')
 
   const channels = options.channels ?? 2
-  const bufferAhead = options.bufferAhead ?? 0.5
+  const bufferAhead = options.bufferAhead ?? 2
   const sourceSampleRate = options.sampleRate ?? 48000
 
   // Create audio context - let browser choose sample rate for best compatibility
@@ -249,10 +167,7 @@ export async function createAudioScheduler(
   const ringBuffer = createAudioRingBuffer(bufferCapacity, channels)
 
   // Load worklet processor
-  const blob = new Blob([workletProcessorCode], { type: 'application/javascript' })
-  const workletUrl = URL.createObjectURL(blob)
-  await audioContext.audioWorklet.addModule(workletUrl)
-  URL.revokeObjectURL(workletUrl)
+  await audioContext.audioWorklet.addModule(workletURL)
 
   // Create worklet node
   const workletNode = new AudioWorkletNode(audioContext, 'ring-buffer-processor', {
@@ -260,12 +175,8 @@ export async function createAudioScheduler(
   })
   workletNode.connect(destination)
 
-  // Send buffers to worklet
-  workletNode.port.postMessage({
-    type: 'init',
-    sampleBuffer: ringBuffer.sampleBuffer,
-    controlBuffer: ringBuffer.controlBuffer,
-  })
+  const audioWorkletMethods = rpc<RingBufferProcessorMethods>(workletNode.port)
+  audioWorkletMethods.init(ringBuffer.sampleBuffer, ringBuffer.controlBuffer)
 
   // State
   let state: AudioSchedulerState = 'stopped'
@@ -276,9 +187,6 @@ export async function createAudioScheduler(
   // Track how many samples we've written to ring buffer (for media time calculation)
   let samplesWrittenToBuffer = 0
   let bufferStartMediaTime = 0
-
-  // Track the last scheduled media time to prevent duplicates
-  let lastScheduledMediaTime = -1
 
   // Pending audio samples sorted by media time
   const pendingSamples: Array<{
