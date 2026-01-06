@@ -1,5 +1,5 @@
 import { FiCircle, FiPause, FiPlay, FiRepeat, FiSquare, FiUpload, FiVolume2 } from 'solid-icons/fi'
-import { type Component, createSignal, For, onMount, Show } from 'solid-js'
+import { type Component, createMemo, createSignal, Index, onMount, Show } from 'solid-js'
 import { createEditor } from '~/hooks/create-editor'
 import { useAuth } from '~/lib/atproto/auth-context'
 import styles from './Editor.module.css'
@@ -9,8 +9,6 @@ interface EditorProps {
   handle?: string
   rkey?: string
 }
-
-const TRACK_IDS = [0, 1, 2, 3] as const
 
 export const Editor: Component<EditorProps> = props => {
   const { agent } = useAuth()
@@ -28,16 +26,17 @@ export const Editor: Component<EditorProps> = props => {
     },
   })
 
+  // Derive layout from first group (MVP: single grid layout)
+  const layout = createMemo(() => editor.project().groups[0]?.layout)
+
   // Helper to get track volume/pan from project store
-  const getTrackVolume = (id: number) => {
-    const trackId = `track-${id}`
+  const getTrackVolume = (trackId: string) => {
     const pipeline = editor.getTrackPipeline(trackId)
     const gainIndex = pipeline.findIndex((e: { type: string }) => e.type === 'audio.gain')
     return gainIndex !== -1 ? editor.getEffectValue(trackId, gainIndex) : 1
   }
 
-  const getTrackPan = (id: number) => {
-    const trackId = `track-${id}`
+  const getTrackPan = (trackId: string) => {
     const pipeline = editor.getTrackPipeline(trackId)
     const panIndex = pipeline.findIndex((e: { type: string }) => e.type === 'audio.pan')
     // Convert 0-1 (store) to -1..1 (display)
@@ -125,26 +124,33 @@ export const Editor: Component<EditorProps> = props => {
           {editor.isPublishing() ? 'Publishing...' : 'Publish'}
         </button>
       </div>
-      <div class={styles.grid}>
-        <For each={TRACK_IDS}>
-          {id => (
+      <div
+        class={styles.grid}
+        style={{
+          'grid-template-columns': `repeat(${layout()?.columns ?? 1}, 1fr)`,
+          'grid-template-rows': `repeat(${layout()?.rows ?? 1}, 1fr)`,
+        }}
+      >
+        <Index each={editor.project().tracks}>
+          {(track, index) => (
             <Track
-              id={id}
-              hasClip={editor.player()?.hasClip(`track-${id}`) ?? false}
+              trackId={track().id}
+              displayIndex={index}
+              hasClip={editor.player()?.hasClip(track().id) ?? false}
               isPlaying={editor.player()?.isPlaying() ?? false}
-              isSelected={editor.selectedTrack() === id}
-              isRecording={editor.isRecording() && editor.selectedTrack() === id}
-              isLoading={editor.previewPending() && editor.selectedTrack() === id}
-              volume={getTrackVolume(id)}
-              pan={getTrackPan(id)}
-              onSelect={() => editor.selectTrack(id)}
-              onVolumeChange={value => editor.setTrackVolume(id, value)}
-              onPanChange={value => editor.setTrackPan(id, value)}
-              onClear={() => editor.clearRecording(id)}
-              onDownload={() => editor.downloadClip(id)}
+              isSelected={editor.isSelectedTrack(track().id)}
+              isRecording={editor.isRecording() && editor.isSelectedTrack(track().id)}
+              isLoading={editor.previewPending() && editor.isSelectedTrack(track().id)}
+              volume={getTrackVolume(track().id)}
+              pan={getTrackPan(track().id)}
+              onSelect={() => editor.selectTrack(track().id)}
+              onVolumeChange={value => editor.setTrackVolume(track().id, value)}
+              onPanChange={value => editor.setTrackPan(track().id, value)}
+              onClear={() => editor.clearRecording(track().id)}
+              onDownload={() => editor.downloadClip(track().id)}
             />
           )}
-        </For>
+        </Index>
       </div>
     </div>
   )

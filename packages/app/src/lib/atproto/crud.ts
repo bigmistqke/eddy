@@ -240,21 +240,26 @@ export async function publishProject(
     }),
   )
 
-  // Build tracks - only include clips with stem sources
-  const tracks = project.tracks
-    .map(track => ({
-      id: track.id,
-      clips: track.clips
-        .filter(clip => stemRefs.has(clip.id))
-        .map(clip => ({
-          id: clip.id,
-          source: { type: 'stem' as const, ref: stemRefs.get(clip.id)! },
-          offset: clip.offset,
-          duration: clip.duration,
-        })),
-      audioPipeline: track.audioPipeline,
-    }))
-    .filter(track => track.clips.length > 0)
+  // Verify all clips have stem refs
+  for (const track of project.tracks) {
+    for (const clip of track.clips) {
+      if (!stemRefs.has(clip.id)) {
+        throw new Error(`Clip ${clip.id} has no local blob and no remote source`)
+      }
+    }
+  }
+
+  // Build tracks - preserve all tracks
+  const tracks = project.tracks.map(track => ({
+    id: track.id,
+    clips: track.clips.map(clip => ({
+      id: clip.id,
+      source: { type: 'stem' as const, ref: stemRefs.get(clip.id)! },
+      offset: clip.offset,
+      duration: clip.duration,
+    })),
+    audioPipeline: track.audioPipeline,
+  }))
 
   // Build and validate project record
   const record = v.parse(projectWireValidators.main, {

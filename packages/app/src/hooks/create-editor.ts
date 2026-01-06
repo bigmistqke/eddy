@@ -167,10 +167,10 @@ export function createEditor(options: CreateEditorOptions) {
   })
 
   const [localClips, setLocalClips] = createStore<Record<string, LocalClipState>>({})
-  const [selectedTrackIndex, setSelectedTrack] = createSignal<number | null>(null)
+  const [selectedTrackId, setSelectedTrackId] = createSignal<string | null>(null)
   const [masterVolume, setMasterVolume] = createSignal(1)
 
-  const isSelectedTrack = createSelector(selectedTrackIndex)
+  const isSelectedTrack = createSelector(selectedTrackId)
   const isRecording = () => recordAction.pending()
 
   // Resource map for stem blobs - fine-grained reactivity per clipId
@@ -199,9 +199,9 @@ export function createEditor(options: CreateEditorOptions) {
   // Derived state
   const hasAnyRecording = whenMemo(
     player,
-    player => {
-      for (let i = 0; i < 4; i++) {
-        if (player.hasClip(`track-${i}`)) return true
+    _player => {
+      for (const track of project().tracks) {
+        if (_player.hasClip(track.id)) return true
       }
       return false
     },
@@ -260,8 +260,7 @@ export function createEditor(options: CreateEditorOptions) {
     setProject('updatedAt', new Date().toISOString())
   }
 
-  function clearTrack(trackIndex: number) {
-    const trackId = `track-${trackIndex}`
+  function clearTrack(trackId: string) {
     const track = project().tracks.find(t => t.id === trackId)
 
     if (track) {
@@ -422,12 +421,10 @@ export function createEditor(options: CreateEditorOptions) {
   })
 
   // Load clips into player - each track has its own effect for fine-grained reactivity
-  whenEffect(player, player => {
-    const trackIds = ['track-0', 'track-1', 'track-2', 'track-3'] as const
-
+  whenEffect(player, _player => {
     createEffect(
       mapArray(
-        () => trackIds,
+        () => project().tracks.map(t => t.id),
         trackId => {
           // Track the current clip ID to detect changes
           let currentClipId: string | null = null
@@ -441,9 +438,9 @@ export function createEditor(options: CreateEditorOptions) {
 
             // Clip changed - clear old one first
             if (newClipId !== currentClipId) {
-              if (player.hasClip(trackId)) {
+              if (_player.hasClip(trackId)) {
                 log('clearing old clip from player', { trackId, oldClipId: currentClipId })
-                player.clearClip(trackId)
+                _player.clearClip(trackId)
               }
               currentClipId = newClipId
             }
@@ -451,9 +448,9 @@ export function createEditor(options: CreateEditorOptions) {
             // Load new clip if available
             if (clip) {
               const blob = getClipBlob(clip.id)
-              if (blob && !player.hasClip(trackId) && !player.isLoading(trackId)) {
+              if (blob && !_player.hasClip(trackId) && !_player.isLoading(trackId)) {
                 log('loading clip into player', { trackId, clipId: clip.id })
-                player.loadClip(trackId, blob).catch(err => {
+                _player.loadClip(trackId, blob).catch(err => {
                   console.error(`Failed to load clip for track ${trackId}:`, err)
                 })
               }
@@ -469,9 +466,9 @@ export function createEditor(options: CreateEditorOptions) {
               const value = getEffectValue(trackId, j)
 
               if (effect.type === 'audio.gain') {
-                player.setVolume(trackId, value)
+                _player.setVolume(trackId, value)
               } else if (effect.type === 'audio.pan') {
-                player.setPan(trackId, (value - 0.5) * 2)
+                _player.setPan(trackId, (value - 0.5) * 2)
               }
             }
           })
@@ -505,7 +502,7 @@ export function createEditor(options: CreateEditorOptions) {
     player,
     previewPending: previewAction.pending,
     publishError: publishAction.error,
-    selectedTrack: selectedTrackIndex,
+    selectedTrack: selectedTrackId,
     setMasterVolume,
     // Project store actions
     setTitle(title: string) {
@@ -523,14 +520,13 @@ export function createEditor(options: CreateEditorOptions) {
       await player()?.stop()
     },
 
-    selectTrack(trackIndex: number) {
-      log('selectTrack', { trackIndex })
+    selectTrack(trackId: string) {
+      log('selectTrack', { trackId })
       const _player = player()
-      const trackId = `track-${trackIndex}`
 
-      if (isSelectedTrack(trackIndex)) {
+      if (isSelectedTrack(trackId)) {
         previewAction.clear()
-        setSelectedTrack(null)
+        setSelectedTrackId(null)
         return
       }
 
@@ -539,17 +535,15 @@ export function createEditor(options: CreateEditorOptions) {
       previewAction.clear()
 
       if (_player && !_player.hasClip(trackId)) {
-        setSelectedTrack(trackIndex)
+        setSelectedTrackId(trackId)
         previewAction.try(trackId)
       }
     },
 
     async toggleRecording() {
-      const trackIndex = selectedTrackIndex()
-      if (trackIndex === null) return
+      const trackId = selectedTrackId()
+      if (trackId === null) return
       if (finalizeRecordingAction.pending()) return
-
-      const trackId = `track-${trackIndex}`
 
       if (isRecording()) {
         // Stop recording - cancel triggers hold to resolve
@@ -559,7 +553,7 @@ export function createEditor(options: CreateEditorOptions) {
         const result = await recordAction.promise()
 
         previewAction.clear()
-        setSelectedTrack(null)
+        setSelectedTrackId(null)
 
         if (result) {
           await finalizeRecordingAction(result)
@@ -573,9 +567,9 @@ export function createEditor(options: CreateEditorOptions) {
       const _player = player()
       if (!_player) return
 
-      if (selectedTrackIndex() !== null && !isRecording()) {
+      if (selectedTrackId() !== null && !isRecording()) {
         previewAction.clear()
-        setSelectedTrack(null)
+        setSelectedTrackId(null)
       }
 
       await resumeAudioContext()
@@ -587,14 +581,12 @@ export function createEditor(options: CreateEditorOptions) {
       }
     },
 
-    clearRecording(trackIndex: number) {
-      const trackId = `track-${trackIndex}`
-      clearTrack(trackIndex)
+    clearRecording(trackId: string) {
+      clearTrack(trackId)
       player()?.clearClip(trackId)
     },
 
-    setTrackVolume(trackIndex: number, value: number) {
-      const trackId = `track-${trackIndex}`
+    setTrackVolume(trackId: string, value: number) {
       const pipeline = getTrackPipeline(trackId)
       const gainIndex = pipeline.findIndex(e => e.type === 'audio.gain')
       if (gainIndex !== -1) {
@@ -603,8 +595,7 @@ export function createEditor(options: CreateEditorOptions) {
       player()?.setVolume(trackId, value)
     },
 
-    setTrackPan(trackIndex: number, value: number) {
-      const trackId = `track-${trackIndex}`
+    setTrackPan(trackId: string, value: number) {
       const pipeline = getTrackPipeline(trackId)
       const panIndex = pipeline.findIndex(e => e.type === 'audio.pan')
       if (panIndex !== -1) {
@@ -620,11 +611,10 @@ export function createEditor(options: CreateEditorOptions) {
       }
     },
 
-    downloadClip(trackIndex: number) {
-      const trackId = `track-${trackIndex}`
+    downloadClip(trackId: string) {
       const track = project().tracks.find(t => t.id === trackId)
       if (!track || track.clips.length === 0) {
-        console.warn('No clip found for track', trackIndex)
+        console.warn('No clip found for track', trackId)
         return
       }
       const clipId = track.clips[0].id
@@ -636,7 +626,7 @@ export function createEditor(options: CreateEditorOptions) {
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `track-${trackIndex + 1}.webm`
+      link.download = `${trackId}.webm`
       link.click()
       URL.revokeObjectURL(url)
     },

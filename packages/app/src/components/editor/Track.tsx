@@ -4,7 +4,8 @@ import { type Component, Show } from 'solid-js'
 import styles from './Track.module.css'
 
 interface TrackProps {
-  id: number
+  trackId: string
+  displayIndex: number
   hasClip: boolean
   isPlaying: boolean
   isSelected: boolean
@@ -43,7 +44,7 @@ export const Track: Component<TrackProps> = props => {
       onKeyDown={event => event.code === 'Enter' && props.onSelect()}
     >
       <div class={styles.trackHeader}>
-        <span class={styles.trackLabel}>Track {props.id + 1}</span>
+        <span class={styles.trackLabel}>Track {props.displayIndex + 1}</span>
         <span class={styles.status}>{getStatus()}</span>
       </div>
 
