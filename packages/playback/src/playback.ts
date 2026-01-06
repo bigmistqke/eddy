@@ -23,9 +23,7 @@ export interface PlaybackOptions {
   audioBufferAhead?: number
   /** Maximum video frames to keep in buffer (default: 60) */
   maxVideoFrames?: number
-  /** Audio context to use (creates one if not provided) */
-  audioContext?: AudioContext
-  /** Destination node for audio output (defaults to audioContext.destination) */
+  /** Destination node for audio output. If provided, uses its context. */
   audioDestination?: AudioNode
 }
 
@@ -160,7 +158,6 @@ export async function createPlayback(
   if (audioTrack) {
     audioScheduler = await createAudioScheduler({
       bufferAhead: audioBufferAhead,
-      audioContext: options.audioContext,
       destination: options.audioDestination,
       sampleRate: audioTrack.sampleRate,
       channels: audioTrack.channelCount,

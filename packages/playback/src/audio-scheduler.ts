@@ -20,9 +20,7 @@ export type AudioSchedulerState = 'stopped' | 'playing' | 'paused'
 export interface AudioSchedulerOptions {
   /** How far ahead to buffer audio in seconds (default: 0.5) */
   bufferAhead?: number
-  /** Audio context to use (creates one if not provided) */
-  audioContext?: AudioContext
-  /** Destination node for audio output (defaults to audioContext.destination) */
+  /** Destination node for audio output. If provided, uses its context. Otherwise creates own AudioContext. */
   destination?: AudioNode
   /** Sample rate (default: 48000) */
   sampleRate?: number
@@ -151,9 +149,9 @@ export async function createAudioScheduler(
   const bufferAhead = options.bufferAhead ?? 2
   const sourceSampleRate = options.sampleRate ?? 48000
 
-  // Create audio context - let browser choose sample rate for best compatibility
-  const audioContext =
-    (options.destination?.context as AudioContext) ?? options.audioContext ?? new AudioContext()
+  // Get context from destination, or create our own
+  const ownsContext = !options.destination
+  const audioContext = (options.destination?.context as AudioContext) ?? new AudioContext()
   const destination = options.destination ?? audioContext.destination
 
   // Use the actual AudioContext sample rate
@@ -390,7 +388,8 @@ export async function createAudioScheduler(
       workletNode.disconnect()
       pendingSamples.length = 0
       state = 'stopped'
-      if (!options.audioContext) {
+      // Only close the context if we created it (not passed via options or destination)
+      if (ownsContext) {
         audioContext.close()
       }
     },
