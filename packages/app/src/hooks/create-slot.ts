@@ -9,6 +9,9 @@ import type { DemuxWorkerMethods } from '~/workers/demux.worker'
 import DemuxWorker from '~/workers/demux.worker?worker'
 
 export interface Slot {
+  // Identity
+  readonly trackId: string
+
   // State (reactive)
   playback: Accessor<Playback | null>
   audioPipeline: AudioPipeline
@@ -43,12 +46,12 @@ export interface Slot {
 }
 
 export interface CreateSlotOptions {
-  index: number
+  trackId: string
   compositor: Compositor
 }
 
 export function createSlot(options: CreateSlotOptions): Slot {
-  const { index, compositor } = options
+  const { trackId, compositor } = options
 
   const audioPipeline = createAudioPipeline()
   let lastSentTimestamp: number | null = null
@@ -66,9 +69,10 @@ export function createSlot(options: CreateSlotOptions): Slot {
       info,
       getVideoConfig: () => worker.getVideoConfig(),
       getAudioConfig: () => worker.getAudioConfig(),
-      getSamples: (trackId, startTime, endTime) => worker.getSamples(trackId, startTime, endTime),
-      getAllSamples: trackId => worker.getAllSamples(trackId),
-      getKeyframeBefore: (trackId, time) => worker.getKeyframeBefore(trackId, time),
+      getSamples: (demuxTrackId, startTime, endTime) =>
+        worker.getSamples(demuxTrackId, startTime, endTime),
+      getAllSamples: demuxTrackId => worker.getAllSamples(demuxTrackId),
+      getKeyframeBefore: (demuxTrackId, time) => worker.getKeyframeBefore(demuxTrackId, time),
       destroy() {
         worker.destroy()
         worker[$MESSENGER].terminate()
@@ -84,7 +88,7 @@ export function createSlot(options: CreateSlotOptions): Slot {
     onCleanup(() => {
       newPlayback.destroy()
       demuxer.destroy()
-      compositor.setFrame(index, null)
+      compositor.setFrame(trackId, null)
     })
 
     return newPlayback
@@ -110,7 +114,7 @@ export function createSlot(options: CreateSlotOptions): Slot {
   }
 
   function setPreviewSource(stream: MediaStream | null): void {
-    compositor.setPreviewStream(index, stream)
+    compositor.setPreviewStream(trackId, stream)
   }
 
   function setVolume(value: number): void {
@@ -165,7 +169,7 @@ export function createSlot(options: CreateSlotOptions): Slot {
     if (frameTimestamp === null) {
       if (lastSentTimestamp !== null) {
         lastSentTimestamp = null
-        compositor.setFrame(index, null)
+        compositor.setFrame(trackId, null)
       }
       return
     }
@@ -178,7 +182,7 @@ export function createSlot(options: CreateSlotOptions): Slot {
     const frame = currentPlayback.getFrameAt(time)
     if (frame) {
       lastSentTimestamp = frameTimestamp
-      compositor.setFrame(index, transfer(frame))
+      compositor.setFrame(trackId, transfer(frame))
     }
   }
 
@@ -188,6 +192,7 @@ export function createSlot(options: CreateSlotOptions): Slot {
   }
 
   return {
+    trackId,
     playback,
     audioPipeline,
     load,

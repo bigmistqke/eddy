@@ -93,10 +93,10 @@ function calculateStackViewport(canvasSize: CanvasSize): Viewport {
 
 /** Convert clip to segment source */
 function clipToSource(clip: Clip): SegmentSource | null {
-  if (!clip.source) return null
+  const speed = resolveValue(clip.speed, 1)
 
-  if (clip.source.type === 'stem') {
-    const speed = resolveValue(clip.speed, 1)
+  // Clip with stem source (uploaded)
+  if (clip.source?.type === 'stem') {
     return {
       type: 'stem',
       clipId: clip.id,
@@ -107,8 +107,20 @@ function clipToSource(clip: Clip): SegmentSource | null {
     }
   }
 
-  // Group source - TODO: implement nested timeline
-  return null
+  // Clip with group source - TODO: implement nested timeline
+  if (clip.source?.type === 'group') {
+    return null
+  }
+
+  // Local clip (no source yet, stored in localClips)
+  // Still create a segment so playback works
+  return {
+    type: 'local',
+    clipId: clip.id,
+    in: (clip.sourceOffset ?? 0) / 1000,
+    out: ((clip.sourceOffset ?? 0) + clip.duration) / 1000,
+    speed,
+  }
 }
 
 /** Compile a track's clips into segments with the given viewport */
@@ -190,14 +202,13 @@ export function compileLayoutTimeline(project: Project, canvasSize: CanvasSize):
     // Compile track segments
     const segments = compileTrackSegments(track, viewport)
 
-    if (segments.length > 0) {
-      slots.push({ trackId: track.id, segments })
+    // Always include slot (even without segments) so preview/recording works
+    slots.push({ trackId: track.id, viewport, segments })
 
-      // Update max duration
-      for (const seg of segments) {
-        if (seg.endTime > maxDuration) {
-          maxDuration = seg.endTime
-        }
+    // Update max duration
+    for (const seg of segments) {
+      if (seg.endTime > maxDuration) {
+        maxDuration = seg.endTime
       }
     }
 

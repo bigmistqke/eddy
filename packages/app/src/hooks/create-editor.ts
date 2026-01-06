@@ -122,7 +122,12 @@ export function createEditor(options: CreateEditorOptions) {
       () => project().canvas.height,
     ),
     async ([canvas, width, height], { onCleanup }) => {
-      const result = await createPlayer(canvas, width, height)
+      const result = await createPlayer({
+        canvas,
+        width,
+        height,
+        project,
+      })
       initDebugInfo(result)
 
       onCleanup(() => {
@@ -196,7 +201,7 @@ export function createEditor(options: CreateEditorOptions) {
     player,
     player => {
       for (let i = 0; i < 4; i++) {
-        if (player.hasClip(i)) return true
+        if (player.hasClip(`track-${i}`)) return true
       }
       return false
     },
@@ -232,20 +237,25 @@ export function createEditor(options: CreateEditorOptions) {
     return track?.audioPipeline ?? []
   }
 
-  function addRecording(trackIndex: number, blob: Blob, duration: number) {
-    const clipId = `clip-${trackIndex}-${Date.now()}`
+  function addRecording(trackId: string, blob: Blob, duration: number) {
+    const clipId = `clip-${trackId}-${Date.now()}`
 
     // Set localClips FIRST so the blob is available when the effect runs
     // (Solid doesn't track store keys that don't exist when first accessed)
     setLocalClips(clipId, { blob, duration })
 
-    setProject('tracks', trackIndex, 'clips', [
-      {
-        id: clipId,
-        offset: 0,
-        duration: Math.round(duration),
-      },
-    ])
+    setProject(
+      'tracks',
+      track => track.id === trackId,
+      'clips',
+      [
+        {
+          id: clipId,
+          offset: 0,
+          duration: Math.round(duration),
+        },
+      ],
+    )
 
     setProject('updatedAt', new Date().toISOString())
   }
@@ -278,7 +288,7 @@ export function createEditor(options: CreateEditorOptions) {
   }
 
   // Preview action - requests media access and sets up preview stream
-  const previewAction = action(async (trackIndex: number, { onCleanup }) => {
+  const previewAction = action(async (trackId: string, { onCleanup }) => {
     await resumeAudioContext()
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: {
@@ -288,19 +298,19 @@ export function createEditor(options: CreateEditorOptions) {
       },
       video: { facingMode: 'user' },
     })
-    player()?.setPreviewSource(trackIndex, stream)
+    player()?.setPreviewSource(trackId, stream)
 
     onCleanup(() => {
       stream.getTracks().forEach(t => t.stop())
-      player()?.setPreviewSource(trackIndex, null)
+      player()?.setPreviewSource(trackId, null)
     })
 
     return stream
   })
 
   // Recording action - uses generator pattern for clean async composition
-  const recordAction = action(function* (trackIndex: number, { onCleanup }) {
-    log('record', { trackIndex })
+  const recordAction = action(function* (trackId: string, { onCleanup }) {
+    log('record', { trackId })
 
     const _workers = assertedNotNullish(workers(), 'Workers not ready')
     const _player = assertedNotNullish(player(), 'No player available')
@@ -343,12 +353,12 @@ export function createEditor(options: CreateEditorOptions) {
     log('recording started')
 
     // Hold until cancelled, then return recording info for finalization
-    return hold(() => ({ trackIndex, startTime }))
+    return hold(() => ({ trackId, startTime }))
   })
 
   // Finalize recording and add to track
   const finalizeRecordingAction = action(
-    async ({ trackIndex, startTime }: { trackIndex: number; startTime: number }) => {
+    async ({ trackId, startTime }: { trackId: string; startTime: number }) => {
       const _workers = assertedNotNullish(workers(), 'Workers not ready')
 
       log('finalizing recording...')
@@ -362,7 +372,7 @@ export function createEditor(options: CreateEditorOptions) {
           duration,
         })
 
-        addRecording(trackIndex, result.blob, duration)
+        addRecording(trackId, result.blob, duration)
       }
 
       // Reset muxer for next recording
@@ -404,29 +414,27 @@ export function createEditor(options: CreateEditorOptions) {
 
   // Load clips into player - each track has its own effect for fine-grained reactivity
   whenEffect(player, player => {
-    const trackIndices = [0, 1, 2, 3] as const
+    const trackIds = ['track-0', 'track-1', 'track-2', 'track-3'] as const
 
     createEffect(
       mapArray(
-        () => trackIndices,
-        trackIndex => {
-          const trackId = `track-${trackIndex}`
-
+        () => trackIds,
+        trackId => {
           // Track the current clip ID to detect changes
           let currentClipId: string | null = null
 
           // Effect for loading/clearing clips
           createEffect(() => {
-            // Access tracks array directly by index for proper reactivity
-            const track = project().tracks[trackIndex]
+            // Access track by ID
+            const track = project().tracks.find(t => t.id === trackId)
             const clip = track?.clips[0]
             const newClipId = clip?.id ?? null
 
             // Clip changed - clear old one first
             if (newClipId !== currentClipId) {
-              if (player.hasClip(trackIndex)) {
-                log('clearing old clip from player', { trackIndex, oldClipId: currentClipId })
-                player.clearClip(trackIndex)
+              if (player.hasClip(trackId)) {
+                log('clearing old clip from player', { trackId, oldClipId: currentClipId })
+                player.clearClip(trackId)
               }
               currentClipId = newClipId
             }
@@ -434,10 +442,10 @@ export function createEditor(options: CreateEditorOptions) {
             // Load new clip if available
             if (clip) {
               const blob = getClipBlob(clip.id)
-              if (blob && !player.hasClip(trackIndex) && !player.isLoading(trackIndex)) {
-                log('loading clip into player', { trackIndex, clipId: clip.id })
-                player.loadClip(trackIndex, blob).catch(err => {
-                  console.error(`Failed to load clip for track ${trackIndex}:`, err)
+              if (blob && !player.hasClip(trackId) && !player.isLoading(trackId)) {
+                log('loading clip into player', { trackId, clipId: clip.id })
+                player.loadClip(trackId, blob).catch(err => {
+                  console.error(`Failed to load clip for track ${trackId}:`, err)
                 })
               }
             }
@@ -452,9 +460,9 @@ export function createEditor(options: CreateEditorOptions) {
               const value = getEffectValue(trackId, j)
 
               if (effect.type === 'audio.gain') {
-                player.setVolume(trackIndex, value)
+                player.setVolume(trackId, value)
               } else if (effect.type === 'audio.pan') {
-                player.setPan(trackIndex, (value - 0.5) * 2)
+                player.setPan(trackId, (value - 0.5) * 2)
               }
             }
           })
@@ -509,6 +517,7 @@ export function createEditor(options: CreateEditorOptions) {
     selectTrack(trackIndex: number) {
       log('selectTrack', { trackIndex })
       const _player = player()
+      const trackId = `track-${trackIndex}`
 
       if (isSelectedTrack(trackIndex)) {
         previewAction.clear()
@@ -520,9 +529,9 @@ export function createEditor(options: CreateEditorOptions) {
 
       previewAction.clear()
 
-      if (_player && !_player.hasClip(trackIndex)) {
+      if (_player && !_player.hasClip(trackId)) {
         setSelectedTrack(trackIndex)
-        previewAction.try(trackIndex)
+        previewAction.try(trackId)
       }
     },
 
@@ -530,6 +539,8 @@ export function createEditor(options: CreateEditorOptions) {
       const trackIndex = selectedTrackIndex()
       if (trackIndex === null) return
       if (finalizeRecordingAction.pending()) return
+
+      const trackId = `track-${trackIndex}`
 
       if (isRecording()) {
         // Stop recording - cancel triggers hold to resolve
@@ -545,7 +556,7 @@ export function createEditor(options: CreateEditorOptions) {
           await finalizeRecordingAction(result)
         }
       } else {
-        recordAction.try(trackIndex)
+        recordAction.try(trackId)
       }
     },
 
@@ -567,29 +578,30 @@ export function createEditor(options: CreateEditorOptions) {
       }
     },
 
-    clearRecording(index: number) {
-      clearTrack(index)
-      player()?.clearClip(index)
+    clearRecording(trackIndex: number) {
+      const trackId = `track-${trackIndex}`
+      clearTrack(trackIndex)
+      player()?.clearClip(trackId)
     },
 
-    setTrackVolume(index: number, value: number) {
-      const trackId = `track-${index}`
+    setTrackVolume(trackIndex: number, value: number) {
+      const trackId = `track-${trackIndex}`
       const pipeline = getTrackPipeline(trackId)
       const gainIndex = pipeline.findIndex(e => e.type === 'audio.gain')
       if (gainIndex !== -1) {
         setEffectValue(trackId, gainIndex, value)
       }
-      player()?.setVolume(index, value)
+      player()?.setVolume(trackId, value)
     },
 
-    setTrackPan(index: number, value: number) {
-      const trackId = `track-${index}`
+    setTrackPan(trackIndex: number, value: number) {
+      const trackId = `track-${trackIndex}`
       const pipeline = getTrackPipeline(trackId)
       const panIndex = pipeline.findIndex(e => e.type === 'audio.pan')
       if (panIndex !== -1) {
         setEffectValue(trackId, panIndex, (value + 1) / 2)
       }
-      player()?.setPan(index, value)
+      player()?.setPan(trackId, value)
     },
 
     toggleLoop() {

@@ -69,7 +69,7 @@ describe('compileLayoutTimeline', () => {
     const timeline = compileLayoutTimeline(project, { width: 640, height: 360 })
 
     expect(timeline.duration).toBe(15) // max of all clips
-    expect(timeline.slots).toHaveLength(3) // 3 tracks with clips
+    expect(timeline.slots).toHaveLength(4) // all 4 tracks in layout (including empty ones)
   })
 
   it('calculates correct viewports for 2x2 grid', () => {

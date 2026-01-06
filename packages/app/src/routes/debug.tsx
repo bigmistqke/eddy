@@ -117,7 +117,7 @@ export default function Debug() {
     const demuxWorker = rpc<DemuxWorkerMethods>(new DemuxWorker())
     const buffer = await blob.arrayBuffer()
     const info = await demuxWorker.init(buffer)
-    addLog(`demuxed: ${info.duration.toFixed(2)}s, ${info.videoTrackId !== null ? 'has video' : 'no video'}`)
+    addLog(`demuxed: ${info.duration.toFixed(2)}s, ${info.videoTracks.length > 0 ? 'has video' : 'no video'}`)
 
     const demuxer: Demuxer = {
       info,

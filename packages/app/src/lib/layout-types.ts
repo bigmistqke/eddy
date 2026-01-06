@@ -23,13 +23,22 @@ export interface SegmentSourceStem {
   speed: number // Playback rate (1 = normal)
 }
 
+/** Reference to a local clip (not yet uploaded) */
+export interface SegmentSourceLocal {
+  type: 'local'
+  clipId: string // For tracking which clip this came from
+  in: number // Start time in source (seconds)
+  out: number // End time in source (seconds)
+  speed: number // Playback rate (1 = normal)
+}
+
 /** Reference to a nested timeline (for group clips) */
 export interface SegmentSourceTimeline {
   type: 'timeline'
   timeline: LayoutTimeline
 }
 
-export type SegmentSource = SegmentSourceStem | SegmentSourceTimeline
+export type SegmentSource = SegmentSourceStem | SegmentSourceLocal | SegmentSourceTimeline
 
 /** A segment represents a clip on the timeline with its computed viewport */
 export interface LayoutSegment {
@@ -43,6 +52,7 @@ export interface LayoutSegment {
 /** A slot contains all segments for a single track */
 export interface LayoutSlot {
   trackId: string
+  viewport: Viewport // Where this track renders (from layout)
   segments: LayoutSegment[] // Sorted by startTime
 }
 
