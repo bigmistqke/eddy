@@ -179,8 +179,8 @@ export function createEditor(options: CreateEditorOptions) {
     () =>
       project()
         .tracks.flatMap(track => track.clips)
-        .filter(
-          (clip): clip is typeof clip & { source: ClipSourceStem } => isStemSource(clip.source),
+        .filter((clip): clip is typeof clip & { source: ClipSourceStem } =>
+          isStemSource(clip.source),
         )
         .map(clip => [clip.id, clip] as const),
     async (clipId, clip) => {
@@ -244,18 +244,13 @@ export function createEditor(options: CreateEditorOptions) {
     // (Solid doesn't track store keys that don't exist when first accessed)
     setLocalClips(clipId, { blob, duration })
 
-    setProject(
-      'tracks',
-      track => track.id === trackId,
-      'clips',
-      [
-        {
-          id: clipId,
-          offset: 0,
-          duration: Math.round(duration),
-        },
-      ],
-    )
+    setProject('tracks', track => track.id === trackId, 'clips', [
+      {
+        id: clipId,
+        offset: 0,
+        duration: Math.round(duration),
+      },
+    ])
 
     setProject('updatedAt', new Date().toISOString())
   }
@@ -307,7 +302,6 @@ export function createEditor(options: CreateEditorOptions) {
     return stream
   })
 
-  // Recording action - uses generator pattern for clean async composition
   const recordAction = action(function* (trackId: string, { onCleanup }) {
     log('record', { trackId })
 
@@ -378,8 +372,7 @@ export function createEditor(options: CreateEditorOptions) {
       await _workers.muxer.reset()
       await _workers.muxer.preInit()
 
-      const _player = player()
-      await _player?.stop()
+      await player()?.stop()
 
       return result
     },

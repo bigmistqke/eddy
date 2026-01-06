@@ -8,7 +8,7 @@
 import { $MESSENGER, rpc, transfer } from '@bigmistqke/rpc/messenger'
 import type { Demuxer } from '@eddy/codecs'
 import { createPlayback } from '@eddy/playback'
-import { createSignal, Match, onCleanup, Show, Switch } from 'solid-js'
+import { createSignal, Match, Show, Switch } from 'solid-js'
 import { action, defer, hold } from '~/hooks/action'
 import { resource } from '~/hooks/resource'
 import type { CaptureWorkerMethods } from '~/workers/debug-capture.worker'
@@ -72,7 +72,7 @@ export default function Debug() {
 
     const processor = new MediaStreamTrackProcessor({ track: videoTrack })
     const capturePromise = _workers.capture
-      .start(transfer(processor.readable as ReadableStream<VideoFrame>))
+      .start(transfer(processor.readable))
       .then(() => addLog('capture completed'))
       .catch((err: unknown) => addLog(`capture error: ${err}`))
 
@@ -117,13 +117,16 @@ export default function Debug() {
     const demuxWorker = rpc<DemuxWorkerMethods>(new DemuxWorker())
     const buffer = await blob.arrayBuffer()
     const info = await demuxWorker.init(buffer)
-    addLog(`demuxed: ${info.duration.toFixed(2)}s, ${info.videoTracks.length > 0 ? 'has video' : 'no video'}`)
+    addLog(
+      `demuxed: ${info.duration.toFixed(2)}s, ${info.videoTracks.length > 0 ? 'has video' : 'no video'}`,
+    )
 
     const demuxer: Demuxer = {
       info,
       getVideoConfig: () => demuxWorker.getVideoConfig(),
       getAudioConfig: () => demuxWorker.getAudioConfig(),
-      getSamples: (trackId, startTime, endTime) => demuxWorker.getSamples(trackId, startTime, endTime),
+      getSamples: (trackId, startTime, endTime) =>
+        demuxWorker.getSamples(trackId, startTime, endTime),
       getAllSamples: trackId => demuxWorker.getAllSamples(trackId),
       getKeyframeBefore: (trackId, time) => demuxWorker.getKeyframeBefore(trackId, time),
       destroy() {
@@ -135,7 +138,7 @@ export default function Debug() {
     addLog('creating playback...')
     const pb = await createPlayback(demuxer, {})
     await pb.prepareToPlay(0)
-    pb.startAudio(0)  // Sets state to 'playing' so tick() will buffer
+    pb.startAudio(0) // Sets state to 'playing' so tick() will buffer
     addLog(`playback ready, duration: ${pb.duration.toFixed(2)}s`)
 
     onCleanup(() => {
@@ -196,15 +199,23 @@ export default function Debug() {
       <div style={{ 'margin-bottom': '20px', display: 'flex', gap: '10px' }}>
         <Switch>
           <Match when={workers.loading}>
-            <button disabled style={{ padding: '10px 20px' }}>Initializing...</button>
+            <button disabled style={{ padding: '10px 20px' }}>
+              Initializing...
+            </button>
           </Match>
           <Match when={record.pending()}>
-            <button onClick={handleStop} style={{ padding: '10px 20px', background: '#c00', color: 'white' }}>
+            <button
+              onClick={handleStop}
+              style={{ padding: '10px 20px', background: '#c00', color: 'white' }}
+            >
               Stop Recording
             </button>
           </Match>
           <Match when={workers()}>
-            <button onClick={() => record.try()} style={{ padding: '10px 20px', background: '#0a0', color: 'white' }}>
+            <button
+              onClick={() => record.try()}
+              style={{ padding: '10px 20px', background: '#0a0', color: 'white' }}
+            >
               Record
             </button>
           </Match>

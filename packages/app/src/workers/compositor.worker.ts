@@ -4,6 +4,8 @@ import { debug } from '@eddy/utils'
 import { getActiveSegments } from '~/lib/layout-resolver'
 import type { LayoutTimeline, Viewport } from '~/lib/layout-types'
 
+const log = debug('compositor-worker', false)
+
 export interface CompositorWorkerMethods {
   /** Initialize with OffscreenCanvas */
   init(canvas: OffscreenCanvas, width: number, height: number): Promise<void>
@@ -39,30 +41,13 @@ export interface CompositorWorkerMethods {
   destroy(): void
 }
 
-const log = debug('compositor-worker', false)
-
-// Simple shader - samples a single texture per quad
-const fragmentShader = glsl`
-  precision mediump float;
-
-  ${uniform.sampler2D('u_video')}
-
-  varying vec2 v_uv;
-
-  void main() {
-    vec2 uv = v_uv * 0.5 + 0.5;
-    uv.y = 1.0 - uv.y; // Flip Y for video
-    gl_FragColor = texture2D(u_video, uv);
-  }
-`
-
 // View type with our specific uniforms
 interface CompositorView {
   uniforms: {
-    u_video: { set: (value: number) => void }
+    u_video: { set(value: number): void }
   }
   attributes: {
-    a_quad: { bind: () => void }
+    a_quad: { bind(): void }
   }
 }
 
@@ -108,6 +93,21 @@ function viewportToWebGL(viewport: Viewport, canvasHeight: number): Viewport {
     height: viewport.height,
   }
 }
+
+// Simple shader - samples a single texture per quad
+const fragmentShader = glsl`
+  precision mediump float;
+
+  ${uniform.sampler2D('u_video')}
+
+  varying vec2 v_uv;
+
+  void main() {
+    vec2 uv = v_uv * 0.5 + 0.5;
+    uv.y = 1.0 - uv.y; // Flip Y for video
+    gl_FragColor = texture2D(u_video, uv);
+  }
+`
 
 /**********************************************************************************/
 /*                                                                                */
