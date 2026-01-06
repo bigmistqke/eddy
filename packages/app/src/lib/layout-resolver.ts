@@ -93,31 +93,17 @@ function calculateStackViewport(canvasSize: CanvasSize): Viewport {
 
 /** Convert clip to segment source */
 function clipToSource(clip: Clip): SegmentSource | null {
-  const speed = resolveValue(clip.speed, 1)
-
-  // Clip with stem source (uploaded)
-  if (clip.source?.type === 'stem') {
-    return {
-      type: 'stem',
-      clipId: clip.id,
-      stemUri: clip.source.ref.uri,
-      in: (clip.sourceOffset ?? 0) / 1000, // ms to seconds
-      out: ((clip.sourceOffset ?? 0) + clip.duration) / 1000,
-      speed,
-    }
-  }
-
-  // Clip with group source - TODO: implement nested timeline
+  // Group source - TODO: implement nested timeline
   if (clip.source?.type === 'group') {
     return null
   }
 
-  // Local clip (no source yet, stored in localClips)
-  // Still create a segment so playback works
+  // Regular clip (blob fetched separately via clipId)
+  const speed = resolveValue(clip.speed, 1)
   return {
-    type: 'local',
+    type: 'clip',
     clipId: clip.id,
-    in: (clip.sourceOffset ?? 0) / 1000,
+    in: (clip.sourceOffset ?? 0) / 1000, // ms to seconds
     out: ((clip.sourceOffset ?? 0) + clip.duration) / 1000,
     speed,
   }

@@ -13,20 +13,10 @@ export interface Viewport {
   height: number
 }
 
-/** Reference to a stem with timing info */
-export interface SegmentSourceStem {
-  type: 'stem'
-  clipId: string // For tracking which clip this came from
-  stemUri: string // AT Protocol URI to stem record
-  in: number // Start time in source (seconds)
-  out: number // End time in source (seconds)
-  speed: number // Playback rate (1 = normal)
-}
-
-/** Reference to a local clip (not yet uploaded) */
-export interface SegmentSourceLocal {
-  type: 'local'
-  clipId: string // For tracking which clip this came from
+/** Reference to a clip (blob fetched separately via clipId) */
+export interface SegmentSourceClip {
+  type: 'clip'
+  clipId: string
   in: number // Start time in source (seconds)
   out: number // End time in source (seconds)
   speed: number // Playback rate (1 = normal)
@@ -38,7 +28,7 @@ export interface SegmentSourceTimeline {
   timeline: LayoutTimeline
 }
 
-export type SegmentSource = SegmentSourceStem | SegmentSourceLocal | SegmentSourceTimeline
+export type SegmentSource = SegmentSourceClip | SegmentSourceTimeline
 
 /** A segment represents a clip on the timeline with its computed viewport */
 export interface LayoutSegment {
