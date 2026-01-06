@@ -344,8 +344,7 @@ export function createEditor(options: CreateEditorOptions) {
   // Finalize recording and add to track
   const finalizeRecordingAction = action(
     async ({ trackIndex, startTime }: { trackIndex: number; startTime: number }) => {
-      const _workers = workers()
-      if (!_workers) return
+      const _workers = assertedNotNullish(workers(), 'Workers not ready')
 
       log('finalizing recording...')
       const result = await _workers.muxer.finalize()

@@ -1,18 +1,13 @@
 import { createSignal, type Accessor } from 'solid-js'
-
-export class CancelledError extends Error {
-  constructor() {
-    super('Action was cancelled')
-    this.name = 'CancelledError'
-  }
-}
+import { assertedNotNullish, isGeneratorFunction, isObject } from '~/utils'
 
 /** Symbol to identify hold marker */
-const HOLD = Symbol('hold')
+export const $HOLD = Symbol('hold')
+export const $CLEANUP = Symbol('cleanup')
 
 /** Hold marker type */
 interface HoldMarker<T> {
-  [HOLD]: true
+  [$HOLD]: true
   getValue: () => T
 }
 
@@ -25,36 +20,8 @@ export interface ActionContext {
 /** Generator that yields promises and returns R (or HoldMarker<R>) */
 export type ActionGenerator<R> = Generator<Promise<unknown>, R | HoldMarker<R>, unknown>
 
-/**
- * Wrap a promise for use with yield* in generator actions.
- * Provides proper typing for the resolved value.
- *
- * @example
- * const data = yield* defer(fetch('/api').then(r => r.json()))
- * const stream = yield* defer(getUserMedia())
- */
-export function* defer<T>(promise: Promise<T>): Generator<Promise<T>, T, T> {
-  return (yield promise) as T
-}
-
-/**
- * Hold until the action is cancelled, then return the value.
- * Use this for "run until cancelled" actions that should resolve (not throw) on cancel.
- * Always the last statement - no code runs after cancellation.
- *
- * @example
- * // With return value
- * return hold(() => ({ trackIndex, duration }))
- *
- * // Void action (no return value)
- * return hold()
- */
-export function hold<T = void>(getValue?: () => T): HoldMarker<T> {
-  return { [HOLD]: true, getValue: getValue ?? (() => undefined as T) }
-}
-
 /** Async function fetcher */
-export type AsyncFetcher<T, R> = (args: T, context: ActionContext) => Promise<R>
+export type AsyncFetcher<T, R> = (args: T, context: ActionContext) => Promise<R | HoldMarker<R>>
 
 /** Generator function fetcher - yields promises, runner awaits with abort checks */
 export type GeneratorFetcher<T, R> = (args: T, context: ActionContext) => ActionGenerator<R>
@@ -72,7 +39,7 @@ export type Action<T, R> = ActionFn<T, R> & {
   /** Whether the action is currently running */
   pending: Accessor<boolean>
   /** The result of the last successful invocation */
-  result: Accessor<R | undefined>
+  latest: Accessor<R | undefined>
   /** Any error from the last invocation */
   error: Accessor<unknown>
   /** Cancel the current invocation */
@@ -85,75 +52,170 @@ export type Action<T, R> = ActionFn<T, R> & {
   promise: () => Promise<R | undefined>
 }
 
-/** Check if a function is a generator function */
-function isGeneratorFunction(fn: Function): fn is (...args: any[]) => Generator {
-  return fn.constructor.name === 'GeneratorFunction'
+export interface PromiseWithCleanup<T> extends Promise<T> {
+  [$CLEANUP]: (value: T) => void
 }
 
+/**********************************************************************************/
+/*                                                                                */
+/*                                 Internal Utils                                 */
+/*                                                                                */
+/**********************************************************************************/
+
 /** Check if a value is a hold marker */
-function isHoldMarker(value: unknown): value is HoldMarker<unknown> {
-  return value !== null && typeof value === 'object' && HOLD in value
+function isHoldMarker<T>(value: unknown): value is HoldMarker<T> {
+  return isObject(value) && $HOLD in value
+}
+
+function isPromiseWithCleanup<T>(value: unknown): value is PromiseWithCleanup<T> {
+  return isObject(value) && $CLEANUP in value
+}
+
+function waitForAbort(signal: AbortSignal) {
+  return new Promise<void>(resolve => {
+    signal.addEventListener('abort', () => resolve(), { once: true })
+  })
 }
 
 /** Run a generator with abort checks between yields */
-async function runGenerator<R>(gen: ActionGenerator<R>, signal: AbortSignal): Promise<R> {
+async function runGenerator<R>(
+  gen: ActionGenerator<R>,
+  context: ActionContext,
+): Promise<R | HoldMarker<R>> {
   let result = gen.next()
 
   while (!result.done) {
     // Check abort before awaiting
-    if (signal.aborted) {
+    if (context.signal.aborted) {
       throw new CancelledError()
+    }
+
+    const promise = result.value
+
+    if (isPromiseWithCleanup(promise)) {
+      const cleanup = promise[$CLEANUP]
+      context.onCleanup(async () => cleanup(await promise))
     }
 
     // Normal promise - await it
     const value = await result.value
 
     // Check abort after awaiting
-    if (signal.aborted) {
+    if (context.signal.aborted) {
       throw new CancelledError()
     }
 
     result = gen.next(value)
   }
 
-  // Check if return value is a hold marker
-  if (isHoldMarker(result.value)) {
-    await new Promise<void>(resolve => {
-      signal.addEventListener('abort', () => resolve(), { once: true })
-    })
-    return result.value.getValue() as R
-  }
-
   return result.value
 }
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                      Utils                                     */
+/*                                                                                */
+/**********************************************************************************/
+
+export class CancelledError extends Error {
+  constructor() {
+    super('Action was cancelled')
+    this.name = 'CancelledError'
+  }
+}
+
+/**
+ * Wrap a promise for use with yield* in generator actions.
+ * Provides proper typing for the resolved value.
+ *
+ * @example
+ * const data = yield* defer(fetch('/api').then(r => r.json()))
+ * const stream = yield* defer(getUserMedia())
+ */
+export function* defer<T>(
+  promise: Promise<T>,
+  onCleanup?: (value: T) => void,
+): Generator<Promise<T> | PromiseWithCleanup<T>, T, T> {
+  if (onCleanup) {
+    ;(promise as PromiseWithCleanup<T>)[$CLEANUP] = onCleanup
+  }
+  return (yield promise) as T
+}
+
+/**
+ * Hold until the action is cancelled, then return the value.
+ * Use this for "run until cancelled" actions that should resolve (not throw) on cancel.
+ * Always the last statement - no code runs after cancellation.
+ *
+ * @example
+ * // With return value
+ * return hold(() => ({ trackIndex, duration }))
+ *
+ * // Void action (no return value)
+ * return hold()
+ */
+export function hold<T = void>(getValue?: () => T): HoldMarker<T> {
+  return { [$HOLD]: true, getValue: getValue ?? (() => undefined as T) }
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                      Utils                                     */
+/*                                                                                */
+/**********************************************************************************/
 
 /**
  * Creates an async action that can be called directly and awaited.
  *
  * Supports two styles:
  * 1. Async function: `action(async (args, ctx) => { ... })`
- * 2. Generator function: `action(function* (args, ctx) { yield promise; ... })`
+ * 2. Generator function: `action(function* (args, ctx) { yield* defer(promise); ... })`
  *
  * Generator style automatically checks for abort between yields.
- * Use `yield* defer(promise)` for typed yields:
  *
+ * @example
  * ```ts
+ * // Basic usage with defer() for typed async operations
  * const fetchUser = action(function* () {
  *   const response = yield* defer(fetch('/api/user'))
  *   return yield* defer(response.json())
  * })
+ *
+ * // With cleanup using onCleanup
+ * const record = action(function* (trackIndex: number, { onCleanup }) {
+ *   const stream = yield* defer(navigator.mediaDevices.getUserMedia({ video: true }))
+ *   onCleanup(() => stream.getTracks().forEach(t => t.stop()))
+ *
+ *   // defer() not needed if you don't need type inference or cleanup
+ *   yield startRecording(stream)
+ * })
+ *
+ * // With hold() - runs until cancelled, then returns value
+ * const record = action(function* (trackIndex: number, { onCleanup }) {
+ *   const stream = yield* defer(navigator.mediaDevices.getUserMedia({ video: true }))
+ *   onCleanup(() => stream.getTracks().forEach(t => t.stop()))
+ *
+ *   const startTime = performance.now()
+ *   // Hold until action.cancel() is called
+ *   return hold(() => ({ trackIndex, duration: performance.now() - startTime }))
+ * })
+ *
+ * // Usage
+ * record(0)                              // Start recording
+ * record.pending()                       // true while running
+ * record.cancel()                        // Stop and trigger cleanup
+ * const result = await record.promise()  // Get return value from hold()
  * ```
  */
 export function action<T = undefined, R = void>(fetcher: ActionFetcher<T, R>): Action<T, R> {
   const [pending, setPending] = createSignal(false)
-  const [result, setResult] = createSignal<R | undefined>(undefined)
+  const [latest, setResult] = createSignal<R | undefined>(undefined)
   const [error, setError] = createSignal<unknown>(undefined)
 
   let abortController: AbortController | null = null
   let cleanupFns: (() => void)[] = []
   let currentPromise: Promise<R> | null = null
-
-  const isGenerator = isGeneratorFunction(fetcher)
+  const { promise: initialPromise, resolve: resolveInitial } = Promise.withResolvers<void>()
 
   function registerCleanup(fn: () => void) {
     cleanupFns.push(fn)
@@ -194,18 +256,6 @@ export function action<T = undefined, R = void>(fetcher: ActionFetcher<T, R>): A
     }
   }
 
-  /** Create a bound generator from args and context */
-  function createGenerator(args: T, context: ActionContext): ActionGenerator<R> {
-    if (isGenerator) {
-      return (fetcher as GeneratorFetcher<T, R>)(args, context)
-    } else {
-      // Wrap async function as single-yield generator
-      return (function* () {
-        return (yield (fetcher as AsyncFetcher<T, R>)(args, context)) as R
-      })()
-    }
-  }
-
   async function actionFn(args?: T): Promise<R> {
     cleanup()
 
@@ -218,18 +268,34 @@ export function action<T = undefined, R = void>(fetcher: ActionFetcher<T, R>): A
 
     const promise = (async () => {
       try {
-        const gen = createGenerator(args as T, context)
-        const value = await runGenerator(gen, signal)
+        let value: R | HoldMarker<R>
 
-        // If runGenerator completed, the generator finished successfully
-        // (either normally, or via hold)
+        if (isGeneratorFunction<GeneratorFetcher<T, R>>(fetcher)) {
+          value = await runGenerator(fetcher(args as T, context), context)
+        } else {
+          const promise = fetcher(args as T, context)
+          if (isPromiseWithCleanup(promise)) {
+            const cleanup = promise[$CLEANUP]
+            context.onCleanup(async () => cleanup(await promise))
+          }
+          value = await promise
+        }
+
+        // Check if return value is a hold marker
+        if (isHoldMarker(value)) {
+          await waitForAbort(signal)
+          value = value.getValue()
+        }
+
         setResult(() => value)
+        resolveInitial()
         return value
       } catch (err) {
         // If runGenerator threw CancelledError, re-throw it
         if (err instanceof CancelledError) {
           throw err
         }
+        console.error(err)
         setError(err)
         throw err
       } finally {
@@ -251,19 +317,14 @@ export function action<T = undefined, R = void>(fetcher: ActionFetcher<T, R>): A
   }
 
   async function promise(): Promise<R | undefined> {
-    if (currentPromise) {
-      try {
-        return await currentPromise
-      } catch {
-        return undefined
-      }
-    }
-    return result()
+    return initialPromise.then(() =>
+      assertedNotNullish(currentPromise!, 'Current Promise is undefined'),
+    )
   }
 
   return Object.assign(actionFn, {
     pending,
-    result,
+    latest,
     error,
     cancel,
     clear,

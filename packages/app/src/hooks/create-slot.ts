@@ -90,7 +90,7 @@ export function createSlot(options: CreateSlotOptions): Slot {
     return newPlayback
   })
 
-  const playback = () => loadAction.result() ?? null
+  const playback = () => loadAction.latest() ?? null
 
   async function load(blob: Blob): Promise<void> {
     await loadAction(blob)
@@ -102,7 +102,7 @@ export function createSlot(options: CreateSlotOptions): Slot {
   }
 
   function hasClip(): boolean {
-    return !!loadAction.result()
+    return !!loadAction.latest()
   }
 
   function isLoading(): boolean {
