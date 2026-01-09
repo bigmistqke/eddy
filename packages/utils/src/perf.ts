@@ -22,8 +22,10 @@ export interface PerfMonitor {
   end(label: string): void
   /** Record a single value (for non-timing metrics like cache hits) */
   record(label: string, value: number): void
-  /** Increment a counter */
+  /** Increment a counter by 1 */
   increment(label: string): void
+  /** Add to a counter by a specific amount */
+  count(label: string, amount: number): void
   /** Get a counter value */
   getCounter(label: string): number
   /** Get all counters */
@@ -114,6 +116,11 @@ export function createPerfMonitor(threshold: number = 16.67, maxSamples: number 
     increment(label: string) {
       if (!enabled) return
       counters.set(label, (counters.get(label) ?? 0) + 1)
+    },
+
+    count(label: string, amount: number) {
+      if (!enabled) return
+      counters.set(label, (counters.get(label) ?? 0) + amount)
     },
 
     getCounter(label: string): number {

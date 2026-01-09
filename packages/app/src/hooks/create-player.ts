@@ -235,6 +235,9 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
     // Send port2 to playback worker (playback worker sends)
     pooledWorker.rpc.connectToCompositor(clipId, transfer(channel.port2))
 
+    // Sync current loop state to new worker
+    pooledWorker.rpc.setLoop(clock.loop())
+
     const newClip: ClipEntry = {
       clipId,
       trackId,
@@ -311,6 +314,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
 
   // Render loop state
   let animationFrameId: number | null = null
+  let prevTime = 0
 
   /**
    * Render loop - drives compositor rendering and handles looping.
@@ -322,21 +326,29 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
     const time = clock.tick()
     const playing = clock.isPlaying()
 
-    // Handle loop reset
-    if (playing && clock.loop() && maxDuration() > 0 && time >= maxDuration()) {
-      log('loop reset')
-      // Reset all playback workers to start
-      for (const clip of Object.values(clips)) {
-        if (clip.state === 'playing') {
-          clip.pooledWorker.rpc.seek(0).then(() => {
-            clip.pooledWorker.rpc.play(0)
-          })
+    // Detect loop reset (clock jumped backward while playing)
+    if (playing && time < prevTime) {
+      log('loop reset detected', { prevTime, time })
+      // Reset all playback workers to start - seek all first, then play all
+      const playingClips = Object.values(clips).filter(clip => clip.state === 'playing')
+      Promise.all(playingClips.map(clip => clip.pooledWorker.rpc.seek(0))).then(() => {
+        for (const clip of playingClips) {
+          clip.pooledWorker.rpc.play(0)
         }
-      }
+      })
     }
+    prevTime = time
 
-    // Render compositor at current time
-    compositor.render(time)
+    // Render compositor at current time and track frame availability
+    compositor.render(time).then(stats => {
+      // Track dropped frames (only when playing and expecting frames)
+      if (playing && stats.expected > 0) {
+        perf.count('frames-expected', stats.expected)
+        perf.count('frames-rendered', stats.rendered)
+        perf.count('frames-dropped', stats.dropped)
+        perf.count('frames-stale', stats.stale)
+      }
+    })
 
     perf.end('renderLoop')
 
@@ -497,7 +509,13 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
       }
     },
 
-    setLoop: clock.setLoop,
+    setLoop(enabled: boolean) {
+      clock.setLoop(enabled)
+      // Sync loop state to all workers
+      for (const clip of Object.values(clips)) {
+        clip.pooledWorker.rpc.setLoop(enabled)
+      }
+    },
 
     async loadClip(trackId: string, blob: Blob, clipId?: string): Promise<string> {
       // Generate clipId if not provided

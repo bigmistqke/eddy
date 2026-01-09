@@ -7,6 +7,18 @@ import { PREVIEW_CLIP_ID } from '~/lib/layout-types'
 
 const log = debug('compositor-worker', false)
 
+/** Stats returned from render() for dropped frame tracking */
+export interface RenderStats {
+  /** Number of placements that should have rendered */
+  expected: number
+  /** Number of placements that actually had frames */
+  rendered: number
+  /** Number of placements that were missing frames (dropped) */
+  dropped: number
+  /** Number of placements that rendered a stale/repeated frame */
+  stale: number
+}
+
 export interface CompositorWorkerMethods {
   /** Initialize with OffscreenCanvas */
   init(canvas: OffscreenCanvas, width: number, height: number): Promise<void>
@@ -26,8 +38,8 @@ export interface CompositorWorkerMethods {
   /** Disconnect a playback worker */
   disconnectPlaybackWorker(clipId: string): void
 
-  /** Render at time T (queries timeline internally) */
-  render(time: number): void
+  /** Render at time T (queries timeline internally). Returns frame availability stats. */
+  render(time: number): RenderStats
 
   /** Set a frame on capture canvas (for pre-rendering, doesn't affect visible canvas) */
   setCaptureFrame(clipId: string, frame: Transferred<VideoFrame> | null): void
@@ -144,6 +156,9 @@ const playbackWorkerPorts = new Map<string, MessagePort>()
 // Dynamic texture pool - keyed by clipId
 const textures = new Map<string, WebGLTexture>()
 const captureTextures = new Map<string, WebGLTexture>()
+
+// Track last rendered frame timestamp per clipId for stale detection
+const lastRenderedTimestamp = new Map<string, number>()
 
 function setFrame(clipId: string, frame: VideoFrame | null) {
   // Close previous playback frame
@@ -287,8 +302,10 @@ expose<CompositorWorkerMethods>({
     }
   },
 
-  render(time) {
-    if (!gl || !canvas || !view || !program || !timeline) return
+  render(time): RenderStats {
+    const stats: RenderStats = { expected: 0, rendered: 0, dropped: 0, stale: 0 }
+
+    if (!gl || !canvas || !view || !program || !timeline) return stats
 
     gl.useProgram(program)
 
@@ -299,6 +316,7 @@ expose<CompositorWorkerMethods>({
 
     // Query timeline for active placements at this time
     const activePlacements = getActivePlacements(timeline, time)
+    stats.expected = activePlacements.length
 
     // Draw all active placements (both playback and preview)
     for (const { placement } of activePlacements) {
@@ -308,7 +326,20 @@ expose<CompositorWorkerMethods>({
         ? previewFrames.get(placement.trackId)
         : playbackFrames.get(placement.clipId)
 
-      if (!frame) continue
+      if (!frame) {
+        stats.dropped++
+        continue
+      }
+
+      // Check for stale frame (same timestamp as last render)
+      const frameKey = isPreview ? `preview-${placement.trackId}` : placement.clipId
+      const lastTimestamp = lastRenderedTimestamp.get(frameKey)
+      if (lastTimestamp !== undefined && frame.timestamp === lastTimestamp) {
+        stats.stale++
+      }
+      lastRenderedTimestamp.set(frameKey, frame.timestamp)
+
+      stats.rendered++
 
       // Use trackId for texture key when preview (avoids collision with playback textures)
       const textureKey = isPreview ? `preview-${placement.trackId}` : placement.clipId
@@ -326,6 +357,8 @@ expose<CompositorWorkerMethods>({
       view.attributes.a_quad.bind()
       gl.drawArrays(gl.TRIANGLES, 0, 6)
     }
+
+    return stats
   },
 
   // Set a frame on the capture canvas (for pre-rendering)

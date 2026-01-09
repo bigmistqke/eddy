@@ -37,6 +37,9 @@ export interface PlaybackWorkerMethods {
   /** Seek to time (buffers from keyframe) */
   seek(time: number): Promise<void>
 
+  /** Set loop mode (enables pre-buffering from start when near end) */
+  setLoop(enabled: boolean): void
+
   /** Get current buffer range */
   getBufferRange(): { start: number; end: number }
 
@@ -280,6 +283,7 @@ let isPlaying = false
 let startWallTime = 0 // performance.now() when play started
 let startMediaTime = 0 // media time when play started
 let speed = 1
+let loopEnabled = false // Whether to pre-buffer from start when near end
 
 // Compositor connection
 let compositor: RPC<CompositorFrameMethods> | null = null
@@ -529,6 +533,45 @@ async function bufferAhead(fromTime: number): Promise<void> {
   }
 }
 
+/** Buffer frames from the start (for loop pre-buffering) */
+async function bufferFromStart(): Promise<void> {
+  if (!videoSink || !videoTrack) return
+  if (isBuffering) return
+
+  // Check if we already have frames at the start
+  if (frameBuffer.length > 0 && frameBuffer[0].timestamp <= 100_000) {
+    return // Already have frames near 0
+  }
+
+  isBuffering = true
+  log('bufferFromStart: pre-buffering for loop')
+
+  try {
+    // Get first keyframe
+    const keyPacket = await videoSink.getKeyPacket(0)
+    if (!keyPacket) return
+
+    let packet: typeof keyPacket | null = keyPacket
+    let decoded = 0
+
+    // Buffer first few frames
+    while (packet && decoded < BUFFER_AHEAD_FRAMES / 2) {
+      const sample = packetToSample(packet)
+      try {
+        await decodeAndBuffer(sample)
+        decoded++
+      } catch (error) {
+        log('bufferFromStart: decode failed, skipping', { pts: sample.pts, error })
+      }
+      packet = await videoSink.getNextPacket(packet)
+    }
+  } catch (error) {
+    log('bufferFromStart error', { error })
+  } finally {
+    isBuffering = false
+  }
+}
+
 /** Seek to time (from keyframe) */
 async function seekToTime(time: number): Promise<void> {
   log('seekToTime', { time })
@@ -628,11 +671,18 @@ function streamLoop(): void {
   // Send frame to compositor
   sendFrameToCompositor(time)
 
-  // Trim frames behind us to free memory
-  trimOldFrames(time)
+  // Trim frames behind us to free memory (but preserve start frames if looping)
+  if (!loopEnabled || time < duration - BUFFER_AHEAD_SECONDS) {
+    trimOldFrames(time)
+  }
 
   // Buffer ahead
   bufferAhead(time)
+
+  // Pre-buffer from start when near end with looping enabled
+  if (loopEnabled && duration > 0 && time >= duration - BUFFER_AHEAD_SECONDS) {
+    bufferFromStart()
+  }
 
   // Continue loop
   animationFrameId = requestAnimationFrame(streamLoop)
@@ -791,6 +841,11 @@ expose<PlaybackWorkerMethods>({
     } else {
       state = 'paused'
     }
+  },
+
+  setLoop(enabled) {
+    log('setLoop', { enabled })
+    loopEnabled = enabled
   },
 
   getBufferRange() {

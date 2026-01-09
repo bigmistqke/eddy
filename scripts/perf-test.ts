@@ -12,6 +12,7 @@
  *   --headless         Run in headless mode
  *   --video=<path>     Path to test video file (default: packages/codecs/src/__tests__/fixtures/test-vp9.webm)
  *   --tracks=<n>       Number of tracks to load (1-4, default: 4)
+ *   --loop             Enable looping (test loop behavior)
  */
 
 import puppeteer, { type Browser, type Page } from 'puppeteer'
@@ -31,6 +32,7 @@ const DURATION = parseInt(getArg('duration', '10000'), 10)
 const HEADLESS = hasFlag('headless')
 const VIDEO_PATH = getArg('video', 'packages/codecs/src/__tests__/fixtures/test-vp9.webm')
 const NUM_TRACKS = Math.min(4, Math.max(1, parseInt(getArg('tracks', '4'), 10)))
+const LOOP_ENABLED = hasFlag('loop')
 
 interface PerfStats {
   samples: number
@@ -55,6 +57,7 @@ async function main() {
   console.log(`   Headless: ${HEADLESS}`)
   console.log(`   Video: ${VIDEO_PATH}`)
   console.log(`   Tracks: ${NUM_TRACKS}`)
+  console.log(`   Loop: ${LOOP_ENABLED}`)
   console.log('')
 
   if (!fs.existsSync(VIDEO_PATH)) {
@@ -205,6 +208,17 @@ async function main() {
         ;(window as any).eddy.perf.reset()
       }
     })
+
+    // Enable loop if requested
+    if (LOOP_ENABLED) {
+      console.log('🔁 Enabling loop...')
+      await page.evaluate(() => {
+        const player = (window as any).__EDDY_DEBUG__?.player
+        if (player?.setLoop) {
+          player.setLoop(true)
+        }
+      })
+    }
 
     // Start playback using debug interface
     console.log('▶️  Starting playback...')
@@ -376,6 +390,36 @@ async function main() {
           console.log('')
           console.log(`  🎬 Frame misses by track: [${frameMisses.join(', ')}]`)
           console.log('  ⚠️  Frame misses cause visual jank!')
+        }
+
+        // Calculate dropped frame rate from compositor stats
+        const framesExpected = counters['frames-expected'] ?? 0
+        const framesDropped = counters['frames-dropped'] ?? 0
+        const framesStale = counters['frames-stale'] ?? 0
+        if (framesExpected > 0) {
+          const droppedRate = (framesDropped / framesExpected) * 100
+          const staleRate = (framesStale / framesExpected) * 100
+          const problemRate = ((framesDropped + framesStale) / framesExpected) * 100
+          console.log('')
+          console.log('───────────────────────────────────────────────────────────────')
+          console.log('                    FRAME QUALITY SUMMARY')
+          console.log('───────────────────────────────────────────────────────────────')
+          console.log('')
+          console.log(`  📊 Expected frames: ${framesExpected}`)
+          console.log(`  ✅ Rendered frames: ${counters['frames-rendered'] ?? 0}`)
+          console.log(`  ❌ Dropped frames:  ${framesDropped} (${droppedRate.toFixed(1)}%)`)
+          console.log(`  🔁 Stale frames:    ${framesStale} (${staleRate.toFixed(1)}%)`)
+          console.log('')
+
+          if (problemRate > 10) {
+            console.log('  🔴 POOR: More than 10% problem frames (dropped + stale)')
+          } else if (problemRate > 5) {
+            console.log('  🟡 FAIR: 5-10% problem frames')
+          } else if (problemRate > 1) {
+            console.log('  🟢 GOOD: Less than 5% problem frames')
+          } else {
+            console.log('  🎯 EXCELLENT: Less than 1% problem frames')
+          }
         }
       }
     } else {
