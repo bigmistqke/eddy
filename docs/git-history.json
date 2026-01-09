@@ -1,5 +1,13 @@
 [
   {
+    "hash": "bd6cf69f62c1c16f3da3d6c684e80c1aa8151ead",
+    "short_hash": "bd6cf69",
+    "author": "bigmistqke",
+    "date": "2026-01-09T12:25:18+01:00",
+    "message": "refactor: clip-based playback with worker pool\n\n- Add WorkerPool for reusing playback workers across clips\n- Change player from track-centric to clip-centric (TrackEntry → ClipEntry)\n- Frames now tagged with clipId, mapped to trackId in compositor\n- Add hasClipForTrack/isLoadingForTrack for track-based queries",
+    "files_changed": 6
+  },
+  {
     "hash": "d041f494242c9f449e808f65660ef880d17b9a94",
     "short_hash": "d041f49",
     "author": "bigmistqke",
