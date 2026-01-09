@@ -10,7 +10,7 @@
  *   --url=<url>        App URL (default: http://127.0.0.1:5173)
  *   --duration=<ms>    How long to run playback test (default: 10000)
  *   --headless         Run in headless mode
- *   --video=<path>     Path to test video file (will be loaded into all 4 tracks)
+ *   --video=<path>     Path to test video file (default: packages/codecs/src/__tests__/fixtures/test-vp9.webm)
  *   --tracks=<n>       Number of tracks to load (1-4, default: 4)
  */
 
@@ -29,7 +29,7 @@ const hasFlag = (name: string): boolean => args.includes(`--${name}`)
 const APP_URL = getArg('url', 'http://127.0.0.1:5173')
 const DURATION = parseInt(getArg('duration', '10000'), 10)
 const HEADLESS = hasFlag('headless')
-const VIDEO_PATH = getArg('video', '')
+const VIDEO_PATH = getArg('video', 'packages/codecs/src/__tests__/fixtures/test-vp9.webm')
 const NUM_TRACKS = Math.min(4, Math.max(1, parseInt(getArg('tracks', '4'), 10)))
 
 interface PerfStats {
@@ -53,15 +53,15 @@ async function main() {
   console.log(`   URL: ${APP_URL}`)
   console.log(`   Duration: ${DURATION}ms`)
   console.log(`   Headless: ${HEADLESS}`)
-  console.log(`   Video: ${VIDEO_PATH || '(required - use --video=<path>)'}`)
+  console.log(`   Video: ${VIDEO_PATH}`)
   console.log(`   Tracks: ${NUM_TRACKS}`)
   console.log('')
 
-  if (!VIDEO_PATH || !fs.existsSync(VIDEO_PATH)) {
-    console.error('❌ Error: --video=<path> is required')
-    console.error('   Please provide a path to a test video file (WebM or MP4)')
+  if (!fs.existsSync(VIDEO_PATH)) {
+    console.error(`❌ Error: Video file not found: ${VIDEO_PATH}`)
+    console.error('   Please provide a valid path to a test video file (WebM or MP4)')
     console.error('')
-    console.error('   Example: pnpm perf --video=test-clip.webm')
+    console.error('   Example: pnpm perf --video=packages/codecs/src/__tests__/fixtures/test-vp9.webm')
     process.exit(1)
   }
 
