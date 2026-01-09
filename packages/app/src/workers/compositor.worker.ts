@@ -2,7 +2,7 @@ import { expose, transfer, type Transferred } from '@bigmistqke/rpc/messenger'
 import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
 import { debug } from '@eddy/utils'
 import { getActiveSegments } from '~/lib/layout-resolver'
-import type { Timeline, Viewport } from '~/lib/layout-types'
+import type { LayoutTimeline, Viewport } from '~/lib/layout-types'
 
 const log = debug('compositor-worker', false)
 
@@ -11,7 +11,7 @@ export interface CompositorWorkerMethods {
   init(canvas: OffscreenCanvas, width: number, height: number): Promise<void>
 
   /** Set the compiled layout timeline */
-  setTimeline(timeline: Timeline): void
+  setTimeline(timeline: LayoutTimeline): void
 
   /** Set a preview stream for a track (continuously reads latest frame) */
   setPreviewStream(trackId: string, stream: ReadableStream<VideoFrame> | null): void
@@ -128,7 +128,7 @@ let captureView: CompositorView | null = null
 let captureProgram: WebGLProgram | null = null
 
 // Current layout timeline
-let timeline: Timeline | null = null
+let timeline: LayoutTimeline | null = null
 
 // Frame sources - keyed by trackId
 const previewFrames = new Map<string, VideoFrame>()

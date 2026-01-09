@@ -78,6 +78,11 @@ export interface Player extends PlayerState, PlayerActions {
   /** Performance logging */
   logPerf: () => void
   resetPerf: () => void
+  /** Get all perf stats (main thread + workers) */
+  getAllPerf: () => Promise<{
+    main: Record<string, any>
+    workers: Record<string, Record<string, any>>
+  }>
 }
 
 // Expose perf monitor globally for console debugging
@@ -190,7 +195,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
     compositorRpc.connectPlaybackWorker(trackId, transfer(channel.port1))
 
     // Send port2 to playback worker (playback worker sends)
-    playbackRpc.connectToCompositor(transfer(channel.port2), trackId)
+    playbackRpc.connectToCompositor(trackId, transfer(channel.port2))
 
     const newTrack: TrackEntry = {
       trackId,
@@ -359,7 +364,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
       // Start all playback workers
       for (const track of tracksWithClips) {
         track.rpc.play(startTime)
-        track.state = 'playing'
+        setTracks(track.trackId, 'state', 'playing')
       }
 
       clock.play(startTime)
@@ -373,7 +378,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
       for (const track of Object.values(tracks)) {
         if (track.state === 'playing') {
           track.rpc.pause()
-          track.state = 'paused'
+          setTracks(track.trackId, 'state', 'paused')
         }
       }
 
@@ -391,7 +396,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
         }
         if (track.state !== 'idle' && track.state !== 'loading') {
           await track.rpc.seek(0)
-          track.state = 'ready'
+          setTracks(track.trackId, 'state', 'ready')
         }
       }
     },
@@ -406,7 +411,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
         for (const track of Object.values(tracks)) {
           if (track.state === 'playing') {
             track.rpc.pause()
-            track.state = 'paused'
+            setTracks(track.trackId, 'state', 'paused')
           }
         }
       }
@@ -425,7 +430,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
         for (const track of Object.values(tracks)) {
           if (track.state === 'paused') {
             track.rpc.play(time)
-            track.state = 'playing'
+            setTracks(track.trackId, 'state', 'playing')
           }
         }
         clock.play(time)
@@ -438,20 +443,18 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
       log('loadClip', { trackId, blobSize: blob.size })
 
       const track = getOrCreateTrack(trackId)
-      track.state = 'loading'
+      setTracks(trackId, 'state', 'loading')
 
       // Convert blob to ArrayBuffer and send to worker
       const buffer = await blob.arrayBuffer()
       const { duration } = await track.rpc.load(buffer)
 
-      track.duration = duration
-      track.state = 'ready'
+      setTracks(trackId, 'duration', duration)
+      setTracks(trackId, 'state', 'ready')
 
       // Seek to current time (or 0) to show initial frame
       const currentTime = clock.time()
       await track.rpc.seek(currentTime)
-
-      // Trigger duration recalc
 
       log('loadClip complete', { trackId, duration })
     },
@@ -487,6 +490,31 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
     // Utilities
     getAudioPipeline: (trackId: string) => tracks[trackId]?.audioPipeline,
     logPerf: () => perf.logSummary(),
-    resetPerf: () => perf.reset(),
+    resetPerf: () => {
+      perf.reset()
+      // Reset worker perf too
+      for (const track of Object.values(tracks)) {
+        track.rpc.resetPerf()
+      }
+    },
+    async getAllPerf() {
+      const workerStats: Record<string, Record<string, any>> = {}
+
+      // Collect from all playback workers
+      await Promise.all(
+        Object.entries(tracks).map(async ([trackId, track]) => {
+          try {
+            workerStats[trackId] = await track.rpc.getPerf()
+          } catch {
+            // Worker might not be ready
+          }
+        }),
+      )
+
+      return {
+        main: perf.getAllStats(),
+        workers: workerStats,
+      }
+    },
   }
 }
