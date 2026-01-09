@@ -1,5 +1,29 @@
 [
   {
+    "hash": "ecf639cc751adf77b6b0131c983fe6c38129c2ab",
+    "short_hash": "ecf639c",
+    "author": "bigmistqke",
+    "date": "2026-01-10T00:30:16+01:00",
+    "message": "feat: frame quality tracking with stale frame detection\n\n- Add RenderStats interface with expected/rendered/dropped/stale counts\n- Compositor tracks stale frames (same timestamp as previous render)\n- Player counts frame stats and reports to perf monitor\n- Add perf.count(label, amount) for accumulating counters\n- Perf test displays dropped + stale frame summary\n- Add loop pre-buffering to playback workers\n- Sync loop state to workers for buffer management",
+    "files_changed": 5
+  },
+  {
+    "hash": "9a612d74962773d9c84e4e07416e48a442ef3d4d",
+    "short_hash": "9a612d7",
+    "author": "bigmistqke",
+    "date": "2026-01-10T00:30:09+01:00",
+    "message": "fix: bin/download buttons operate on clip at current time\n\n- Add getClipAtTime helper to find clip overlapping playback position\n- Add removeClip to delete single clip instead of clearing all\n- clearRecording now removes only the clip at current time\n- downloadClip now downloads only the clip at current time\n- Fix hasClip -> hasClipForTrack for button visibility",
+    "files_changed": 2
+  },
+  {
+    "hash": "7739a2829227c4f7fb33b94a9058d6f8fa7e2764",
+    "short_hash": "7739a28",
+    "author": "bigmistqke",
+    "date": "2026-01-09T14:39:16+01:00",
+    "message": "feat: add time input to transport bar for scrubbing\n\nShows current time / duration in MM:SS.ms format.\nClick and edit to seek to a specific time.",
+    "files_changed": 2
+  },
+  {
     "hash": "de934677f25fee84939aafdf7cbce3bf31a8216a",
     "short_hash": "de93467",
     "author": "bigmistqke",

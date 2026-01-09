@@ -824,6 +824,138 @@
       "created_at": "2026-01-09T14:28:36.362154+01:00",
       "updated_at": "2026-01-09T14:28:36.362154+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"de93467\",\"confidence\":95}"
+    },
+    {
+      "id": 76,
+      "change_id": "e40131d0-7d4c-48a0-a4ac-922da421ded4",
+      "node_type": "goal",
+      "title": "add a timer input to scrub through time",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-09T14:35:02.159365+01:00",
+      "updated_at": "2026-01-09T14:35:02.159365+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"add a timer input to scrub through time\"}"
+    },
+    {
+      "id": 77,
+      "change_id": "e0dfea4a-e8c2-4510-b879-4a76f36a0244",
+      "node_type": "action",
+      "title": "Add TimeInput component to transport bar",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-09T14:35:32.452759+01:00",
+      "updated_at": "2026-01-09T14:35:32.452759+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"Editor.tsx\",\"Editor.module.css\"]}"
+    },
+    {
+      "id": 78,
+      "change_id": "d3df2d42-0838-4139-b2f7-6a276833f156",
+      "node_type": "outcome",
+      "title": "Committed: feat add time input to transport bar for scrubbing",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-09T14:39:26.124576+01:00",
+      "updated_at": "2026-01-09T14:39:26.124576+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"7739a28\",\"confidence\":95}"
+    },
+    {
+      "id": 79,
+      "change_id": "2740bd88-33a0-446f-a96f-1bf512d482c4",
+      "node_type": "action",
+      "title": "Fix loop detection - track previous time to detect clock reset",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-09T14:41:38.637343+01:00",
+      "updated_at": "2026-01-09T14:41:38.637343+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"create-player.ts\"]}"
+    },
+    {
+      "id": 80,
+      "change_id": "e83edd3d-b7a7-4941-8079-724bf7dc8547",
+      "node_type": "goal",
+      "title": "fix: looping not replaying clips",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-09T14:42:59.174879+01:00",
+      "updated_at": "2026-01-09T14:42:59.174879+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"looping is currently not working: the time indicator does show the looping, but the clip is not replaying\"}"
+    },
+    {
+      "id": 81,
+      "change_id": "c41fe262-d1a9-437b-8cbf-4622d72af1e0",
+      "node_type": "observation",
+      "title": "Playback worker needs loop awareness to pre-buffer start when near end",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-09T14:57:02.372719+01:00",
+      "updated_at": "2026-01-09T14:57:02.372719+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 82,
+      "change_id": "32e55b45-e063-48c7-977d-9dcaaed988cb",
+      "node_type": "goal",
+      "title": "fix bin and download button of track",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-09T23:38:08.554324+01:00",
+      "updated_at": "2026-01-09T23:38:08.554324+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"fix bin and download button of track -> it should delete or download the clip that is at that point in time of the track\"}"
+    },
+    {
+      "id": 83,
+      "change_id": "7b9e091f-4e9d-4557-97a6-bba7cb131fe4",
+      "node_type": "action",
+      "title": "Update clearRecording and downloadClip to work on clip at current time",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-09T23:38:36.056482+01:00",
+      "updated_at": "2026-01-09T23:38:36.056482+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"create-editor.ts\"]}"
+    },
+    {
+      "id": 84,
+      "change_id": "6e3c8187-0df0-417a-b202-ec22063b5faa",
+      "node_type": "action",
+      "title": "Implement getClipAtTime helper and modify clearRecording/downloadClip to operate on clip at current time",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-09T23:40:39.082600+01:00",
+      "updated_at": "2026-01-09T23:40:39.082600+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 85,
+      "change_id": "f1c51187-6199-40c6-a17a-5ad8b0aa2c98",
+      "node_type": "outcome",
+      "title": "Fixed clearRecording and downloadClip to operate on clip at current playback time",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-09T23:41:54.538645+01:00",
+      "updated_at": "2026-01-09T23:41:54.538645+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 86,
+      "change_id": "a01cfa68-e675-4235-9ce4-79d46f13113b",
+      "node_type": "outcome",
+      "title": "Committed: fix bin/download buttons + frame quality tracking",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-10T00:30:30.715232+01:00",
+      "updated_at": "2026-01-10T00:30:30.715232+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"HEAD~2\",\"confidence\":95}"
+    },
+    {
+      "id": 87,
+      "change_id": "1262c15a-d3cc-443b-992c-e0436dde32ce",
+      "node_type": "outcome",
+      "title": "Committed: feat frame quality tracking with stale detection",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-10T00:30:30.751302+01:00",
+      "updated_at": "2026-01-10T00:30:30.751302+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"HEAD~1\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -1607,6 +1739,105 @@
       "weight": 1.0,
       "rationale": "Committed",
       "created_at": "2026-01-09T14:28:40.736131+01:00"
+    },
+    {
+      "id": 72,
+      "from_node_id": 76,
+      "to_node_id": 77,
+      "from_change_id": "e40131d0-7d4c-48a0-a4ac-922da421ded4",
+      "to_change_id": "e0dfea4a-e8c2-4510-b879-4a76f36a0244",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation step",
+      "created_at": "2026-01-09T14:35:38.287798+01:00"
+    },
+    {
+      "id": 73,
+      "from_node_id": 77,
+      "to_node_id": 78,
+      "from_change_id": "e0dfea4a-e8c2-4510-b879-4a76f36a0244",
+      "to_change_id": "d3df2d42-0838-4139-b2f7-6a276833f156",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-09T14:39:30.360678+01:00"
+    },
+    {
+      "id": 74,
+      "from_node_id": 80,
+      "to_node_id": 79,
+      "from_change_id": "e83edd3d-b7a7-4941-8079-724bf7dc8547",
+      "to_change_id": "2740bd88-33a0-446f-a96f-1bf512d482c4",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation step",
+      "created_at": "2026-01-09T14:43:04.005814+01:00"
+    },
+    {
+      "id": 75,
+      "from_node_id": 79,
+      "to_node_id": 81,
+      "from_change_id": "2740bd88-33a0-446f-a96f-1bf512d482c4",
+      "to_change_id": "c41fe262-d1a9-437b-8cbf-4622d72af1e0",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Discovery during implementation",
+      "created_at": "2026-01-09T14:57:07.153137+01:00"
+    },
+    {
+      "id": 76,
+      "from_node_id": 82,
+      "to_node_id": 83,
+      "from_change_id": "32e55b45-e063-48c7-977d-9dcaaed988cb",
+      "to_change_id": "7b9e091f-4e9d-4557-97a6-bba7cb131fe4",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation step",
+      "created_at": "2026-01-09T23:38:40.706980+01:00"
+    },
+    {
+      "id": 77,
+      "from_node_id": 82,
+      "to_node_id": 84,
+      "from_change_id": "32e55b45-e063-48c7-977d-9dcaaed988cb",
+      "to_change_id": "6e3c8187-0df0-417a-b202-ec22063b5faa",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-01-09T23:40:44.258621+01:00"
+    },
+    {
+      "id": 78,
+      "from_node_id": 84,
+      "to_node_id": 85,
+      "from_change_id": "6e3c8187-0df0-417a-b202-ec22063b5faa",
+      "to_change_id": "f1c51187-6199-40c6-a17a-5ad8b0aa2c98",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Result",
+      "created_at": "2026-01-09T23:41:58.137833+01:00"
+    },
+    {
+      "id": 79,
+      "from_node_id": 84,
+      "to_node_id": 86,
+      "from_change_id": "6e3c8187-0df0-417a-b202-ec22063b5faa",
+      "to_change_id": "a01cfa68-e675-4235-9ce4-79d46f13113b",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-10T00:30:35.870973+01:00"
+    },
+    {
+      "id": 80,
+      "from_node_id": 84,
+      "to_node_id": 87,
+      "from_change_id": "6e3c8187-0df0-417a-b202-ec22063b5faa",
+      "to_change_id": "1262c15a-d3cc-443b-992c-e0436dde32ce",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-10T00:30:35.881783+01:00"
     }
   ]
 }
