@@ -1,7 +1,7 @@
 import type { Agent } from '@atproto/api'
 import { $MESSENGER, rpc, transfer } from '@bigmistqke/rpc/messenger'
 import { every, whenEffect, whenMemo } from '@bigmistqke/solid-whenever'
-import type { AudioEffect, ClipSource, ClipSourceStem, Project, Track } from '@eddy/lexicons'
+import type { AudioEffect, Clip, ClipSource, ClipSourceStem, Project, Track } from '@eddy/lexicons'
 import { getMasterMixer, resumeAudioContext } from '@eddy/mixer'
 import { debug } from '@eddy/utils'
 import { createEffect, createSelector, createSignal, mapArray, type Accessor } from 'solid-js'
@@ -269,6 +269,31 @@ export function createEditor(options: CreateEditorOptions) {
       t => t.id === trackId,
       produce((track: Track) => {
         track.clips = []
+      }),
+    )
+
+    setProject('updatedAt', new Date().toISOString())
+  }
+
+  /** Find the clip at a given time (in seconds) on a track */
+  function getClipAtTime(trackId: string, timeSeconds: number): Clip | undefined {
+    const track = project().tracks.find(t => t.id === trackId)
+    if (!track) return undefined
+
+    const timeMs = timeSeconds * 1000 // Convert to ms (clips use ms)
+    return track.clips.find(clip => clip.offset <= timeMs && timeMs < clip.offset + clip.duration)
+  }
+
+  /** Remove a single clip from a track */
+  function removeClip(trackId: string, clipId: string) {
+    // Clean up local blob reference
+    setLocalClips(clipId, undefined!)
+
+    setProject(
+      'tracks',
+      t => t.id === trackId,
+      produce((track: Track) => {
+        track.clips = track.clips.filter(clip => clip.id !== clipId)
       }),
     )
 
@@ -575,8 +600,17 @@ export function createEditor(options: CreateEditorOptions) {
     },
 
     clearRecording(trackId: string) {
-      clearTrack(trackId)
-      player()?.clearClip(trackId)
+      const _player = player()
+      const currentTime = _player?.time() ?? 0
+      const clip = getClipAtTime(trackId, currentTime)
+
+      if (!clip) {
+        console.warn('No clip found at current time for track', trackId)
+        return
+      }
+
+      removeClip(trackId, clip.id)
+      _player?.clearClip(clip.id)
     },
 
     setTrackVolume(trackId: string, value: number) {
@@ -605,21 +639,25 @@ export function createEditor(options: CreateEditorOptions) {
     },
 
     downloadClip(trackId: string) {
-      const track = project().tracks.find(t => t.id === trackId)
-      if (!track || track.clips.length === 0) {
-        console.warn('No clip found for track', trackId)
+      const _player = player()
+      const currentTime = _player?.time() ?? 0
+      const clip = getClipAtTime(trackId, currentTime)
+
+      if (!clip) {
+        console.warn('No clip found at current time for track', trackId)
         return
       }
-      const clipId = track.clips[0].id
-      const blob = getClipBlob(clipId)
+
+      const blob = getClipBlob(clip.id)
       if (!blob) {
-        console.warn('No blob found for clip', clipId)
+        console.warn('No blob found for clip', clip.id)
         return
       }
+
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `${trackId}.webm`
+      link.download = `${trackId}-${clip.id}.webm`
       link.click()
       URL.revokeObjectURL(url)
     },

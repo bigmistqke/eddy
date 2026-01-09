@@ -194,7 +194,7 @@ export const Editor: Component<EditorProps> = props => {
             <Track
               trackId={track().id}
               displayIndex={index}
-              hasClip={editor.player()?.hasClip(track().id) ?? false}
+              hasClip={editor.player()?.hasClipForTrack(track().id) ?? false}
               isPlaying={editor.player()?.isPlaying() ?? false}
               isSelected={editor.isSelectedTrack(track().id)}
               isRecording={editor.isRecording() && editor.isSelectedTrack(track().id)}
