@@ -1,5 +1,13 @@
 [
   {
+    "hash": "de934677f25fee84939aafdf7cbce3bf31a8216a",
+    "short_hash": "de93467",
+    "author": "bigmistqke",
+    "date": "2026-01-09T14:28:31+01:00",
+    "message": "fix: preview rendering with segment-based timeline\n\nInjects synthetic 'preview' clip into timeline when track is in preview mode.\nCompositor uses unified render loop for both playback and preview frames.",
+    "files_changed": 4
+  },
+  {
     "hash": "bd6cf69f62c1c16f3da3d6c684e80c1aa8151ead",
     "short_hash": "bd6cf69",
     "author": "bigmistqke",

@@ -791,6 +791,39 @@
       "created_at": "2026-01-09T12:25:26.987216+01:00",
       "updated_at": "2026-01-09T12:25:26.987216+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"bd6cf69\",\"confidence\":95}"
+    },
+    {
+      "id": 73,
+      "change_id": "8ffb1a28-daba-4e21-9dc6-34789bf153e1",
+      "node_type": "goal",
+      "title": "fix: preview is not working in compiled segment based layout",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-09T14:15:50.772294+01:00",
+      "updated_at": "2026-01-09T14:15:50.772294+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"fix: preview is not working in compiled segment based layout\"}"
+    },
+    {
+      "id": 74,
+      "change_id": "2783d27a-a527-4886-98ec-63d1a62b2627",
+      "node_type": "action",
+      "title": "Add trackViewports to LayoutTimeline for preview rendering",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-09T14:16:17.385205+01:00",
+      "updated_at": "2026-01-09T14:16:17.385205+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"layout-types.ts\",\"timeline-compiler.ts\",\"compositor.worker.ts\"]}"
+    },
+    {
+      "id": 75,
+      "change_id": "67330c4a-e200-4503-87d7-9c7fd3ccbc8a",
+      "node_type": "outcome",
+      "title": "Committed: fix preview rendering with segment-based timeline",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-09T14:28:36.362154+01:00",
+      "updated_at": "2026-01-09T14:28:36.362154+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"de93467\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -1552,6 +1585,28 @@
       "weight": 1.0,
       "rationale": "Committed",
       "created_at": "2026-01-09T12:25:31.437097+01:00"
+    },
+    {
+      "id": 70,
+      "from_node_id": 73,
+      "to_node_id": 74,
+      "from_change_id": "8ffb1a28-daba-4e21-9dc6-34789bf153e1",
+      "to_change_id": "2783d27a-a527-4886-98ec-63d1a62b2627",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation step",
+      "created_at": "2026-01-09T14:16:21.545848+01:00"
+    },
+    {
+      "id": 71,
+      "from_node_id": 74,
+      "to_node_id": 75,
+      "from_change_id": "2783d27a-a527-4886-98ec-63d1a62b2627",
+      "to_change_id": "67330c4a-e200-4503-87d7-9c7fd3ccbc8a",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-09T14:28:40.736131+01:00"
     }
   ]
 }
