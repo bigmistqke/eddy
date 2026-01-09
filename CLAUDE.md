@@ -173,3 +173,127 @@ Prefer `display: grid` over flexbox for layouts.
 - **Ask before committing** - Always ask permission before `git commit`
 - **Commit messages** - No Claude signature
 - **TypeScript checks** - Run `pnpm types` to check compilation. Only run once when creating new files, don't repeatedly check.
+
+## Decision Graph Workflow
+
+Deciduous tracks goals, decisions, actions, outcomes, and observations in a persistent graph that survives context loss.
+
+### Slash Commands
+
+| Command | Mode | Purpose |
+|---------|------|---------|
+| `/recover` | Session Start | Query graph, check git state, recover context |
+| `/work <goal>` | Working | Start work transaction (creates goal, guides through flow) |
+| `/commit [msg]` | Commit | Analyze coherence, split if needed, commit + sync deciduous |
+| `/decision <action>` | Manual | Direct access to deciduous CLI for edge cases |
+
+### Session Lifecycle
+
+```
+SESSION START
+│
+├─► /recover
+│   Query past decisions, pending work, git state
+│
+USER REQUEST
+│
+├─► ASK before logging goal
+│   "I'll log this as a goal: <title>. OK?"
+│   Then: deciduous add goal "<title>" -c 90 --prompt-stdin << 'EOF'
+│         <user's verbatim message>
+│         EOF
+│
+WORKING (auto-log, don't ask)
+│
+├─► Log action BEFORE each logical change
+│   deciduous add action "<what I'm about to do>" -c 85
+│   deciduous link <goal_id> <action_id> -r "Implementation"
+│
+├─► Log observation for EVERY gotcha/learning
+│   deciduous add observation "<what I discovered>" -c 80
+│   deciduous link <related_node> <obs_id> -r "Discovery"
+│
+├─► Log outcome AFTER completion
+│   deciduous add outcome "<result>" -c 90
+│   deciduous link <action_id> <outcome_id> -r "Result"
+│
+BEFORE COMMIT
+│
+├─► List things for user to test
+├─► Wait for confirmation
+├─► /commit [msg]
+│   - Analyzes diff coherence
+│   - Splits if needed (asks first)
+│   - Warns if overlapping work
+│   - Commits WITHOUT Claude signature
+│   - Creates outcome with --commit HEAD
+│   - Links to action, syncs graph
+│
+SESSION END (or context getting long)
+│
+└─► Final sync: deciduous sync
+```
+
+### Logging Granularity
+
+**Logical changes** - not every file edit, but every coherent unit of work:
+- Adding a feature component = 1 action
+- Fixing a bug = 1 action (+ 1 observation for the root cause)
+- Refactoring 3 related files = 1 action
+- Discovering a gotcha = 1 observation
+
+### Autonomy Rules
+
+| Node Type | Ask First? | When |
+|-----------|------------|------|
+| `goal` | **YES** | User request starts new work |
+| `decision` | **YES** | Multiple valid approaches |
+| `action` | No | Before each logical change |
+| `outcome` | No | After success/failure |
+| `observation` | No | Every gotcha, learning, discovery |
+
+### Verbatim Prompts
+
+Goals MUST capture the user's exact message:
+
+```bash
+deciduous add goal "Add dark mode" -c 90 --prompt-stdin << 'EOF'
+Can you add dark mode support? I want a toggle in the settings
+that persists to localStorage, and it should respect the system
+preference by default.
+EOF
+```
+
+### Connection Rules
+
+| Node Type | Link To |
+|-----------|---------|
+| `goal` | Can be root (no parent needed) |
+| `action` | Parent goal or decision |
+| `outcome` | The action it resolves |
+| `observation` | Related goal/action/decision |
+| `option` | Parent decision |
+
+### Quick Reference
+
+```bash
+# Session start
+/recover
+
+# Start work (asks first)
+/work "Add feature X"
+
+# Manual logging
+deciduous add goal "Title" -c 90 -p "prompt"
+deciduous add action "Title" -c 85 -f "file1.ts,file2.ts"
+deciduous add observation "Title" -c 80
+deciduous add outcome "Title" -c 90 --commit HEAD
+deciduous link <from> <to> -r "reason"
+
+# Always after commit
+deciduous sync
+
+# View
+deciduous nodes
+deciduous serve
+```

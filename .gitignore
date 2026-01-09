@@ -36,3 +36,6 @@ pnpm-debug.log*
 # Test assets
 scripts/*.webm
 scripts/*.mp4
+
+# Deciduous database (local)
+.deciduous/
