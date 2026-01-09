@@ -1,5 +1,26 @@
 import { FiCircle, FiPause, FiPlay, FiRepeat, FiSquare, FiUpload, FiVolume2 } from 'solid-icons/fi'
 import { type Component, createEffect, createMemo, createSignal, Index, onMount, Show } from 'solid-js'
+
+/** Format time in seconds to MM:SS.ms */
+function formatTime(seconds: number): string {
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.floor(seconds % 60)
+  const ms = Math.floor((seconds % 1) * 100)
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`
+}
+
+/** Parse MM:SS.ms format to seconds */
+function parseTime(str: string): number | null {
+  // Handle MM:SS.ms or MM:SS or SS.ms or SS
+  const match = str.match(/^(?:(\d+):)?(\d+)(?:\.(\d+))?$/)
+  if (!match) return null
+
+  const mins = match[1] ? parseInt(match[1], 10) : 0
+  const secs = parseInt(match[2], 10)
+  const ms = match[3] ? parseInt(match[3].padEnd(2, '0').slice(0, 2), 10) : 0
+
+  return mins * 60 + secs + ms / 100
+}
 import { createEditor } from '~/hooks/create-editor'
 import { useAuth } from '~/lib/atproto/auth-context'
 import styles from './Editor.module.css'
@@ -109,6 +130,31 @@ export const Editor: Component<EditorProps> = props => {
         >
           <FiRepeat size={20} />
         </button>
+        <div class={styles.timeDisplay}>
+          <input
+            type="text"
+            class={styles.timeInput}
+            value={formatTime(editor.player()?.time() ?? 0)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                const parsed = parseTime(e.currentTarget.value)
+                if (parsed !== null) {
+                  editor.player()?.seek(parsed)
+                }
+                e.currentTarget.blur()
+              }
+            }}
+            onBlur={e => {
+              const parsed = parseTime(e.currentTarget.value)
+              if (parsed !== null) {
+                editor.player()?.seek(parsed)
+              }
+            }}
+            disabled={editor.isRecording()}
+          />
+          <span class={styles.timeSeparator}>/</span>
+          <span class={styles.duration}>{formatTime(editor.player()?.maxDuration() ?? 0)}</span>
+        </div>
         <label class={styles.masterVolume}>
           <FiVolume2 size={16} />
           <input
