@@ -4,9 +4,9 @@ import { createAudioPipeline, type AudioPipeline } from '@eddy/mixer'
 import { debug, getGlobalPerfMonitor } from '@eddy/utils'
 import { createEffect, createMemo, createSignal, on, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
-import { compileLayoutTimeline, injectPreviewClips } from '~/lib/timeline-compiler'
 import type { LayoutTimeline } from '~/lib/layout-types'
-import { createWorkerPool, type WorkerPool, type PooledWorker } from '~/lib/worker-pool'
+import { compileLayoutTimeline, injectPreviewClips } from '~/lib/timeline-compiler'
+import { createWorkerPool, type PooledWorker } from '~/lib/worker-pool'
 import type { CompositorWorkerMethods } from '~/workers/compositor.worker'
 import CompositorWorker from '~/workers/compositor.worker?worker'
 import { createClock, type Clock } from './create-clock'
@@ -114,6 +114,12 @@ interface ClipEntry {
   pooledWorker: PooledWorker
   duration: number
   state: 'idle' | 'loading' | 'ready' | 'playing' | 'paused'
+  /** Stored buffer for gapless loop handoff */
+  buffer: ArrayBuffer | null
+  /** Worker being prepared for loop transition */
+  nextWorker: PooledWorker | null
+  /** Whether nextWorker is ready to take over */
+  nextWorkerReady: boolean
 }
 
 /**
@@ -192,6 +198,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
   const [tracks, setTracks] = createStore<Record<string, TrackEntry>>({})
 
   // Clip entries - keyed by clipId (playback workers)
+  // Note: Use unwrap() when accessing worker RPC methods to avoid SolidJS proxy issues
   const [clips, setClips] = createStore<Record<string, ClipEntry>>({})
 
   /** Get or create a track entry (audio pipeline only) */
@@ -235,15 +242,15 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
     // Send port2 to playback worker (playback worker sends)
     pooledWorker.rpc.connectToCompositor(clipId, transfer(channel.port2))
 
-    // Sync current loop state to new worker
-    pooledWorker.rpc.setLoop(clock.loop())
-
     const newClip: ClipEntry = {
       clipId,
       trackId,
       pooledWorker,
       duration: 0,
       state: 'idle',
+      buffer: null,
+      nextWorker: null,
+      nextWorkerReady: false,
     }
     setClips(clipId, newClip)
 
@@ -263,6 +270,11 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
 
     // Release worker back to pool
     workerPool.release(clip.pooledWorker)
+
+    // Release nextWorker if it exists
+    if (clip.nextWorker) {
+      workerPool.release(clip.nextWorker)
+    }
 
     setClips(clipId, undefined!)
   }
@@ -295,6 +307,100 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
     }),
   )
 
+  /** How far ahead to start preparing the next worker for loop (seconds) */
+  const LOOP_PREPARE_AHEAD = 2.0
+
+  /**
+   * Prepare a fresh worker for gapless loop transition.
+   * Called when approaching end of clip with looping enabled.
+   *
+   * The new worker loads and buffers frames internally, but is NOT connected
+   * to the compositor yet. This allows the old worker to keep sending frames
+   * until the exact moment of handoff.
+   */
+  async function prepareNextWorker(clip: ClipEntry): Promise<void> {
+    // Skip if already preparing or no buffer stored
+    if (clip.nextWorker) {
+      log('prepareNextWorker: already has nextWorker')
+      return
+    }
+    if (!clip.buffer) {
+      log('prepareNextWorker: no buffer stored!', clip.clipId)
+      return
+    }
+
+    log('prepareNextWorker: starting', clip.clipId)
+
+    // Acquire a fresh worker
+    const nextWorker = workerPool.acquire()
+
+    // Store it immediately (to prevent duplicate preparations)
+    setClips(clip.clipId, 'nextWorker', nextWorker)
+    setClips(clip.clipId, 'nextWorkerReady', false)
+
+    try {
+      // Load the same buffer
+      await nextWorker.rpc.load(clip.buffer)
+
+      // DON'T connect to compositor yet - let old worker keep sending frames
+      // Just seek to 0 to buffer frames internally
+      await nextWorker.rpc.seek(0)
+
+      setClips(clip.clipId, 'nextWorkerReady', true)
+      log('prepareNextWorker: ready', { clipId: clip.clipId })
+    } catch (error) {
+      log('prepareNextWorker: failed', { clipId: clip.clipId, error })
+      // Clean up on failure
+      workerPool.release(nextWorker)
+      setClips(clip.clipId, 'nextWorker', null)
+      setClips(clip.clipId, 'nextWorkerReady', false)
+    }
+  }
+
+  /**
+   * Perform the worker handoff when loop occurs.
+   * Connects the new worker to compositor (which disconnects old worker),
+   * then starts playback.
+   */
+  function performLoopHandoff(clip: ClipEntry): void {
+    log('performLoopHandoff: starting', { clipId: clip.clipId })
+
+    if (!clip.nextWorker || !clip.nextWorkerReady) {
+      log('performLoopHandoff: nextWorker not ready, falling back to seek')
+      // Fallback: seek current worker to 0
+      clip.pooledWorker.rpc.seek(0).then(() => {
+        clip.pooledWorker.rpc.play(0)
+      })
+      return
+    }
+
+    log('performLoopHandoff: swapping workers')
+
+    const oldWorker = clip.pooledWorker
+    const newWorker = clip.nextWorker
+
+    // Connect new worker to compositor (this closes old worker's port)
+    const channel = new MessageChannel()
+    compositorRpc.connectPlaybackWorker(clip.clipId, transfer(channel.port1))
+    newWorker.rpc.connectToCompositor(clip.clipId, transfer(channel.port2))
+
+    // Start playing from 0 - frames are already buffered from prepareNextWorker
+    // The stream loop will immediately send the buffered frame at time 0
+    newWorker.rpc.play(0)
+
+    // Replace entire clip entry to avoid SolidJS proxy issues with nested object updates
+    // Use unwrap to get raw values and avoid spreading proxied objects
+    setClips(clip.clipId, {
+      pooledWorker: newWorker,
+      nextWorker: null,
+      nextWorkerReady: false,
+    })
+
+    // Release old worker back to pool
+    workerPool.release(oldWorker)
+    log('performLoopHandoff: done')
+  }
+
   // Derived max duration from timeline or playback workers
   const maxDuration = createMemo(() => {
     // First check timeline duration
@@ -325,19 +431,29 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
 
     const time = clock.tick()
     const playing = clock.isPlaying()
+    const looping = clock.loop()
+    const duration = maxDuration()
 
     // Detect loop reset (clock jumped backward while playing)
     if (playing && time < prevTime) {
       log('loop reset detected', { prevTime, time })
-      // Reset all playback workers to start - seek all first, then play all
+      // Perform gapless handoff for all playing clips
       const playingClips = Object.values(clips).filter(clip => clip.state === 'playing')
-      Promise.all(playingClips.map(clip => clip.pooledWorker.rpc.seek(0))).then(() => {
-        for (const clip of playingClips) {
-          clip.pooledWorker.rpc.play(0)
-        }
-      })
+      for (const clip of playingClips) {
+        performLoopHandoff(clip)
+      }
     }
     prevTime = time
+
+    // Proactively prepare next workers when approaching end with looping enabled
+    if (playing && looping && duration > 0 && time >= duration - LOOP_PREPARE_AHEAD) {
+      const playingClips = Object.values(clips).filter(
+        clip => clip.state === 'playing' && !clip.nextWorker && clip.buffer,
+      )
+      for (const clip of playingClips) {
+        prepareNextWorker(clip)
+      }
+    }
 
     // Render compositor at current time and track frame availability
     compositor.render(time).then(stats => {
@@ -407,9 +523,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
       log('play', { startTime })
 
       // Wait for any loading clips to finish (with timeout)
-      const loadingClips = Array.from(Object.values(clips)).filter(
-        clip => clip.state === 'loading',
-      )
+      const loadingClips = Array.from(Object.values(clips)).filter(clip => clip.state === 'loading')
       if (loadingClips.length > 0) {
         log('waiting for loading clips', { count: loadingClips.length })
         // Poll for loading completion with timeout
@@ -462,7 +576,15 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
       clock.stop()
 
       // Pause and seek all playback workers to 0
+      // Use unwrap() to get raw objects and avoid SolidJS proxy issues with RPC calls
       for (const clip of Object.values(clips)) {
+        // Clean up nextWorker if it exists
+        if (clip.nextWorker) {
+          workerPool.release(clip.nextWorker)
+          setClips(clip.clipId, 'nextWorker', null)
+          setClips(clip.clipId, 'nextWorkerReady', false)
+        }
+
         if (clip.state === 'playing') {
           clip.pooledWorker.rpc.pause()
         }
@@ -511,9 +633,17 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
 
     setLoop(enabled: boolean) {
       clock.setLoop(enabled)
-      // Sync loop state to all workers
-      for (const clip of Object.values(clips)) {
-        clip.pooledWorker.rpc.setLoop(enabled)
+
+      // Clean up any pending nextWorkers when looping is disabled
+      if (!enabled) {
+        for (const clip of Object.values(clips)) {
+          if (clip.nextWorker) {
+            log('setLoop: cleaning up nextWorker', { clipId: clip.clipId })
+            workerPool.release(clip.nextWorker)
+            setClips(clip.clipId, 'nextWorker', null)
+            setClips(clip.clipId, 'nextWorkerReady', false)
+          }
+        }
       }
     },
 
@@ -533,6 +663,8 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
       const buffer = await blob.arrayBuffer()
       const { duration } = await clip.pooledWorker.rpc.load(buffer)
 
+      // Store buffer for gapless loop handoff
+      setClips(resolvedClipId, 'buffer', buffer)
       setClips(resolvedClipId, 'duration', duration)
       setClips(resolvedClipId, 'state', 'ready')
 
@@ -561,16 +693,15 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
     /** Check if any clip exists for a track (backwards-compatible) */
     hasClipForTrack(trackId: string): boolean {
       return Object.values(clips).some(
-        clip => clip.trackId === trackId &&
-          (clip.state === 'ready' || clip.state === 'playing' || clip.state === 'paused')
+        clip =>
+          clip.trackId === trackId &&
+          (clip.state === 'ready' || clip.state === 'playing' || clip.state === 'paused'),
       )
     },
 
     /** Check if any clip is loading for a track (backwards-compatible) */
     isLoadingForTrack(trackId: string): boolean {
-      return Object.values(clips).some(
-        clip => clip.trackId === trackId && clip.state === 'loading'
-      )
+      return Object.values(clips).some(clip => clip.trackId === trackId && clip.state === 'loading')
     },
 
     /** Get all clipIds for a track */

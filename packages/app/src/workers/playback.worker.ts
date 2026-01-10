@@ -37,9 +37,6 @@ export interface PlaybackWorkerMethods {
   /** Seek to time (buffers from keyframe) */
   seek(time: number): Promise<void>
 
-  /** Set loop mode (enables pre-buffering from start when near end) */
-  setLoop(enabled: boolean): void
-
   /** Get current buffer range */
   getBufferRange(): { start: number; end: number }
 
@@ -278,12 +275,15 @@ let frameBuffer: FrameData[] = []
 let bufferPosition = 0 // Where we've decoded up to (seconds)
 let isBuffering = false // Lock to prevent concurrent buffer operations
 
+// Unique worker ID for debugging
+const workerId = Math.random().toString(36).substring(2, 8)
+log('Worker created with ID:', workerId)
+
 // Playback timing state
 let isPlaying = false
 let startWallTime = 0 // performance.now() when play started
 let startMediaTime = 0 // media time when play started
 let speed = 1
-let loopEnabled = false // Whether to pre-buffer from start when near end
 
 // Compositor connection
 let compositor: RPC<CompositorFrameMethods> | null = null
@@ -533,48 +533,9 @@ async function bufferAhead(fromTime: number): Promise<void> {
   }
 }
 
-/** Buffer frames from the start (for loop pre-buffering) */
-async function bufferFromStart(): Promise<void> {
-  if (!videoSink || !videoTrack) return
-  if (isBuffering) return
-
-  // Check if we already have frames at the start
-  if (frameBuffer.length > 0 && frameBuffer[0].timestamp <= 100_000) {
-    return // Already have frames near 0
-  }
-
-  isBuffering = true
-  log('bufferFromStart: pre-buffering for loop')
-
-  try {
-    // Get first keyframe
-    const keyPacket = await videoSink.getKeyPacket(0)
-    if (!keyPacket) return
-
-    let packet: typeof keyPacket | null = keyPacket
-    let decoded = 0
-
-    // Buffer first few frames
-    while (packet && decoded < BUFFER_AHEAD_FRAMES / 2) {
-      const sample = packetToSample(packet)
-      try {
-        await decodeAndBuffer(sample)
-        decoded++
-      } catch (error) {
-        log('bufferFromStart: decode failed, skipping', { pts: sample.pts, error })
-      }
-      packet = await videoSink.getNextPacket(packet)
-    }
-  } catch (error) {
-    log('bufferFromStart error', { error })
-  } finally {
-    isBuffering = false
-  }
-}
-
 /** Seek to time (from keyframe) */
 async function seekToTime(time: number): Promise<void> {
-  log('seekToTime', { time })
+  log('seekToTime: starting', { time })
 
   // Clear buffer
   frameBuffer = []
@@ -592,6 +553,8 @@ async function seekToTime(time: number): Promise<void> {
   }
   pendingFrameResolvers = []
 
+  log('seekToTime: cleared pending state')
+
   // Reset decoder
   if (decoder && decoder.state !== 'closed') {
     decoder.reset()
@@ -599,14 +562,24 @@ async function seekToTime(time: number): Promise<void> {
   }
   decoderReady = false
 
-  if (!videoSink) return
+  log('seekToTime: decoder reset')
+
+  if (!videoSink) {
+    log('seekToTime: no videoSink, returning')
+    return
+  }
 
   // Find keyframe before target
+  log('seekToTime: getting keyframe packet')
   const keyPacket = await videoSink.getKeyPacket(time)
   bufferPosition = keyPacket?.timestamp ?? 0
 
+  log('seekToTime: got keyframe, buffering ahead')
+
   // Buffer from keyframe to target + ahead
   await bufferAhead(bufferPosition)
+
+  log('seekToTime: done')
 }
 
 /** Get current media time from wall clock */
@@ -671,18 +644,11 @@ function streamLoop(): void {
   // Send frame to compositor
   sendFrameToCompositor(time)
 
-  // Trim frames behind us to free memory (but preserve start frames if looping)
-  if (!loopEnabled || time < duration - BUFFER_AHEAD_SECONDS) {
-    trimOldFrames(time)
-  }
+  // Trim frames behind us to free memory
+  trimOldFrames(time)
 
   // Buffer ahead
   bufferAhead(time)
-
-  // Pre-buffer from start when near end with looping enabled
-  if (loopEnabled && duration > 0 && time >= duration - BUFFER_AHEAD_SECONDS) {
-    bufferFromStart()
-  }
 
   // Continue loop
   animationFrameId = requestAnimationFrame(streamLoop)
@@ -790,6 +756,11 @@ expose<PlaybackWorkerMethods>({
     log('connectToCompositor', { clipId: id })
     clipId = id
     compositor = rpc<CompositorFrameMethods>(port)
+
+    // Immediately send buffered frame if available (for gapless handoff)
+    if (frameBuffer.length > 0) {
+      sendFrameToCompositor(startMediaTime)
+    }
   },
 
   play(startTime, playbackSpeed = 1) {
@@ -805,7 +776,7 @@ expose<PlaybackWorkerMethods>({
   },
 
   pause() {
-    log('pause')
+    log('pause RPC received', { workerId, clipId, isPlaying })
 
     // Capture current position
     startMediaTime = getCurrentMediaTime()
@@ -816,7 +787,7 @@ expose<PlaybackWorkerMethods>({
   },
 
   async seek(time) {
-    log('seek', { time })
+    log('seek RPC received', { workerId, time, clipId, hasVideoSink: !!videoSink })
     const wasPlaying = isPlaying
 
     if (wasPlaying) {
@@ -843,11 +814,6 @@ expose<PlaybackWorkerMethods>({
     }
   },
 
-  setLoop(enabled) {
-    log('setLoop', { enabled })
-    loopEnabled = enabled
-  },
-
   getBufferRange() {
     if (frameBuffer.length === 0) {
       return { start: 0, end: 0 }
@@ -871,7 +837,7 @@ expose<PlaybackWorkerMethods>({
   },
 
   destroy() {
-    log('destroy')
+    log('destroy RPC received', { workerId, clipId })
 
     stopStreamLoop()
 
