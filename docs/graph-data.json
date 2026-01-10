@@ -956,6 +956,50 @@
       "created_at": "2026-01-10T00:30:30.751302+01:00",
       "updated_at": "2026-01-10T00:30:30.751302+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"HEAD~1\",\"confidence\":95}"
+    },
+    {
+      "id": 88,
+      "change_id": "4e923869-7c29-4bd9-a764-6cc3899413fa",
+      "node_type": "action",
+      "title": "Implement gapless worker handoff for looping",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-10T01:02:08.136415+01:00",
+      "updated_at": "2026-01-10T01:02:08.136415+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 89,
+      "change_id": "ba26f5b5-3e1f-4f58-8b1e-0690646ed129",
+      "node_type": "observation",
+      "title": "Looping is now a player-level concern, not worker-level. Workers stay stateless - player orchestrates gapless handoff by spinning up fresh workers preemptively.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-10T01:02:17.537761+01:00",
+      "updated_at": "2026-01-10T01:02:17.537761+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 90,
+      "change_id": "e08ca0fd-ca4d-46a1-ae4e-fce1a7632058",
+      "node_type": "outcome",
+      "title": "Committed: fix gapless worker handoff for seamless looping",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-10T02:12:19.993286+01:00",
+      "updated_at": "2026-01-10T02:12:19.993286+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"HEAD~1\",\"confidence\":95}"
+    },
+    {
+      "id": 91,
+      "change_id": "75935ec6-0b4b-46f3-b3b9-396423015b7f",
+      "node_type": "outcome",
+      "title": "Committed: add loop perf test to workflow docs",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-10T02:12:20.042837+01:00",
+      "updated_at": "2026-01-10T02:12:20.042837+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"9369ebd\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -1838,6 +1882,50 @@
       "weight": 1.0,
       "rationale": "Committed",
       "created_at": "2026-01-10T00:30:35.881783+01:00"
+    },
+    {
+      "id": 81,
+      "from_node_id": 80,
+      "to_node_id": 88,
+      "from_change_id": "e83edd3d-b7a7-4941-8079-724bf7dc8547",
+      "to_change_id": "4e923869-7c29-4bd9-a764-6cc3899413fa",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation approach",
+      "created_at": "2026-01-10T01:02:12.835255+01:00"
+    },
+    {
+      "id": 82,
+      "from_node_id": 88,
+      "to_node_id": 89,
+      "from_change_id": "4e923869-7c29-4bd9-a764-6cc3899413fa",
+      "to_change_id": "ba26f5b5-3e1f-4f58-8b1e-0690646ed129",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Architecture insight",
+      "created_at": "2026-01-10T01:02:21.321588+01:00"
+    },
+    {
+      "id": 83,
+      "from_node_id": 88,
+      "to_node_id": 90,
+      "from_change_id": "4e923869-7c29-4bd9-a764-6cc3899413fa",
+      "to_change_id": "e08ca0fd-ca4d-46a1-ae4e-fce1a7632058",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-10T02:12:24.642276+01:00"
+    },
+    {
+      "id": 84,
+      "from_node_id": 88,
+      "to_node_id": 91,
+      "from_change_id": "4e923869-7c29-4bd9-a764-6cc3899413fa",
+      "to_change_id": "75935ec6-0b4b-46f3-b3b9-396423015b7f",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-10T02:12:24.652492+01:00"
     }
   ]
 }

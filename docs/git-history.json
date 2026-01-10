@@ -1,19 +1,27 @@
 [
   {
-    "hash": "ecf639cc751adf77b6b0131c983fe6c38129c2ab",
-    "short_hash": "ecf639c",
+    "hash": "9369ebdbe7936f48d290d2f885affd340103053e",
+    "short_hash": "9369ebd",
     "author": "bigmistqke",
-    "date": "2026-01-10T00:30:16+01:00",
-    "message": "feat: frame quality tracking with stale frame detection\n\n- Add RenderStats interface with expected/rendered/dropped/stale counts\n- Compositor tracks stale frames (same timestamp as previous render)\n- Player counts frame stats and reports to perf monitor\n- Add perf.count(label, amount) for accumulating counters\n- Perf test displays dropped + stale frame summary\n- Add loop pre-buffering to playback workers\n- Sync loop state to workers for buffer management",
-    "files_changed": 5
+    "date": "2026-01-10T02:12:10+01:00",
+    "message": "chore: add loop perf test to workflow docs",
+    "files_changed": 1
   },
   {
-    "hash": "9a612d74962773d9c84e4e07416e48a442ef3d4d",
-    "short_hash": "9a612d7",
+    "hash": "8ac2ab81afba36ec095e3dead10fc380127bc877",
+    "short_hash": "8ac2ab8",
     "author": "bigmistqke",
-    "date": "2026-01-10T00:30:09+01:00",
-    "message": "fix: bin/download buttons operate on clip at current time\n\n- Add getClipAtTime helper to find clip overlapping playback position\n- Add removeClip to delete single clip instead of clearing all\n- clearRecording now removes only the clip at current time\n- downloadClip now downloads only the clip at current time\n- Fix hasClip -> hasClipForTrack for button visibility",
+    "date": "2026-01-10T02:12:06+01:00",
+    "message": "fix: gapless worker handoff for seamless looping\n\nMove loop responsibility from worker to player. Workers play linearly,\nplayer orchestrates handoff by proactively spinning up fresh workers\nand swapping atomically at loop point.",
     "files_changed": 2
+  },
+  {
+    "hash": "bd8525d5f646cede85637c9e1bb6dc4a7968debe",
+    "short_hash": "bd8525d",
+    "author": "bigmistqke",
+    "date": "2026-01-10T00:30:20+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 3
   },
   {
     "hash": "7739a2829227c4f7fb33b94a9058d6f8fa7e2764",
