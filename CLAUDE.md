@@ -10,6 +10,7 @@ Work protocol for Claude Code. Project knowledge lives in the decision graph - u
 - **Commit messages** - No Claude signature
 - **TypeScript checks** - Run `pnpm types` once when creating new files, don't repeatedly check
 - **Running TypeScript** - Use `node` directly (Node >=24 has native TS support): `node script.ts`
+- **Performance tests** - Run `pnpm perf --loop --duration=6000 --tracks=1 --headless` to test playback loop behavior
 
 ## Code Conventions
 
