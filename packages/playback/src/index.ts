@@ -1,18 +1,18 @@
-// Frame buffer (stores raw ArrayBuffer, creates VideoFrame on-demand)
+// Frame utilities
 export {
-  createFrameBuffer,
-  type FrameBuffer,
-  type FrameBufferOptions,
-  type FrameBufferState,
+  alignUp,
+  calculateAlignedLayout,
+  dataToFrame,
+  frameToData,
   type FrameData,
-} from './frame-buffer'
+  type PlaneLayout,
+} from './frame-utils'
 
-// Audio scheduler
+// Playback engine
 export {
-  type AudioScheduler,
-  type AudioSchedulerOptions,
-  type AudioSchedulerState,
-} from './audio-scheduler'
-
-// Playback
-export { createPlayback, type Playback, type PlaybackOptions, type PlaybackState } from './playback'
+  createPlaybackEngine,
+  PlaybackEngine,
+  type FrameCallback,
+  type PlaybackEngineConfig,
+  type PlaybackState,
+} from './playback-engine'

@@ -7,7 +7,8 @@
 
 import { $MESSENGER, rpc, transfer } from '@bigmistqke/rpc/messenger'
 import type { Demuxer } from '@eddy/codecs'
-import { createPlayback } from '@eddy/playback'
+// TODO: Restore when @eddy/playback module is created
+// import { createPlayback } from '@eddy/playback'
 import { createSignal, Match, Show, Switch } from 'solid-js'
 import { action, defer, hold } from '~/hooks/action'
 import { resource } from '~/hooks/resource'
@@ -109,79 +110,11 @@ export default function Debug() {
     await finalize()
   }
 
+  // TODO: Restore when @eddy/playback module is created
   // Playback action - demux and play the recorded blob on canvas
-  const playback = action(async (blob: Blob, { onCleanup }) => {
-    if (!canvasRef) throw new Error('No canvas')
-
-    addLog('creating demuxer...')
-    const demuxWorker = rpc<DemuxWorkerMethods>(new DemuxWorker())
-    const buffer = await blob.arrayBuffer()
-    const info = await demuxWorker.init(buffer)
-    addLog(
-      `demuxed: ${info.duration.toFixed(2)}s, ${info.videoTracks.length > 0 ? 'has video' : 'no video'}`,
-    )
-
-    const demuxer: Demuxer = {
-      info,
-      getVideoConfig: () => demuxWorker.getVideoConfig(),
-      getAudioConfig: () => demuxWorker.getAudioConfig(),
-      getSamples: (trackId, startTime, endTime) =>
-        demuxWorker.getSamples(trackId, startTime, endTime),
-      getAllSamples: trackId => demuxWorker.getAllSamples(trackId),
-      getKeyframeBefore: (trackId, time) => demuxWorker.getKeyframeBefore(trackId, time),
-      destroy() {
-        demuxWorker.destroy()
-        demuxWorker[$MESSENGER].terminate()
-      },
-    }
-
-    addLog('creating playback...')
-    const pb = await createPlayback(demuxer, {})
-    await pb.prepareToPlay(0)
-    pb.startAudio(0) // Sets state to 'playing' so tick() will buffer
-    addLog(`playback ready, duration: ${pb.duration.toFixed(2)}s`)
-
-    onCleanup(() => {
-      pb.destroy()
-      demuxer.destroy()
-    })
-
-    // Set up canvas
-    const ctx = canvasRef.getContext('2d')!
-    canvasRef.width = 640
-    canvasRef.height = 480
-
-    // Simple render loop
-    let animationId: number | null = null
-    let startTime = performance.now()
-    let frameCount = 0
-
-    function render() {
-      const elapsed = (performance.now() - startTime) / 1000
-
-      pb.tick(elapsed)
-
-      const frame = pb.getFrameAt(elapsed)
-      if (frame) {
-        ctx.drawImage(frame, 0, 0, canvasRef!.width, canvasRef!.height)
-        frame.close()
-        frameCount++
-      }
-
-      if (elapsed < pb.duration) {
-        animationId = requestAnimationFrame(render)
-      } else {
-        addLog(`playback complete: ${frameCount} frames`)
-      }
-    }
-
-    render()
-
-    onCleanup(() => {
-      if (animationId) cancelAnimationFrame(animationId)
-    })
-
-    return pb
+  const playback = action(async (_blob: Blob, { onCleanup: _onCleanup }) => {
+    addLog('playback not yet implemented - @eddy/playback module needs to be created')
+    return null
   })
 
   const status = () => {

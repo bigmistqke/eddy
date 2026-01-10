@@ -1,8 +1,8 @@
-import { expose, transfer, type Transferred } from '@bigmistqke/rpc/messenger'
-import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
+import { expose, type Transferred } from '@bigmistqke/rpc/messenger'
+import { createCompositorEngine, type CompositorEngine } from '@eddy/compositor'
 import { debug } from '@eddy/utils'
 import { getActivePlacements } from '~/lib/timeline-compiler'
-import type { LayoutTimeline, Viewport } from '~/lib/layout-types'
+import type { LayoutTimeline } from '~/lib/layout-types'
 import { PREVIEW_CLIP_ID } from '~/lib/layout-types'
 
 const log = debug('compositor-worker', false)
@@ -54,91 +54,15 @@ export interface CompositorWorkerMethods {
   destroy(): void
 }
 
-// View type with our specific uniforms
-interface CompositorView {
-  uniforms: {
-    u_video: { set(value: number): void }
-  }
-  attributes: {
-    a_quad: { bind(): void }
-  }
-}
-
 /**********************************************************************************/
 /*                                                                                */
-/*                                      Utils                                     */
+/*                                     State                                      */
 /*                                                                                */
 /**********************************************************************************/
 
-function createVideoTexture(glCtx: WebGL2RenderingContext | WebGLRenderingContext): WebGLTexture {
-  const texture = glCtx.createTexture()
-  if (!texture) throw new Error('Failed to create texture')
-
-  glCtx.bindTexture(glCtx.TEXTURE_2D, texture)
-  glCtx.texParameteri(glCtx.TEXTURE_2D, glCtx.TEXTURE_WRAP_S, glCtx.CLAMP_TO_EDGE)
-  glCtx.texParameteri(glCtx.TEXTURE_2D, glCtx.TEXTURE_WRAP_T, glCtx.CLAMP_TO_EDGE)
-  glCtx.texParameteri(glCtx.TEXTURE_2D, glCtx.TEXTURE_MIN_FILTER, glCtx.LINEAR)
-  glCtx.texParameteri(glCtx.TEXTURE_2D, glCtx.TEXTURE_MAG_FILTER, glCtx.LINEAR)
-
-  return texture
-}
-
-/** Get or create a texture for a clipId */
-function getOrCreateTexture(
-  glCtx: WebGL2RenderingContext | WebGLRenderingContext,
-  textureMap: Map<string, WebGLTexture>,
-  clipId: string,
-): WebGLTexture {
-  let texture = textureMap.get(clipId)
-  if (!texture) {
-    texture = createVideoTexture(glCtx)
-    textureMap.set(clipId, texture)
-  }
-  return texture
-}
-
-/** Convert viewport from layout coordinates (y=0 at top) to WebGL coordinates (y=0 at bottom) */
-function viewportToWebGL(viewport: Viewport, canvasHeight: number): Viewport {
-  return {
-    x: viewport.x,
-    y: canvasHeight - viewport.y - viewport.height,
-    width: viewport.width,
-    height: viewport.height,
-  }
-}
-
-// Simple shader - samples a single texture per quad
-const fragmentShader = glsl`
-  precision mediump float;
-
-  ${uniform.sampler2D('u_video')}
-
-  varying vec2 v_uv;
-
-  void main() {
-    vec2 uv = v_uv * 0.5 + 0.5;
-    uv.y = 1.0 - uv.y; // Flip Y for video
-    gl_FragColor = texture2D(u_video, uv);
-  }
-`
-
-/**********************************************************************************/
-/*                                                                                */
-/*                                     Methods                                    */
-/*                                                                                */
-/**********************************************************************************/
-
-// Worker state - main canvas (visible)
-let canvas: OffscreenCanvas | null = null
-let gl: WebGL2RenderingContext | WebGLRenderingContext | null = null
-let view: CompositorView | null = null
-let program: WebGLProgram | null = null
-
-// Capture canvas state (for pre-rendering, not visible)
-let captureCanvas: OffscreenCanvas | null = null
-let captureGl: WebGL2RenderingContext | WebGLRenderingContext | null = null
-let captureView: CompositorView | null = null
-let captureProgram: WebGLProgram | null = null
+// Compositor engines
+let mainEngine: CompositorEngine | null = null
+let captureEngine: CompositorEngine | null = null
 
 // Current layout timeline
 let timeline: LayoutTimeline | null = null
@@ -153,10 +77,6 @@ const previewReaders = new Map<string, ReadableStreamDefaultReader<VideoFrame>>(
 // Playback worker connections - keyed by clipId
 const playbackWorkerPorts = new Map<string, MessagePort>()
 
-// Dynamic texture pool - keyed by clipId
-const textures = new Map<string, WebGLTexture>()
-const captureTextures = new Map<string, WebGLTexture>()
-
 // Track last rendered frame info per clipId for stale detection
 // A frame is only stale if enough time passed for a new frame to be expected
 interface LastFrameInfo {
@@ -164,6 +84,12 @@ interface LastFrameInfo {
   duration: number // VideoFrame.duration (microseconds)
 }
 const lastRenderedFrame = new Map<string, LastFrameInfo>()
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                   Helpers                                      */
+/*                                                                                */
+/**********************************************************************************/
 
 function setFrame(clipId: string, frame: VideoFrame | null) {
   // Close previous playback frame
@@ -199,13 +125,19 @@ async function readPreviewStream(trackId: string, stream: ReadableStream<VideoFr
       }
       previewFrames.set(trackId, frame)
     }
-  } catch (e) {
-    log('readPreviewStream: error', { trackId, error: e })
+  } catch (error) {
+    log('readPreviewStream: error', { trackId, error })
   }
 
   previewReaders.delete(trackId)
   log('readPreviewStream: ended', { trackId })
 }
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                    Methods                                     */
+/*                                                                                */
+/**********************************************************************************/
 
 expose<CompositorWorkerMethods>({
   setFrame,
@@ -214,31 +146,11 @@ expose<CompositorWorkerMethods>({
     log('init', { width, height })
 
     // Main canvas (visible)
-    canvas = offscreenCanvas
-    gl = canvas.getContext('webgl2') || canvas.getContext('webgl')
-
-    if (!gl) {
-      throw new Error('WebGL not supported')
-    }
-
-    // Compile shader for main canvas
-    const compiled = compile.toQuad(gl, fragmentShader)
-    view = compiled.view as CompositorView
-    program = compiled.program
-
-    gl.useProgram(program)
+    mainEngine = createCompositorEngine(offscreenCanvas)
 
     // Capture canvas (for pre-rendering, same size)
-    captureCanvas = new OffscreenCanvas(width, height)
-    captureGl = captureCanvas.getContext('webgl2') || captureCanvas.getContext('webgl')
-
-    if (captureGl) {
-      const captureCompiled = compile.toQuad(captureGl, fragmentShader)
-      captureView = captureCompiled.view as CompositorView
-      captureProgram = captureCompiled.program
-
-      captureGl.useProgram(captureProgram)
-    }
+    const captureCanvas = new OffscreenCanvas(width, height)
+    captureEngine = createCompositorEngine(captureCanvas)
   },
 
   setTimeline(newTimeline) {
@@ -310,20 +222,16 @@ expose<CompositorWorkerMethods>({
   render(time): RenderStats {
     const stats: RenderStats = { expected: 0, rendered: 0, dropped: 0, stale: 0 }
 
-    if (!gl || !canvas || !view || !program || !timeline) return stats
+    if (!mainEngine || !timeline) return stats
 
-    gl.useProgram(program)
-
-    // Clear entire canvas with dark background
-    gl.viewport(0, 0, canvas.width, canvas.height)
-    gl.clearColor(0.1, 0.1, 0.1, 1.0)
-    gl.clear(gl.COLOR_BUFFER_BIT)
+    // Clear canvas
+    mainEngine.clear()
 
     // Query timeline for active placements at this time
     const activePlacements = getActivePlacements(timeline, time)
     stats.expected = activePlacements.length
 
-    // Draw all active placements (both playback and preview)
+    // Render all active placements
     for (const { placement } of activePlacements) {
       // Get frame from appropriate source based on clipId
       const isPreview = placement.clipId === PREVIEW_CLIP_ID
@@ -337,18 +245,15 @@ expose<CompositorWorkerMethods>({
       }
 
       // Check for stale frame - only count as stale if a new frame SHOULD be available
-      // Frame timestamp/duration are in microseconds, render time is in seconds
       const frameKey = isPreview ? `preview-${placement.trackId}` : placement.clipId
       const lastInfo = lastRenderedFrame.get(frameKey)
       if (lastInfo && frame.timestamp === lastInfo.timestamp && lastInfo.duration > 0) {
         // Same frame as before - check if current render time exceeds frame's valid period
-        // Convert frame timestamp + duration to seconds for comparison with render time
         const frameEndTime = (lastInfo.timestamp + lastInfo.duration) / 1_000_000
         if (time >= frameEndTime) {
           // Render time is past when next frame should be available - this is truly stale
           stats.stale++
         }
-        // Otherwise: still within frame's valid period (expected for low-FPS video on high-FPS display)
       }
       lastRenderedFrame.set(frameKey, {
         timestamp: frame.timestamp,
@@ -359,76 +264,41 @@ expose<CompositorWorkerMethods>({
 
       // Use trackId for texture key when preview (avoids collision with playback textures)
       const textureKey = isPreview ? `preview-${placement.trackId}` : placement.clipId
-      const texture = getOrCreateTexture(gl, textures, textureKey)
-
-      gl.activeTexture(gl.TEXTURE0)
-      gl.bindTexture(gl.TEXTURE_2D, texture)
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, frame)
-
-      // Convert viewport to WebGL coordinates (y flipped)
-      const vp = viewportToWebGL(placement.viewport, canvas.height)
-      gl.viewport(vp.x, vp.y, vp.width, vp.height)
-
-      view.uniforms.u_video.set(0)
-      view.attributes.a_quad.bind()
-      gl.drawArrays(gl.TRIANGLES, 0, 6)
+      mainEngine.renderPlacement({
+        id: textureKey,
+        frame,
+        viewport: placement.viewport,
+      })
     }
 
     return stats
   },
 
-  // Set a frame on the capture canvas (for pre-rendering)
   setCaptureFrame(clipId, frame) {
-    if (!captureGl) return
+    if (!captureEngine || !frame) return
 
-    const texture = getOrCreateTexture(captureGl, captureTextures, clipId)
-
-    captureGl.activeTexture(captureGl.TEXTURE0)
-    captureGl.bindTexture(captureGl.TEXTURE_2D, texture)
-
-    if (frame) {
-      captureGl.texImage2D(captureGl.TEXTURE_2D, 0, captureGl.RGBA, captureGl.RGBA, captureGl.UNSIGNED_BYTE, frame)
-      frame.close()
-    }
+    captureEngine.uploadFrame(clipId, frame)
+    frame.close()
   },
 
   renderToCaptureCanvas(time) {
-    if (!captureGl || !captureCanvas || !captureView || !captureProgram || !timeline) return
-
-    captureGl.useProgram(captureProgram)
-
-    // Clear
-    captureGl.viewport(0, 0, captureCanvas.width, captureCanvas.height)
-    captureGl.clearColor(0.1, 0.1, 0.1, 1.0)
-    captureGl.clear(captureGl.COLOR_BUFFER_BIT)
+    if (!captureEngine || !timeline) return
 
     // Query timeline for active placements
     const activePlacements = getActivePlacements(timeline, time)
 
-    // Draw each active placement
-    for (const { placement } of activePlacements) {
-      const texture = captureTextures.get(placement.clipId)
-      if (!texture) continue
-
-      captureGl.activeTexture(captureGl.TEXTURE0)
-      captureGl.bindTexture(captureGl.TEXTURE_2D, texture)
-
-      const vp = viewportToWebGL(placement.viewport, captureCanvas.height)
-      captureGl.viewport(vp.x, vp.y, vp.width, vp.height)
-
-      captureView.uniforms.u_video.set(0)
-      captureView.attributes.a_quad.bind()
-      captureGl.drawArrays(captureGl.TRIANGLES, 0, 6)
-    }
+    // Render using pre-uploaded textures
+    captureEngine.renderById(
+      activePlacements.map(({ placement }) => ({
+        id: placement.clipId,
+        viewport: placement.viewport,
+      })),
+    )
   },
 
   captureFrame(timestamp) {
-    if (!captureCanvas) return null
-
-    return new VideoFrame(captureCanvas, {
-      timestamp,
-      alpha: 'discard',
-    })
+    if (!captureEngine) return null
+    return captureEngine.captureFrame(timestamp)
   },
 
   destroy() {
@@ -457,8 +327,14 @@ expose<CompositorWorkerMethods>({
     }
     playbackWorkerPorts.clear()
 
-    // Clear textures
-    textures.clear()
-    captureTextures.clear()
+    // Destroy engines
+    if (mainEngine) {
+      mainEngine.destroy()
+      mainEngine = null
+    }
+    if (captureEngine) {
+      captureEngine.destroy()
+      captureEngine = null
+    }
   },
 })
