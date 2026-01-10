@@ -157,8 +157,13 @@ const playbackWorkerPorts = new Map<string, MessagePort>()
 const textures = new Map<string, WebGLTexture>()
 const captureTextures = new Map<string, WebGLTexture>()
 
-// Track last rendered frame timestamp per clipId for stale detection
-const lastRenderedTimestamp = new Map<string, number>()
+// Track last rendered frame info per clipId for stale detection
+// A frame is only stale if enough time passed for a new frame to be expected
+interface LastFrameInfo {
+  timestamp: number // VideoFrame.timestamp (microseconds)
+  duration: number // VideoFrame.duration (microseconds)
+}
+const lastRenderedFrame = new Map<string, LastFrameInfo>()
 
 function setFrame(clipId: string, frame: VideoFrame | null) {
   // Close previous playback frame
@@ -331,13 +336,24 @@ expose<CompositorWorkerMethods>({
         continue
       }
 
-      // Check for stale frame (same timestamp as last render)
+      // Check for stale frame - only count as stale if a new frame SHOULD be available
+      // Frame timestamp/duration are in microseconds, render time is in seconds
       const frameKey = isPreview ? `preview-${placement.trackId}` : placement.clipId
-      const lastTimestamp = lastRenderedTimestamp.get(frameKey)
-      if (lastTimestamp !== undefined && frame.timestamp === lastTimestamp) {
-        stats.stale++
+      const lastInfo = lastRenderedFrame.get(frameKey)
+      if (lastInfo && frame.timestamp === lastInfo.timestamp && lastInfo.duration > 0) {
+        // Same frame as before - check if current render time exceeds frame's valid period
+        // Convert frame timestamp + duration to seconds for comparison with render time
+        const frameEndTime = (lastInfo.timestamp + lastInfo.duration) / 1_000_000
+        if (time >= frameEndTime) {
+          // Render time is past when next frame should be available - this is truly stale
+          stats.stale++
+        }
+        // Otherwise: still within frame's valid period (expected for low-FPS video on high-FPS display)
       }
-      lastRenderedTimestamp.set(frameKey, frame.timestamp)
+      lastRenderedFrame.set(frameKey, {
+        timestamp: frame.timestamp,
+        duration: frame.duration ?? 0,
+      })
 
       stats.rendered++
 

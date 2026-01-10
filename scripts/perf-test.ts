@@ -15,9 +15,8 @@
  *   --loop             Enable looping (test loop behavior)
  */
 
-import puppeteer, { type Browser, type Page } from 'puppeteer'
 import * as fs from 'fs'
-import * as path from 'path'
+import puppeteer, { type Browser, type Page } from 'puppeteer'
 
 // Parse CLI args
 const args = process.argv.slice(2)
@@ -64,7 +63,9 @@ async function main() {
     console.error(`❌ Error: Video file not found: ${VIDEO_PATH}`)
     console.error('   Please provide a valid path to a test video file (WebM or MP4)')
     console.error('')
-    console.error('   Example: pnpm perf --video=packages/codecs/src/__tests__/fixtures/test-vp9.webm')
+    console.error(
+      '   Example: pnpm perf --video=packages/codecs/src/__tests__/fixtures/test-vp9.webm',
+    )
     process.exit(1)
   }
 
@@ -88,10 +89,7 @@ async function main() {
 
     // Grant camera/microphone permissions
     const context = browser.defaultBrowserContext()
-    await context.overridePermissions(APP_URL, [
-      'camera',
-      'microphone',
-    ])
+    await context.overridePermissions(APP_URL, ['camera', 'microphone'])
 
     // Enable console logging from the page
     page.on('console', msg => {
@@ -159,43 +157,33 @@ async function main() {
 
     console.log('✅ All clips loaded to project')
 
-    // Wait and check status periodically
-    for (let i = 0; i < 10; i++) {
-      await sleep(1000)
-      const status = await page.evaluate(() => {
-        const debug = (window as any).__EDDY_DEBUG__
-        const player = debug?.player
-        return {
-          hasClip0: player?.hasClipForTrack?.('track-0'),
-          hasClip1: player?.hasClipForTrack?.('track-1'),
-          isLoading0: player?.isLoadingForTrack?.('track-0'),
-          isLoading1: player?.isLoadingForTrack?.('track-1'),
-        }
-      })
-      console.log(`⏳ Status check ${i + 1}/10:`, JSON.stringify(status))
-      if (status.hasClip0 && status.hasClip1) {
-        console.log('✅ Clips ready!')
-        break
-      }
-    }
-
-    const debugInfo = await page.evaluate(() => {
+    const debugInfo = await page.evaluate((numTracks: number) => {
       const debug = (window as any).__EDDY_DEBUG__
       const project = debug?.editor?.project()
       const player = debug?.player
+
+      // Build track status for each loaded track
+      const trackStatus: Record<string, { hasClip: boolean | string; isLoading: boolean | string }> =
+        {}
+      for (let i = 0; i < numTracks; i++) {
+        const trackId = `track-${i}`
+        trackStatus[trackId] = {
+          hasClip: player?.hasClipForTrack?.(trackId) ?? 'no hasClipForTrack',
+          isLoading: player?.isLoadingForTrack?.(trackId) ?? 'no isLoadingForTrack',
+        }
+      }
+
       return {
         trackCount: project?.tracks?.length ?? 0,
-        tracks: project?.tracks?.map((t: any) => ({
-          id: t.id,
-          clipCount: t.clips?.length ?? 0,
-          firstClipId: t.clips?.[0]?.id,
-        })) ?? [],
-        hasClip0: player?.hasClipForTrack?.('track-0') ?? 'no hasClipForTrack',
-        hasClip1: player?.hasClipForTrack?.('track-1') ?? 'no hasClipForTrack',
-        isLoading0: player?.isLoadingForTrack?.('track-0') ?? 'no isLoadingForTrack',
-        isLoading1: player?.isLoadingForTrack?.('track-1') ?? 'no isLoadingForTrack',
+        tracks:
+          project?.tracks?.map((t: any) => ({
+            id: t.id,
+            clipCount: t.clips?.length ?? 0,
+            firstClipId: t.clips?.[0]?.id,
+          })) ?? [],
+        trackStatus,
       }
-    })
+    }, NUM_TRACKS)
     console.log('🔍 Debug info:', JSON.stringify(debugInfo, null, 2))
 
     // Reset perf counters before test (main + workers)
@@ -276,22 +264,22 @@ async function main() {
 
       // Sort by average time (descending)
       const sortedLabels = Object.keys(stats.stats).sort(
-        (a, b) => stats.stats[b].avg - stats.stats[a].avg
+        (a, b) => stats.stats[b].avg - stats.stats[a].avg,
       )
 
       // Table header
       console.log(
-        '  Label                        │ Avg (ms) │ Max (ms) │ Min (ms) │ Samples │ Slow  │ Slow %'
+        '  Label                        │ Avg (ms) │ Max (ms) │ Min (ms) │ Samples │ Slow  │ Slow %',
       )
       console.log(
-        '───────────────────────────────┼──────────┼──────────┼──────────┼─────────┼───────┼────────'
+        '───────────────────────────────┼──────────┼──────────┼──────────┼─────────┼───────┼────────',
       )
 
       for (const label of sortedLabels) {
         const s: PerfStats = stats.stats[label]
         const slowPercent = ((s.overThreshold / s.samples) * 100).toFixed(1)
         console.log(
-          `  ${label.padEnd(29)} │ ${s.avg.toFixed(2).padStart(8)} │ ${s.max.toFixed(2).padStart(8)} │ ${s.min.toFixed(2).padStart(8)} │ ${String(s.samples).padStart(7)} │ ${String(s.overThreshold).padStart(5)} │ ${slowPercent.padStart(5)}%`
+          `  ${label.padEnd(29)} │ ${s.avg.toFixed(2).padStart(8)} │ ${s.max.toFixed(2).padStart(8)} │ ${s.min.toFixed(2).padStart(8)} │ ${String(s.samples).padStart(7)} │ ${String(s.overThreshold).padStart(5)} │ ${slowPercent.padStart(5)}%`,
         )
       }
 
@@ -319,7 +307,7 @@ async function main() {
             const s = ws[label]
             const slowPercent = ((s.overThreshold / s.samples) * 100).toFixed(1)
             console.log(
-              `  ${label.padEnd(29)} │ ${s.avg.toFixed(2).padStart(8)} │ ${s.max.toFixed(2).padStart(8)} │ ${String(s.samples).padStart(7)} │ ${slowPercent.padStart(5)}%`
+              `  ${label.padEnd(29)} │ ${s.avg.toFixed(2).padStart(8)} │ ${s.max.toFixed(2).padStart(8)} │ ${String(s.samples).padStart(7)} │ ${slowPercent.padStart(5)}%`,
             )
           }
         }
@@ -335,7 +323,9 @@ async function main() {
         const droppedPercent = (renderLoop.overThreshold / renderLoop.samples) * 100
         console.log('')
         console.log(`  📈 Effective FPS: ${fps.toFixed(1)}`)
-        console.log(`  ⚠️  Dropped frames: ${renderLoop.overThreshold} (${droppedPercent.toFixed(1)}%)`)
+        console.log(
+          `  ⚠️  Dropped frames: ${renderLoop.overThreshold} (${droppedPercent.toFixed(1)}%)`,
+        )
         console.log(`  ⏱️  Avg frame time: ${renderLoop.avg.toFixed(2)}ms`)
         console.log(`  📉 Worst frame: ${renderLoop.max.toFixed(2)}ms`)
         console.log('')
@@ -373,7 +363,9 @@ async function main() {
         if (totalCacheAccess > 0) {
           const hitRate = (cacheHits / totalCacheAccess) * 100
           console.log('')
-          console.log(`  📊 Cache hit rate: ${hitRate.toFixed(1)}% (${cacheHits}/${totalCacheAccess})`)
+          console.log(
+            `  📊 Cache hit rate: ${hitRate.toFixed(1)}% (${cacheHits}/${totalCacheAccess})`,
+          )
 
           if (hitRate < 90) {
             console.log('  ⚠️  Low cache hit rate - frames being evicted before use')
@@ -399,7 +391,6 @@ async function main() {
         if (framesExpected > 0) {
           const droppedRate = (framesDropped / framesExpected) * 100
           const staleRate = (framesStale / framesExpected) * 100
-          const problemRate = ((framesDropped + framesStale) / framesExpected) * 100
           console.log('')
           console.log('───────────────────────────────────────────────────────────────')
           console.log('                    FRAME QUALITY SUMMARY')
@@ -411,8 +402,10 @@ async function main() {
           console.log(`  🔁 Stale frames:    ${framesStale} (${staleRate.toFixed(1)}%)`)
           console.log('')
 
+          // Quality rating based on dropped + stale frames
+          const problemRate = droppedRate + staleRate
           if (problemRate > 10) {
-            console.log('  🔴 POOR: More than 10% problem frames (dropped + stale)')
+            console.log('  🔴 POOR: More than 10% problem frames')
           } else if (problemRate > 5) {
             console.log('  🟡 FAIR: 5-10% problem frames')
           } else if (problemRate > 1) {
@@ -432,7 +425,6 @@ async function main() {
         ;(window as any).eddy.perf.logSummary()
       }
     })
-
   } catch (error) {
     console.error('❌ Error:', error)
     process.exit(1)
