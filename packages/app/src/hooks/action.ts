@@ -1,5 +1,5 @@
+import { assertedNotNullish, isGeneratorFunction, isObject } from '@eddy/utils'
 import { createSignal, type Accessor } from 'solid-js'
-import { assertedNotNullish, isGeneratorFunction, isObject } from '~/utils'
 
 /** Symbol to identify hold marker */
 export const $HOLD = Symbol('hold')

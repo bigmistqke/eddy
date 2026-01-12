@@ -1,6 +1,6 @@
 import { expose, rpc, transfer, type RPC } from '@bigmistqke/rpc/messenger'
 import type { VideoTrackInfo } from '@eddy/codecs'
-import { createPlaybackEngine, type PlaybackEngine, type PlaybackState } from '@eddy/playback'
+import { createPlayback, type Playback, type PlaybackState } from '@eddy/playback'
 import { debug } from '@eddy/utils'
 
 const log = debug('playback-worker', false)
@@ -33,7 +33,10 @@ export interface PlaybackWorkerMethods {
   getState(): PlaybackState
 
   /** Get performance stats */
-  getPerf(): Record<string, { samples: number; avg: number; max: number; min: number; overThreshold: number }>
+  getPerf(): Record<
+    string,
+    { samples: number; avg: number; max: number; min: number; overThreshold: number }
+  >
 
   /** Reset performance stats */
   resetPerf(): void
@@ -57,7 +60,7 @@ let compositor: RPC<CompositorFrameMethods> | null = null
 let clipId = ''
 
 // Playback engine
-let engine: PlaybackEngine | null = null
+let engine: Playback | null = null
 
 /**********************************************************************************/
 /*                                                                                */
@@ -75,7 +78,7 @@ expose<PlaybackWorkerMethods>({
     }
 
     // Create new engine with frame callback
-    engine = createPlaybackEngine({
+    engine = createPlayback({
       onFrame: frame => {
         if (compositor && clipId) {
           if (frame) {

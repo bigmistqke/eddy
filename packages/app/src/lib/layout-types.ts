@@ -52,7 +52,7 @@ export interface LayoutSegment {
  * The compiled layout timeline.
  * Segments are sorted by startTime for O(log n) binary search.
  */
-export interface LayoutTimeline {
+export interface CompiledTimeline {
   /** Total duration in seconds */
   duration: number
   /** Sorted segments (by startTime) */

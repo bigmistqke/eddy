@@ -5,11 +5,11 @@
  * The timeline uses segments with placements for O(log n) time queries.
  */
 
-import type { Clip, Group, Project, Track, Value } from '@eddy/lexicons'
+import type { Group, Project, Track, Value } from '@eddy/lexicons'
 import type {
   ActivePlacement,
+  CompiledTimeline,
   LayoutSegment,
-  LayoutTimeline,
   Placement,
   TransitionInfo,
   Viewport,
@@ -261,7 +261,7 @@ export function injectPreviewClips(project: Project, previewTrackIds: Set<string
 /**
  * Compile a Project into a LayoutTimeline
  */
-export function compileLayoutTimeline(project: Project, canvasSize: CanvasSize): LayoutTimeline {
+export function compileLayoutTimeline(project: Project, canvasSize: CanvasSize): CompiledTimeline {
   // Collect all clip info
   const clipInfos = collectClipInfos(project, canvasSize)
 
@@ -283,7 +283,7 @@ export function compileLayoutTimeline(project: Project, canvasSize: CanvasSize):
  * Binary search to find segment containing time.
  * Returns the segment or null if time is outside all segments.
  */
-export function findSegmentAtTime(timeline: LayoutTimeline, time: number): LayoutSegment | null {
+export function findSegmentAtTime(timeline: CompiledTimeline, time: number): LayoutSegment | null {
   const { segments } = timeline
   if (segments.length === 0) return null
 
@@ -311,7 +311,7 @@ export function findSegmentAtTime(timeline: LayoutTimeline, time: number): Layou
  * Get all placements active at a given time with computed local times.
  * Uses binary search for O(log n) segment lookup.
  */
-export function getActivePlacements(timeline: LayoutTimeline, time: number): ActivePlacement[] {
+export function getActivePlacements(timeline: CompiledTimeline, time: number): ActivePlacement[] {
   const segment = findSegmentAtTime(timeline, time)
   if (!segment) return []
 
@@ -327,7 +327,7 @@ export function getActivePlacements(timeline: LayoutTimeline, time: number): Act
  * Get all placements that overlap with a time range (for pre-buffering).
  */
 export function getPlacementsInRange(
-  timeline: LayoutTimeline,
+  timeline: CompiledTimeline,
   start: number,
   end: number,
 ): Placement[] {
@@ -352,10 +352,7 @@ export function getPlacementsInRange(
 /**
  * Get the next transition point after a given time.
  */
-export function getNextTransition(
-  timeline: LayoutTimeline,
-  time: number,
-): TransitionInfo | null {
+export function getNextTransition(timeline: CompiledTimeline, time: number): TransitionInfo | null {
   const { segments } = timeline
 
   // Find all segment boundaries after current time

@@ -3,7 +3,7 @@ import { $MESSENGER, rpc, transfer } from '@bigmistqke/rpc/messenger'
 import { every, whenEffect, whenMemo } from '@bigmistqke/solid-whenever'
 import type { AudioEffect, Clip, ClipSource, ClipSourceStem, Project, Track } from '@eddy/lexicons'
 import { getMasterMixer, resumeAudioContext } from '@eddy/mixer'
-import { debug } from '@eddy/utils'
+import { assertedNotNullish, debug } from '@eddy/utils'
 import { createEffect, createSelector, createSignal, mapArray, type Accessor } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
 import { action, defer, hold } from '~/hooks/action'
@@ -12,7 +12,6 @@ import { resource } from '~/hooks/resource'
 import { getProjectByRkey, getStemBlob, publishProject } from '~/lib/atproto/crud'
 import { createDebugInfo as initDebugInfo } from '~/lib/create-debug-info'
 import { createResourceMap } from '~/lib/create-resource-map'
-import { assertedNotNullish } from '~/utils'
 import type { CaptureWorkerMethods } from '~/workers/capture.worker'
 import CaptureWorker from '~/workers/capture.worker?worker'
 import type { MuxerWorkerMethods } from '~/workers/muxer.worker'
@@ -466,7 +465,11 @@ export function createEditor(options: CreateEditorOptions) {
             // Load new clip if available
             if (clip) {
               const blob = getClipBlob(clip.id)
-              if (blob && !_player.hasClipForTrack(trackId) && !_player.isLoadingForTrack(trackId)) {
+              if (
+                blob &&
+                !_player.hasClipForTrack(trackId) &&
+                !_player.isLoadingForTrack(trackId)
+              ) {
                 log('loading clip into player', { trackId, clipId: clip.id })
                 _player.loadClip(trackId, blob, clip.id).catch(err => {
                   console.error(`Failed to load clip for track ${trackId}:`, err)

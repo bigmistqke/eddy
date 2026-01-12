@@ -4,7 +4,7 @@ import { createAudioPipeline, type AudioPipeline } from '@eddy/mixer'
 import { debug, getGlobalPerfMonitor } from '@eddy/utils'
 import { createEffect, createMemo, createSignal, on, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
-import type { LayoutTimeline } from '~/lib/layout-types'
+import type { CompiledTimeline } from '~/lib/layout-types'
 import { compileLayoutTimeline, injectPreviewClips } from '~/lib/timeline-compiler'
 import { createWorkerPool, type PooledWorker } from '~/lib/worker-pool'
 import type { CompositorWorkerMethods } from '~/workers/compositor.worker'
@@ -76,7 +76,7 @@ export interface Player extends PlayerState, PlayerActions {
   /** Clock for time management */
   clock: Clock
   /** Current layout timeline (reactive) */
-  timeline: Accessor<LayoutTimeline>
+  timeline: Accessor<CompiledTimeline>
   /** Get audio pipeline by trackId */
   getAudioPipeline: (trackId: string) => AudioPipeline | undefined
   /** Performance logging */
@@ -153,9 +153,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
     render: compositorRpc.render,
     connectPlaybackWorker: compositorRpc.connectPlaybackWorker,
     disconnectPlaybackWorker: compositorRpc.disconnectPlaybackWorker,
-    setCaptureFrame: compositorRpc.setCaptureFrame,
     renderToCaptureCanvas: compositorRpc.renderToCaptureCanvas,
-    captureFrame: compositorRpc.captureFrame,
 
     setPreviewStream(trackId: string, stream: MediaStream | null) {
       // Clean up existing processor

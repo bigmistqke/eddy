@@ -1,9 +1,9 @@
 import { expose, type Transferred } from '@bigmistqke/rpc/messenger'
-import { createCompositorEngine, type CompositorEngine } from '@eddy/compositor'
+import { createCompositor, type Compositor } from '@eddy/compositor'
 import { debug } from '@eddy/utils'
-import { getActivePlacements } from '~/lib/timeline-compiler'
-import type { LayoutTimeline } from '~/lib/layout-types'
+import type { CompiledTimeline, Placement } from '~/lib/layout-types'
 import { PREVIEW_CLIP_ID } from '~/lib/layout-types'
+import { getActivePlacements } from '~/lib/timeline-compiler'
 
 const log = debug('compositor-worker', false)
 
@@ -24,7 +24,7 @@ export interface CompositorWorkerMethods {
   init(canvas: OffscreenCanvas, width: number, height: number): Promise<void>
 
   /** Set the compiled layout timeline */
-  setTimeline(timeline: LayoutTimeline): void
+  setTimeline(timeline: CompiledTimeline): void
 
   /** Set a preview stream for a track (continuously reads latest frame) */
   setPreviewStream(trackId: string, stream: ReadableStream<VideoFrame> | null): void
@@ -41,14 +41,8 @@ export interface CompositorWorkerMethods {
   /** Render at time T (queries timeline internally). Returns frame availability stats. */
   render(time: number): RenderStats
 
-  /** Set a frame on capture canvas (for pre-rendering, doesn't affect visible canvas) */
-  setCaptureFrame(clipId: string, frame: Transferred<VideoFrame> | null): void
-
   /** Render to capture canvas at time T */
   renderToCaptureCanvas(time: number): void
-
-  /** Capture frame from capture canvas as VideoFrame */
-  captureFrame(timestamp: number): VideoFrame | null
 
   /** Clean up resources */
   destroy(): void
@@ -61,17 +55,17 @@ export interface CompositorWorkerMethods {
 /**********************************************************************************/
 
 // Compositor engines
-let mainEngine: CompositorEngine | null = null
-let captureEngine: CompositorEngine | null = null
+let mainEngine: Compositor | null = null
+let captureEngine: Compositor | null = null
 
-// Current layout timeline
-let timeline: LayoutTimeline | null = null
+// Current compiled timeline
+let compiledTimeline: CompiledTimeline | null = null
 
 // Frame sources - keyed by clipId
-const playbackFrames = new Map<string, VideoFrame>()
+const frames = new Map<string, VideoFrame>()
 
 // Preview frames - keyed by trackId (for camera preview during recording)
-const previewFrames = new Map<string, VideoFrame>()
+let previewFrame: VideoFrame | null = null
 const previewReaders = new Map<string, ReadableStreamDefaultReader<VideoFrame>>()
 
 // Playback worker connections - keyed by clipId
@@ -85,23 +79,25 @@ interface LastFrameInfo {
 }
 const lastRenderedFrame = new Map<string, LastFrameInfo>()
 
+let renderStats: RenderStats = { expected: 0, rendered: 0, dropped: 0, stale: 0 }
+
 /**********************************************************************************/
 /*                                                                                */
-/*                                   Helpers                                      */
+/*                                    Utils                                       */
 /*                                                                                */
 /**********************************************************************************/
 
 function setFrame(clipId: string, frame: VideoFrame | null) {
   // Close previous playback frame
-  const prevFrame = playbackFrames.get(clipId)
+  const prevFrame = frames.get(clipId)
   if (prevFrame) {
     prevFrame.close()
   }
 
   if (frame) {
-    playbackFrames.set(clipId, frame)
+    frames.set(clipId, frame)
   } else {
-    playbackFrames.delete(clipId)
+    frames.delete(clipId)
   }
 }
 
@@ -119,11 +115,10 @@ async function readPreviewStream(trackId: string, stream: ReadableStream<VideoFr
       }
 
       // Close previous frame and store new one
-      const prevFrame = previewFrames.get(trackId)
-      if (prevFrame) {
-        prevFrame.close()
+      if (previewFrame) {
+        previewFrame.close()
       }
-      previewFrames.set(trackId, frame)
+      previewFrame = frame
     }
   } catch (error) {
     log('readPreviewStream: error', { trackId, error })
@@ -131,6 +126,37 @@ async function readPreviewStream(trackId: string, stream: ReadableStream<VideoFr
 
   previewReaders.delete(trackId)
   log('readPreviewStream: ended', { trackId })
+}
+
+function updateRenderStats(
+  time: number,
+  frame: VideoFrame | null | undefined,
+  placement: Placement,
+  isPreview: boolean,
+) {
+  if (!frame) {
+    renderStats.dropped++
+    return
+  }
+  const frameKey = isPreview ? `preview-${placement.trackId}` : placement.clipId
+  const lastInfo = lastRenderedFrame.get(frameKey)
+
+  // Check for stale frame - only count as stale if a new frame SHOULD be available
+  if (lastInfo && frame.timestamp === lastInfo.timestamp && lastInfo.duration > 0) {
+    // Same frame as before - check if current render time exceeds frame's valid period
+    const frameEndTime = (lastInfo.timestamp + lastInfo.duration) / 1_000_000
+    if (time >= frameEndTime) {
+      // Render time is past when next frame should be available - this is truly stale
+      renderStats.stale++
+    }
+  }
+
+  lastRenderedFrame.set(frameKey, {
+    timestamp: frame.timestamp,
+    duration: frame.duration ?? 0,
+  })
+
+  renderStats.rendered++
 }
 
 /**********************************************************************************/
@@ -146,16 +172,19 @@ expose<CompositorWorkerMethods>({
     log('init', { width, height })
 
     // Main canvas (visible)
-    mainEngine = createCompositorEngine(offscreenCanvas)
+    mainEngine = createCompositor(offscreenCanvas)
 
     // Capture canvas (for pre-rendering, same size)
     const captureCanvas = new OffscreenCanvas(width, height)
-    captureEngine = createCompositorEngine(captureCanvas)
+    captureEngine = createCompositor(captureCanvas)
   },
 
   setTimeline(newTimeline) {
-    timeline = newTimeline
-    log('setTimeline', { duration: timeline.duration, segments: timeline.segments.length })
+    compiledTimeline = newTimeline
+    log('setTimeline', {
+      duration: compiledTimeline.duration,
+      segments: compiledTimeline.segments.length,
+    })
   },
 
   setPreviewStream(trackId, stream) {
@@ -169,10 +198,9 @@ expose<CompositorWorkerMethods>({
     }
 
     // Close existing preview frame
-    const existingFrame = previewFrames.get(trackId)
-    if (existingFrame) {
-      existingFrame.close()
-      previewFrames.delete(trackId)
+    if (previewFrame) {
+      previewFrame.close()
+      previewFrame = null
     }
 
     // Start reading new stream
@@ -212,58 +240,38 @@ expose<CompositorWorkerMethods>({
     }
 
     // Close any remaining frame for this clip
-    const frame = playbackFrames.get(clipId)
+    const frame = frames.get(clipId)
     if (frame) {
       frame.close()
-      playbackFrames.delete(clipId)
+      frames.delete(clipId)
     }
   },
 
   render(time): RenderStats {
-    const stats: RenderStats = { expected: 0, rendered: 0, dropped: 0, stale: 0 }
-
-    if (!mainEngine || !timeline) return stats
+    if (!mainEngine || !compiledTimeline) return renderStats
 
     // Clear canvas
     mainEngine.clear()
 
     // Query timeline for active placements at this time
-    const activePlacements = getActivePlacements(timeline, time)
-    stats.expected = activePlacements.length
+    const activePlacements = getActivePlacements(compiledTimeline, time)
+    renderStats.expected = activePlacements.length
 
     // Render all active placements
     for (const { placement } of activePlacements) {
       // Get frame from appropriate source based on clipId
       const isPreview = placement.clipId === PREVIEW_CLIP_ID
-      const frame = isPreview
-        ? previewFrames.get(placement.trackId)
-        : playbackFrames.get(placement.clipId)
+      const frame = isPreview ? previewFrame : frames.get(placement.clipId)
+
+      updateRenderStats(time, frame, placement, isPreview)
 
       if (!frame) {
-        stats.dropped++
         continue
       }
 
-      // Check for stale frame - only count as stale if a new frame SHOULD be available
-      const frameKey = isPreview ? `preview-${placement.trackId}` : placement.clipId
-      const lastInfo = lastRenderedFrame.get(frameKey)
-      if (lastInfo && frame.timestamp === lastInfo.timestamp && lastInfo.duration > 0) {
-        // Same frame as before - check if current render time exceeds frame's valid period
-        const frameEndTime = (lastInfo.timestamp + lastInfo.duration) / 1_000_000
-        if (time >= frameEndTime) {
-          // Render time is past when next frame should be available - this is truly stale
-          stats.stale++
-        }
-      }
-      lastRenderedFrame.set(frameKey, {
-        timestamp: frame.timestamp,
-        duration: frame.duration ?? 0,
-      })
-
-      stats.rendered++
-
       // Use trackId for texture key when preview (avoids collision with playback textures)
       const textureKey = isPreview ? `preview-${placement.trackId}` : placement.clipId
+
       mainEngine.renderPlacement({
         id: textureKey,
         frame,
@@ -271,21 +279,14 @@ expose<CompositorWorkerMethods>({
       })
     }
 
-    return stats
-  },
-
-  setCaptureFrame(clipId, frame) {
-    if (!captureEngine || !frame) return
-
-    captureEngine.uploadFrame(clipId, frame)
-    frame.close()
+    return renderStats
   },
 
   renderToCaptureCanvas(time) {
-    if (!captureEngine || !timeline) return
+    if (!captureEngine || !compiledTimeline) return
 
     // Query timeline for active placements
-    const activePlacements = getActivePlacements(timeline, time)
+    const activePlacements = getActivePlacements(compiledTimeline, time)
 
     // Render using pre-uploaded textures
     captureEngine.renderById(
@@ -296,24 +297,17 @@ expose<CompositorWorkerMethods>({
     )
   },
 
-  captureFrame(timestamp) {
-    if (!captureEngine) return null
-    return captureEngine.captureFrame(timestamp)
-  },
-
   destroy() {
     log('destroy')
 
     // Close all frames
-    for (const frame of playbackFrames.values()) {
+    for (const frame of frames.values()) {
       frame.close()
     }
-    playbackFrames.clear()
+    frames.clear()
 
-    for (const frame of previewFrames.values()) {
-      frame.close()
-    }
-    previewFrames.clear()
+    previewFrame?.close()
+    previewFrame = null
 
     // Cancel all preview readers
     for (const reader of previewReaders.values()) {
@@ -332,6 +326,7 @@ expose<CompositorWorkerMethods>({
       mainEngine.destroy()
       mainEngine = null
     }
+
     if (captureEngine) {
       captureEngine.destroy()
       captureEngine = null
