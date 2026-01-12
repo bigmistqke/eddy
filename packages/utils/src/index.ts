@@ -47,3 +47,6 @@ export {
   type PerfMonitor,
   type PerfStats,
 } from './perf'
+
+// Animation loop
+export { createLoop, type Loop } from './loop'

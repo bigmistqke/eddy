@@ -1,7 +1,7 @@
 import { rpc, transfer, type RPC } from '@bigmistqke/rpc/messenger'
 import type { Project } from '@eddy/lexicons'
 import { createAudioPipeline, type AudioPipeline } from '@eddy/mixer'
-import { debug, getGlobalPerfMonitor } from '@eddy/utils'
+import { createLoop, debug, getGlobalPerfMonitor } from '@eddy/utils'
 import { createEffect, createMemo, createSignal, on, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import type { CompiledTimeline } from '~/lib/layout-types'
@@ -429,14 +429,13 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
   const clock = createClock({ duration: maxDuration })
 
   // Render loop state
-  let animationFrameId: number | null = null
   let prevTime = 0
 
   /**
    * Render loop - drives compositor rendering and handles looping.
    * Video frames are streamed directly from playback workers to compositor.
    */
-  function renderLoop() {
+  const renderLoop = createLoop(() => {
     perf.start('renderLoop')
 
     const time = clock.tick()
@@ -477,24 +476,10 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
     })
 
     perf.end('renderLoop')
-
-    animationFrameId = requestAnimationFrame(renderLoop)
-  }
-
-  function startRenderLoop() {
-    if (animationFrameId !== null) return
-    animationFrameId = requestAnimationFrame(renderLoop)
-  }
-
-  function stopRenderLoop() {
-    if (animationFrameId !== null) {
-      cancelAnimationFrame(animationFrameId)
-      animationFrameId = null
-    }
-  }
+  })
 
   function destroy(): void {
-    stopRenderLoop()
+    renderLoop.stop()
 
     // Remove all clips
     for (const clipId of Object.keys(clips)) {
@@ -513,7 +498,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
   }
 
   // Start render loop
-  startRenderLoop()
+  renderLoop.start()
 
   return {
     // Canvas

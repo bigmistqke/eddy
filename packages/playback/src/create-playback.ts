@@ -1,5 +1,5 @@
 import type { DemuxedSample, VideoTrackInfo } from '@eddy/codecs'
-import { createPerfMonitor, debug } from '@eddy/utils'
+import { createLoop, createPerfMonitor, debug } from '@eddy/utils'
 import {
   ALL_FORMATS,
   BlobSource,
@@ -146,7 +146,7 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
   let isBuffering = false // Lock to prevent concurrent buffer operations
 
   // Playback timing state
-  let _isPlaying = false
+  // let _isPlaying = false
   let startWallTime = 0 // performance.now() when play started
   let startMediaTime = 0 // media time when play started
   let speed = 1
@@ -154,9 +154,6 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
   // State tracking
   let _state: PlaybackState = 'idle'
   let lastSentTimestamp: number | null = null
-
-  // Animation frame ID
-  let animationFrameId: number | null = null
 
   // Pending frame resolvers
   let pendingFrameResolvers: Array<{
@@ -470,7 +467,7 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
   }
 
   function getCurrentMediaTime(): number {
-    if (!_isPlaying) return startMediaTime
+    if (!streamLoop.isRunning) return startMediaTime
     const elapsed = (performance.now() - startWallTime) / 1000
     return startMediaTime + elapsed * speed
   }
@@ -485,16 +482,14 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
     }
   }
 
-  function streamLoop(): void {
-    if (!_isPlaying) return
-
+  const streamLoop = createLoop(loop => {
     const time = getCurrentMediaTime()
 
     // Check for end
     if (duration > 0 && time >= duration) {
       log('streamLoop: reached end', { time, duration: duration })
-      _isPlaying = false
       _state = 'paused'
+      loop.stop()
       return
     }
 
@@ -506,26 +501,11 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
 
     // Buffer ahead
     bufferAhead(time)
-
-    // Continue loop
-    animationFrameId = requestAnimationFrame(streamLoop)
-  }
-
-  function startStreamLoop(): void {
-    if (animationFrameId !== null) return
-    animationFrameId = requestAnimationFrame(streamLoop)
-  }
-
-  function stopStreamLoop(): void {
-    if (animationFrameId !== null) {
-      cancelAnimationFrame(animationFrameId)
-      animationFrameId = null
-    }
-  }
+  })
 
   return {
     get isPlaying() {
-      return _isPlaying
+      return streamLoop.isRunning
     },
 
     get videoDuration() {
@@ -642,33 +622,31 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
       startMediaTime = startTime
       startWallTime = performance.now()
       speed = playbackSpeed
-      _isPlaying = true
       _state = 'playing'
 
-      startStreamLoop()
+      streamLoop.start()
     },
 
     pause() {
-      log('pause', { isPlaying: _isPlaying })
+      log('pause', { isPlaying: streamLoop.isRunning })
 
       // Capture current position
       startMediaTime = getCurrentMediaTime()
-      _isPlaying = false
       _state = 'paused'
 
-      stopStreamLoop()
+      streamLoop.stop()
     },
 
     async seek(time) {
       log('seek', { time, hasVideoSink: !!videoSink })
-      const wasPlaying = _isPlaying
+      const wasPlaying = streamLoop.isRunning
 
       if (wasPlaying) {
-        _isPlaying = false
-        stopStreamLoop()
+        streamLoop.stop()
       }
 
       _state = 'seeking'
+
       await seekToTime(time)
 
       // Update position
@@ -679,9 +657,8 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
 
       if (wasPlaying) {
         startWallTime = performance.now()
-        _isPlaying = true
         _state = 'playing'
-        startStreamLoop()
+        streamLoop.start()
       } else {
         _state = 'paused'
       }
