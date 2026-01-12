@@ -1055,6 +1055,17 @@
       "created_at": "2026-01-10T02:48:47.689669+01:00",
       "updated_at": "2026-01-10T02:48:47.689669+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"7ce0b3d\",\"confidence\":90}"
+    },
+    {
+      "id": 97,
+      "change_id": "4f97b768-1c3b-4a39-a88f-6b0597465619",
+      "node_type": "outcome",
+      "title": "Committed: closure factory pattern refactor + docs update",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-12T17:18:43.704189+01:00",
+      "updated_at": "2026-01-12T17:18:43.704189+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"HEAD~2\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -2003,6 +2014,28 @@
       "weight": 1.0,
       "rationale": "Result",
       "created_at": "2026-01-10T02:48:47.830732+01:00"
+    },
+    {
+      "id": 87,
+      "from_node_id": 94,
+      "to_node_id": 95,
+      "from_change_id": "00eab0c7-2422-40ac-9c52-6647f54479a9",
+      "to_change_id": "2fc77f91-b34a-4873-aa1f-a173a3366f1d",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Continuation of refactor work",
+      "created_at": "2026-01-12T17:12:04.592567+01:00"
+    },
+    {
+      "id": 88,
+      "from_node_id": 95,
+      "to_node_id": 97,
+      "from_change_id": "2fc77f91-b34a-4873-aa1f-a173a3366f1d",
+      "to_change_id": "4f97b768-1c3b-4a39-a88f-6b0597465619",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-12T17:18:47.866636+01:00"
     }
   ]
 }

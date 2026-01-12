@@ -1,27 +1,27 @@
 [
   {
+    "hash": "f4848ef069320fca422f6e74cf3b3d27fe7b5f84",
+    "short_hash": "f4848ef",
+    "author": "bigmistqke",
+    "date": "2026-01-12T17:18:34+01:00",
+    "message": "docs: add closure-over-class convention to CLAUDE.md",
+    "files_changed": 1
+  },
+  {
+    "hash": "125be3825a04900d8fd67de27c28bb6eb5646fbb",
+    "short_hash": "125be38",
+    "author": "bigmistqke",
+    "date": "2026-01-12T17:18:30+01:00",
+    "message": "refactor: use closure factory pattern for playback and compositor modules\n\n- Replace PlaybackEngine class with createPlayback() factory function\n- Replace CompositorEngine class with createCompositor() factory function\n- Move utility functions (assertedNotNullish, isGeneratorFunction, isObject) to @eddy/utils\n- Update workers to use new factory APIs\n- Rename LayoutTimeline to CompiledTimeline for clarity",
+    "files_changed": 14
+  },
+  {
     "hash": "7ce0b3d2ca851bbe087cfda34ea3e43a7d01180b",
     "short_hash": "7ce0b3d",
     "author": "bigmistqke",
     "date": "2026-01-10T02:47:54+01:00",
     "message": "refactor: extract worker logic to @eddy/playback and @eddy/compositor\n\n- Replace stale @eddy/playback with new implementation:\n  - PlaybackEngine class for video playback lifecycle\n  - Frame utilities (alignUp, calculateAlignedLayout, frameToData, dataToFrame)\n\n- Replace stale @eddy/compositor with new implementation:\n  - CompositorEngine class for WebGL video frame rendering\n\n- Refactor workers to thin RPC wrappers:\n  - demux.worker.ts: 264 → 101 lines (uses @eddy/codecs)\n  - playback.worker.ts: 861 → 167 lines (uses @eddy/playback)\n  - compositor.worker.ts: 464 → 340 lines (uses @eddy/compositor)\n\n- Update debug.tsx to handle missing playback module gracefully",
     "files_changed": 20
-  },
-  {
-    "hash": "df1b77b044b0e95b788ae2f4c96066a2e67ddf9d",
-    "short_hash": "df1b77b",
-    "author": "bigmistqke",
-    "date": "2026-01-10T02:20:09+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "5e76bff2641af707567266a385af8b86d929681a",
-    "short_hash": "5e76bff",
-    "author": "bigmistqke",
-    "date": "2026-01-10T02:20:05+01:00",
-    "message": "fix: stale frame detection accounts for frame duration\n\nOnly count frames as stale when render time exceeds frame's valid period.\nPreviously marked every repeated frame as stale, causing 50% stale rate\nfor 30fps video on 60fps display. Now correctly shows ~2% actual stale.\n\nAlso fix perf-test track status to respect --tracks argument.",
-    "files_changed": 2
   },
   {
     "hash": "9369ebdbe7936f48d290d2f885affd340103053e",
