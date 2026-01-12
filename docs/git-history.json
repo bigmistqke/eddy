@@ -1,19 +1,27 @@
 [
   {
-    "hash": "f4848ef069320fca422f6e74cf3b3d27fe7b5f84",
-    "short_hash": "f4848ef",
+    "hash": "d9b3db379005df9d539005c8916d51bf1d508ad8",
+    "short_hash": "d9b3db3",
     "author": "bigmistqke",
-    "date": "2026-01-12T17:18:34+01:00",
-    "message": "docs: add closure-over-class convention to CLAUDE.md",
+    "date": "2026-01-12T18:30:51+01:00",
+    "message": "feat: add decoder queue backpressure to skip delta frames when overloaded",
     "files_changed": 1
   },
   {
-    "hash": "125be3825a04900d8fd67de27c28bb6eb5646fbb",
-    "short_hash": "125be38",
+    "hash": "c057cd713874dee42685656cfbff8d926b5af3a3",
+    "short_hash": "c057cd7",
     "author": "bigmistqke",
-    "date": "2026-01-12T17:18:30+01:00",
-    "message": "refactor: use closure factory pattern for playback and compositor modules\n\n- Replace PlaybackEngine class with createPlayback() factory function\n- Replace CompositorEngine class with createCompositor() factory function\n- Move utility functions (assertedNotNullish, isGeneratorFunction, isObject) to @eddy/utils\n- Update workers to use new factory APIs\n- Rename LayoutTimeline to CompiledTimeline for clarity",
-    "files_changed": 14
+    "date": "2026-01-12T17:18:58+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
+    "hash": "0b60ffda1f740b2dd329e638329a1636ef2b127c",
+    "short_hash": "0b60ffd",
+    "author": "bigmistqke",
+    "date": "2026-01-12T17:18:38+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
   },
   {
     "hash": "7ce0b3d2ca851bbe087cfda34ea3e43a7d01180b",

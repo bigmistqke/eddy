@@ -1066,6 +1066,61 @@
       "created_at": "2026-01-12T17:18:43.704189+01:00",
       "updated_at": "2026-01-12T17:18:43.704189+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"HEAD~2\",\"confidence\":95}"
+    },
+    {
+      "id": 98,
+      "change_id": "1f538729-6691-40ba-855f-f40f8fb48263",
+      "node_type": "observation",
+      "title": "VP9 all-keyframe enables simple budget system - any frame can be skipped without breaking decode chain, eliminates forced keyframe complexity",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-12T18:08:37.845522+01:00",
+      "updated_at": "2026-01-12T18:08:37.845522+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 99,
+      "change_id": "878e833b-3c25-43b5-a883-0e25bb222c3d",
+      "node_type": "goal",
+      "title": "Implement adaptive frame skipping using queue-based backpressure",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-12T18:24:57.089744+01:00",
+      "updated_at": "2026-01-12T18:24:57.089744+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"Two-part implementation for prioritizing recording over playback:\\n\\nTicket 1: Local decoder backpressure\\n- Use decoder.decodeQueueSize to skip non-keyframes when decoder is overwhelmed\\n- No cross-worker coordination needed\\n- Simple threshold check before each decode\\n\\nTicket 2: SAB-based recorder backpressure  \\n- Muxer broadcasts encoder queue depth via SharedArrayBuffer\\n- Playback workers check SAB and skip non-keyframes when encoder is busy\\n- API: createPlaybackScheduler(sab) / createRecordingScheduler(sab)\\n- SAB passed from main thread to all workers\\n\\nCombined: skip delta frames if EITHER decoder OR encoder is backed up\"}"
+    },
+    {
+      "id": 100,
+      "change_id": "d699993b-f4c3-4200-b130-a6033c113cca",
+      "node_type": "action",
+      "title": "Ticket 1: Add decoder.decodeQueueSize backpressure to playback",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-12T18:25:28.193572+01:00",
+      "updated_at": "2026-01-12T18:25:28.193572+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"In create-playback.ts decodeAndBuffer():\\n\\n```ts\\nif (decoder.decodeQueueSize > THRESHOLD && !sample.isKeyframe) {\\n  return // skip delta frame\\n}\\ndecoder.decode(chunk)\\n```\\n\\n- Add DECODE_QUEUE_THRESHOLD constant (start with 3)\\n- Log when skipping for debugging\\n- No external dependencies, self-contained change\"}"
+    },
+    {
+      "id": 101,
+      "change_id": "064a3801-1d6d-458d-92f0-528618cd9d66",
+      "node_type": "action",
+      "title": "Ticket 2: SAB scheduler for recorder queue backpressure",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-12T18:25:42.321564+01:00",
+      "updated_at": "2026-01-12T18:25:42.321564+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Create packages/scheduler or packages/app/src/lib/scheduler:\\n\\n```ts\\n// scheduler.ts\\nexport function createScheduler() {\\n  const buffer = new SharedArrayBuffer(4)\\n  const view = new Int32Array(buffer)\\n  return { buffer, view }\\n}\\n\\nexport function createPlaybackScheduler(buffer: SharedArrayBuffer) {\\n  const view = new Int32Array(buffer)\\n  return {\\n    shouldSkipDeltaFrames: () => Atomics.load(view, 0) === 1\\n  }\\n}\\n\\nexport function createRecordingScheduler(buffer: SharedArrayBuffer) {\\n  const view = new Int32Array(buffer)\\n  return {\\n    updateFromEncoder(queueSize: number) {\\n      if (queueSize > 5) Atomics.store(view, 0, 1)\\n      else if (queueSize < 2) Atomics.store(view, 0, 0)\\n    }\\n  }\\n}\\n```\\n\\nIntegration:\\n- Main thread: create SAB, pass to worker pool and muxer\\n- Muxer: call updateFromEncoder after each encode\\n- Playback: check shouldSkipDeltaFrames before decode\"}"
+    },
+    {
+      "id": 102,
+      "change_id": "baa06ebb-a1a5-436f-817b-cf4458df55f5",
+      "node_type": "outcome",
+      "title": "Committed: decoder queue backpressure (Ticket 1)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-12T18:30:57.153896+01:00",
+      "updated_at": "2026-01-12T18:30:57.153896+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"d9b3db3\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -2036,6 +2091,83 @@
       "weight": 1.0,
       "rationale": "Committed",
       "created_at": "2026-01-12T17:18:47.866636+01:00"
+    },
+    {
+      "id": 89,
+      "from_node_id": 57,
+      "to_node_id": 98,
+      "from_change_id": "fc7c15a6-3359-4f2e-adf8-2d58b7dfdc3e",
+      "to_change_id": "1f538729-6691-40ba-855f-f40f8fb48263",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "New benefit discovered during budget system design",
+      "created_at": "2026-01-12T18:08:43.882921+01:00"
+    },
+    {
+      "id": 90,
+      "from_node_id": 34,
+      "to_node_id": 98,
+      "from_change_id": "7d74f2c6-3221-4a67-af93-a07da86d9592",
+      "to_change_id": "1f538729-6691-40ba-855f-f40f8fb48263",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Simplifies priority coordination approach",
+      "created_at": "2026-01-12T18:08:44.002100+01:00"
+    },
+    {
+      "id": 91,
+      "from_node_id": 34,
+      "to_node_id": 99,
+      "from_change_id": "7d74f2c6-3221-4a67-af93-a07da86d9592",
+      "to_change_id": "878e833b-3c25-43b5-a883-0e25bb222c3d",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Chosen approach for performance coordination",
+      "created_at": "2026-01-12T18:25:02.711330+01:00"
+    },
+    {
+      "id": 92,
+      "from_node_id": 99,
+      "to_node_id": 100,
+      "from_change_id": "878e833b-3c25-43b5-a883-0e25bb222c3d",
+      "to_change_id": "d699993b-f4c3-4200-b130-a6033c113cca",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "First implementation step",
+      "created_at": "2026-01-12T18:25:46.924828+01:00"
+    },
+    {
+      "id": 93,
+      "from_node_id": 99,
+      "to_node_id": 101,
+      "from_change_id": "878e833b-3c25-43b5-a883-0e25bb222c3d",
+      "to_change_id": "064a3801-1d6d-458d-92f0-528618cd9d66",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Second implementation step",
+      "created_at": "2026-01-12T18:25:46.933706+01:00"
+    },
+    {
+      "id": 94,
+      "from_node_id": 100,
+      "to_node_id": 101,
+      "from_change_id": "d699993b-f4c3-4200-b130-a6033c113cca",
+      "to_change_id": "064a3801-1d6d-458d-92f0-528618cd9d66",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Ticket 2 builds on Ticket 1",
+      "created_at": "2026-01-12T18:25:46.942721+01:00"
+    },
+    {
+      "id": 95,
+      "from_node_id": 100,
+      "to_node_id": 102,
+      "from_change_id": "d699993b-f4c3-4200-b130-a6033c113cca",
+      "to_change_id": "baa06ebb-a1a5-436f-817b-cf4458df55f5",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-12T18:31:01.579513+01:00"
     }
   ]
 }

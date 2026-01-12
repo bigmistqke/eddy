@@ -46,6 +46,7 @@
   font-family: monospace;
   font-size: 14px;
   text-align: center;
+  box-sizing: content-box;
 }
 
 .timeInput:focus {
