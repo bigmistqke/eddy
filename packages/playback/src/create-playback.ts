@@ -242,7 +242,13 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
         }
       },
       error: error => {
-        log('decoder error callback', { error, message: error.message, name: error.name })
+        console.error('[playback:engine] decoder error callback - DECODER WILL CLOSE', {
+          error,
+          message: error.message,
+          name: error.name,
+          stack: error.stack,
+          decoderState: decoder?.state,
+        })
         // Reject any pending promises
         const pending = pendingFrameResolvers.shift()
         if (pending) {
@@ -258,7 +264,28 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
   async function decodeAndBuffer(sample: DemuxedSample): Promise<void> {
     perf.start('decode')
     if (!decoder || decoder.state === 'closed') {
-      log('decodeAndBuffer: decoder not available', { decoderState: decoder?.state })
+      log('decodeAndBuffer: decoder not available, reinitializing', {
+        decoderState: decoder?.state,
+      })
+      // Decoder closed unexpectedly (error state) - reinitialize it
+      if (videoConfig) {
+        try {
+          await initDecoder()
+          log('decodeAndBuffer: decoder reinitialized')
+        } catch (error) {
+          console.error('[playback:engine] decodeAndBuffer: failed to reinitialize decoder', error)
+          perf.end('decode')
+          return
+        }
+      } else {
+        perf.end('decode')
+        return
+      }
+    }
+
+    // After potential reinitialization, verify decoder is available
+    if (!decoder) {
+      log('decodeAndBuffer: decoder still not available after reinit attempt')
       perf.end('decode')
       return
     }
@@ -361,7 +388,7 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
       perf.end('decode')
     } catch (error) {
       perf.end('decode')
-      log('decodeAndBuffer error', {
+      console.error('[playback:engine] decodeAndBuffer error', {
         error,
         errorMessage: error instanceof Error ? error.message : String(error),
         isKeyframe: sample.isKeyframe,
@@ -404,14 +431,17 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
           decoded++
         } catch (error) {
           // Log but continue - try next packet
-          log('bufferAhead: decode failed, skipping', { pts: sample.pts, error })
+          console.error('[playback:engine] bufferAhead: decode failed, skipping', {
+            pts: sample.pts,
+            error,
+          })
         }
         perf.start('demux')
         packet = await videoSink.getNextPacket(packet)
         perf.end('demux')
       }
     } catch (error) {
-      log('bufferAhead error', { error })
+      console.error('[playback:engine] bufferAhead error', error)
     } finally {
       perf.end('bufferAhead')
       isBuffering = false
@@ -491,6 +521,20 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
       _state = 'paused'
       loop.stop()
       return
+    }
+
+    // Log buffer state periodically (every ~60 frames)
+    if (Math.random() < 0.016) {
+      log('streamLoop: status', {
+        time,
+        bufferLength: frameBuffer.length,
+        bufferPosition,
+        isBuffering,
+        decoderReady,
+        lastSentTimestamp,
+        pendingResolvers: pendingFrameResolvers.length,
+        pendingFrames: pendingFrames.length,
+      })
     }
 
     // Send frame to callback
