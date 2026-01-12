@@ -20,6 +20,9 @@ const BUFFER_AHEAD_FRAMES = 10
 const BUFFER_AHEAD_SECONDS = 1.0
 const BUFFER_MAX_FRAMES = 30
 
+/** Backpressure: skip delta frames if decoder queue exceeds this */
+const DECODE_QUEUE_THRESHOLD = 3
+
 /** Frame output callback */
 export type FrameCallback = (frame: VideoFrame | null) => void
 
@@ -255,6 +258,16 @@ export function createPlayback({ onFrame }: PlaybackEngineConfig = {}) {
     // Skip delta frames if decoder not ready (need keyframe first)
     if (!decoderReady && !sample.isKeyframe) {
       log('skipping delta frame, decoder not ready')
+      perf.end('decode')
+      return
+    }
+
+    // Skip delta frames if decoder queue is backed up (backpressure)
+    if (decoder.decodeQueueSize > DECODE_QUEUE_THRESHOLD && !sample.isKeyframe) {
+      log('skipping delta frame, decoder queue backed up', {
+        decodeQueueSize: decoder.decodeQueueSize,
+        threshold: DECODE_QUEUE_THRESHOLD,
+      })
       perf.end('decode')
       return
     }
