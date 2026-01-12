@@ -1121,6 +1121,17 @@
       "created_at": "2026-01-12T18:30:57.153896+01:00",
       "updated_at": "2026-01-12T18:30:57.153896+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"d9b3db3\",\"confidence\":95}"
+    },
+    {
+      "id": 103,
+      "change_id": "3b530eed-ae61-47db-a52a-c74c42592af7",
+      "node_type": "outcome",
+      "title": "Committed SAB scheduler for cross-worker recording backpressure",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-12T19:10:34.685019+01:00",
+      "updated_at": "2026-01-12T19:10:34.685019+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"HEAD~1\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -2168,6 +2179,17 @@
       "weight": 1.0,
       "rationale": "Committed",
       "created_at": "2026-01-12T18:31:01.579513+01:00"
+    },
+    {
+      "id": 96,
+      "from_node_id": 101,
+      "to_node_id": 103,
+      "from_change_id": "064a3801-1d6d-458d-92f0-528618cd9d66",
+      "to_change_id": "3b530eed-ae61-47db-a52a-c74c42592af7",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-12T19:10:39.358963+01:00"
     }
   ]
 }

@@ -1,5 +1,13 @@
 [
   {
+    "hash": "8c64a36d697d4a29505b6e84214c3d3a4b887e3c",
+    "short_hash": "8c64a36",
+    "author": "bigmistqke",
+    "date": "2026-01-12T19:10:13+01:00",
+    "message": "feat: add SAB scheduler for cross-worker recording backpressure\n\nWhen encoder queue backs up during recording, signal playback workers\nvia SharedArrayBuffer to skip delta frames. Keeps recording smooth\nby prioritizing encoder over decode.\n\n- Add scheduler.ts with SCHEDULER_BUFFER singleton and createScheduler()\n- Muxer worker updates scheduler when videoQueueSize exceeds threshold\n- Playback workers check scheduler before decoding delta frames\n- Expose videoQueueSize getter on Muxer interface",
+    "files_changed": 7
+  },
+  {
     "hash": "d9b3db379005df9d539005c8916d51bf1d508ad8",
     "short_hash": "d9b3db3",
     "author": "bigmistqke",
@@ -8,20 +16,12 @@
     "files_changed": 1
   },
   {
-    "hash": "c057cd713874dee42685656cfbff8d926b5af3a3",
-    "short_hash": "c057cd7",
+    "hash": "d9b3db379005df9d539005c8916d51bf1d508ad8",
+    "short_hash": "d9b3db3",
     "author": "bigmistqke",
-    "date": "2026-01-12T17:18:58+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "0b60ffda1f740b2dd329e638329a1636ef2b127c",
-    "short_hash": "0b60ffd",
-    "author": "bigmistqke",
-    "date": "2026-01-12T17:18:38+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
+    "date": "2026-01-12T18:30:51+01:00",
+    "message": "feat: add decoder queue backpressure to skip delta frames when overloaded",
+    "files_changed": 1
   },
   {
     "hash": "7ce0b3d2ca851bbe087cfda34ea3e43a7d01180b",
