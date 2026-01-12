@@ -12,9 +12,6 @@ import { dataToFrame, frameToData, type FrameData } from './frame-utils'
 
 const log = debug('playback:engine', false)
 
-/** Worker state */
-export type PlaybackState = 'idle' | 'loading' | 'ready' | 'playing' | 'paused' | 'seeking'
-
 /** Buffer configuration */
 const BUFFER_AHEAD_FRAMES = 10
 const BUFFER_AHEAD_SECONDS = 1.0
@@ -23,29 +20,26 @@ const BUFFER_MAX_FRAMES = 30
 /** Backpressure: skip delta frames if decoder queue exceeds this */
 const DECODE_QUEUE_THRESHOLD = 3
 
+/**********************************************************************************/
+/*                                                                                */
+/*                                     Types                                      */
+/*                                                                                */
+/**********************************************************************************/
+
+/** Worker state */
+export type PlaybackState = 'idle' | 'loading' | 'ready' | 'playing' | 'paused' | 'seeking'
+
 /** Frame output callback */
 export type FrameCallback = (frame: VideoFrame | null) => void
 
 /** Playback engine configuration */
-export interface PlaybackEngineConfig {
+export interface PlaybackConfig {
   /** Callback when a new frame should be displayed */
   onFrame?: FrameCallback
+  /** External backpressure check - return true to skip delta frames */
+  shouldSkipDeltaFrame?: () => boolean
   /** Enable debug logging */
   debug?: boolean
-}
-
-/** Convert packet to sample format */
-function packetToSample(packet: EncodedPacket, trackId: number): DemuxedSample {
-  return {
-    number: 0,
-    trackId,
-    pts: packet.timestamp,
-    dts: packet.timestamp,
-    duration: packet.duration,
-    isKeyframe: packet.type === 'key',
-    data: packet.data,
-    size: packet.data.byteLength,
-  }
 }
 
 /**
@@ -54,26 +48,13 @@ function packetToSample(packet: EncodedPacket, trackId: number): DemuxedSample {
  * timing, outputting VideoFrames via callback.
  */
 export interface Playback {
-  cleanup: () => void
-  /** Current playback state */
-  readonly state: PlaybackState
   /** Whether playback is active */
   readonly isPlaying: boolean
   /** Video duration in seconds */
   readonly videoDuration: number
-  /** Set frame output callback */
-  setFrameCallback(callback: FrameCallback | null): void
-  /** Load video from buffer */
-  load(buffer: ArrayBuffer): Promise<{
-    duration: number
-    videoTrack: VideoTrackInfo | null
-  }>
-  /** Start playback from time at speed */
-  play(startTime: number, playbackSpeed?: number): void
-  /** Pause playback */
-  pause(): void
-  /** Seek to time (buffers from keyframe) */
-  seek(time: number): Promise<void>
+  cleanup(): void
+  /** Clean up resources */
+  destroy(): void
   /** Get current buffer range */
   getBufferRange(): {
     start: number
@@ -90,18 +71,57 @@ export interface Playback {
       overThreshold: number
     }
   >
+  /** Current playback state */
+  getState(): PlaybackState
+  /** Load video from buffer */
+  load(buffer: ArrayBuffer): Promise<{
+    duration: number
+    videoTrack: VideoTrackInfo | null
+  }>
+  /** Pause playback */
+  pause(): void
+  /** Start playback from time at speed */
+  play(startTime: number, playbackSpeed?: number): void
   /** Reset performance stats */
   resetPerf(): void
+  /** Seek to time (buffers from keyframe) */
+  seek(time: number): Promise<void>
   /** Send current frame to compositor (for initial frame on handoff) */
   sendCurrentFrame(): void
-  /** Clean up resources */
-  destroy(): void
+  /** Set frame output callback */
+  setFrameCallback(callback: FrameCallback | null): void
 }
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                     Utils                                      */
+/*                                                                                */
+/**********************************************************************************/
+
+/** Convert packet to sample format */
+function packetToSample(packet: EncodedPacket, trackId: number): DemuxedSample {
+  return {
+    number: 0,
+    trackId,
+    pts: packet.timestamp,
+    dts: packet.timestamp,
+    duration: packet.duration,
+    isKeyframe: packet.type === 'key',
+    data: packet.data,
+    size: packet.data.byteLength,
+  }
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                 Create Playback                                */
+/*                                                                                */
+/**********************************************************************************/
 
 /**
  * Create a new playback engine instance
  */
-export function createPlayback({ onFrame }: PlaybackEngineConfig = {}) {
+export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig = {}): Playback {
   // return new PlaybackEngine(config)
 
   let perf = createPerfMonitor()
@@ -268,6 +288,13 @@ export function createPlayback({ onFrame }: PlaybackEngineConfig = {}) {
         decodeQueueSize: decoder.decodeQueueSize,
         threshold: DECODE_QUEUE_THRESHOLD,
       })
+      perf.end('decode')
+      return
+    }
+
+    // Skip delta frames if external scheduler signals backpressure (e.g., encoder busy)
+    if (shouldSkipDeltaFrame?.() && !sample.isKeyframe) {
+      log('skipping delta frame, external backpressure')
       perf.end('decode')
       return
     }
@@ -508,10 +535,6 @@ export function createPlayback({ onFrame }: PlaybackEngineConfig = {}) {
   return {
     cleanup,
 
-    get state(): PlaybackState {
-      return _state
-    },
-
     get isPlaying(): boolean {
       return _isPlaying
     },
@@ -520,8 +543,12 @@ export function createPlayback({ onFrame }: PlaybackEngineConfig = {}) {
       return duration
     },
 
+    getState(): PlaybackState {
+      return _state
+    },
+
     setFrameCallback(callback: FrameCallback | null): void {
-      onFrame = callback
+      onFrame = callback ?? undefined
     },
 
     async load(

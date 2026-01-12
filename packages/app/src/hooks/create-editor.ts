@@ -12,6 +12,7 @@ import { resource } from '~/hooks/resource'
 import { getProjectByRkey, getStemBlob, publishProject } from '~/lib/atproto/crud'
 import { createDebugInfo as initDebugInfo } from '~/lib/create-debug-info'
 import { createResourceMap } from '~/lib/create-resource-map'
+import { SCHEDULER_BUFFER } from '~/lib/scheduler'
 import type { CaptureWorkerMethods } from '~/workers/capture.worker'
 import CaptureWorker from '~/workers/capture.worker?worker'
 import type { MuxerWorkerMethods } from '~/workers/muxer.worker'
@@ -126,6 +127,7 @@ export function createEditor(options: CreateEditorOptions) {
         width,
         height,
         project,
+        schedulerBuffer: SCHEDULER_BUFFER,
       })
       initDebugInfo(result)
 
@@ -148,6 +150,9 @@ export function createEditor(options: CreateEditorOptions) {
       capture[$MESSENGER].terminate()
       muxer[$MESSENGER].terminate()
     })
+
+    // Pass scheduler buffer to muxer for backpressure signaling
+    muxer.setSchedulerBuffer(SCHEDULER_BUFFER)
 
     // Create MessageChannel to connect capture → muxer
     const channel = new MessageChannel()

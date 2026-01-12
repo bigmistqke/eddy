@@ -5,6 +5,7 @@ import { debug, getGlobalPerfMonitor } from '@eddy/utils'
 import { createEffect, createMemo, createSignal, on, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import type { CompiledTimeline } from '~/lib/layout-types'
+import type { SchedulerBuffer } from '~/lib/scheduler'
 import { compileLayoutTimeline, injectPreviewClips } from '~/lib/timeline-compiler'
 import { createWorkerPool, type PooledWorker } from '~/lib/worker-pool'
 import type { CompositorWorkerMethods } from '~/workers/compositor.worker'
@@ -99,6 +100,7 @@ export interface CreatePlayerOptions {
   width: number
   height: number
   project: Accessor<Project>
+  schedulerBuffer: SchedulerBuffer
 }
 
 /** Track entry for audio routing */
@@ -127,8 +129,8 @@ interface ClipEntry {
  * Uses direct worker-to-worker frame transfer for video.
  */
 export async function createPlayer(options: CreatePlayerOptions): Promise<Player> {
-  const { canvas: canvasElement, width, height, project } = options
-  log('createPlayer', { width, height })
+  const { canvas: canvasElement, width, height, project, schedulerBuffer } = options
+  log('createPlayer', { width, height, schedulerBuffer })
 
   // Set canvas size and transfer to worker
   canvasElement.width = width
@@ -230,6 +232,9 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
 
     // Acquire worker from pool
     const pooledWorker = workerPool.acquire()
+
+    // Pass scheduler buffer if available
+    pooledWorker.rpc.setSchedulerBuffer(schedulerBuffer)
 
     // Create MessageChannel for worker-to-worker communication
     const channel = new MessageChannel()

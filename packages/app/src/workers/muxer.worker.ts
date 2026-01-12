@@ -1,10 +1,17 @@
 import { expose } from '@bigmistqke/rpc/messenger'
 import { createMuxer, type AudioFrameData, type Muxer, type VideoFrameData } from '@eddy/codecs'
 import { debug } from '@eddy/utils'
+import { createScheduler, type RecorderScheduler, type SchedulerBuffer } from '~/lib/scheduler'
 
 const log = debug('muxer-worker', false)
 
 export interface MuxerWorkerMethods {
+  /**
+   * Set scheduler buffer for cross-worker coordination.
+   * Call this before recording.
+   */
+  setSchedulerBuffer(buffer: SharedArrayBuffer): void
+
   /**
    * Set the capture port for receiving frames from capture worker.
    * Call this before recording.
@@ -46,6 +53,7 @@ export interface MuxerWorkerMethods {
 // Worker state
 let muxer: Muxer | null = null
 let capturedFrameCount = 0
+let scheduler: RecorderScheduler | null = null
 
 function addVideoFrame(data: VideoFrameData) {
   if (!muxer) {
@@ -53,6 +61,11 @@ function addVideoFrame(data: VideoFrameData) {
     return
   }
   muxer.addVideoFrame(data)
+
+  // Update scheduler with queue depth for backpressure signaling
+  if (scheduler) {
+    scheduler.updateFromEncoder(muxer.videoQueueSize)
+  }
 }
 
 function addAudioFrame(data: AudioFrameData) {
@@ -64,6 +77,11 @@ function addAudioFrame(data: AudioFrameData) {
 }
 
 expose<MuxerWorkerMethods>({
+  setSchedulerBuffer(buffer) {
+    log('setSchedulerBuffer')
+    scheduler = createScheduler(buffer as SchedulerBuffer).recorder
+  },
+
   addVideoFrame,
   addAudioFrame,
 
@@ -87,8 +105,10 @@ expose<MuxerWorkerMethods>({
     if (muxer?.isReady) return
 
     log('pre-initializing VP9 + Opus encoders...')
+
     muxer = createMuxer({ videoCodec: 'vp9', videoBitrate: 2_000_000, audio: true })
     await muxer.init()
+
     log('pre-initialization complete')
   },
 
@@ -100,6 +120,7 @@ expose<MuxerWorkerMethods>({
     }
 
     const result = await muxer.finalize()
+
     log('finalized', { frames: result.videoFrameCount, bytes: result.blob.size })
 
     return { blob: result.blob, frameCount: result.videoFrameCount }
@@ -109,5 +130,8 @@ expose<MuxerWorkerMethods>({
     capturedFrameCount = 0
     muxer?.reset()
     muxer = null
+
+    // Reset scheduler to idle (recording stopped)
+    scheduler?.reset()
   },
 })

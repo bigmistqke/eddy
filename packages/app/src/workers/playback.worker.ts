@@ -1,7 +1,8 @@
 import { expose, rpc, transfer, type RPC } from '@bigmistqke/rpc/messenger'
 import type { VideoTrackInfo } from '@eddy/codecs'
-import { createPlayback, type Playback, type PlaybackState } from '@eddy/playback'
+import { createPlayback, type PlaybackState } from '@eddy/playback'
 import { debug } from '@eddy/utils'
+import { createScheduler, type PlaybackScheduler, type SchedulerBuffer } from '~/lib/scheduler'
 
 const log = debug('playback-worker', false)
 
@@ -11,6 +12,9 @@ interface CompositorFrameMethods {
 }
 
 export interface PlaybackWorkerMethods {
+  /** Set scheduler buffer for cross-worker coordination */
+  setSchedulerBuffer(buffer: SchedulerBuffer): void
+
   /** Load a blob for playback */
   load(buffer: ArrayBuffer): Promise<{ duration: number; videoTrack: VideoTrackInfo | null }>
 
@@ -55,12 +59,30 @@ export interface PlaybackWorkerMethods {
 const workerId = Math.random().toString(36).substring(2, 8)
 log('Worker created with ID:', workerId)
 
+const engine = createPlayback({
+  onFrame(frame) {
+    if (compositor && clipId) {
+      if (frame) {
+        compositor.setFrame(clipId, transfer(frame))
+      } else {
+        compositor.setFrame(clipId, null)
+      }
+    }
+  },
+  shouldSkipDeltaFrame() {
+    if (!scheduler) {
+      return false
+    }
+    return scheduler.shouldSkipDeltaFrames()
+  },
+})
+
 // Compositor connection
 let compositor: RPC<CompositorFrameMethods> | null = null
 let clipId = ''
 
-// Playback engine
-let engine: Playback | null = null
+// Scheduler for cross-worker coordination
+let scheduler: PlaybackScheduler | null = null
 
 /**********************************************************************************/
 /*                                                                                */
@@ -69,101 +91,41 @@ let engine: Playback | null = null
 /**********************************************************************************/
 
 expose<PlaybackWorkerMethods>({
+  getBufferRange: engine.getBufferRange,
+  getPerf: engine.getPerf,
+  getState: engine.getState,
+  pause: engine.pause,
+  play: engine.play,
+  resetPerf: engine.resetPerf,
+  seek: engine.seek,
+
+  setSchedulerBuffer(buffer) {
+    log('setSchedulerBuffer')
+
+    scheduler = createScheduler(buffer).playback
+  },
+
   async load(buffer) {
     log('load', { size: buffer.byteLength })
 
-    // Clean up previous engine
-    if (engine) {
-      engine.destroy()
-    }
-
-    // Create new engine with frame callback
-    engine = createPlayback({
-      onFrame: frame => {
-        if (compositor && clipId) {
-          if (frame) {
-            compositor.setFrame(clipId, transfer(frame))
-          } else {
-            compositor.setFrame(clipId, null)
-          }
-        }
-      },
-    })
-
+    engine.destroy()
     return engine.load(buffer)
   },
 
   connectToCompositor(id, port) {
     log('connectToCompositor', { clipId: id })
+
     clipId = id
     compositor = rpc<CompositorFrameMethods>(port)
 
     // Immediately send buffered frame if available (for gapless handoff)
-    if (engine) {
-      engine.sendCurrentFrame()
-    }
-  },
-
-  play(startTime, playbackSpeed = 1) {
-    log('play', { startTime, playbackSpeed })
-    if (!engine) {
-      log('play: no engine')
-      return
-    }
-    engine.play(startTime, playbackSpeed)
-  },
-
-  pause() {
-    log('pause RPC received', { workerId, clipId })
-    if (!engine) {
-      log('pause: no engine')
-      return
-    }
-    engine.pause()
-  },
-
-  async seek(time) {
-    log('seek RPC received', { workerId, time, clipId })
-    if (!engine) {
-      log('seek: no engine')
-      return
-    }
-    await engine.seek(time)
-  },
-
-  getBufferRange() {
-    if (!engine) {
-      return { start: 0, end: 0 }
-    }
-    return engine.getBufferRange()
-  },
-
-  getState() {
-    if (!engine) {
-      return 'idle'
-    }
-    return engine.state
-  },
-
-  getPerf() {
-    if (!engine) {
-      return {}
-    }
-    return engine.getPerf()
-  },
-
-  resetPerf() {
-    if (engine) {
-      engine.resetPerf()
-    }
+    engine.sendCurrentFrame()
   },
 
   destroy() {
     log('destroy RPC received', { workerId, clipId })
-    if (engine) {
-      engine.destroy()
-      engine = null
-    }
+
+    engine.destroy()
     compositor = null
     clipId = ''
   },

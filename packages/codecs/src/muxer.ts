@@ -65,6 +65,9 @@ export interface Muxer {
   /** Number of audio frames encoded */
   readonly audioFrameCount: number
 
+  /** Number of video frames waiting to be encoded (for backpressure) */
+  readonly videoQueueSize: number
+
   /**
    * Initialize the muxer (creates encoder).
    * Must be called before adding frames.
@@ -215,6 +218,10 @@ export function createMuxer(options: MuxerOptions = {}): Muxer {
 
     get audioFrameCount() {
       return audioFrameCount
+    },
+
+    get videoQueueSize() {
+      return videoQueue.length
     },
 
     async init() {
