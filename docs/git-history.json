@@ -1,5 +1,21 @@
 [
   {
+    "hash": "fa9a2d2fe8db070c16ef654a2adb080095a435a7",
+    "short_hash": "fa9a2d2",
+    "author": "bigmistqke",
+    "date": "2026-01-12T19:36:19+01:00",
+    "message": "feat: reuse decoder when loading clips with matching config\n\nAdds reset() method that flushes decoder but keeps it alive.\nOn load(), compares VideoDecoderConfig - if codec/width/height match,\nskips decoder initialization (~50-200ms savings on subsequent clips).",
+    "files_changed": 3
+  },
+  {
+    "hash": "863fd46dcff6d2763a863f06eed3db70ea78a55f",
+    "short_hash": "863fd46",
+    "author": "bigmistqke",
+    "date": "2026-01-12T19:26:20+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
     "hash": "43f16f4461957dce80e1b8f6714a32d36c7c9355",
     "short_hash": "43f16f4",
     "author": "bigmistqke",
@@ -8,20 +24,12 @@
     "files_changed": 2
   },
   {
-    "hash": "261ee0e4075f9ac2d241ea258b5792a668d665b0",
-    "short_hash": "261ee0e",
+    "hash": "43f16f4461957dce80e1b8f6714a32d36c7c9355",
+    "short_hash": "43f16f4",
     "author": "bigmistqke",
-    "date": "2026-01-12T19:10:56+01:00",
-    "message": "chore: sync deciduous graph",
+    "date": "2026-01-12T19:26:09+01:00",
+    "message": "refactor: make createWorkerPool generic with factory functions\n\nWorker pool no longer imports PlaybackWorker directly. Caller provides:\n- create: factory to instantiate Worker\n- wrap: factory to wrap with RPC\n- reset: cleanup function on release\n\nThis decouples the pool from specific worker types.",
     "files_changed": 2
-  },
-  {
-    "hash": "3fc216082ce06a6025b53f4f382f57613603edfd",
-    "short_hash": "3fc2160",
-    "author": "bigmistqke",
-    "date": "2026-01-12T19:10:19+01:00",
-    "message": "chore: sync deciduous graph and fix timeInput box-sizing",
-    "files_changed": 3
   },
   {
     "hash": "d9b3db379005df9d539005c8916d51bf1d508ad8",
