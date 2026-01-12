@@ -52,8 +52,6 @@ export interface Playback {
   readonly isPlaying: boolean
   /** Video duration in seconds */
   readonly videoDuration: number
-  /** Reset for new clip (flushes decoder but keeps it alive for reuse) */
-  reset(): void
   /** Get current buffer range */
   getBufferRange(): {
     start: number
@@ -711,52 +709,6 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
       if (frameBuffer.length > 0) {
         sendFrame(startMediaTime)
       }
-    },
-
-    reset(): void {
-      log('reset')
-
-      stopStreamLoop()
-
-      // Clear buffers but keep decoder alive
-      frameBuffer = []
-      bufferPosition = 0
-      lastSentTimestamp = null
-      _isPlaying = false
-      startMediaTime = 0
-      startWallTime = 0
-
-      // Clear pending frames
-      for (const frame of pendingFrames) {
-        frame.close()
-      }
-      pendingFrames = []
-      for (const pending of pendingFrameResolvers) {
-        pending.reject(new Error('Reset'))
-      }
-      pendingFrameResolvers = []
-
-      // Flush decoder but keep it alive (will be reconfigured on next load if needed)
-      if (decoder && decoder.state !== 'closed') {
-        decoder.reset()
-        // Reconfigure to keep it ready
-        if (videoConfig) {
-          decoder.configure(videoConfig)
-        }
-      }
-      decoderReady = false
-
-      // Clean up input
-      if (input) {
-        input[Symbol.dispose]?.()
-        input = null
-      }
-      videoTrack = null
-      videoSink = null
-      duration = 0
-
-      // Keep videoConfig for potential reuse on next load
-      _state = 'idle'
     },
   } satisfies Playback
 }

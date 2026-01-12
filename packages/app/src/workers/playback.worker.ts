@@ -44,9 +44,6 @@ export interface PlaybackWorkerMethods {
 
   /** Reset performance stats */
   resetPerf(): void
-
-  /** Reset for new clip (keeps decoder alive for reuse) */
-  reset(): void
 }
 
 /**********************************************************************************/
@@ -59,7 +56,7 @@ export interface PlaybackWorkerMethods {
 const workerId = Math.random().toString(36).substring(2, 8)
 log('Worker created with ID:', workerId)
 
-const engine = createPlayback({
+const playback = createPlayback({
   onFrame(frame) {
     if (compositor && clipId) {
       if (frame) {
@@ -91,14 +88,13 @@ let scheduler: PlaybackScheduler | null = null
 /**********************************************************************************/
 
 expose<PlaybackWorkerMethods>({
-  getBufferRange: engine.getBufferRange,
-  getPerf: engine.getPerf,
-  getState: engine.getState,
-  pause: engine.pause,
-  play: engine.play,
-  reset: engine.reset,
-  resetPerf: engine.resetPerf,
-  seek: engine.seek,
+  getBufferRange: playback.getBufferRange,
+  getPerf: playback.getPerf,
+  getState: playback.getState,
+  pause: playback.pause,
+  play: playback.play,
+  resetPerf: playback.resetPerf,
+  seek: playback.seek,
 
   setSchedulerBuffer(buffer) {
     log('setSchedulerBuffer')
@@ -110,7 +106,7 @@ expose<PlaybackWorkerMethods>({
     log('load', { size: buffer.byteLength })
 
     // load() handles cleanup internally and reuses decoder if config matches
-    return engine.load(buffer)
+    return playback.load(buffer)
   },
 
   connectToCompositor(id, port) {
@@ -120,6 +116,6 @@ expose<PlaybackWorkerMethods>({
     compositor = rpc<CompositorFrameMethods>(port)
 
     // Immediately send buffered frame if available (for gapless handoff)
-    engine.sendCurrentFrame()
+    playback.sendCurrentFrame()
   },
 })

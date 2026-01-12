@@ -37,7 +37,7 @@ export interface WorkerPoolOptions<T> {
   wrap: (worker: Worker) => T
 
   /** Reset worker state on release (keeps worker alive) */
-  reset: (rpc: T) => void | Promise<void>
+  reset?: (rpc: T) => void | Promise<void>
 
   /** Maximum number of workers to keep in pool (default: 8) */
   maxSize?: number
@@ -95,12 +95,10 @@ export function createWorkerPool<T>(options: WorkerPoolOptions<T>): WorkerPool<T
 
     if (inPool) {
       // Reset worker state, keep worker alive for reuse
-      await reset(pooledWorker.rpc)
+      await reset?.(pooledWorker.rpc)
       pooledWorker.inUse = false
       log('released worker to pool', { poolSize: pool.length })
     } else {
-      // Temporary worker (pool was full) - fully terminate
-      await reset(pooledWorker.rpc)
       pooledWorker.worker.terminate()
       log('terminated temporary worker')
     }
