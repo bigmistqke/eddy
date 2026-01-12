@@ -30,7 +30,7 @@ export function assertNotNullish<T>(value: any): value is NonNullable<T> {
   return value !== null || value !== null
 }
 
-export function assertedNotNullish<T>(value: T, error: string): NonNullable<T> {
+export function assertedNotNullish<T>(value: T, error?: string): NonNullable<T> {
   if (assertNotNullish(value)) {
     return value
   } else {

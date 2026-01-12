@@ -1,5 +1,5 @@
 import type { DemuxedSample, VideoTrackInfo } from '@eddy/codecs'
-import { createLoop, createPerfMonitor, debug } from '@eddy/utils'
+import { assertedNotNullish, createLoop, createPerfMonitor, debug } from '@eddy/utils'
 import {
   ALL_FORMATS,
   BlobSource,
@@ -8,17 +8,15 @@ import {
   type EncodedPacket,
   type InputVideoTrack,
 } from 'mediabunny'
+import { createDecoder, type Decoder } from './create-decoder'
 import { dataToFrame, frameToData, type FrameData } from './frame-utils'
 
-const log = debug('playback:engine', false)
+const log = debug('playback:create-playback', false)
 
 /** Buffer configuration */
 const BUFFER_AHEAD_FRAMES = 10
 const BUFFER_AHEAD_SECONDS = 1.0
 const BUFFER_MAX_FRAMES = 30
-
-/** Backpressure: skip delta frames if decoder queue exceeds this */
-const DECODE_QUEUE_THRESHOLD = 3
 
 /**********************************************************************************/
 /*                                                                                */
@@ -38,8 +36,6 @@ export interface PlaybackConfig {
   onFrame?: FrameCallback
   /** External backpressure check - return true to skip delta frames */
   shouldSkipDeltaFrame?: () => boolean
-  /** Enable debug logging */
-  debug?: boolean
 }
 
 /**
@@ -125,9 +121,7 @@ function configsMatch(a: VideoDecoderConfig | null, b: VideoDecoderConfig | null
  * Create a new playback engine instance
  */
 export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig = {}): Playback {
-  // return new PlaybackEngine(config)
-
-  let perf = createPerfMonitor()
+  const perf = createPerfMonitor()
 
   // Demuxer state
   let input: Input | null = null
@@ -136,9 +130,8 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
   let videoConfig: VideoDecoderConfig | null = null
   let duration = 0
 
-  // Decoder state
-  let decoder: VideoDecoder | null = null
-  let decoderReady = false
+  // Decoder (managed wrapper)
+  let decoder: Decoder | null = null
 
   // Buffer state (ring buffer of decoded frames)
   let frameBuffer: FrameData[] = []
@@ -146,7 +139,6 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
   let isBuffering = false // Lock to prevent concurrent buffer operations
 
   // Playback timing state
-  // let _isPlaying = false
   let startWallTime = 0 // performance.now() when play started
   let startMediaTime = 0 // media time when play started
   let speed = 1
@@ -154,13 +146,6 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
   // State tracking
   let _state: PlaybackState = 'idle'
   let lastSentTimestamp: number | null = null
-
-  // Pending frame resolvers
-  let pendingFrameResolvers: Array<{
-    resolve: (frame: VideoFrame) => void
-    reject: (error: Error) => void
-  }> = []
-  let pendingFrames: VideoFrame[] = []
 
   function sendFrame(time: number): void {
     if (!onFrame) return
@@ -205,206 +190,8 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
     return best ?? frameBuffer[0]
   }
 
-  async function initDecoder(): Promise<void> {
-    if (!videoConfig) throw new Error('No video config')
-
-    log('initDecoder', {
-      codec: videoConfig.codec,
-      codedWidth: videoConfig.codedWidth,
-      codedHeight: videoConfig.codedHeight,
-      hasDescription: !!videoConfig.description,
-      descriptionLength:
-        videoConfig.description instanceof ArrayBuffer ? videoConfig.description.byteLength : 'N/A',
-    })
-
-    // Check if decoder supports this config
-    const support = await VideoDecoder.isConfigSupported(videoConfig)
-    log('decoder config support', { supported: support.supported, config: support.config })
-
-    if (!support.supported) {
-      throw new Error(`Unsupported video config: ${videoConfig.codec}`)
-    }
-
-    // Clear pending state
-    pendingFrameResolvers = []
-    pendingFrames = []
-
-    decoder = new VideoDecoder({
-      output: (frame: VideoFrame) => {
-        log('decoder output', { timestamp: frame.timestamp, duration: frame.duration })
-        // If we have pending resolvers, resolve the first one
-        const pending = pendingFrameResolvers.shift()
-        if (pending) {
-          pending.resolve(frame)
-        } else {
-          // Otherwise queue the frame
-          pendingFrames.push(frame)
-        }
-      },
-      error: error => {
-        console.error('[playback:engine] decoder error callback - DECODER WILL CLOSE', {
-          error,
-          message: error.message,
-          name: error.name,
-          stack: error.stack,
-          decoderState: decoder?.state,
-        })
-        // Reject any pending promises
-        const pending = pendingFrameResolvers.shift()
-        if (pending) {
-          pending.reject(error)
-        }
-      },
-    })
-
-    decoder.configure(videoConfig)
-    decoderReady = false
-  }
-
-  async function decodeAndBuffer(sample: DemuxedSample): Promise<void> {
-    perf.start('decode')
-    if (!decoder || decoder.state === 'closed') {
-      log('decodeAndBuffer: decoder not available, reinitializing', {
-        decoderState: decoder?.state,
-      })
-      // Decoder closed unexpectedly (error state) - reinitialize it
-      if (videoConfig) {
-        try {
-          await initDecoder()
-          log('decodeAndBuffer: decoder reinitialized')
-        } catch (error) {
-          console.error('[playback:engine] decodeAndBuffer: failed to reinitialize decoder', error)
-          perf.end('decode')
-          return
-        }
-      } else {
-        perf.end('decode')
-        return
-      }
-    }
-
-    // After potential reinitialization, verify decoder is available
-    if (!decoder) {
-      log('decodeAndBuffer: decoder still not available after reinit attempt')
-      perf.end('decode')
-      return
-    }
-
-    // Skip delta frames if decoder not ready (need keyframe first)
-    if (!decoderReady && !sample.isKeyframe) {
-      log('skipping delta frame, decoder not ready')
-      perf.end('decode')
-      return
-    }
-
-    // Skip delta frames if decoder queue is backed up (backpressure)
-    if (decoder.decodeQueueSize > DECODE_QUEUE_THRESHOLD && !sample.isKeyframe) {
-      log('skipping delta frame, decoder queue backed up', {
-        decodeQueueSize: decoder.decodeQueueSize,
-        threshold: DECODE_QUEUE_THRESHOLD,
-      })
-      perf.end('decode')
-      return
-    }
-
-    // Skip delta frames if external scheduler signals backpressure (e.g., encoder busy)
-    if (shouldSkipDeltaFrame?.() && !sample.isKeyframe) {
-      log('skipping delta frame, external backpressure')
-      perf.end('decode')
-      return
-    }
-
-    log('decodeAndBuffer', {
-      pts: sample.pts,
-      dts: sample.dts,
-      duration: sample.duration,
-      isKeyframe: sample.isKeyframe,
-      dataSize: sample.data.byteLength,
-      decoderState: decoder.state,
-      decodeQueueSize: decoder.decodeQueueSize,
-    })
-
-    const chunk = new EncodedVideoChunk({
-      type: sample.isKeyframe ? 'key' : 'delta',
-      timestamp: sample.pts * 1_000_000,
-      duration: sample.duration * 1_000_000,
-      data: sample.data,
-    })
-
-    try {
-      // Set up promise BEFORE decode (to avoid race condition)
-      const framePromise = new Promise<VideoFrame>((resolve, reject) => {
-        // Check if we already have a frame queued
-        if (pendingFrames.length > 0) {
-          resolve(pendingFrames.shift()!)
-          return
-        }
-
-        // Set up timeout
-        const timeoutId = setTimeout(() => {
-          // Remove this resolver from queue
-          const index = pendingFrameResolvers.findIndex(p => p.resolve === resolve)
-          if (index !== -1) pendingFrameResolvers.splice(index, 1)
-          reject(new Error('Decode timeout'))
-        }, 5000)
-
-        pendingFrameResolvers.push({
-          resolve: frame => {
-            clearTimeout(timeoutId)
-            resolve(frame)
-          },
-          reject: error => {
-            clearTimeout(timeoutId)
-            reject(error)
-          },
-        })
-      })
-
-      // Now decode the chunk
-      decoder.decode(chunk)
-
-      // Wait for the frame
-      const frame = await framePromise
-
-      decoderReady = true
-      log('decode success', { timestamp: frame.timestamp, duration: frame.duration })
-
-      const data = await frameToData(frame, sample)
-
-      // Insert in sorted order
-      const insertIndex = frameBuffer.findIndex(f => f.timestamp > data.timestamp)
-      if (insertIndex === -1) {
-        frameBuffer.push(data)
-      } else {
-        frameBuffer.splice(insertIndex, 0, data)
-      }
-
-      bufferPosition = sample.pts + sample.duration
-
-      // Trim old frames (keep max buffer size)
-      while (frameBuffer.length > BUFFER_MAX_FRAMES) {
-        frameBuffer.shift()
-      }
-      perf.end('decode')
-    } catch (error) {
-      perf.end('decode')
-      console.error('[playback:engine] decodeAndBuffer error', {
-        error,
-        errorMessage: error instanceof Error ? error.message : String(error),
-        isKeyframe: sample.isKeyframe,
-        pts: sample.pts,
-        dataSize: sample.data.byteLength,
-      })
-      if (sample.isKeyframe) {
-        decoderReady = false
-      }
-      // Re-throw to let caller handle
-      throw error
-    }
-  }
-
   async function bufferAhead(fromTime: number): Promise<void> {
-    if (!videoSink || !videoTrack) return
+    if (!videoSink || !videoTrack || !decoder) return
     if (isBuffering) return // Prevent concurrent buffering
 
     const targetEnd = Math.min(fromTime + BUFFER_AHEAD_SECONDS, duration)
@@ -412,7 +199,7 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
 
     isBuffering = true
     perf.start('bufferAhead')
-    log('bufferAhead', { fromTime, targetEnd, bufferPosition: bufferPosition })
+    log('bufferAhead', { fromTime, targetEnd, bufferPosition })
 
     try {
       // Get packet at current buffer position
@@ -426,16 +213,55 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
       let decoded = 0
       while (packet && packet.timestamp < targetEnd && decoded < BUFFER_AHEAD_FRAMES) {
         const sample = packetToSample(packet, videoTrack.id)
-        try {
-          await decodeAndBuffer(sample)
-          decoded++
-        } catch (error) {
-          // Log but continue - try next packet
-          console.error('[playback:engine] bufferAhead: decode failed, skipping', {
-            pts: sample.pts,
-            error,
-          })
+
+        perf.start('decode')
+        const result = await decoder.decode(sample)
+        perf.end('decode')
+
+        switch (result.type) {
+          case 'frame': {
+            const data = await frameToData(result.frame, sample)
+
+            // Insert in sorted order
+            const insertIndex = frameBuffer.findIndex(f => f.timestamp > data.timestamp)
+            if (insertIndex === -1) {
+              frameBuffer.push(data)
+            } else {
+              frameBuffer.splice(insertIndex, 0, data)
+            }
+
+            bufferPosition = sample.pts + sample.duration
+            decoded++
+
+            // Trim old frames (keep max buffer size)
+            while (frameBuffer.length > BUFFER_MAX_FRAMES) {
+              frameBuffer.shift()
+            }
+            break
+          }
+
+          case 'skipped':
+            // Delta frame skipped due to backpressure or not ready - continue
+            log('bufferAhead: frame skipped', { reason: result.reason, pts: sample.pts })
+            break
+
+          case 'needs-keyframe': {
+            // Decoder recovered from error, seek to keyframe
+            log('bufferAhead: decoder needs keyframe', { time: result.time })
+            const keyPacket = await videoSink.getKeyPacket(result.time)
+            if (keyPacket) {
+              log('bufferAhead: found recovery keyframe', {
+                keyframePts: keyPacket.timestamp,
+                requestedTime: result.time,
+              })
+              packet = keyPacket
+              bufferPosition = keyPacket.timestamp
+              continue // Restart loop from keyframe
+            }
+            break
+          }
         }
+
         perf.start('demux')
         packet = await videoSink.getNextPacket(packet)
         perf.end('demux')
@@ -456,25 +282,10 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
     lastSentTimestamp = null
     isBuffering = false
 
-    // Clear pending frame state
-    for (const frame of pendingFrames) {
-      frame.close()
-    }
-    pendingFrames = []
-    // Reject any waiting resolvers
-    for (const pending of pendingFrameResolvers) {
-      pending.reject(new Error('Seek interrupted'))
-    }
-    pendingFrameResolvers = []
-
-    log('seekToTime: cleared pending state')
-
     // Reset decoder
-    if (decoder && decoder.state !== 'closed') {
+    if (decoder) {
       decoder.reset()
-      decoder.configure(videoConfig!)
     }
-    decoderReady = false
 
     log('seekToTime: decoder reset')
 
@@ -517,7 +328,7 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
 
     // Check for end
     if (duration > 0 && time >= duration) {
-      log('streamLoop: reached end', { time, duration: duration })
+      log('streamLoop: reached end', { time, duration })
       _state = 'paused'
       loop.stop()
       return
@@ -530,10 +341,9 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
         bufferLength: frameBuffer.length,
         bufferPosition,
         isBuffering,
-        decoderReady,
+        decoderReady: decoder?.isReady,
+        decoderState: decoder?.state,
         lastSentTimestamp,
-        pendingResolvers: pendingFrameResolvers.length,
-        pendingFrames: pendingFrames.length,
       })
     }
 
@@ -599,18 +409,17 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
         videoConfig = await videoTrack.getDecoderConfig()
         duration = await videoTrack.computeDuration()
 
-        const config = videoConfig
         log('videoTrack info', {
           id: videoTrack.id,
           codedWidth: videoTrack.codedWidth,
           codedHeight: videoTrack.codedHeight,
-          duration: duration,
-          videoConfig: config
+          duration,
+          videoConfig: videoConfig
             ? {
-                codec: config.codec,
-                codedWidth: config.codedWidth,
-                codedHeight: config.codedHeight,
-                hasDescription: !!config.description,
+                codec: videoConfig.codec,
+                codedWidth: videoConfig.codedWidth,
+                codedHeight: videoConfig.codedHeight,
+                hasDescription: !!videoConfig.description,
               }
             : null,
         })
@@ -633,31 +442,32 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
           codec: codecString ?? 'unknown',
           width: videoTrack.codedWidth,
           height: videoTrack.codedHeight,
-          duration: duration,
+          duration,
           timescale: 1,
           sampleCount: 0,
           bitrate: 0,
         }
 
         // Reuse decoder if config matches, otherwise create new
-        if (decoder && decoder.state !== 'closed' && configsMatch(previousConfig, videoConfig)) {
+        if (decoder && configsMatch(previousConfig, videoConfig)) {
           log('reusing decoder, config matches')
           decoder.reset()
-          decoder.configure(videoConfig!)
-          decoderReady = false
         } else {
           // Close old decoder if exists
-          if (decoder && decoder.state !== 'closed') {
+          if (decoder) {
             decoder.close()
           }
-          await initDecoder()
+          decoder = createDecoder({
+            videoConfig: assertedNotNullish(videoConfig, 'Expected videoConfig to be defined.'),
+            shouldSkipDeltaFrame,
+          })
         }
       }
 
       _state = 'ready'
-      log('load complete', { duration: duration, hasVideo: !!videoTrack })
+      log('load complete', { duration, hasVideo: !!videoTrack })
 
-      return { duration: duration, videoTrack: videoTrackInfo }
+      return { duration, videoTrack: videoTrackInfo }
     },
 
     play(startTime, playbackSpeed = 1) {
