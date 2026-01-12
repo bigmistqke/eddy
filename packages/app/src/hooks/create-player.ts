@@ -10,9 +10,12 @@ import { compileLayoutTimeline, injectPreviewClips } from '~/lib/timeline-compil
 import { createWorkerPool, type PooledWorker } from '~/lib/worker-pool'
 import type { CompositorWorkerMethods } from '~/workers/compositor.worker'
 import CompositorWorker from '~/workers/compositor.worker?worker'
+import type { PlaybackWorkerMethods } from '~/workers/playback.worker'
+import PlaybackWorker from '~/workers/playback.worker?worker'
 import { createClock, type Clock } from './create-clock'
 
 type CompositorRPC = RPC<CompositorWorkerMethods>
+type PlaybackRPC = RPC<PlaybackWorkerMethods>
 
 const log = debug('player', false)
 const perf = getGlobalPerfMonitor()
@@ -113,13 +116,13 @@ interface TrackEntry {
 interface ClipEntry {
   clipId: string
   trackId: string
-  pooledWorker: PooledWorker
+  pooledWorker: PooledWorker<PlaybackRPC>
   duration: number
   state: 'idle' | 'loading' | 'ready' | 'playing' | 'paused'
   /** Stored buffer for gapless loop handoff */
   buffer: ArrayBuffer | null
   /** Worker being prepared for loop transition */
-  nextWorker: PooledWorker | null
+  nextWorker: PooledWorker<PlaybackRPC> | null
   /** Whether nextWorker is ready to take over */
   nextWorkerReady: boolean
 }
@@ -192,7 +195,12 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
   })
 
   // Worker pool for playback workers
-  const workerPool = createWorkerPool({ maxSize: 8 })
+  const workerPool = createWorkerPool<PlaybackRPC>({
+    create: () => new PlaybackWorker(),
+    wrap: worker => rpc<PlaybackWorkerMethods>(worker),
+    reset: workerRpc => workerRpc.destroy(),
+    maxSize: 8,
+  })
 
   // Track entries - keyed by trackId (audio routing only)
   const [tracks, setTracks] = createStore<Record<string, TrackEntry>>({})

@@ -1,31 +1,26 @@
 /**
  * Worker Pool
  *
- * Manages a pool of reusable Web Workers to avoid initialization overhead.
- * Workers are acquired for clip playback and returned when done.
+ * Generic pool of reusable Web Workers to avoid initialization overhead.
+ * Workers are acquired, used, and released back to the pool.
  */
 
-import { rpc, type RPC } from '@bigmistqke/rpc/messenger'
 import { debug } from '@eddy/utils'
-import type { PlaybackWorkerMethods } from '~/workers/playback.worker'
-import PlaybackWorker from '~/workers/playback.worker?worker'
 
 const log = debug('worker-pool', false)
 
-type PlaybackRPC = RPC<PlaybackWorkerMethods>
-
-export interface PooledWorker {
+export interface PooledWorker<T> {
   worker: Worker
-  rpc: PlaybackRPC
+  rpc: T
   inUse: boolean
 }
 
-export interface WorkerPool {
+export interface WorkerPool<T> {
   /** Acquire a worker from the pool (creates new if none available) */
-  acquire(): PooledWorker
+  acquire(): PooledWorker<T>
 
   /** Release a worker back to the pool */
-  release(worker: PooledWorker): void
+  release(worker: PooledWorker<T>): void
 
   /** Get current pool stats */
   stats(): { total: number; inUse: number; idle: number }
@@ -34,34 +29,43 @@ export interface WorkerPool {
   destroy(): void
 }
 
-export interface WorkerPoolOptions {
+export interface WorkerPoolOptions<T> {
+  /** Factory to create a new Worker instance */
+  create: () => Worker
+
+  /** Wrap worker with RPC interface */
+  wrap: (worker: Worker) => T
+
+  /** Reset worker state on release (keeps worker alive) */
+  reset: (rpc: T) => void | Promise<void>
+
   /** Maximum number of workers to keep in pool (default: 8) */
   maxSize?: number
 }
 
 /**
- * Create a worker pool for playback workers
+ * Create a generic worker pool
  */
-export function createWorkerPool(options: WorkerPoolOptions = {}): WorkerPool {
-  const { maxSize = 8 } = options
+export function createWorkerPool<T>(options: WorkerPoolOptions<T>): WorkerPool<T> {
+  const { create, wrap, reset, maxSize = 8 } = options
 
-  const pool: PooledWorker[] = []
+  const pool: PooledWorker<T>[] = []
 
-  function createWorker(): PooledWorker {
+  function createWorker(): PooledWorker<T> {
     log('creating new worker')
-    const worker = new PlaybackWorker()
-    const workerRpc = rpc<PlaybackWorkerMethods>(worker)
+    const worker = create()
+    const rpc = wrap(worker)
 
     return {
       worker,
-      rpc: workerRpc,
+      rpc,
       inUse: false,
     }
   }
 
-  function acquire(): PooledWorker {
+  function acquire(): PooledWorker<T> {
     // Find an idle worker
-    const idle = pool.find(w => !w.inUse)
+    const idle = pool.find(pooledWorker => !pooledWorker.inUse)
 
     if (idle) {
       log('acquiring idle worker', { poolSize: pool.length })
@@ -86,25 +90,24 @@ export function createWorkerPool(options: WorkerPoolOptions = {}): WorkerPool {
     return tempWorker
   }
 
-  async function release(pooledWorker: PooledWorker): Promise<void> {
+  async function release(pooledWorker: PooledWorker<T>): Promise<void> {
     const inPool = pool.includes(pooledWorker)
 
     if (inPool) {
-      // Reset worker state - cleans up decoder, input, buffers
-      // Worker remains alive and ready for new clip
-      await pooledWorker.rpc.destroy()
+      // Reset worker state, keep worker alive for reuse
+      await reset(pooledWorker.rpc)
       pooledWorker.inUse = false
       log('released worker to pool', { poolSize: pool.length })
     } else {
       // Temporary worker (pool was full) - fully terminate
-      await pooledWorker.rpc.destroy()
+      await reset(pooledWorker.rpc)
       pooledWorker.worker.terminate()
       log('terminated temporary worker')
     }
   }
 
   function stats() {
-    const inUse = pool.filter(w => w.inUse).length
+    const inUse = pool.filter(pooledWorker => pooledWorker.inUse).length
     return {
       total: pool.length,
       inUse,
@@ -115,7 +118,6 @@ export function createWorkerPool(options: WorkerPoolOptions = {}): WorkerPool {
   function destroy(): void {
     log('destroying pool', { size: pool.length })
     for (const pooledWorker of pool) {
-      pooledWorker.rpc.destroy()
       pooledWorker.worker.terminate()
     }
     pool.length = 0
