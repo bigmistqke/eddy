@@ -45,6 +45,46 @@ for (const p of playbacks) { ... }
 
 Prefer `display: grid` over flexbox.
 
+### Closures over Classes
+
+Prefer factory functions returning object literals over classes:
+
+```ts
+// Good - createX factory with closure
+function helperThatDoesntNeedState(frame: VideoFrame) { ... }
+
+export function createPlayback(config: Config): Playback {
+  // Private state
+  let buffer: Frame[] = []
+
+  // Private functions (need internal state)
+  function seekInternal(time: number) {
+    buffer = []
+    // ...
+  }
+
+  // Public API
+  return {
+    play() { ... },
+    seek(time: number) {
+      seekInternal(time)
+    },
+  }
+}
+
+// Bad - class
+export class PlaybackEngine {
+  private buffer: Frame[] = []
+  play() { ... }
+}
+```
+
+Rules:
+- Factory function named `createX`, returns interface `X`
+- Private state/functions inside closure
+- Pure helpers that don't need internal state go OUTSIDE the factory (top of file)
+- Public API is the returned object literal
+
 ## Decision Graph
 
 Deciduous tracks goals, decisions, actions, outcomes, and observations in a persistent graph that survives context loss.
