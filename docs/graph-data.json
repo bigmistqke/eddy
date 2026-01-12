@@ -1176,6 +1176,61 @@
       "created_at": "2026-01-12T19:36:58.585150+01:00",
       "updated_at": "2026-01-12T19:36:58.585150+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"fa9a2d2\",\"confidence\":95}"
+    },
+    {
+      "id": 108,
+      "change_id": "c2fe6d50-561e-4382-992c-5e418405e3d1",
+      "node_type": "outcome",
+      "title": "Committed: remove redundant reset() after decoder reuse refactor",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-12T20:04:19.915902+01:00",
+      "updated_at": "2026-01-12T20:04:19.915902+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"6d6ffa7\",\"confidence\":95}"
+    },
+    {
+      "id": 109,
+      "change_id": "ec98ca5c-d669-4924-aa3c-0193706dc52f",
+      "node_type": "goal",
+      "title": "fix: video clips sporadically stuck at first frame",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-12T20:26:47.080139+01:00",
+      "updated_at": "2026-01-12T20:26:47.080139+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"User reported: \\\"there is currently a bug when playing videos: sporadically a clip would get stuck at the first frame. stopping and re-playing does not work: only looping -> it would start playing the clip once it looped around\\\"\"}"
+    },
+    {
+      "id": 110,
+      "change_id": "658833c4-1022-419b-8e31-0308c498a217",
+      "node_type": "observation",
+      "title": "Root cause: stale animationFrameId prevents stream loop restart",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-12T20:26:55.548507+01:00",
+      "updated_at": "2026-01-12T20:26:55.548507+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 111,
+      "change_id": "e8eed696-b166-4d4f-9d50-6fbb532ae294",
+      "node_type": "action",
+      "title": "Fix: clear animationFrameId on early returns in streamLoop",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-12T20:27:07.769614+01:00",
+      "updated_at": "2026-01-12T20:27:07.769614+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 112,
+      "change_id": "9c7fae04-05c5-48c1-8cff-91ad0082f837",
+      "node_type": "outcome",
+      "title": "Created createLoop utility and refactored createPlayback + createPlayer to use it",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-12T20:40:16.664735+01:00",
+      "updated_at": "2026-01-12T20:40:16.664735+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -2256,6 +2311,50 @@
       "weight": 1.0,
       "rationale": "Committed",
       "created_at": "2026-01-12T19:36:58.597216+01:00"
+    },
+    {
+      "id": 99,
+      "from_node_id": 105,
+      "to_node_id": 108,
+      "from_change_id": "88820b10-2eee-4ae5-99d2-943e89a5a45b",
+      "to_change_id": "c2fe6d50-561e-4382-992c-5e418405e3d1",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Cleanup after decoder reuse",
+      "created_at": "2026-01-12T20:04:39.692141+01:00"
+    },
+    {
+      "id": 100,
+      "from_node_id": 109,
+      "to_node_id": 110,
+      "from_change_id": "ec98ca5c-d669-4924-aa3c-0193706dc52f",
+      "to_change_id": "658833c4-1022-419b-8e31-0308c498a217",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Root cause identified",
+      "created_at": "2026-01-12T20:26:55.720515+01:00"
+    },
+    {
+      "id": 101,
+      "from_node_id": 109,
+      "to_node_id": 111,
+      "from_change_id": "ec98ca5c-d669-4924-aa3c-0193706dc52f",
+      "to_change_id": "e8eed696-b166-4d4f-9d50-6fbb532ae294",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-01-12T20:27:08.090898+01:00"
+    },
+    {
+      "id": 102,
+      "from_node_id": 111,
+      "to_node_id": 112,
+      "from_change_id": "e8eed696-b166-4d4f-9d50-6fbb532ae294",
+      "to_change_id": "9c7fae04-05c5-48c1-8cff-91ad0082f837",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implemented",
+      "created_at": "2026-01-12T20:40:16.836453+01:00"
     }
   ]
 }
