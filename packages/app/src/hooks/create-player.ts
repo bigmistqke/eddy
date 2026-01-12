@@ -198,7 +198,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
   const workerPool = createWorkerPool<PlaybackRPC>({
     create: () => new PlaybackWorker(),
     wrap: worker => rpc<PlaybackWorkerMethods>(worker),
-    reset: workerRpc => workerRpc.destroy(),
+    reset: workerRpc => workerRpc.reset(),
     maxSize: 8,
   })
 

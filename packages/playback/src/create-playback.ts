@@ -52,9 +52,8 @@ export interface Playback {
   readonly isPlaying: boolean
   /** Video duration in seconds */
   readonly videoDuration: number
-  cleanup(): void
-  /** Clean up resources */
-  destroy(): void
+  /** Reset for new clip (flushes decoder but keeps it alive for reuse) */
+  reset(): void
   /** Get current buffer range */
   getBufferRange(): {
     start: number
@@ -110,6 +109,12 @@ function packetToSample(packet: EncodedPacket, trackId: number): DemuxedSample {
     data: packet.data,
     size: packet.data.byteLength,
   }
+}
+
+/** Check if two VideoDecoderConfigs are equivalent (can reuse decoder) */
+function configsMatch(a: VideoDecoderConfig | null, b: VideoDecoderConfig | null): boolean {
+  if (!a || !b) return false
+  return a.codec === b.codec && a.codedWidth === b.codedWidth && a.codedHeight === b.codedHeight
 }
 
 /**********************************************************************************/
@@ -203,18 +208,6 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
     }
 
     return best ?? frameBuffer[0]
-  }
-
-  function cleanup(): void {
-    if (input) {
-      input[Symbol.dispose]?.()
-    }
-    if (decoder && decoder.state !== 'closed') {
-      decoder.close()
-    }
-    frameBuffer = []
-    bufferPosition = 0
-    decoderReady = false
   }
 
   async function initDecoder(): Promise<void> {
@@ -533,32 +526,38 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
   }
 
   return {
-    cleanup,
-
-    get isPlaying(): boolean {
+    get isPlaying() {
       return _isPlaying
     },
 
-    get videoDuration(): number {
+    get videoDuration() {
       return duration
     },
 
-    getState(): PlaybackState {
+    getState() {
       return _state
     },
 
-    setFrameCallback(callback: FrameCallback | null): void {
+    setFrameCallback(callback) {
       onFrame = callback ?? undefined
     },
 
-    async load(
-      buffer: ArrayBuffer,
-    ): Promise<{ duration: number; videoTrack: VideoTrackInfo | null }> {
+    async load(buffer) {
       log('load', { size: buffer.byteLength })
       _state = 'loading'
 
-      // Clean up previous
-      cleanup()
+      // Store previous config to check for reuse
+      const previousConfig = videoConfig
+
+      // Clean up previous input (but not decoder yet)
+      if (input) {
+        input[Symbol.dispose]?.()
+        input = null
+      }
+      videoTrack = null
+      videoSink = null
+      frameBuffer = []
+      bufferPosition = 0
 
       // Create input from buffer
       const blob = new Blob([buffer])
@@ -618,8 +617,19 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
           bitrate: 0,
         }
 
-        // Initialize decoder
-        await initDecoder()
+        // Reuse decoder if config matches, otherwise create new
+        if (decoder && decoder.state !== 'closed' && configsMatch(previousConfig, videoConfig)) {
+          log('reusing decoder, config matches')
+          decoder.reset()
+          decoder.configure(videoConfig!)
+          decoderReady = false
+        } else {
+          // Close old decoder if exists
+          if (decoder && decoder.state !== 'closed') {
+            decoder.close()
+          }
+          await initDecoder()
+        }
       }
 
       _state = 'ready'
@@ -628,7 +638,7 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
       return { duration: duration, videoTrack: videoTrackInfo }
     },
 
-    play(startTime: number, playbackSpeed = 1): void {
+    play(startTime, playbackSpeed = 1) {
       log('play', { startTime, playbackSpeed })
 
       startMediaTime = startTime
@@ -640,7 +650,7 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
       startStreamLoop()
     },
 
-    pause(): void {
+    pause() {
       log('pause', { isPlaying: _isPlaying })
 
       // Capture current position
@@ -651,7 +661,7 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
       stopStreamLoop()
     },
 
-    async seek(time: number): Promise<void> {
+    async seek(time) {
       log('seek', { time, hasVideoSink: !!videoSink })
       const wasPlaying = _isPlaying
 
@@ -679,7 +689,7 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
       }
     },
 
-    getBufferRange(): { start: number; end: number } {
+    getBufferRange() {
       if (frameBuffer.length === 0) {
         return { start: 0, end: 0 }
       }
@@ -689,10 +699,7 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
       }
     },
 
-    getPerf(): Record<
-      string,
-      { samples: number; avg: number; max: number; min: number; overThreshold: number }
-    > {
+    getPerf() {
       return perf.getAllStats()
     },
 
@@ -706,26 +713,50 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
       }
     },
 
-    destroy(): void {
-      log('destroy')
+    reset(): void {
+      log('reset')
 
       stopStreamLoop()
 
-      if (decoder && decoder.state !== 'closed') {
-        decoder.close()
-      }
-      decoder = null
+      // Clear buffers but keep decoder alive
+      frameBuffer = []
+      bufferPosition = 0
+      lastSentTimestamp = null
+      _isPlaying = false
+      startMediaTime = 0
+      startWallTime = 0
 
+      // Clear pending frames
+      for (const frame of pendingFrames) {
+        frame.close()
+      }
+      pendingFrames = []
+      for (const pending of pendingFrameResolvers) {
+        pending.reject(new Error('Reset'))
+      }
+      pendingFrameResolvers = []
+
+      // Flush decoder but keep it alive (will be reconfigured on next load if needed)
+      if (decoder && decoder.state !== 'closed') {
+        decoder.reset()
+        // Reconfigure to keep it ready
+        if (videoConfig) {
+          decoder.configure(videoConfig)
+        }
+      }
+      decoderReady = false
+
+      // Clean up input
       if (input) {
         input[Symbol.dispose]?.()
         input = null
       }
-
       videoTrack = null
       videoSink = null
-      videoConfig = null
-      frameBuffer = []
+      duration = 0
+
+      // Keep videoConfig for potential reuse on next load
       _state = 'idle'
     },
-  }
+  } satisfies Playback
 }

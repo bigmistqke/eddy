@@ -45,8 +45,8 @@ export interface PlaybackWorkerMethods {
   /** Reset performance stats */
   resetPerf(): void
 
-  /** Clean up resources */
-  destroy(): void
+  /** Reset for new clip (keeps decoder alive for reuse) */
+  reset(): void
 }
 
 /**********************************************************************************/
@@ -96,6 +96,7 @@ expose<PlaybackWorkerMethods>({
   getState: engine.getState,
   pause: engine.pause,
   play: engine.play,
+  reset: engine.reset,
   resetPerf: engine.resetPerf,
   seek: engine.seek,
 
@@ -108,7 +109,7 @@ expose<PlaybackWorkerMethods>({
   async load(buffer) {
     log('load', { size: buffer.byteLength })
 
-    engine.destroy()
+    // load() handles cleanup internally and reuses decoder if config matches
     return engine.load(buffer)
   },
 
@@ -120,13 +121,5 @@ expose<PlaybackWorkerMethods>({
 
     // Immediately send buffered frame if available (for gapless handoff)
     engine.sendCurrentFrame()
-  },
-
-  destroy() {
-    log('destroy RPC received', { workerId, clipId })
-
-    engine.destroy()
-    compositor = null
-    clipId = ''
   },
 })
