@@ -215,7 +215,9 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
         const sample = packetToSample(packet, videoTrack.id)
 
         perf.start('decode')
-        const result = await decoder.decode(sample)
+        // decode() returns sync if frame ready, Promise if waiting
+        const maybeResult = decoder.decode(sample)
+        const result = maybeResult instanceof Promise ? await maybeResult : maybeResult
         perf.end('decode')
 
         switch (result.type) {

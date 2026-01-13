@@ -27,8 +27,8 @@ export interface DecoderConfig {
 
 /** Managed video decoder with automatic recovery */
 export interface Decoder {
-  /** Decode a sample, handling recovery automatically */
-  decode(sample: DemuxedSample): Promise<DecodeResult>
+  /** Decode a sample - returns sync if frame ready, Promise if waiting */
+  decode(sample: DemuxedSample): DecodeResult | Promise<DecodeResult>
   /** Reset decoder state (for seeking) */
   reset(): void
   /** Close decoder and release resources */
@@ -147,7 +147,7 @@ export function createDecoder({
       return decoder?.state ?? 'none'
     },
 
-    async decode(sample) {
+    decode(sample): DecodeResult | Promise<DecodeResult> {
       // Check if recovery is pending from previous error
       if (pendingRecoveryTime !== null) {
         const time = pendingRecoveryTime
@@ -188,43 +188,47 @@ export function createDecoder({
         data: sample.data,
       })
 
-      try {
-        // Set up frame promise before decode
-        const framePromise = waitForFrame()
+      // Queue decode
+      decoder!.decode(chunk)
 
-        // Decode
-        decoder!.decode(chunk)
-
-        // Wait for frame
-        const frame = await framePromise
+      // Check if frame is already available (sync path)
+      if (pendingFrames.length > 0) {
+        const frame = pendingFrames.shift()!
         isReady = true
-
-        log('decode success', { timestamp: frame.timestamp })
+        log('decode success (sync)', { timestamp: frame.timestamp })
         return { type: 'frame', frame }
-      } catch (error) {
-        console.error('[playback:decoder] decode error', {
-          error,
-          isKeyframe: sample.isKeyframe,
-          pts: sample.pts,
-          decoderState: decoder?.state,
-        })
-
-        if (sample.isKeyframe) {
-          isReady = false
-        }
-
-        // If decoder closed due to error, signal recovery needed
-        if (decoder?.state === 'closed') {
-          pendingRecoveryTime = sample.pts
-          log('decoder closed, will request keyframe recovery', { pts: sample.pts })
-          // Reinitialize for next attempt
-          init()
-          return { type: 'needs-keyframe', time: sample.pts }
-        }
-
-        // For other errors on delta frames, just skip
-        return { type: 'skipped', reason: 'not-ready' }
       }
+
+      // Frame not ready yet - return promise (async path)
+      return waitForFrame()
+        .then(frame => {
+          isReady = true
+          log('decode success (async)', { timestamp: frame.timestamp })
+          return { type: 'frame', frame } as DecodeResult
+        })
+        .catch(error => {
+          console.error('[playback:decoder] decode error', {
+            error,
+            isKeyframe: sample.isKeyframe,
+            pts: sample.pts,
+            decoderState: decoder?.state,
+          })
+
+          if (sample.isKeyframe) {
+            isReady = false
+          }
+
+          // If decoder closed due to error, signal recovery needed
+          if (decoder?.state === 'closed') {
+            pendingRecoveryTime = sample.pts
+            log('decoder closed, will request keyframe recovery', { pts: sample.pts })
+            init()
+            return { type: 'needs-keyframe', time: sample.pts } as DecodeResult
+          }
+
+          // For other errors, skip
+          return { type: 'skipped', reason: 'not-ready' } as DecodeResult
+        })
     },
 
     reset() {
