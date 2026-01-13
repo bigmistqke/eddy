@@ -1231,6 +1231,72 @@
       "created_at": "2026-01-12T20:40:16.664735+01:00",
       "updated_at": "2026-01-12T20:40:16.664735+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 113,
+      "change_id": "d0bbf3ad-45fd-4670-a3b6-4fa796f5093c",
+      "node_type": "outcome",
+      "title": "Committed: fix stuck frame bug with createLoop utility",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-12T20:44:08.635418+01:00",
+      "updated_at": "2026-01-12T20:44:08.635418+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"5969b19\",\"confidence\":100}"
+    },
+    {
+      "id": 114,
+      "change_id": "c73f8dec-f031-4eb7-b5d7-2f6ac9453bef",
+      "node_type": "observation",
+      "title": "Bug refinement: clips stuck on LAST frame, not first. When clip exits timeline segment it stays visible. Replay doesn't restart clip, only loop handoff works.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-12T20:46:29.957288+01:00",
+      "updated_at": "2026-01-12T20:46:29.957288+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 115,
+      "change_id": "e03d3560-3fac-456f-b25b-89dd8338b1fa",
+      "node_type": "observation",
+      "title": "Root cause: play() filters out clips with state='playing', but worker may have internally stopped (video ended). No state sync mechanism. Clip never gets re-seeked/restarted.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-12T20:47:38.125401+01:00",
+      "updated_at": "2026-01-12T20:47:38.125401+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 116,
+      "change_id": "ee37046e-6368-42b6-934b-ca1169281f5d",
+      "node_type": "action",
+      "title": "Fix: include 'playing' clips in play() filter so they get re-seeked/restarted",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-12T20:48:07.401176+01:00",
+      "updated_at": "2026-01-12T20:48:07.401176+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 117,
+      "change_id": "397845e1-7c6a-42bb-b807-ec0096818993",
+      "node_type": "observation",
+      "title": "Sync decode() path fixed stuck clip bug - frames no longer orphaned in pendingFrames buffer when Promise setup raced with decoder output",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-14T00:05:32.963126+01:00",
+      "updated_at": "2026-01-14T00:05:32.963126+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 118,
+      "change_id": "e024fed3-d2f1-4d01-be6e-92e7788f19f6",
+      "node_type": "outcome",
+      "title": "Stuck clip bug fixed - sync decode() return path prevents frame orphaning in hot loop",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-14T00:05:39.735284+01:00",
+      "updated_at": "2026-01-14T00:05:39.735284+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"fce67a6\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -2355,6 +2421,72 @@
       "weight": 1.0,
       "rationale": "Implemented",
       "created_at": "2026-01-12T20:40:16.836453+01:00"
+    },
+    {
+      "id": 103,
+      "from_node_id": 112,
+      "to_node_id": 113,
+      "from_change_id": "9c7fae04-05c5-48c1-8cff-91ad0082f837",
+      "to_change_id": "d0bbf3ad-45fd-4670-a3b6-4fa796f5093c",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-12T20:44:08.777612+01:00"
+    },
+    {
+      "id": 104,
+      "from_node_id": 109,
+      "to_node_id": 114,
+      "from_change_id": "ec98ca5c-d669-4924-aa3c-0193706dc52f",
+      "to_change_id": "c73f8dec-f031-4eb7-b5d7-2f6ac9453bef",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Bug refinement",
+      "created_at": "2026-01-12T20:46:30.109215+01:00"
+    },
+    {
+      "id": 105,
+      "from_node_id": 114,
+      "to_node_id": 115,
+      "from_change_id": "c73f8dec-f031-4eb7-b5d7-2f6ac9453bef",
+      "to_change_id": "e03d3560-3fac-456f-b25b-89dd8338b1fa",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Root cause identified",
+      "created_at": "2026-01-12T20:47:38.273763+01:00"
+    },
+    {
+      "id": 106,
+      "from_node_id": 115,
+      "to_node_id": 116,
+      "from_change_id": "e03d3560-3fac-456f-b25b-89dd8338b1fa",
+      "to_change_id": "ee37046e-6368-42b6-934b-ca1169281f5d",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-01-12T20:48:07.559971+01:00"
+    },
+    {
+      "id": 107,
+      "from_node_id": 109,
+      "to_node_id": 117,
+      "from_change_id": "ec98ca5c-d669-4924-aa3c-0193706dc52f",
+      "to_change_id": "397845e1-7c6a-42bb-b807-ec0096818993",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Bug fixed by commit fce67a6",
+      "created_at": "2026-01-14T00:05:39.589591+01:00"
+    },
+    {
+      "id": 108,
+      "from_node_id": 109,
+      "to_node_id": 118,
+      "from_change_id": "ec98ca5c-d669-4924-aa3c-0193706dc52f",
+      "to_change_id": "e024fed3-d2f1-4d01-be6e-92e7788f19f6",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Goal completed",
+      "created_at": "2026-01-14T00:05:44.091698+01:00"
     }
   ]
 }

@@ -1,27 +1,43 @@
 [
   {
+    "hash": "fce67a6170d3e65e0f8fd58c19829e4bafe78c3d",
+    "short_hash": "fce67a6",
+    "author": "bigmistqke",
+    "date": "2026-01-14T00:02:20+01:00",
+    "message": "perf: return sync from decode() when frame already available\n\ndecode() now returns DecodeResult | Promise<DecodeResult>:\n- If frame is already in pendingFrames buffer, return sync (no Promise)\n- If waiting for decoder output, return Promise\n- Caller checks instanceof Promise and only awaits when necessary\n\nReduces Promise overhead in hot path when decoder is keeping up.",
+    "files_changed": 2
+  },
+  {
+    "hash": "36ab475660aeeb5c564cf06202d3a4857b9c2a80",
+    "short_hash": "36ab475",
+    "author": "bigmistqke",
+    "date": "2026-01-12T21:36:27+01:00",
+    "message": "refactor: extract decoder management into createDecoder wrapper\n\n- New create-decoder.ts encapsulates all VideoDecoder complexity\n- Decoder.decode() returns discriminated union: frame | skipped | needs-keyframe\n- Handles automatic reinitialization when decoder closes due to error\n- Manages keyframe requirement tracking and backpressure internally\n- Simplifies create-playback.ts by removing scattered decoder state",
+    "files_changed": 3
+  },
+  {
+    "hash": "b4a9358b19b61fd7d9bc6057a0a8ff2743a8bc31",
+    "short_hash": "b4a9358",
+    "author": "bigmistqke",
+    "date": "2026-01-12T21:14:27+01:00",
+    "message": "fix: recover decoder when unexpectedly closed to prevent stuck clips\n\nWhen VideoDecoder enters 'closed' state due to an error, subsequent\ndecode attempts would silently fail, causing clips to freeze. Now\ndecodeAndBuffer() detects closed decoders and reinitializes them\nautomatically.\n\nAlso enables debug logging and uses console.error for error messages\nto help diagnose any remaining issues.",
+    "files_changed": 1
+  },
+  {
+    "hash": "5969b19e3f630ff1e2681dd1fa353dc27f963d77",
+    "short_hash": "5969b19",
+    "author": "bigmistqke",
+    "date": "2026-01-12T20:43:35+01:00",
+    "message": "fix: prevent stuck frame bug with createLoop utility\n\nAdd createLoop utility that encapsulates requestAnimationFrame loop\nmanagement with proper cleanup. Fixes sporadic bug where clips would\nget stuck at first frame because stale animationFrameId prevented\nstream loop from restarting.\n\n- createLoop returns { isRunning, start(), stop() }\n- Callback receives loop instance for self-termination\n- Refactor createPlayback and createPlayer to use createLoop",
+    "files_changed": 4
+  },
+  {
     "hash": "6d6ffa7dec50db684b1ac776423fccb2ea60b004",
     "short_hash": "6d6ffa7",
     "author": "bigmistqke",
     "date": "2026-01-12T20:04:15+01:00",
     "message": "chore: remove redundant reset() after decoder reuse refactor",
     "files_changed": 4
-  },
-  {
-    "hash": "b89cbc29f2ed21ffcda30db08a51b3a9bb33a312",
-    "short_hash": "b89cbc2",
-    "author": "bigmistqke",
-    "date": "2026-01-12T19:37:40+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "fa9a2d2fe8db070c16ef654a2adb080095a435a7",
-    "short_hash": "fa9a2d2",
-    "author": "bigmistqke",
-    "date": "2026-01-12T19:36:19+01:00",
-    "message": "feat: reuse decoder when loading clips with matching config\n\nAdds reset() method that flushes decoder but keeps it alive.\nOn load(), compares VideoDecoderConfig - if codec/width/height match,\nskips decoder initialization (~50-200ms savings on subsequent clips).",
-    "files_changed": 3
   },
   {
     "hash": "fa9a2d2fe8db070c16ef654a2adb080095a435a7",
