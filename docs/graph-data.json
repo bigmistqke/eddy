@@ -1297,6 +1297,39 @@
       "created_at": "2026-01-14T00:05:39.735284+01:00",
       "updated_at": "2026-01-14T00:05:39.735284+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"fce67a6\",\"confidence\":95}"
+    },
+    {
+      "id": 119,
+      "change_id": "942aea38-70a1-4ace-96d5-459f76e4d4ac",
+      "node_type": "goal",
+      "title": "feat: offline video+audio export to WebM with download",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-14T00:18:04.326880+01:00",
+      "updated_at": "2026-01-14T00:18:04.326880+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"User requested: render and mux composited video + audio to webm -> and download\\n- Offline render (frame-by-frame, not real-time)\\n- Audio from processed audio pipeline (with gain/pan effects)\\n- Output: VP9 video + Opus audio in WebM\"}"
+    },
+    {
+      "id": 120,
+      "change_id": "3a5b2bb5-eb88-4165-b245-cea4c63539ba",
+      "node_type": "action",
+      "title": "Create offline audio mixer with OfflineAudioContext",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-14T00:18:10.579710+01:00",
+      "updated_at": "2026-01-14T00:18:10.579710+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 121,
+      "change_id": "ee906bb1-9650-4e2f-a53c-cf940f674200",
+      "node_type": "outcome",
+      "title": "Committed: feat: add video export with offline rendering",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-14T10:31:40.127755+01:00",
+      "updated_at": "2026-01-14T10:31:40.127755+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"d96bdab\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -2487,6 +2520,28 @@
       "weight": 1.0,
       "rationale": "Goal completed",
       "created_at": "2026-01-14T00:05:44.091698+01:00"
+    },
+    {
+      "id": 109,
+      "from_node_id": 119,
+      "to_node_id": 120,
+      "from_change_id": "942aea38-70a1-4ace-96d5-459f76e4d4ac",
+      "to_change_id": "3a5b2bb5-eb88-4165-b245-cea4c63539ba",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation step",
+      "created_at": "2026-01-14T00:18:15.619813+01:00"
+    },
+    {
+      "id": 110,
+      "from_node_id": 120,
+      "to_node_id": 121,
+      "from_change_id": "3a5b2bb5-eb88-4165-b245-cea4c63539ba",
+      "to_change_id": "ee906bb1-9650-4e2f-a53c-cf940f674200",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-14T10:31:46.476671+01:00"
     }
   ]
 }
