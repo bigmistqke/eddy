@@ -4,16 +4,13 @@ export { getAudioContext, resumeAudioContext } from './context'
 // Mixer
 export { getMasterMixer, type MasterMixer } from './mixer'
 
-// Pipeline
-export {
-  buildAudioPipeline,
-  BuiltPipeline,
-  createAudioPipeline,
-  registerAudioElement,
-  type AudioElement,
-  type AudioElementFactory,
-  type AudioPipeline,
-} from './pipeline'
+// Effect Chain
+export { createEffectChain, type EffectChain } from './create-effect-chain'
+
+export { registerAudioElement, type AudioElement, type AudioElementFactory } from './audio-elements'
+
+// Audio Bus
+export { createAudioBus, type AudioBus } from './create-audio-bus'
 
 // Audio Decoder
 export {

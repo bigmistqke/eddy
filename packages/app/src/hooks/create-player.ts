@@ -1,5 +1,5 @@
 import { rpc, transfer, type RPC } from '@bigmistqke/rpc/messenger'
-import { createAudioPipeline, type AudioPipeline } from '@eddy/audio'
+import { createAudioBus, type AudioBus } from '@eddy/audio'
 import type { Project } from '@eddy/lexicons'
 import { createLoop, debug, getGlobalPerfMonitor } from '@eddy/utils'
 import { createEffect, createMemo, createSignal, on, type Accessor } from 'solid-js'
@@ -16,10 +16,10 @@ import { compileLayoutTimeline, injectPreviewClips } from '~/lib/timeline-compil
 import { createWorkerPool } from '~/lib/worker-pool'
 import type { CompositorWorkerMethods } from '~/workers/compositor.worker'
 import CompositorWorker from '~/workers/compositor.worker?worker'
-import AudioPlaybackWorker from '~/workers/playback.audio.worker?worker'
 import type { AudioPlaybackWorkerMethods } from '~/workers/playback.audio.worker'
-import VideoPlaybackWorker from '~/workers/playback.video.worker?worker'
+import AudioPlaybackWorker from '~/workers/playback.audio.worker?worker'
 import type { VideoPlaybackWorkerMethods } from '~/workers/playback.video.worker'
+import VideoPlaybackWorker from '~/workers/playback.video.worker?worker'
 import { createClock, type Clock } from './create-clock'
 
 type CompositorRPC = RPC<CompositorWorkerMethods>
@@ -102,7 +102,7 @@ export interface Player extends PlayerState, PlayerActions {
   /** Current layout timeline (reactive) */
   timeline: Accessor<CompiledTimeline>
   /** Get audio pipeline by trackId */
-  getAudioPipeline: (trackId: string) => AudioPipeline | undefined
+  getAudioPipeline: (trackId: string) => AudioBus | undefined
   /** Performance logging */
   logPerf: () => void
   resetPerf: () => void
@@ -129,7 +129,7 @@ export interface CreatePlayerOptions {
 /** Track entry for audio routing */
 interface TrackEntry {
   trackId: string
-  audioPipeline: AudioPipeline
+  audioPipeline: AudioBus
 }
 
 /** Clip entry for managing playback (video + audio) */
@@ -253,7 +253,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
 
     const newTrack: TrackEntry = {
       trackId,
-      audioPipeline: createAudioPipeline(effects),
+      audioPipeline: createAudioBus(effects),
     }
     setTracks(trackId, newTrack)
 
@@ -282,7 +282,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
       videoWorker,
       audioWorker,
       schedulerBuffer,
-      audioDestination: track.audioPipeline.pipeline.input,
+      audioDestination: track.audioPipeline.effectChain.input,
     })
 
     // Pass scheduler buffer to video worker
@@ -406,7 +406,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
       videoWorker,
       audioWorker,
       schedulerBuffer,
-      audioDestination: track.audioPipeline.pipeline.input,
+      audioDestination: track.audioPipeline.effectChain.input,
     })
 
     // Store it immediately (to prevent duplicate preparations)

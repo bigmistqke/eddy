@@ -2,7 +2,7 @@ import type { AudioEffect } from '@eddy/lexicons'
 import { createDemuxer } from '@eddy/media'
 import { debug } from '@eddy/utils'
 import { createAudioDecoder } from './audio-decoder'
-import { buildAudioPipeline } from './pipeline'
+import { createEffectChain } from './create-effect-chain'
 
 const log = debug('offline-audio-mixer', false)
 
@@ -55,8 +55,8 @@ export function createOfflineAudioMixer(duration: number, sampleRate = 48000): O
         const source = offlineCtx.createBufferSource()
         source.buffer = track.buffer
 
-        // Build pipeline from effects using the element system
-        const pipeline = buildAudioPipeline(offlineCtx, track.effects)
+        // Build effect nodes using the element system
+        const pipeline = createEffectChain(offlineCtx, track.effects)
 
         // Connect: source -> pipeline -> destination
         source.connect(pipeline.input)
