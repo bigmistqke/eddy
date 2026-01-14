@@ -1330,6 +1330,105 @@
       "created_at": "2026-01-14T10:31:40.127755+01:00",
       "updated_at": "2026-01-14T10:31:40.127755+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"d96bdab\",\"confidence\":95}"
+    },
+    {
+      "id": 122,
+      "change_id": "9b5ad1fc-8efd-4bc9-95e1-43526c02c586",
+      "node_type": "goal",
+      "title": "Fix audio pipeline for live playback",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-14T10:57:41.574941+01:00",
+      "updated_at": "2026-01-14T10:57:41.574941+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Audio pipeline works for export but not live playback:\\n1. createDefaultProject doesn't define audioPipeline effects\\n2. Empty effects array means no gain/pan elements are created\\n3. setVolume/setPan silently fail because elements don't exist\"}"
+    },
+    {
+      "id": 123,
+      "change_id": "a779b091-f791-41f5-9605-42aba53820cb",
+      "node_type": "action",
+      "title": "Add default audioPipeline with gain/pan to createDefaultProject",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-14T10:57:49.996265+01:00",
+      "updated_at": "2026-01-14T10:57:49.996265+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 124,
+      "change_id": "317dc332-da8b-4791-9007-6000537c1738",
+      "node_type": "outcome",
+      "title": "Default project now has audioPipeline with gain/pan - elements created correctly",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-14T10:58:26.805164+01:00",
+      "updated_at": "2026-01-14T10:58:26.805164+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 125,
+      "change_id": "80a1fa03-987b-46d2-82cb-c55316e5171c",
+      "node_type": "action",
+      "title": "Connect audio source to pipeline for live playback",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-14T11:02:25.375907+01:00",
+      "updated_at": "2026-01-14T11:02:25.375907+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 126,
+      "change_id": "7336931d-41d4-4346-94cd-0c6dc5d7e46c",
+      "node_type": "observation",
+      "title": "Live audio playback was never implemented - playback workers only decode video, audioPipeline.connect() never called",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-14T11:02:25.537797+01:00",
+      "updated_at": "2026-01-14T11:02:25.537797+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 127,
+      "change_id": "f73d927c-80be-4006-b9a2-72d3285bab9d",
+      "node_type": "outcome",
+      "title": "Audio playback connected via HTMLAudioElement per clip, synced with play/pause/seek/stop",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-14T11:05:29.994444+01:00",
+      "updated_at": "2026-01-14T11:05:29.994444+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 128,
+      "change_id": "389badd0-637e-4da3-b38f-ba4f22801b62",
+      "node_type": "action",
+      "title": "Restore AudioWorklet-based audio scheduler with ring buffer",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-14T11:14:54.925279+01:00",
+      "updated_at": "2026-01-14T11:14:54.925279+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 129,
+      "change_id": "a419aaa1-0753-4362-b85a-d852f01de3a8",
+      "node_type": "action",
+      "title": "Refactor playback into createVideoPlayback, createAudioPlayback, and createPlayback orchestrator",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-14T11:31:43.723012+01:00",
+      "updated_at": "2026-01-14T11:31:43.723012+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 130,
+      "change_id": "cad0965c-3eb6-4ccc-b166-d598887e9491",
+      "node_type": "outcome",
+      "title": "Committed: refactor video/audio playback with ring buffer scheduling",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-14T14:45:16.716355+01:00",
+      "updated_at": "2026-01-14T14:45:16.716355+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"5a3cc79\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -2542,6 +2641,94 @@
       "weight": 1.0,
       "rationale": "Committed",
       "created_at": "2026-01-14T10:31:46.476671+01:00"
+    },
+    {
+      "id": 111,
+      "from_node_id": 122,
+      "to_node_id": 123,
+      "from_change_id": "9b5ad1fc-8efd-4bc9-95e1-43526c02c586",
+      "to_change_id": "a779b091-f791-41f5-9605-42aba53820cb",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-01-14T10:57:59.557407+01:00"
+    },
+    {
+      "id": 112,
+      "from_node_id": 123,
+      "to_node_id": 124,
+      "from_change_id": "a779b091-f791-41f5-9605-42aba53820cb",
+      "to_change_id": "317dc332-da8b-4791-9007-6000537c1738",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Result",
+      "created_at": "2026-01-14T10:58:32.738324+01:00"
+    },
+    {
+      "id": 113,
+      "from_node_id": 122,
+      "to_node_id": 125,
+      "from_change_id": "9b5ad1fc-8efd-4bc9-95e1-43526c02c586",
+      "to_change_id": "80a1fa03-987b-46d2-82cb-c55316e5171c",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-01-14T11:02:37.280040+01:00"
+    },
+    {
+      "id": 114,
+      "from_node_id": 122,
+      "to_node_id": 126,
+      "from_change_id": "9b5ad1fc-8efd-4bc9-95e1-43526c02c586",
+      "to_change_id": "7336931d-41d4-4346-94cd-0c6dc5d7e46c",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Discovery",
+      "created_at": "2026-01-14T11:02:37.289650+01:00"
+    },
+    {
+      "id": 115,
+      "from_node_id": 125,
+      "to_node_id": 127,
+      "from_change_id": "80a1fa03-987b-46d2-82cb-c55316e5171c",
+      "to_change_id": "f73d927c-80be-4006-b9a2-72d3285bab9d",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Result",
+      "created_at": "2026-01-14T11:05:34.213848+01:00"
+    },
+    {
+      "id": 116,
+      "from_node_id": 122,
+      "to_node_id": 128,
+      "from_change_id": "9b5ad1fc-8efd-4bc9-95e1-43526c02c586",
+      "to_change_id": "389badd0-637e-4da3-b38f-ba4f22801b62",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-01-14T11:14:59.579989+01:00"
+    },
+    {
+      "id": 117,
+      "from_node_id": 128,
+      "to_node_id": 129,
+      "from_change_id": "389badd0-637e-4da3-b38f-ba4f22801b62",
+      "to_change_id": "a419aaa1-0753-4362-b85a-d852f01de3a8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-01-14T11:31:50.129245+01:00"
+    },
+    {
+      "id": 118,
+      "from_node_id": 129,
+      "to_node_id": 130,
+      "from_change_id": "a419aaa1-0753-4362-b85a-d852f01de3a8",
+      "to_change_id": "cad0965c-3eb6-4ccc-b166-d598887e9491",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-14T14:45:23.125140+01:00"
     }
   ]
 }
