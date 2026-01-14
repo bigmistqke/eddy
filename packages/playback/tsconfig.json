@@ -9,7 +9,8 @@
     "declaration": true,
     "declarationMap": true,
     "noEmit": true,
-    "lib": ["ESNext", "DOM", "DOM.Iterable"]
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": ["vite/client", "@types/audioworklet"]
   },
   "include": ["src/**/*.ts"]
 }

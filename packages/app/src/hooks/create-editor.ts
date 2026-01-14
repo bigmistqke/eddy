@@ -536,26 +536,6 @@ export function createEditor(options: CreateEditorOptions) {
 
   createEffect(() => getMasterMixer().setMasterVolume(masterVolume()))
 
-  /** Extract gain value from audio effects (0-1) */
-  function getGainFromPipeline(effects: AudioEffect[] | undefined): number {
-    if (!effects) return 1
-    const gain = effects.find(effect => effect.type === 'audio.gain')
-    if (gain && 'value' in gain && gain.value && 'value' in gain.value) {
-      return gain.value.value / 100
-    }
-    return 1
-  }
-
-  /** Extract pan value from audio effects (-1 to 1) */
-  function getPanFromPipeline(effects: AudioEffect[] | undefined): number {
-    if (!effects) return 0
-    const pan = effects.find(effect => effect.type === 'audio.pan')
-    if (pan && 'value' in pan && pan.value && 'value' in pan.value) {
-      return (pan.value.value - 50) / 50
-    }
-    return 0
-  }
-
   /** Trigger download of a blob */
   function downloadBlob(blob: Blob, filename: string): void {
     const url = URL.createObjectURL(blob)
@@ -598,8 +578,7 @@ export function createEditor(options: CreateEditorOptions) {
 
       // Decode and mix audio from all clips
       for (const track of _project.tracks) {
-        const gain = getGainFromPipeline(track.audioPipeline)
-        const pan = getPanFromPipeline(track.audioPipeline)
+        const effects = track.audioPipeline ?? []
 
         for (const clip of track.clips) {
           const buffer = await getClipBuffer(clip.id)
@@ -608,7 +587,7 @@ export function createEditor(options: CreateEditorOptions) {
             if (audioBuffer) {
               hasAudio = true
               const startTime = (clip.offset ?? 0) / 1000
-              audioMixer.addTrack({ buffer: audioBuffer, gain, pan, startTime })
+              audioMixer.addTrack({ buffer: audioBuffer, effects, startTime })
             }
           }
           clipIndex++

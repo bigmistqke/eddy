@@ -15,6 +15,8 @@
     "types": "tsc --noEmit"
   },
   "dependencies": {
+    "@eddy/lexicons": "workspace:*",
+    "@eddy/mixer": "workspace:*",
     "@eddy/utils": "workspace:*",
     "mediabunny": "^1.27.3"
   },

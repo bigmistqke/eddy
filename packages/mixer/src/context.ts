@@ -1,7 +1,8 @@
 let audioContext: AudioContext | null = null
 
 export function getAudioContext(): AudioContext {
-  return (audioContext ??= new AudioContext())
+  // Use 48000Hz - standard sample rate for video recording
+  return (audioContext ??= new AudioContext({ sampleRate: 48000 }))
 }
 
 export function resumeAudioContext(): Promise<void> {

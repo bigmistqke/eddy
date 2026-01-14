@@ -1,3 +1,5 @@
+import type { AudioEffect } from '@eddy/lexicons'
+import { buildAudioPipeline } from '@eddy/mixer'
 import { debug } from '@eddy/utils'
 import { createAudioDecoder } from './audio-decoder'
 import { createDemuxer } from './demuxer'
@@ -7,10 +9,8 @@ const log = debug('offline-audio-mixer', false)
 export interface TrackAudioConfig {
   /** Audio buffer containing decoded audio */
   buffer: AudioBuffer
-  /** Gain value (0-1) */
-  gain: number
-  /** Pan value (-1 to 1, 0 = center) */
-  pan: number
+  /** Audio effects from the track's pipeline (lexicon format) */
+  effects: AudioEffect[]
   /** Start time on timeline in seconds */
   startTime: number
 }
@@ -24,20 +24,16 @@ export interface OfflineAudioMixer {
 
 /**
  * Create an offline audio mixer using OfflineAudioContext
- * Renders all audio faster than real-time with gain/pan effects applied
+ * Renders all audio faster than real-time with effects applied via the element system
  */
-export function createOfflineAudioMixer(
-  duration: number,
-  sampleRate = 48000,
-): OfflineAudioMixer {
+export function createOfflineAudioMixer(duration: number, sampleRate = 48000): OfflineAudioMixer {
   const tracks: TrackAudioConfig[] = []
 
   return {
     addTrack(config) {
       log('addTrack', {
         duration: config.buffer.duration,
-        gain: config.gain,
-        pan: config.pan,
+        effectCount: config.effects.length,
         startTime: config.startTime,
       })
       tracks.push(config)
@@ -53,24 +49,18 @@ export function createOfflineAudioMixer(
         sampleRate,
       })
 
-      // Add each track with effects
+      // Add each track with its pipeline
       for (const track of tracks) {
         // Create source
         const source = offlineCtx.createBufferSource()
         source.buffer = track.buffer
 
-        // Create gain node
-        const gainNode = offlineCtx.createGain()
-        gainNode.gain.value = track.gain
+        // Build pipeline from effects using the element system
+        const pipeline = buildAudioPipeline(offlineCtx, track.effects)
 
-        // Create panner node
-        const panNode = offlineCtx.createStereoPanner()
-        panNode.pan.value = track.pan
-
-        // Connect: source -> gain -> pan -> destination
-        source.connect(gainNode)
-        gainNode.connect(panNode)
-        panNode.connect(offlineCtx.destination)
+        // Connect: source -> pipeline -> destination
+        source.connect(pipeline.input)
+        pipeline.output.connect(offlineCtx.destination)
 
         // Start at the track's timeline position
         source.start(track.startTime)
@@ -78,8 +68,7 @@ export function createOfflineAudioMixer(
         log('scheduled track', {
           startTime: track.startTime,
           duration: track.buffer.duration,
-          gain: track.gain,
-          pan: track.pan,
+          elementCount: pipeline.elements.size,
         })
       }
 

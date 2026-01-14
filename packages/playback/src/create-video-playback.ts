@@ -11,7 +11,7 @@ import {
 import { createDecoder, type Decoder } from './create-decoder'
 import { dataToFrame, frameToData, type FrameData } from './frame-utils'
 
-const log = debug('playback:create-playback', false)
+const log = debug('playback:create-video-playback', false)
 
 /** Buffer configuration */
 const BUFFER_AHEAD_FRAMES = 10
@@ -25,13 +25,13 @@ const BUFFER_MAX_FRAMES = 30
 /**********************************************************************************/
 
 /** Worker state */
-export type PlaybackState = 'idle' | 'loading' | 'ready' | 'playing' | 'paused' | 'seeking'
+export type VideoPlaybackState = 'idle' | 'loading' | 'ready' | 'playing' | 'paused' | 'seeking'
 
 /** Frame output callback */
 export type FrameCallback = (frame: VideoFrame | null) => void
 
-/** Playback engine configuration */
-export interface PlaybackConfig {
+/** Video playback configuration */
+export interface VideoPlaybackConfig {
   /** Callback when a new frame should be displayed */
   onFrame?: FrameCallback
   /** External backpressure check - return true to skip delta frames */
@@ -39,11 +39,11 @@ export interface PlaybackConfig {
 }
 
 /**
- * PlaybackEngine handles demuxing, decoding, and frame buffering
+ * VideoPlayback handles demuxing, decoding, and frame buffering
  * for smooth video playback. It manages its own internal state and
  * timing, outputting VideoFrames via callback.
  */
-export interface Playback {
+export interface VideoPlayback {
   /** Whether playback is active */
   readonly isPlaying: boolean
   /** Video duration in seconds */
@@ -65,7 +65,7 @@ export interface Playback {
     }
   >
   /** Current playback state */
-  getState(): PlaybackState
+  getState(): VideoPlaybackState
   /** Load video from buffer */
   load(buffer: ArrayBuffer): Promise<{
     duration: number
@@ -122,7 +122,7 @@ function configsMatch(a: VideoDecoderConfig | null, b: VideoDecoderConfig | null
 /**
  * Create a new playback engine instance
  */
-export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig = {}): Playback {
+export function createVideoPlayback({ onFrame, shouldSkipDeltaFrame }: VideoPlaybackConfig = {}): VideoPlayback {
   const perf = createPerfMonitor()
 
   // Demuxer state
@@ -146,7 +146,7 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
   let speed = 1
 
   // State tracking
-  let _state: PlaybackState = 'idle'
+  let _state: VideoPlaybackState = 'idle'
   let lastSentTimestamp: number | null = null
 
   function sendFrame(time: number): void {
@@ -668,5 +668,5 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
         sendFrame(startMediaTime)
       }
     },
-  } satisfies Playback
+  } satisfies VideoPlayback
 }

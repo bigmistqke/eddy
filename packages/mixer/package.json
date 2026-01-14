@@ -11,6 +11,7 @@
     "types": "tsc --noEmit"
   },
   "dependencies": {
+    "@eddy/lexicons": "workspace:*",
     "@eddy/utils": "workspace:*"
   },
   "devDependencies": {

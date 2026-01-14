@@ -94,6 +94,12 @@ importers:
 
   packages/codecs:
     dependencies:
+      '@eddy/lexicons':
+        specifier: workspace:*
+        version: link:../lexicons
+      '@eddy/mixer':
+        specifier: workspace:*
+        version: link:../mixer
       '@eddy/utils':
         specifier: workspace:*
         version: link:../utils
@@ -148,6 +154,9 @@ importers:
 
   packages/mixer:
     dependencies:
+      '@eddy/lexicons':
+        specifier: workspace:*
+        version: link:../lexicons
       '@eddy/utils':
         specifier: workspace:*
         version: link:../utils
@@ -168,9 +177,15 @@ importers:
         specifier: ^1.27.3
         version: 1.27.3
     devDependencies:
+      '@types/audioworklet':
+        specifier: ^0.0.92
+        version: 0.0.92
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
+      vite:
+        specifier: ^6.4.1
+        version: 6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)
 
   packages/utils:
     dependencies:

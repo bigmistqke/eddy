@@ -2,6 +2,7 @@
  * Animation frame loop utility
  *
  * Encapsulates requestAnimationFrame loop management with proper cleanup.
+ * Falls back to setInterval in workers where requestAnimationFrame isn't available.
  */
 
 export interface Loop {
@@ -13,8 +14,16 @@ export interface Loop {
   stop(): void
 }
 
+// Check if we're in a worker (no requestAnimationFrame)
+const isWorker = typeof requestAnimationFrame === 'undefined'
+
+// ~60fps interval for workers
+const WORKER_INTERVAL_MS = 16
+
 /**
  * Create an animation frame loop.
+ *
+ * Uses requestAnimationFrame on main thread, setInterval in workers.
  *
  * @param callback - Called every frame while running. Receives the loop instance
  *                   so it can call loop.stop() to self-terminate.
@@ -36,30 +45,38 @@ export interface Loop {
  * ```
  */
 export function createLoop(callback: (loop: Loop) => void): Loop {
-  let animationFrameId: number | null = null
+  let loopId: number | null = null
 
   function tick(): void {
     callback(loop)
     // Only continue if still running (callback might have called stop())
-    if (animationFrameId !== null) {
-      animationFrameId = requestAnimationFrame(tick)
+    if (loopId !== null && !isWorker) {
+      loopId = requestAnimationFrame(tick)
     }
   }
 
   const loop: Loop = {
     get isRunning() {
-      return animationFrameId !== null
+      return loopId !== null
     },
 
     start() {
-      if (animationFrameId !== null) return
-      animationFrameId = requestAnimationFrame(tick)
+      if (loopId !== null) return
+      if (isWorker) {
+        loopId = setInterval(() => callback(loop), WORKER_INTERVAL_MS) as unknown as number
+      } else {
+        loopId = requestAnimationFrame(tick)
+      }
     },
 
     stop() {
-      if (animationFrameId === null) return
-      cancelAnimationFrame(animationFrameId)
-      animationFrameId = null
+      if (loopId === null) return
+      if (isWorker) {
+        clearInterval(loopId)
+      } else {
+        cancelAnimationFrame(loopId)
+      }
+      loopId = null
     },
   }
 

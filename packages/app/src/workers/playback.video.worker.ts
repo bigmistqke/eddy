@@ -1,6 +1,6 @@
 import { expose, rpc, transfer, type RPC } from '@bigmistqke/rpc/messenger'
 import type { VideoTrackInfo } from '@eddy/codecs'
-import { createPlayback, type PlaybackState } from '@eddy/playback'
+import { createVideoPlayback, type VideoPlaybackState } from '@eddy/playback'
 import { debug } from '@eddy/utils'
 import { createScheduler, type PlaybackScheduler, type SchedulerBuffer } from '~/lib/scheduler'
 
@@ -11,7 +11,7 @@ interface CompositorFrameMethods {
   setFrame(clipId: string, frame: VideoFrame | null): void
 }
 
-export interface PlaybackWorkerMethods {
+export interface VideoPlaybackWorkerMethods {
   /** Set scheduler buffer for cross-worker coordination */
   setSchedulerBuffer(buffer: SchedulerBuffer): void
 
@@ -34,7 +34,7 @@ export interface PlaybackWorkerMethods {
   getBufferRange(): { start: number; end: number }
 
   /** Get current state */
-  getState(): PlaybackState
+  getState(): VideoPlaybackState
 
   /** Get performance stats */
   getPerf(): Record<
@@ -59,7 +59,7 @@ export interface PlaybackWorkerMethods {
 const workerId = Math.random().toString(36).substring(2, 8)
 log('Worker created with ID:', workerId)
 
-const playback = createPlayback({
+const playback = createVideoPlayback({
   onFrame(frame) {
     if (compositor && clipId) {
       if (frame) {
@@ -90,7 +90,7 @@ let scheduler: PlaybackScheduler | null = null
 /*                                                                                */
 /**********************************************************************************/
 
-expose<PlaybackWorkerMethods>({
+expose<VideoPlaybackWorkerMethods>({
   getBufferRange: playback.getBufferRange,
   getPerf: playback.getPerf,
   getState: playback.getState,
