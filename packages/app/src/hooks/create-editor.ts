@@ -252,20 +252,27 @@ export function createEditor(options: CreateEditorOptions) {
     return track?.audioPipeline ?? []
   }
 
-  function addRecording(trackId: string, blob: Blob, duration: number) {
+  function addRecording(trackId: string, blob: Blob, duration: number, offset: number) {
     const clipId = `clip-${trackId}-${Date.now()}`
 
     // Set localClips FIRST so the blob is available when the effect runs
     // (Solid doesn't track store keys that don't exist when first accessed)
     setLocalClips(clipId, { blob, duration })
 
-    setProject('tracks', track => track.id === trackId, 'clips', [
-      {
-        id: clipId,
-        offset: 0,
-        duration: Math.round(duration),
-      },
-    ])
+    // Append new clip to existing clips (later clips have higher priority for punch-through)
+    setProject(
+      'tracks',
+      track => track.id === trackId,
+      'clips',
+      clips => [
+        ...clips,
+        {
+          id: clipId,
+          offset: Math.round(offset),
+          duration: Math.round(duration),
+        },
+      ],
+    )
 
     setProject('updatedAt', new Date().toISOString())
   }
@@ -373,6 +380,9 @@ export function createEditor(options: CreateEditorOptions) {
       'Cannot start recording without media stream',
     )
 
+    // Capture timeline offset (in ms) before recording starts
+    const timelineOffset = _player.time() * 1000
+
     // Get video track and create processor
     const videoTrack = assertedNotNullish(stream.getVideoTracks()[0], 'No video track')
     const videoProcessor = new MediaStreamTrackProcessor({ track: videoTrack })
@@ -402,17 +412,31 @@ export function createEditor(options: CreateEditorOptions) {
     mixer.useMediaStreamOutput()
     onCleanup(() => mixer.useDirectOutput())
 
-    yield* defer(_player.play(0))
+    // Mute the track being recorded to (so existing clips don't play audio)
+    // The new recording's audio comes from the capture stream, not this pipeline
+    _player.setVolume(trackId, 0)
+    onCleanup(() => _player.setVolume(trackId, 1))
 
-    log('recording started')
+    // Start playback from current position (not 0)
+    yield* defer(_player.play(timelineOffset / 1000))
+
+    log('recording started', { timelineOffset })
 
     // Hold until cancelled, then return recording info for finalization
-    return hold(() => ({ trackId, startTime }))
+    return hold(() => ({ trackId, startTime, timelineOffset }))
   })
 
   // Finalize recording and add to track
   const finalizeRecordingAction = action(
-    async ({ trackId, startTime }: { trackId: string; startTime: number }) => {
+    async ({
+      trackId,
+      startTime,
+      timelineOffset,
+    }: {
+      trackId: string
+      startTime: number
+      timelineOffset: number
+    }) => {
       const _workers = assertedNotNullish(workers(), 'Workers not ready')
 
       log('finalizing recording...')
@@ -424,9 +448,10 @@ export function createEditor(options: CreateEditorOptions) {
           blobSize: result.blob.size,
           frameCount: result.frameCount,
           duration,
+          timelineOffset,
         })
 
-        addRecording(trackId, result.blob, duration)
+        addRecording(trackId, result.blob, duration, timelineOffset)
       }
 
       // Reset muxer for next recording
@@ -856,8 +881,8 @@ export function createEditor(options: CreateEditorOptions) {
     },
 
     /** Load a test clip into a track (for perf testing) */
-    loadTestClip(trackId: string, blob: Blob, duration: number) {
-      addRecording(trackId, blob, duration)
+    loadTestClip(trackId: string, blob: Blob, duration: number, offset = 0) {
+      addRecording(trackId, blob, duration, offset)
     },
 
     // Export

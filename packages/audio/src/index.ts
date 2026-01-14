@@ -7,12 +7,12 @@ export { getMasterMixer, type MasterMixer } from './mixer'
 // Pipeline
 export {
   buildAudioPipeline,
+  BuiltPipeline,
   createAudioPipeline,
   registerAudioElement,
   type AudioElement,
   type AudioElementFactory,
   type AudioPipeline,
-  type BuiltPipeline,
 } from './pipeline'
 
 // Audio Decoder
