@@ -1,5 +1,21 @@
 [
   {
+    "hash": "ef2cd554af7d2d070178730a16e032345aeeaa2f",
+    "short_hash": "ef2cd55",
+    "author": "bigmistqke",
+    "date": "2026-01-14T17:10:10+01:00",
+    "message": "refactor: split pipeline.ts into focused modules\n\n- audio-elements.ts: element registry and factories\n- create-effect-chain.ts: low-level effect node builder\n- create-audio-bus.ts: high-level live audio routing\n- Rename: BuiltPipeline → EffectChain, AudioPipeline → AudioBus",
+    "files_changed": 7
+  },
+  {
+    "hash": "8855e891784f103691db845301aa7150451396e8",
+    "short_hash": "8855e89",
+    "author": "bigmistqke",
+    "date": "2026-01-14T16:29:44+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
     "hash": "01de7f2ec7943c2722a622c316dd6dfbbc01d90e",
     "short_hash": "01de7f2",
     "author": "bigmistqke",
@@ -8,20 +24,12 @@
     "files_changed": 2
   },
   {
-    "hash": "440353b38ae41e20282be52fdc701b0eed1c6bc2",
-    "short_hash": "440353b",
+    "hash": "01de7f2ec7943c2722a622c316dd6dfbbc01d90e",
+    "short_hash": "01de7f2",
     "author": "bigmistqke",
-    "date": "2026-01-14T16:17:07+01:00",
-    "message": "chore: sync deciduous graph",
+    "date": "2026-01-14T16:29:25+01:00",
+    "message": "feat: record from offset with clip layering support\n\n- Capture timeline offset when recording starts\n- Append new clips to array (later clips = higher priority)\n- Start playback from current position, not always 0\n- Mute track during recording to silence existing clips",
     "files_changed": 2
-  },
-  {
-    "hash": "60e00febe1e962c879fa6d9d0742fbb641fd12e1",
-    "short_hash": "60e00fe",
-    "author": "bigmistqke",
-    "date": "2026-01-14T16:16:52+01:00",
-    "message": "feat: punch-through clip behavior (top clip replaces underlying)\n\nWhen clips overlap within a track, only the top clip (last in array)\nplays. Earlier clips are silenced/hidden during overlap, then resume.\nThis enables recording over existing clips from an offset.",
-    "files_changed": 1
   },
   {
     "hash": "60e00febe1e962c879fa6d9d0742fbb641fd12e1",
