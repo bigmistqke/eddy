@@ -196,24 +196,32 @@ function buildSegments(clipInfos: ClipInfo[]): LayoutSegment[] {
     const startTime = transitions[i]
     const endTime = transitions[i + 1]
 
-    // Find all clips active during this segment
-    const placements: Placement[] = []
+    // Find the TOP clip per track for this segment (punch-through behavior)
+    // Later clips in clipInfos array have higher priority and overwrite earlier ones
+    const topClipPerTrack = new Map<string, ClipInfo>()
 
     for (const clip of clipInfos) {
       // Clip is active if it overlaps with this segment
       if (clip.timelineStart < endTime && clip.timelineEnd > startTime) {
-        // Calculate in-point for this segment:
-        // Account for how far into the clip we are when this segment starts
-        const segmentOffsetInClip = Math.max(0, startTime - clip.timelineStart) * clip.speed
-        placements.push({
-          clipId: clip.clipId,
-          trackId: clip.trackId,
-          viewport: clip.viewport,
-          in: clip.sourceIn + segmentOffsetInClip,
-          out: clip.sourceOut,
-          speed: clip.speed,
-        })
+        // Later clips overwrite earlier ones (last in array = highest priority)
+        topClipPerTrack.set(clip.trackId, clip)
       }
+    }
+
+    // Build placements from the winning clips
+    const placements: Placement[] = []
+    for (const clip of topClipPerTrack.values()) {
+      // Calculate in-point for this segment:
+      // Account for how far into the clip we are when this segment starts
+      const segmentOffsetInClip = Math.max(0, startTime - clip.timelineStart) * clip.speed
+      placements.push({
+        clipId: clip.clipId,
+        trackId: clip.trackId,
+        viewport: clip.viewport,
+        in: clip.sourceIn + segmentOffsetInClip,
+        out: clip.sourceOut,
+        speed: clip.speed,
+      })
     }
 
     // Only add segment if it has placements
