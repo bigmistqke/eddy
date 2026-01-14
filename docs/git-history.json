@@ -1,5 +1,21 @@
 [
   {
+    "hash": "01de7f2ec7943c2722a622c316dd6dfbbc01d90e",
+    "short_hash": "01de7f2",
+    "author": "bigmistqke",
+    "date": "2026-01-14T16:29:25+01:00",
+    "message": "feat: record from offset with clip layering support\n\n- Capture timeline offset when recording starts\n- Append new clips to array (later clips = higher priority)\n- Start playback from current position, not always 0\n- Mute track during recording to silence existing clips",
+    "files_changed": 2
+  },
+  {
+    "hash": "440353b38ae41e20282be52fdc701b0eed1c6bc2",
+    "short_hash": "440353b",
+    "author": "bigmistqke",
+    "date": "2026-01-14T16:17:07+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
     "hash": "60e00febe1e962c879fa6d9d0742fbb641fd12e1",
     "short_hash": "60e00fe",
     "author": "bigmistqke",
@@ -8,20 +24,12 @@
     "files_changed": 1
   },
   {
-    "hash": "b85e048f8fda8e096af47cd7f4cc6a4f2154e285",
-    "short_hash": "b85e048",
+    "hash": "60e00febe1e962c879fa6d9d0742fbb641fd12e1",
+    "short_hash": "60e00fe",
     "author": "bigmistqke",
-    "date": "2026-01-14T15:42:45+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "7522c413b0f6e3e1ceb279e2304198be5f1bbad4",
-    "short_hash": "7522c41",
-    "author": "bigmistqke",
-    "date": "2026-01-14T15:42:22+01:00",
-    "message": "fix: stop audio playback when clip ends\n\nAdd onEnd callback to audio playback engine that fires when media\nreaches its duration. Worker handles this by stopping the scheduling\nloop and setting ring buffer to not playing, preventing the last\naudio chunk from repeating.",
-    "files_changed": 3
+    "date": "2026-01-14T16:16:52+01:00",
+    "message": "feat: punch-through clip behavior (top clip replaces underlying)\n\nWhen clips overlap within a track, only the top clip (last in array)\nplays. Earlier clips are silenced/hidden during overlap, then resume.\nThis enables recording over existing clips from an offset.",
+    "files_changed": 1
   },
   {
     "hash": "7522c413b0f6e3e1ceb279e2304198be5f1bbad4",
