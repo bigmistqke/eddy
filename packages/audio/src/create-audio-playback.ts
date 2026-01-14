@@ -27,10 +27,15 @@ export type AudioPlaybackState = 'idle' | 'loading' | 'ready' | 'playing' | 'pau
 /** Audio output callback - receives decoded AudioData */
 export type AudioCallback = (audioData: AudioData) => void
 
+/** End callback - called when playback reaches the end */
+export type EndCallback = () => void
+
 /** Audio playback configuration */
 export interface AudioPlaybackConfig {
   /** Callback when decoded audio is ready */
   onAudio?: AudioCallback
+  /** Callback when playback reaches the end of media */
+  onEnd?: EndCallback
 }
 
 /** Buffered audio sample */
@@ -215,7 +220,7 @@ function bufferedToAudioData(buffered: BufferedAudio): AudioData {
 /**
  * Create a new audio playback engine instance
  */
-export function createAudioPlayback({ onAudio }: AudioPlaybackConfig = {}): AudioPlayback {
+export function createAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}): AudioPlayback {
   const perf = createPerfMonitor()
 
   // Demuxer state
@@ -454,6 +459,7 @@ export function createAudioPlayback({ onAudio }: AudioPlaybackConfig = {}): Audi
       log('streamLoop: reached end', { time, duration })
       _state = 'paused'
       loop.stop()
+      onEnd?.()
       return
     }
 

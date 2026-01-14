@@ -258,6 +258,13 @@ const playback = createAudioPlayback({
     scheduleAudio(audioData)
     audioData.close()
   },
+  onEnd() {
+    // Playback has reached the end of the media
+    log('playback ended')
+    isPlaying = false
+    schedulingLoop.stop()
+    ringBufferWriter?.setPlaying(false)
+  },
 })
 
 /**********************************************************************************/

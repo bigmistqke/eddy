@@ -49,6 +49,7 @@ export {
   type AudioPlayback,
   type AudioPlaybackConfig,
   type AudioPlaybackState,
+  type EndCallback,
 } from './create-audio-playback'
 
 // Offline Mixer
