@@ -1,4 +1,13 @@
-import { FiCircle, FiPause, FiPlay, FiRepeat, FiSquare, FiUpload, FiVolume2 } from 'solid-icons/fi'
+import {
+  FiCircle,
+  FiDownload,
+  FiPause,
+  FiPlay,
+  FiRepeat,
+  FiSquare,
+  FiUpload,
+  FiVolume2,
+} from 'solid-icons/fi'
 import { type Component, createEffect, createMemo, createSignal, Index, onMount, Show } from 'solid-js'
 
 /** Format time in seconds to MM:SS.ms */
@@ -180,6 +189,24 @@ export const Editor: Component<EditorProps> = props => {
         >
           <FiUpload size={16} />
           {editor.isPublishing() ? 'Publishing...' : 'Publish'}
+        </button>
+        <button
+          type="button"
+          class={styles.exportButton}
+          classList={{ [styles.exporting]: editor.isExporting() }}
+          onClick={() => (editor.isExporting() ? editor.cancelExport() : editor.export())}
+          disabled={
+            editor.isRecording() ||
+            (editor.player()?.isPlaying() ?? false) ||
+            !editor.hasAnyRecording()
+          }
+        >
+          <FiDownload size={16} />
+          <Show when={editor.isExporting()} fallback="Export">
+            <span class={styles.exportProgress}>
+              {editor.exportPhase()} {Math.round(editor.exportProgress() * 100)}%
+            </span>
+          </Show>
         </button>
       </div>
       <div

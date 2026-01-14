@@ -44,6 +44,15 @@ export interface CompositorWorkerMethods {
   /** Render to capture canvas at time T */
   renderToCaptureCanvas(time: number): void
 
+  /** Render and capture a frame for export (returns VideoFrame) */
+  renderAndCapture(time: number): VideoFrame | null
+
+  /** Render with provided frames and capture (for export) */
+  renderFramesAndCapture(
+    time: number,
+    frameEntries: Array<{ clipId: string; frame: VideoFrame }>,
+  ): VideoFrame | null
+
   /** Clean up resources */
   destroy(): void
 }
@@ -295,6 +304,77 @@ expose<CompositorWorkerMethods>({
         viewport: placement.viewport,
       })),
     )
+  },
+
+  renderAndCapture(time) {
+    if (!mainEngine || !compiledTimeline) return null
+
+    // Clear canvas
+    mainEngine.clear()
+
+    // Query timeline for active placements at this time
+    const activePlacements = getActivePlacements(compiledTimeline, time)
+
+    // Render all active placements
+    for (const { placement } of activePlacements) {
+      // Get frame from appropriate source based on clipId
+      const isPreview = placement.clipId === PREVIEW_CLIP_ID
+      const frame = isPreview ? previewFrame : frames.get(placement.clipId)
+
+      if (!frame) {
+        continue
+      }
+
+      // Use trackId for texture key when preview (avoids collision with playback textures)
+      const textureKey = isPreview ? `preview-${placement.trackId}` : placement.clipId
+
+      mainEngine.renderPlacement({
+        id: textureKey,
+        frame,
+        viewport: placement.viewport,
+      })
+    }
+
+    // Capture the frame (timestamp in microseconds)
+    return mainEngine.captureFrame(time * 1_000_000)
+  },
+
+  renderFramesAndCapture(time, frameEntries) {
+    if (!mainEngine || !compiledTimeline) return null
+
+    // Build a temporary frame map from the provided frames
+    const exportFrames = new Map<string, VideoFrame>()
+    for (const { clipId, frame } of frameEntries) {
+      exportFrames.set(clipId, frame)
+    }
+
+    // Clear canvas
+    mainEngine.clear()
+
+    // Query timeline for active placements at this time
+    const activePlacements = getActivePlacements(compiledTimeline, time)
+
+    // Render all active placements using provided frames
+    for (const { placement } of activePlacements) {
+      const frame = exportFrames.get(placement.clipId)
+      if (!frame) continue
+
+      mainEngine.renderPlacement({
+        id: placement.clipId,
+        frame,
+        viewport: placement.viewport,
+      })
+    }
+
+    // Capture the frame (timestamp in microseconds)
+    const capturedFrame = mainEngine.captureFrame(time * 1_000_000)
+
+    // Close the provided frames (they were transferred to us)
+    for (const frame of exportFrames.values()) {
+      frame.close()
+    }
+
+    return capturedFrame
   },
 
   destroy() {

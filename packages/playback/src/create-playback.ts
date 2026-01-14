@@ -83,6 +83,8 @@ export interface Playback {
   sendCurrentFrame(): void
   /** Set frame output callback */
   setFrameCallback(callback: FrameCallback | null): void
+  /** Get a frame at a specific time (for export). Seeks and returns the frame directly. */
+  getFrameAtTime(time: number): Promise<VideoFrame | null>
 }
 
 /**********************************************************************************/
@@ -173,7 +175,12 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
     perf.end('transferFrame')
   }
 
-  function findFrameData(timeSeconds: number): FrameData | null {
+  /**
+   * Find the best frame for a given time.
+   * @param strict - If true, only return frames at or before target time (for export).
+   *                 If false, return closest frame even if slightly in future (for playback).
+   */
+  function findFrameData(timeSeconds: number, strict = false): FrameData | null {
     if (frameBuffer.length === 0) return null
 
     const timeUs = timeSeconds * 1_000_000
@@ -187,7 +194,13 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
       }
     }
 
-    return best ?? frameBuffer[0]
+    // In strict mode (export), don't return future frames - they indicate stale buffer
+    // In playback mode, return first frame as fallback to avoid black flicker
+    if (!best && !strict) {
+      return frameBuffer[0]
+    }
+
+    return best
   }
 
   async function bufferAhead(fromTime: number): Promise<void> {
@@ -243,8 +256,14 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
           }
 
           case 'skipped':
-            // Delta frame skipped due to backpressure or not ready - continue
+            // Delta frame skipped due to backpressure or not ready
             log('bufferAhead: frame skipped', { reason: result.reason, pts: sample.pts })
+            // For 'not-ready', we need a keyframe - but bufferAhead has frame limits
+            // Return early and let getFrameAtTime call seekToTime which has no limits
+            if (result.reason === 'not-ready') {
+              log('bufferAhead: decoder not ready, returning to let seekToTime handle it')
+              return
+            }
             break
 
           case 'needs-keyframe': {
@@ -291,8 +310,8 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
 
     log('seekToTime: decoder reset')
 
-    if (!videoSink) {
-      log('seekToTime: no videoSink, returning')
+    if (!videoSink || !videoTrack || !decoder) {
+      log('seekToTime: no videoSink/decoder, returning')
       return
     }
 
@@ -301,12 +320,48 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
     const keyPacket = await videoSink.getKeyPacket(time)
     bufferPosition = keyPacket?.timestamp ?? 0
 
-    log('seekToTime: got keyframe, buffering ahead')
+    log('seekToTime: got keyframe, decoding to target', { keyframe: bufferPosition, target: time })
 
-    // Buffer from keyframe to target + ahead
-    await bufferAhead(bufferPosition)
+    // Decode from keyframe until we reach the target time (no frame limit)
+    const targetUs = time * 1_000_000
+    let packet = keyPacket
 
-    log('seekToTime: done')
+    while (packet && bufferPosition < time + BUFFER_AHEAD_SECONDS) {
+      const sample = packetToSample(packet, videoTrack.id)
+      const maybeResult = decoder.decode(sample)
+      const result = maybeResult instanceof Promise ? await maybeResult : maybeResult
+
+      if (result.type === 'frame') {
+        const data = await frameToData(result.frame, sample)
+
+        // Insert in sorted order
+        const insertIndex = frameBuffer.findIndex(f => f.timestamp > data.timestamp)
+        if (insertIndex === -1) {
+          frameBuffer.push(data)
+        } else {
+          frameBuffer.splice(insertIndex, 0, data)
+        }
+
+        bufferPosition = sample.pts + sample.duration
+
+        // Trim old frames if buffer too large
+        while (frameBuffer.length > BUFFER_MAX_FRAMES) {
+          frameBuffer.shift()
+        }
+
+        // Once we have a frame past target time, we can stop
+        if (data.timestamp >= targetUs) {
+          break
+        }
+      } else if (result.type === 'needs-keyframe') {
+        log('seekToTime: decoder needs keyframe, breaking')
+        break
+      }
+
+      packet = await videoSink.getNextPacket(packet)
+    }
+
+    log('seekToTime: done', { framesBuffered: frameBuffer.length })
   }
 
   function getCurrentMediaTime(): number {
@@ -374,6 +429,76 @@ export function createPlayback({ onFrame, shouldSkipDeltaFrame }: PlaybackConfig
 
     setFrameCallback(callback) {
       onFrame = callback ?? undefined
+    },
+
+    async getFrameAtTime(time) {
+      log('getFrameAtTime: start', { time, duration, bufferLength: frameBuffer.length })
+
+      // First check if frame is already in buffer (common case for sequential export)
+      // Use strict mode - for export we need accurate timing, not fallback frames
+      let frameData = findFrameData(time, true)
+
+      if (frameData) {
+        // Frame is in buffer - check if it's close enough to requested time
+        // At 30fps, frames are 33.3ms apart, so allow up to 1 frame duration
+        const frameTime = frameData.timestamp / 1_000_000
+        const frameDuration = 1 / 30 // ~33.3ms
+        if (time - frameTime < frameDuration) {
+          log('getFrameAtTime: found in buffer', { time, frameTime })
+          // Proactively buffer ahead for future frames (non-blocking)
+          bufferAhead(time)
+          return dataToFrame(frameData)
+        }
+        log('getFrameAtTime: frame too old', { time, frameTime, diff: time - frameTime })
+      }
+
+      // Check if time is past clip duration
+      if (time > duration) {
+        log('getFrameAtTime: time past duration, returning null', { time, duration })
+        return null
+      }
+
+      // Frame not in buffer or too far from target - need to seek/buffer
+      const timeUs = time * 1_000_000
+      const bufferEnd = frameBuffer.length > 0 ? frameBuffer[frameBuffer.length - 1].timestamp : 0
+      const bufferStart = frameBuffer.length > 0 ? frameBuffer[0].timestamp : 0
+
+      log('getFrameAtTime: buffer state', {
+        timeUs,
+        bufferStart,
+        bufferEnd,
+        bufferLength: frameBuffer.length,
+      })
+
+      if (frameBuffer.length > 0 && timeUs >= bufferStart && timeUs <= bufferEnd + 1_000_000) {
+        // Time is within or just ahead of buffer - try buffering more
+        log('getFrameAtTime: buffering ahead')
+        await bufferAhead(time)
+
+        // Check if bufferAhead produced a usable frame
+        frameData = findFrameData(time, true)
+        const frameTime = frameData ? frameData.timestamp / 1_000_000 : -1
+        const frameDuration = 1 / 30
+        if (!frameData || time - frameTime >= frameDuration) {
+          // bufferAhead didn't help (decoder might need keyframe) - do full seek
+          log('getFrameAtTime: bufferAhead insufficient, falling back to seekToTime')
+          await seekToTime(time)
+        }
+      } else {
+        // Need to seek (jumping to different position or empty buffer)
+        log('getFrameAtTime: seeking')
+        await seekToTime(time)
+      }
+
+      // Get frame data from buffer
+      frameData = findFrameData(time, true)
+      if (!frameData) {
+        log('getFrameAtTime: no frame after seek/buffer', { time, bufferLength: frameBuffer.length })
+        return null
+      }
+
+      log('getFrameAtTime: returning frame', { time, frameTs: frameData.timestamp })
+      return dataToFrame(frameData)
     },
 
     async load(buffer) {

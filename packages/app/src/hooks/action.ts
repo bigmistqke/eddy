@@ -331,3 +331,256 @@ export function action<T = undefined, R = void>(fetcher: ActionFetcher<T, R>): A
     promise,
   }) as Action<T, R>
 }
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                 Phased Actions                                 */
+/*                                                                                */
+/**********************************************************************************/
+
+/** Context for phased action callbacks */
+export interface PhaseContext extends ActionContext {
+  /** Set progress within current phase (0-1) */
+  setProgress: (value: number) => void
+}
+
+/** A phase callback can return sync, Promise, or Generator */
+type PhaseResult<R> = R | Promise<R> | Generator<Promise<unknown>, R, unknown>
+
+/** Phase function signature */
+type PhaseFn<In, Out> = (input: In, ctx: PhaseContext) => PhaseResult<Out>
+
+/** Stored phase definition */
+interface PhaseDefinition<In = unknown, Out = unknown> {
+  name: string
+  fn: PhaseFn<In, Out>
+}
+
+/** Dual-purpose phase method: read current phase or add new phase */
+export interface PhaseMethod<Phases extends string, CurrentResult> {
+  /** Get current phase (signal read) */
+  (): Phases | 'idle' | 'complete' | 'error'
+  /** Add a phase that receives previous result */
+  <Name extends string, NextResult>(
+    name: Name,
+    fn: PhaseFn<CurrentResult, NextResult>,
+  ): PhasedAction<Phases | Name, NextResult>
+}
+
+/** Phased action with phase tracking */
+export interface PhasedAction<Phases extends string, Result> {
+  /** Run the phased action */
+  (): Promise<Result | undefined>
+  /** Get current phase or add new phase */
+  phase: PhaseMethod<Phases, Result>
+  /** Whether action is running */
+  pending: Accessor<boolean>
+  /** Error if failed */
+  error: Accessor<unknown>
+  /** Progress within current phase (0-1) */
+  progress: Accessor<number>
+  /** Cancel execution */
+  cancel: () => void
+}
+
+/** Check if value is a generator (instance, not function) */
+function isGenerator(value: unknown): value is Generator<unknown, unknown, unknown> {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    'next' in value &&
+    typeof (value as Generator).next === 'function'
+  )
+}
+
+/** Run a generator with abort checks between yields */
+async function runPhaseGenerator<R>(
+  gen: Generator<Promise<unknown>, R, unknown>,
+  signal: AbortSignal,
+): Promise<R> {
+  let result = gen.next()
+
+  while (!result.done) {
+    if (signal.aborted) {
+      throw new CancelledError()
+    }
+
+    const value = await result.value
+
+    if (signal.aborted) {
+      throw new CancelledError()
+    }
+
+    result = gen.next(value)
+  }
+
+  return result.value
+}
+
+/**
+ * Create a phased action builder.
+ * Start with `action.phase(name, fn)` and chain more phases.
+ *
+ * @example
+ * ```ts
+ * const exportAction = action
+ *   .phase('preparing', () => {
+ *     return { duration: 10, clips: [...] }
+ *   })
+ *   .phase('audio', async ({ duration }) => {
+ *     return await renderAudio(duration)
+ *   })
+ *   .phase('video', function* (audioBuffer, { setProgress }) {
+ *     for (let i = 0; i < frames; i++) {
+ *       yield renderFrame(i)
+ *       setProgress(i / frames)
+ *     }
+ *     return blob
+ *   })
+ *
+ * // Usage
+ * exportAction()           // run
+ * exportAction.phase()     // 'idle' | 'preparing' | 'audio' | 'video' | 'complete' | 'error'
+ * exportAction.pending()   // true while running
+ * exportAction.progress()  // 0-1 within current phase
+ * exportAction.cancel()    // stop between phases
+ * ```
+ */
+function createPhaseBuilder<Phases extends string, CurrentResult>(
+  phases: PhaseDefinition[],
+): PhasedAction<Phases, CurrentResult> {
+  const [phase, setPhase] = createSignal<Phases | 'idle' | 'complete' | 'error'>('idle')
+  const [pending, setPending] = createSignal(false)
+  const [error, setError] = createSignal<unknown>(undefined)
+  const [progress, setProgress] = createSignal(0)
+
+  let abortController: AbortController | null = null
+  let cleanupFns: (() => void)[] = []
+
+  function cleanup() {
+    for (const fn of cleanupFns) {
+      try {
+        fn()
+      } catch (err) {
+        console.error('Cleanup error:', err)
+      }
+    }
+    cleanupFns = []
+
+    if (abortController) {
+      abortController.abort()
+      abortController = null
+    }
+  }
+
+  function cancel() {
+    cleanup()
+    setPending(false)
+  }
+
+  async function run(): Promise<CurrentResult | undefined> {
+    cleanup()
+
+    abortController = new AbortController()
+    const { signal } = abortController
+
+    setPending(true)
+    setError(undefined)
+    setProgress(0)
+    setPhase('idle')
+
+    let result: unknown = undefined
+
+    try {
+      for (const phaseDef of phases) {
+        if (signal.aborted) {
+          throw new CancelledError()
+        }
+
+        setPhase(() => phaseDef.name as Phases)
+        setProgress(0)
+
+        const ctx: PhaseContext = {
+          signal,
+          setProgress,
+          onCleanup: fn => cleanupFns.push(fn),
+        }
+
+        const phaseResult = phaseDef.fn(result, ctx)
+
+        if (isGenerator(phaseResult)) {
+          result = await runPhaseGenerator(
+            phaseResult as Generator<Promise<unknown>, unknown, unknown>,
+            signal,
+          )
+        } else if (phaseResult instanceof Promise) {
+          result = await phaseResult
+        } else {
+          result = phaseResult
+        }
+
+        if (signal.aborted) {
+          throw new CancelledError()
+        }
+      }
+
+      setPhase('complete')
+      setProgress(1)
+      return result as CurrentResult
+    } catch (err) {
+      if (err instanceof CancelledError) {
+        return undefined
+      }
+
+      console.error('Phased action error:', err)
+      setError(err)
+      setPhase('error')
+      return undefined
+    } finally {
+      setPending(false)
+      cleanup()
+    }
+  }
+
+  // Create dual-purpose phase function:
+  // - phase() with no args -> returns current phase (signal read)
+  // - phase('name', fn) -> adds phase, returns new builder
+  function phaseMethod(): Phases | 'idle' | 'complete' | 'error'
+  function phaseMethod<Name extends string, NextResult>(
+    name: Name,
+    fn: PhaseFn<CurrentResult, NextResult>,
+  ): PhasedAction<Phases | Name, NextResult>
+  function phaseMethod<Name extends string, NextResult>(
+    name?: Name,
+    fn?: PhaseFn<CurrentResult, NextResult>,
+  ) {
+    if (name === undefined) {
+      // No args - return current phase value
+      return phase()
+    }
+    // With args - add phase and return new builder
+    return createPhaseBuilder<Phases | Name, NextResult>([
+      ...phases,
+      { name, fn: fn as PhaseFn<unknown, unknown> },
+    ])
+  }
+
+  // Create the callable action with attached properties
+  const phasedAction = run as PhasedAction<Phases, CurrentResult>
+
+  phasedAction.phase = phaseMethod as typeof phasedAction.phase
+  phasedAction.pending = pending
+  phasedAction.error = error
+  phasedAction.progress = progress
+  phasedAction.cancel = cancel
+
+  return phasedAction
+}
+
+// Add static phase method to action
+action.phase = function <Name extends string, Result>(
+  name: Name,
+  fn: PhaseFn<void, Result>,
+): PhasedAction<Name, Result> {
+  return createPhaseBuilder<Name, Result>([{ name, fn: fn as PhaseFn<unknown, unknown> }])
+}

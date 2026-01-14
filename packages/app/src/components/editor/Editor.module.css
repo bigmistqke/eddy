@@ -20,7 +20,7 @@
 
 .transport {
   display: grid;
-  grid-template-columns: auto auto auto auto auto auto auto;
+  grid-template-columns: auto auto auto auto auto auto auto auto;
   justify-content: center;
   align-items: center;
   gap: 12px;
@@ -229,4 +229,42 @@
 .publishButton:disabled {
   opacity: 0.3;
   cursor: not-allowed;
+}
+
+.exportButton {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+  min-width: 90px;
+}
+
+.exportButton:hover {
+  background: #4f46e5;
+}
+
+.exportButton:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.exportButton.exporting {
+  background: #ef4444;
+}
+
+.exportButton.exporting:hover {
+  background: #dc2626;
+}
+
+.exportProgress {
+  font-size: 12px;
+  text-transform: capitalize;
 }

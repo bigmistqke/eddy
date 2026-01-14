@@ -44,6 +44,9 @@ export interface PlaybackWorkerMethods {
 
   /** Reset performance stats */
   resetPerf(): void
+
+  /** Get frame at specific time (for export) */
+  getFrameAtTime(time: number): Promise<VideoFrame | null>
 }
 
 /**********************************************************************************/
@@ -117,5 +120,10 @@ expose<PlaybackWorkerMethods>({
 
     // Immediately send buffered frame if available (for gapless handoff)
     playback.sendCurrentFrame()
+  },
+
+  async getFrameAtTime(time) {
+    const frame = await playback.getFrameAtTime(time)
+    return frame ? transfer(frame) : null
   },
 })

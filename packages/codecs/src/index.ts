@@ -34,3 +34,13 @@ export {
   type MuxerOptions,
   type VideoFrameData,
 } from './muxer'
+
+// Offline audio mixer (for export)
+export {
+  audioDataArrayToBuffer,
+  createOfflineAudioMixer,
+  decodeClipAudio,
+  extractAudioChunk,
+  type OfflineAudioMixer,
+  type TrackAudioConfig,
+} from './offline-audio-mixer'

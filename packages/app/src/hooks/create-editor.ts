@@ -1,6 +1,12 @@
 import type { Agent } from '@atproto/api'
 import { $MESSENGER, rpc, transfer } from '@bigmistqke/rpc/messenger'
 import { every, whenEffect, whenMemo } from '@bigmistqke/solid-whenever'
+import {
+  createMuxer,
+  createOfflineAudioMixer,
+  decodeClipAudio,
+  extractAudioChunk,
+} from '@eddy/codecs'
 import type { AudioEffect, Clip, ClipSource, ClipSourceStem, Project, Track } from '@eddy/lexicons'
 import { getMasterMixer, resumeAudioContext } from '@eddy/mixer'
 import { assertedNotNullish, debug } from '@eddy/utils'
@@ -13,6 +19,7 @@ import { getProjectByRkey, getStemBlob, publishProject } from '~/lib/atproto/cru
 import { createDebugInfo as initDebugInfo } from '~/lib/create-debug-info'
 import { createResourceMap } from '~/lib/create-resource-map'
 import { SCHEDULER_BUFFER } from '~/lib/scheduler'
+import { getActivePlacements } from '~/lib/timeline-compiler'
 import type { CaptureWorkerMethods } from '~/workers/capture.worker'
 import CaptureWorker from '~/workers/capture.worker?worker'
 import type { MuxerWorkerMethods } from '~/workers/muxer.worker'
@@ -20,6 +27,9 @@ import MuxerWorker from '~/workers/muxer.worker?worker'
 import { createPlayer } from './create-player'
 
 const log = debug('editor', false)
+
+// Cache for clip ArrayBuffers (converted from Blobs)
+const clipBufferCache = new Map<string, ArrayBuffer>()
 
 /** Check if a clip source is a stem reference */
 function isStemSource(source: ClipSource | undefined): source is ClipSourceStem {
@@ -205,7 +215,7 @@ export function createEditor(options: CreateEditorOptions) {
     player,
     _player => {
       for (const track of project().tracks) {
-        if (_player.hasClip(track.id)) return true
+        if (_player.hasClipForTrack(track.id)) return true
       }
       return false
     },
@@ -308,6 +318,27 @@ export function createEditor(options: CreateEditorOptions) {
   // Uses fine-grained access - only subscribes to the specific clipId
   function getClipBlob(clipId: string): Blob | undefined {
     return stemBlobs.get(clipId) ?? localClips[clipId]?.blob
+  }
+
+  // Helper to get ArrayBuffer by clipId (for export)
+  // Caches converted buffers for efficiency
+  async function getClipBuffer(clipId: string): Promise<ArrayBuffer | undefined> {
+    // Check cache first
+    const cached = clipBufferCache.get(clipId)
+    if (cached) return cached
+
+    const blob = getClipBlob(clipId)
+    if (!blob) return undefined
+
+    // Convert and cache
+    const buffer = await blob.arrayBuffer()
+    clipBufferCache.set(clipId, buffer)
+    return buffer
+  }
+
+  // Synchronous version that returns cached buffer or undefined
+  function getClipBufferSync(clipId: string): ArrayBuffer | undefined {
+    return clipBufferCache.get(clipId)
   }
 
   // Preview action - requests media access and sets up preview stream
@@ -505,6 +536,180 @@ export function createEditor(options: CreateEditorOptions) {
 
   createEffect(() => getMasterMixer().setMasterVolume(masterVolume()))
 
+  /** Extract gain value from audio effects (0-1) */
+  function getGainFromPipeline(effects: AudioEffect[] | undefined): number {
+    if (!effects) return 1
+    const gain = effects.find(effect => effect.type === 'audio.gain')
+    if (gain && 'value' in gain && gain.value && 'value' in gain.value) {
+      return gain.value.value / 100
+    }
+    return 1
+  }
+
+  /** Extract pan value from audio effects (-1 to 1) */
+  function getPanFromPipeline(effects: AudioEffect[] | undefined): number {
+    if (!effects) return 0
+    const pan = effects.find(effect => effect.type === 'audio.pan')
+    if (pan && 'value' in pan && pan.value && 'value' in pan.value) {
+      return (pan.value.value - 50) / 50
+    }
+    return 0
+  }
+
+  /** Trigger download of a blob */
+  function downloadBlob(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
+  // Export action using phased action pattern
+  const exportAction = action
+    .phase('preparing', async (_, { onCleanup }) => {
+      const _player = assertedNotNullish(player(), 'No player available')
+      const _project = project()
+      const timeline = _player.timeline()
+
+      if (timeline.duration <= 0) {
+        throw new Error('No content to export')
+      }
+
+      // Pause playback and stop render loop during export
+      _player.pause()
+      _player.stopRenderLoop()
+
+      // Restart render loop when export completes or is cancelled
+      onCleanup(() => _player.startRenderLoop())
+
+      return { player: _player, project: _project, timeline }
+    })
+    .phase('audio', async ({ project: _project, timeline }, { setProgress }) => {
+      log('export: preparing audio')
+      const sampleRate = 48000
+      const audioMixer = createOfflineAudioMixer(timeline.duration, sampleRate)
+      let hasAudio = false
+      let clipIndex = 0
+      const totalClips = _project.tracks.reduce((sum, t) => sum + t.clips.length, 0)
+
+      // Decode and mix audio from all clips
+      for (const track of _project.tracks) {
+        const gain = getGainFromPipeline(track.audioPipeline)
+        const pan = getPanFromPipeline(track.audioPipeline)
+
+        for (const clip of track.clips) {
+          const buffer = await getClipBuffer(clip.id)
+          if (buffer) {
+            const audioBuffer = await decodeClipAudio(buffer, sampleRate)
+            if (audioBuffer) {
+              hasAudio = true
+              const startTime = (clip.offset ?? 0) / 1000
+              audioMixer.addTrack({ buffer: audioBuffer, gain, pan, startTime })
+            }
+          }
+          clipIndex++
+          setProgress(clipIndex / totalClips)
+        }
+      }
+
+      // Render mixed audio
+      const renderedAudio = hasAudio ? await audioMixer.render() : null
+      log('export: audio ready', { hasAudio })
+
+      return { renderedAudio, sampleRate }
+    })
+    .phase('video', async ({ renderedAudio, sampleRate }, { setProgress, signal }) => {
+      const _player = assertedNotNullish(player(), 'No player available')
+      const _project = project()
+      const timeline = _player.timeline()
+      const frameRate = 30
+      const frameDuration = 1 / frameRate
+      const totalFrames = Math.ceil(timeline.duration * frameRate)
+      const samplesPerFrame = Math.floor(sampleRate / frameRate)
+
+      log('export: rendering video', { totalFrames, duration: timeline.duration })
+
+      // Initialize muxer
+      const muxer = createMuxer({
+        videoBitrate: 2_000_000,
+        audioBitrate: 128_000,
+        audio: true,
+        video: true,
+      })
+      await muxer.init()
+
+      // Render frame by frame
+      for (let frameIndex = 0; frameIndex < totalFrames; frameIndex++) {
+        if (signal.aborted) break
+
+        const time = frameIndex * frameDuration
+
+        // Get active placements from timeline at this time
+        const activePlacements = getActivePlacements(timeline, time)
+
+        // Fetch frames directly from each clip's playback worker
+        const frameEntries: Array<{ clipId: string; frame: VideoFrame }> = []
+        for (const { placement, localTime } of activePlacements) {
+          const frame = await _player.getClipFrameAtTime(placement.clipId, localTime)
+          if (frame) {
+            frameEntries.push({ clipId: placement.clipId, frame })
+          }
+        }
+
+        // Render all frames and capture
+        const videoFrame = await _player.compositor.renderFramesAndCapture(time, frameEntries)
+
+        if (videoFrame) {
+          // Copy VideoFrame data for muxer
+          const format = (videoFrame.format ?? 'RGBA') as VideoPixelFormat
+          const codedWidth = videoFrame.displayWidth
+          const codedHeight = videoFrame.displayHeight
+          const size = videoFrame.allocationSize()
+          const buffer = new ArrayBuffer(size)
+          await videoFrame.copyTo(buffer)
+
+          muxer.addVideoFrame({ buffer, format, codedWidth, codedHeight, timestamp: time })
+          videoFrame.close()
+        } else {
+          console.log('no videoFrame!')
+        }
+
+        // Add audio chunk for this frame
+        if (renderedAudio) {
+          const startSample = frameIndex * samplesPerFrame
+          const endSample = (frameIndex + 1) * samplesPerFrame
+          const audioChunk = extractAudioChunk(renderedAudio, startSample, endSample)
+
+          if (audioChunk[0]?.length > 0) {
+            muxer.addAudioFrame({ data: audioChunk, sampleRate, timestamp: time })
+          }
+        }
+
+        setProgress((frameIndex + 1) / totalFrames)
+      }
+
+      return { muxer }
+    })
+    .phase('finalizing', async ({ muxer }) => {
+      log('export: finalizing')
+      const result = await muxer.finalize()
+
+      log('export: complete', {
+        fileSize: result.blob.size,
+        videoFrames: result.videoFrameCount,
+        audioFrames: result.audioFrameCount,
+      })
+
+      // Download the file
+      downloadBlob(result.blob, `export-${Date.now()}.webm`)
+
+      return result
+    })
+
   return {
     canPublish() {
       return (
@@ -674,6 +879,22 @@ export function createEditor(options: CreateEditorOptions) {
     loadTestClip(trackId: string, blob: Blob, duration: number) {
       addRecording(trackId, blob, duration)
     },
+
+    // Export
+    /** Start export and download result */
+    async export() {
+      return exportAction()
+    },
+    /** Cancel ongoing export */
+    cancelExport: exportAction.cancel,
+    /** Export progress within current phase (0-1) */
+    exportProgress: exportAction.progress,
+    /** Current export phase */
+    exportPhase: exportAction.phase,
+    /** Whether export is in progress */
+    isExporting: exportAction.pending,
+    /** Export error if any */
+    exportError: exportAction.error,
   }
 }
 

@@ -202,11 +202,14 @@ function buildSegments(clipInfos: ClipInfo[]): LayoutSegment[] {
     for (const clip of clipInfos) {
       // Clip is active if it overlaps with this segment
       if (clip.timelineStart < endTime && clip.timelineEnd > startTime) {
+        // Calculate in-point for this segment:
+        // Account for how far into the clip we are when this segment starts
+        const segmentOffsetInClip = Math.max(0, startTime - clip.timelineStart) * clip.speed
         placements.push({
           clipId: clip.clipId,
           trackId: clip.trackId,
           viewport: clip.viewport,
-          in: clip.sourceIn,
+          in: clip.sourceIn + segmentOffsetInClip,
           out: clip.sourceOut,
           speed: clip.speed,
         })

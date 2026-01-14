@@ -56,6 +56,8 @@ export interface PlayerActions {
   isLoadingForTrack: (trackId: string) => boolean
   /** Get all clipIds for a track */
   getClipsForTrack: (trackId: string) => string[]
+  /** Get frame at time from a specific clip (for export) */
+  getClipFrameAtTime: (clipId: string, time: number) => Promise<VideoFrame | null>
   /** Set preview stream for recording */
   setPreviewSource: (trackId: string, stream: MediaStream | null) => void
   /** Set track volume */
@@ -64,12 +66,23 @@ export interface PlayerActions {
   setPan: (trackId: string, value: number) => void
   /** Clean up all resources */
   destroy: () => void
+  /** Stop the render loop (for export) */
+  stopRenderLoop: () => void
+  /** Start the render loop */
+  startRenderLoop: () => void
 }
 
 export type Compositor = Omit<CompositorRPC, 'init' | 'setPreviewStream'> & {
   canvas: HTMLCanvasElement
   /** Takes MediaStream (converted to ReadableStream internally) */
   setPreviewStream(trackId: string, stream: MediaStream | null): void
+  /** Render and capture frame for export */
+  renderAndCapture(time: number): Promise<VideoFrame | null>
+  /** Render with provided frames and capture (for export) */
+  renderFramesAndCapture(
+    time: number,
+    frameEntries: Array<{ clipId: string; frame: VideoFrame }>,
+  ): Promise<VideoFrame | null>
 }
 
 export interface Player extends PlayerState, PlayerActions {
@@ -159,6 +172,8 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
     connectPlaybackWorker: compositorRpc.connectPlaybackWorker,
     disconnectPlaybackWorker: compositorRpc.disconnectPlaybackWorker,
     renderToCaptureCanvas: compositorRpc.renderToCaptureCanvas,
+    renderAndCapture: compositorRpc.renderAndCapture,
+    renderFramesAndCapture: compositorRpc.renderFramesAndCapture,
 
     setPreviewStream(trackId: string, stream: MediaStream | null) {
       // Clean up existing processor
@@ -508,6 +523,8 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
     timeline,
     maxDuration,
     destroy,
+    stopRenderLoop: () => renderLoop.stop(),
+    startRenderLoop: () => renderLoop.start(),
     isPlaying: clock.isPlaying,
     time: clock.time,
     loop: clock.loop,
@@ -704,6 +721,15 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
       return Object.values(clips)
         .filter(clip => clip.trackId === trackId)
         .map(clip => clip.clipId)
+    },
+
+    async getClipFrameAtTime(clipId: string, time: number): Promise<VideoFrame | null> {
+      const clip = clips[clipId]
+      if (!clip || clip.state === 'idle' || clip.state === 'loading') {
+        console.log('THIS HAPPENS!!!')
+        return null
+      }
+      return clip.pooledWorker.rpc.getFrameAtTime(time)
     },
 
     setPreviewSource(trackId: string, stream: MediaStream | null): void {
