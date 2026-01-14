@@ -1,5 +1,21 @@
 [
   {
+    "hash": "1b4a427be895f2084d634e47a9ed83f769455b9b",
+    "short_hash": "1b4a427",
+    "author": "bigmistqke",
+    "date": "2026-01-14T15:36:56+01:00",
+    "message": "refactor: reorganize into domain-based packages (audio, video, media)\n\n- Create @eddy/media: demuxer, muxer (shared media types)\n- Create @eddy/audio: decoder, mixer, ring buffer, scheduler, playback\n- Create @eddy/video: decoder, frame utils, compositor, playback\n- Remove @eddy/codecs, @eddy/compositor, @eddy/mixer, @eddy/playback\n- Update all app imports to use new package structure",
+    "files_changed": 100
+  },
+  {
+    "hash": "558c17762e35ccbe2ba25d3d66c1ae7075d6699d",
+    "short_hash": "558c177",
+    "author": "bigmistqke",
+    "date": "2026-01-14T14:45:39+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
     "hash": "5a3cc794918be59884178978159f0ecff7714edc",
     "short_hash": "5a3cc79",
     "author": "bigmistqke",
@@ -8,20 +24,12 @@
     "files_changed": 22
   },
   {
-    "hash": "fc2805d9058e14953c3f87f0b1d9a42b3e85b31c",
-    "short_hash": "fc2805d",
+    "hash": "5a3cc794918be59884178978159f0ecff7714edc",
+    "short_hash": "5a3cc79",
     "author": "bigmistqke",
-    "date": "2026-01-14T10:31:56+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "d96bdab4106b9d198c56a75e3da2789d406aee26",
-    "short_hash": "d96bdab",
-    "author": "bigmistqke",
-    "date": "2026-01-14T10:31:26+01:00",
-    "message": "feat: add video export with offline rendering\n\n- Add phased action pattern for multi-phase async operations\n- Implement frame-by-frame export with getFrameAtTime()\n- Fix localTime calculation for clips spanning segment boundaries\n- Add strict mode to findFrameData for accurate export timing\n- Create offline audio mixer for proper audio rendering\n- Add export button with progress indicator",
-    "files_changed": 12
+    "date": "2026-01-14T14:45:05+01:00",
+    "message": "refactor: separate video/audio playback with ring buffer scheduling\n\n- Split playback.worker into playback.video.worker and playback.audio.worker\n- Add ring buffer + AudioWorklet for lock-free audio streaming\n- Add pending queue scheduling in audio worker (matches working ca079e8 approach)\n- Fix createLoop to use setInterval in workers (requestAnimationFrame unavailable)\n- Set shared AudioContext to 48000Hz for video recording compatibility\n- Move playback orchestration to app package",
+    "files_changed": 22
   },
   {
     "hash": "d96bdab4106b9d198c56a75e3da2789d406aee26",
