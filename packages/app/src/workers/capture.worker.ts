@@ -1,5 +1,5 @@
 import { expose, rpc } from '@bigmistqke/rpc/messenger'
-import type { AudioFrameData, VideoFrameData } from '@eddy/codecs'
+import type { AudioFrameData, VideoFrameData } from '@eddy/media'
 import { debug } from '@eddy/utils'
 
 const log = debug('capture-worker', false)

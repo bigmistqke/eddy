@@ -1,6 +1,11 @@
 import { expose, transfer } from '@bigmistqke/rpc/messenger'
-import type { AudioTrackInfo } from '@eddy/codecs'
-import { createAudioPlayback, createRingBufferWriter, type AudioPlaybackState, type RingBufferWriter } from '@eddy/playback'
+import {
+  createAudioPlayback,
+  createRingBufferWriter,
+  type AudioPlaybackState,
+  type RingBufferWriter,
+} from '@eddy/audio'
+import type { AudioTrackInfo } from '@eddy/media'
 import { createLoop, debug } from '@eddy/utils'
 
 const log = debug('audio-playback-worker', false)

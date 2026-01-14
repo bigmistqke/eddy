@@ -2,13 +2,14 @@ import type { Agent } from '@atproto/api'
 import { $MESSENGER, rpc, transfer } from '@bigmistqke/rpc/messenger'
 import { every, whenEffect, whenMemo } from '@bigmistqke/solid-whenever'
 import {
-  createMuxer,
   createOfflineAudioMixer,
   decodeClipAudio,
   extractAudioChunk,
-} from '@eddy/codecs'
+  getMasterMixer,
+  resumeAudioContext,
+} from '@eddy/audio'
 import type { AudioEffect, Clip, ClipSource, ClipSourceStem, Project, Track } from '@eddy/lexicons'
-import { getMasterMixer, resumeAudioContext } from '@eddy/mixer'
+import { createMuxer } from '@eddy/media'
 import { assertedNotNullish, debug } from '@eddy/utils'
 import { createEffect, createSelector, createSignal, mapArray, type Accessor } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'

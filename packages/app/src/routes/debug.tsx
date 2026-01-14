@@ -6,9 +6,7 @@
  */
 
 import { $MESSENGER, rpc, transfer } from '@bigmistqke/rpc/messenger'
-import type { Demuxer } from '@eddy/codecs'
-// TODO: Restore when @eddy/playback module is created
-// import { createPlayback } from '@eddy/playback'
+import type { Demuxer } from '@eddy/media'
 import { createSignal, Match, Show, Switch } from 'solid-js'
 import { action, defer, hold } from '~/hooks/action'
 import { resource } from '~/hooks/resource'

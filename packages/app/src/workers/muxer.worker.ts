@@ -1,5 +1,5 @@
 import { expose } from '@bigmistqke/rpc/messenger'
-import { createMuxer, type AudioFrameData, type Muxer, type VideoFrameData } from '@eddy/codecs'
+import { createMuxer, type AudioFrameData, type Muxer, type VideoFrameData } from '@eddy/media'
 import { debug } from '@eddy/utils'
 import { createScheduler, type RecorderScheduler, type SchedulerBuffer } from '~/lib/scheduler'
 

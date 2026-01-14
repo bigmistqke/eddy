@@ -4,7 +4,7 @@ import {
   type Demuxer,
   type DemuxedSample,
   type DemuxerInfo,
-} from '@eddy/codecs'
+} from '@eddy/media'
 import { debug } from '@eddy/utils'
 
 const log = debug('demux-worker', false)

@@ -1,7 +1,7 @@
 import { expose, rpc, transfer, type RPC } from '@bigmistqke/rpc/messenger'
-import type { VideoTrackInfo } from '@eddy/codecs'
-import { createVideoPlayback, type VideoPlaybackState } from '@eddy/playback'
+import type { VideoTrackInfo } from '@eddy/media'
 import { debug } from '@eddy/utils'
+import { createVideoPlayback, type VideoPlaybackState } from '@eddy/video'
 import { createScheduler, type PlaybackScheduler, type SchedulerBuffer } from '~/lib/scheduler'
 
 const log = debug('playback-worker', false)

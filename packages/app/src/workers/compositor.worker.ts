@@ -1,6 +1,6 @@
 import { expose, type Transferred } from '@bigmistqke/rpc/messenger'
-import { createCompositor, type Compositor } from '@eddy/compositor'
 import { debug } from '@eddy/utils'
+import { createCompositor, type Compositor } from '@eddy/video'
 import type { CompiledTimeline, Placement } from '~/lib/layout-types'
 import { PREVIEW_CLIP_ID } from '~/lib/layout-types'
 import { getActivePlacements } from '~/lib/timeline-compiler'

@@ -9,8 +9,8 @@
  */
 
 import type { RPC } from '@bigmistqke/rpc/messenger'
-import type { AudioTrackInfo, VideoTrackInfo } from '@eddy/codecs'
-import { createAudioScheduler, type AudioScheduler } from '@eddy/playback'
+import { createAudioScheduler, type AudioScheduler } from '@eddy/audio'
+import type { AudioTrackInfo, VideoTrackInfo } from '@eddy/media'
 import { debug } from '@eddy/utils'
 import type { SchedulerBuffer } from '~/lib/scheduler'
 import type { PooledWorker } from '~/lib/worker-pool'

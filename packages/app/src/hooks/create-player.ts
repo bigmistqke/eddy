@@ -1,6 +1,6 @@
 import { rpc, transfer, type RPC } from '@bigmistqke/rpc/messenger'
+import { createAudioPipeline, type AudioPipeline } from '@eddy/audio'
 import type { Project } from '@eddy/lexicons'
-import { createAudioPipeline, type AudioPipeline } from '@eddy/mixer'
 import { createLoop, debug, getGlobalPerfMonitor } from '@eddy/utils'
 import { createEffect, createMemo, createSignal, on, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
