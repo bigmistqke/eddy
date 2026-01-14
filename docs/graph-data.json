@@ -347,9 +347,9 @@
       "node_type": "goal",
       "title": "Formalize project issues and prioritize performance",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:54:20.263963+01:00",
-      "updated_at": "2026-01-09T02:54:20.263963+01:00",
+      "updated_at": "2026-01-14T16:01:38.369592+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"ok -> i will explain you the current state of the project: 1. demuxing and decoding videoframes while recording causes recording to glitch 2. i don't like how we handled auto-resolver -> we need to reconsider how we compile a possibly complexly nested graph of tracks and groups and clips into an easy queryable datastructure so we don't have to calculate anything during scrubbing 3. when demuxing and decoding more then 3 videos jank starts to appear 4. there is the idea of doing pre-rendering and compositing this with the preview, but that would prevent us from rendering atop of the grid (currently not implemented: everything is in a grid for the MVP, but for future consideration) 4. we had implemented preview rendering at some point, but i decided to remove it during a previous simplification of the library. 5. for the mvp we also want to be able to record over the same track in a later offset -> and loop 6. but before we implement we have to focus first on the performance aspect -> if we can not play it smoothly and record at the same time the project is doomed -> formalize this in a series of issues and let's add them to remote\"}"
     },
     {
@@ -765,9 +765,9 @@
       "node_type": "goal",
       "title": "Refactor to clip-based playback workers with worker pool",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T12:05:15.250045+01:00",
-      "updated_at": "2026-01-09T12:05:15.250045+01:00",
+      "updated_at": "2026-01-14T16:00:50.998372+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"User exploration led to architecture decision:\\n1. Layout resolver should use segment-based model with flat placements\\n2. Playback workers should be per-clip (not per-track)\\n3. Frames tagged with clipId instead of trackId\\n4. Worker pool to reuse workers and avoid init overhead\\n\\nImplementation phases:\\n- Phase 1: Create WorkerPool for playback workers\\n- Phase 2: Refactor create-player.ts: TrackEntry → ClipEntry, keyed by clipId\\n- Phase 3: Update playback.worker.ts: tag frames with clipId\\n- Phase 4: Update compositor.worker.ts: receive frames by clipId\\n- Phase 5: New layout types + compiler with segment/placement model\"}"
     },
     {
@@ -798,9 +798,9 @@
       "node_type": "goal",
       "title": "fix: preview is not working in compiled segment based layout",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T14:15:50.772294+01:00",
-      "updated_at": "2026-01-09T14:15:50.772294+01:00",
+      "updated_at": "2026-01-14T16:00:51.008089+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"fix: preview is not working in compiled segment based layout\"}"
     },
     {
@@ -831,9 +831,9 @@
       "node_type": "goal",
       "title": "add a timer input to scrub through time",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T14:35:02.159365+01:00",
-      "updated_at": "2026-01-09T14:35:02.159365+01:00",
+      "updated_at": "2026-01-14T16:00:51.016636+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"add a timer input to scrub through time\"}"
     },
     {
@@ -875,9 +875,9 @@
       "node_type": "goal",
       "title": "fix: looping not replaying clips",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T14:42:59.174879+01:00",
-      "updated_at": "2026-01-09T14:42:59.174879+01:00",
+      "updated_at": "2026-01-14T16:00:51.024977+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"looping is currently not working: the time indicator does show the looping, but the clip is not replaying\"}"
     },
     {
@@ -897,9 +897,9 @@
       "node_type": "goal",
       "title": "fix bin and download button of track",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T23:38:08.554324+01:00",
-      "updated_at": "2026-01-09T23:38:08.554324+01:00",
+      "updated_at": "2026-01-14T16:00:51.033522+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"fix bin and download button of track -> it should delete or download the clip that is at that point in time of the track\"}"
     },
     {
@@ -1018,9 +1018,9 @@
       "node_type": "goal",
       "title": "Refactor workers to be thin RPC wrappers around modules",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-10T02:22:58.327510+01:00",
-      "updated_at": "2026-01-10T02:22:58.327510+01:00",
+      "updated_at": "2026-01-14T15:59:44.304530+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"workers should be small wrappers around modules -> currently all logic is in .worker.ts files and there are stale and redundant packages in /packages (e.g. packages/compositor packages/playback ...) -> refactor the project so that the logic resides in their respective modules and that the .worker.ts are back small rpc-wrappers around those modules\"}"
     },
     {
@@ -1084,9 +1084,9 @@
       "node_type": "goal",
       "title": "Implement adaptive frame skipping using queue-based backpressure",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-12T18:24:57.089744+01:00",
-      "updated_at": "2026-01-12T18:24:57.089744+01:00",
+      "updated_at": "2026-01-14T15:59:44.275479+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"Two-part implementation for prioritizing recording over playback:\\n\\nTicket 1: Local decoder backpressure\\n- Use decoder.decodeQueueSize to skip non-keyframes when decoder is overwhelmed\\n- No cross-worker coordination needed\\n- Simple threshold check before each decode\\n\\nTicket 2: SAB-based recorder backpressure  \\n- Muxer broadcasts encoder queue depth via SharedArrayBuffer\\n- Playback workers check SAB and skip non-keyframes when encoder is busy\\n- API: createPlaybackScheduler(sab) / createRecordingScheduler(sab)\\n- SAB passed from main thread to all workers\\n\\nCombined: skip delta frames if EITHER decoder OR encoder is backed up\"}"
     },
     {
@@ -1194,9 +1194,9 @@
       "node_type": "goal",
       "title": "fix: video clips sporadically stuck at first frame",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-12T20:26:47.080139+01:00",
-      "updated_at": "2026-01-12T20:26:47.080139+01:00",
+      "updated_at": "2026-01-14T15:59:44.263039+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"User reported: \\\"there is currently a bug when playing videos: sporadically a clip would get stuck at the first frame. stopping and re-playing does not work: only looping -> it would start playing the clip once it looped around\\\"\"}"
     },
     {
@@ -1304,9 +1304,9 @@
       "node_type": "goal",
       "title": "feat: offline video+audio export to WebM with download",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-14T00:18:04.326880+01:00",
-      "updated_at": "2026-01-14T00:18:04.326880+01:00",
+      "updated_at": "2026-01-14T15:59:44.250906+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"User requested: render and mux composited video + audio to webm -> and download\\n- Offline render (frame-by-frame, not real-time)\\n- Audio from processed audio pipeline (with gain/pan effects)\\n- Output: VP9 video + Opus audio in WebM\"}"
     },
     {
@@ -1337,9 +1337,9 @@
       "node_type": "goal",
       "title": "Fix audio pipeline for live playback",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-14T10:57:41.574941+01:00",
-      "updated_at": "2026-01-14T10:57:41.574941+01:00",
+      "updated_at": "2026-01-14T15:59:44.230145+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Audio pipeline works for export but not live playback:\\n1. createDefaultProject doesn't define audioPipeline effects\\n2. Empty effects array means no gain/pan elements are created\\n3. setVolume/setPan silently fail because elements don't exist\"}"
     },
     {
@@ -1451,6 +1451,105 @@
       "created_at": "2026-01-14T15:42:31.578442+01:00",
       "updated_at": "2026-01-14T15:42:31.578442+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"7522c41\",\"confidence\":95}"
+    },
+    {
+      "id": 133,
+      "change_id": "82c576b4-ce2a-4184-96b2-243106c5175d",
+      "node_type": "goal",
+      "title": "Record from offset with clip layering (later clips on top)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-14T16:09:08.115682+01:00",
+      "updated_at": "2026-01-14T16:09:08.115682+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Start recording in a track from an offset position, allowing recording over existing clips. Need to explore:\\n1. How clips layer within a track (last/later clip should be \\\"on top\\\")\\n2. Should clips have z-index for explicit ordering?\\n3. How does playback resolve overlapping clips?\\n4. UI for visualizing overlapping regions\"}"
+    },
+    {
+      "id": 134,
+      "change_id": "be8c735e-4380-4d75-a9a8-0bc675565fd2",
+      "node_type": "decision",
+      "title": "How to handle overlapping clip layering within a track",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-14T16:10:03.803203+01:00",
+      "updated_at": "2026-01-14T16:10:03.803203+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"When recording over existing clips in a track, how should we determine which clip renders on top?\\n\\nCurrent behavior: clips array iteration order determines placement order.\\nQuestion: Should later clips be \\\"on top\\\"? How to handle explicit reordering?\"}"
+    },
+    {
+      "id": 135,
+      "change_id": "80567ce4-fa08-4d04-ad24-f68f7dde8867",
+      "node_type": "option",
+      "title": "Array order = layer order (last in array on top)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-14T16:10:40.875330+01:00",
+      "updated_at": "2026-01-14T16:10:40.875330+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":80,\"prompt\":\"Use clips array order as implicit z-order:\\n- Last clip in array renders last (on top)\\n- When recording, append new clip to end\\n- Reordering = moving clips in array\\n\\nPros:\\n- No schema change\\n- Simple mental model\\n- Works out of the box\\n\\nCons:\\n- Reordering affects array structure\\n- No explicit \\\"layer\\\" concept in UI\"}"
+    },
+    {
+      "id": 136,
+      "change_id": "1b3d91b0-9a7c-4380-84c0-3f74a875cb8a",
+      "node_type": "option",
+      "title": "Add explicit z/layer property to Clip",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-14T16:10:50.017867+01:00",
+      "updated_at": "2026-01-14T16:10:50.017867+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":80,\"prompt\":\"Add optional z-index property to Clip lexicon:\\n\\nclip: {\\n  ...existing,\\n  z: integer  // Higher = on top, default = 0 or array index\\n}\\n\\nPros:\\n- Explicit control\\n- Easy to reorder without moving in array\\n- Future-proof for layer UI\\n\\nCons:\\n- Schema change\\n- More complexity\\n- Need to manage z-index values\"}"
+    },
+    {
+      "id": 137,
+      "change_id": "71af8473-607c-4e3b-b048-d3aad737e4f3",
+      "node_type": "option",
+      "title": "Sort by creation time (TID ordering)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-14T16:10:58.939127+01:00",
+      "updated_at": "2026-01-14T16:10:58.939127+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":75,\"prompt\":\"Use clip ID (TID) as implicit ordering:\\n- Later-created clips have higher TIDs\\n- Sort clips by ID at compile time\\n- Most recent recording always on top\\n\\nPros:\\n- No schema change\\n- Automatic ordering by creation\\n- TIDs are already unique timestamps\\n\\nCons:\\n- Can't manually reorder\\n- Ties layer order to creation time forever\\n- Less intuitive than array order\"}"
+    },
+    {
+      "id": 138,
+      "change_id": "143ec970-68ec-43ef-972b-39f03649a151",
+      "node_type": "observation",
+      "title": "Current system already supports overlapping clips - all are rendered, array order determines placement order",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-14T16:11:09.794634+01:00",
+      "updated_at": "2026-01-14T16:11:09.794634+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 139,
+      "change_id": "341866e9-c4da-4d5b-ac87-566eb14f0dd2",
+      "node_type": "observation",
+      "title": "User wants punch-through behavior: top clip replaces (silences/hides) underlying clips, not layers on top. Only one clip per track audible/visible at any time.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-14T16:13:06.011376+01:00",
+      "updated_at": "2026-01-14T16:13:06.011376+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 140,
+      "change_id": "f7e80139-c556-4ea2-8a72-05f97264be1e",
+      "node_type": "action",
+      "title": "Implement punch-through clip behavior in timeline compiler",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-14T16:14:59.394716+01:00",
+      "updated_at": "2026-01-14T16:14:59.394716+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 141,
+      "change_id": "a123178b-3df9-4840-8d6f-56c29366ab74",
+      "node_type": "outcome",
+      "title": "Punch-through clip behavior: top clip replaces underlying clips in timeline",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-14T16:16:56.839351+01:00",
+      "updated_at": "2026-01-14T16:16:56.839351+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"60e00fe\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -2773,6 +2872,94 @@
       "weight": 1.0,
       "rationale": "Bug fix for audio playback",
       "created_at": "2026-01-14T15:42:35.231547+01:00"
+    },
+    {
+      "id": 121,
+      "from_node_id": 133,
+      "to_node_id": 134,
+      "from_change_id": "82c576b4-ce2a-4184-96b2-243106c5175d",
+      "to_change_id": "be8c735e-4380-4d75-a9a8-0bc675565fd2",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Exploring clip layering design",
+      "created_at": "2026-01-14T16:11:04.783968+01:00"
+    },
+    {
+      "id": 122,
+      "from_node_id": 134,
+      "to_node_id": 135,
+      "from_change_id": "be8c735e-4380-4d75-a9a8-0bc675565fd2",
+      "to_change_id": "80567ce4-fa08-4d04-ad24-f68f7dde8867",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Option A: Array order",
+      "created_at": "2026-01-14T16:11:04.805103+01:00"
+    },
+    {
+      "id": 123,
+      "from_node_id": 134,
+      "to_node_id": 136,
+      "from_change_id": "be8c735e-4380-4d75-a9a8-0bc675565fd2",
+      "to_change_id": "1b3d91b0-9a7c-4380-84c0-3f74a875cb8a",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Option B: Explicit z-index",
+      "created_at": "2026-01-14T16:11:04.813899+01:00"
+    },
+    {
+      "id": 124,
+      "from_node_id": 134,
+      "to_node_id": 137,
+      "from_change_id": "be8c735e-4380-4d75-a9a8-0bc675565fd2",
+      "to_change_id": "71af8473-607c-4e3b-b048-d3aad737e4f3",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Option C: TID ordering",
+      "created_at": "2026-01-14T16:11:04.823995+01:00"
+    },
+    {
+      "id": 125,
+      "from_node_id": 134,
+      "to_node_id": 138,
+      "from_change_id": "be8c735e-4380-4d75-a9a8-0bc675565fd2",
+      "to_change_id": "143ec970-68ec-43ef-972b-39f03649a151",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Discovery",
+      "created_at": "2026-01-14T16:11:14.908188+01:00"
+    },
+    {
+      "id": 126,
+      "from_node_id": 134,
+      "to_node_id": 139,
+      "from_change_id": "be8c735e-4380-4d75-a9a8-0bc675565fd2",
+      "to_change_id": "341866e9-c4da-4d5b-ac87-566eb14f0dd2",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Design requirement",
+      "created_at": "2026-01-14T16:13:11.787256+01:00"
+    },
+    {
+      "id": 127,
+      "from_node_id": 134,
+      "to_node_id": 140,
+      "from_change_id": "be8c735e-4380-4d75-a9a8-0bc675565fd2",
+      "to_change_id": "f7e80139-c556-4ea2-8a72-05f97264be1e",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-01-14T16:15:03.611130+01:00"
+    },
+    {
+      "id": 128,
+      "from_node_id": 140,
+      "to_node_id": 141,
+      "from_change_id": "f7e80139-c556-4ea2-8a72-05f97264be1e",
+      "to_change_id": "a123178b-3df9-4840-8d6f-56c29366ab74",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-14T16:17:00.797241+01:00"
     }
   ]
 }
