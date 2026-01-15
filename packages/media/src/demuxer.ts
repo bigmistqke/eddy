@@ -50,10 +50,8 @@ export interface DemuxedSample {
   number: number
   /** Track ID this sample belongs to */
   trackId: number
-  /** Presentation timestamp in seconds */
-  pts: number
-  /** Decode timestamp in seconds */
-  dts: number
+  /** timestamp in seconds */
+  timestamp: number
   /** Duration in seconds */
   duration: number
   /** Whether this is a sync/keyframe sample */
@@ -104,7 +102,7 @@ export interface Demuxer {
   destroy(): void
 }
 
-function packetToSample(
+export function packetToSample(
   packet: EncodedPacket,
   trackId: number,
   sampleNumber: number,
@@ -112,8 +110,7 @@ function packetToSample(
   return {
     number: sampleNumber,
     trackId,
-    pts: packet.timestamp,
-    dts: packet.timestamp, // Mediabunny doesn't expose DTS separately
+    timestamp: packet.timestamp,
     duration: packet.duration,
     isKeyframe: packet.type === 'key',
     data: packet.data,

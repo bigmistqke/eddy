@@ -107,7 +107,7 @@ export async function createAudioDecoder(
     async decode(sample: DemuxedSample): Promise<AudioData> {
       const chunk = new EncodedAudioChunk({
         type: 'key', // Audio chunks are typically all keyframes
-        timestamp: sample.pts * 1_000_000, // Convert to microseconds
+        timestamp: sample.timestamp * 1_000_000, // Convert to microseconds
         duration: sample.duration * 1_000_000,
         data: sample.data,
       })
@@ -140,7 +140,7 @@ export async function createAudioDecoder(
       for (const sample of samples) {
         const chunk = new EncodedAudioChunk({
           type: 'key',
-          timestamp: sample.pts * 1_000_000,
+          timestamp: sample.timestamp * 1_000_000,
           duration: sample.duration * 1_000_000,
           data: sample.data,
         })

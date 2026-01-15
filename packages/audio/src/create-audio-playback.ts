@@ -112,8 +112,7 @@ function packetToSample(packet: EncodedPacket, trackId: number): DemuxedSample {
   return {
     number: 0,
     trackId,
-    pts: packet.timestamp,
-    dts: packet.timestamp,
+    timestamp: packet.timestamp,
     duration: packet.duration,
     isKeyframe: true, // Audio frames are always keyframes
     data: packet.data,
@@ -125,7 +124,9 @@ function packetToSample(packet: EncodedPacket, trackId: number): DemuxedSample {
 function configsMatch(a: AudioDecoderConfig | null, b: AudioDecoderConfig | null): boolean {
   if (!a || !b) return false
   return (
-    a.codec === b.codec && a.sampleRate === b.sampleRate && a.numberOfChannels === b.numberOfChannels
+    a.codec === b.codec &&
+    a.sampleRate === b.sampleRate &&
+    a.numberOfChannels === b.numberOfChannels
   )
 }
 
@@ -332,7 +333,7 @@ export function createAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}
     const sample = packetToSample(packet, audioTrack.id)
     const chunk = new EncodedAudioChunk({
       type: 'key',
-      timestamp: sample.pts * 1_000_000,
+      timestamp: sample.timestamp * 1_000_000,
       duration: sample.duration * 1_000_000,
       data: sample.data,
     })
@@ -447,7 +448,10 @@ export function createAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}
     const keepPastSeconds = 0.5
     const minTimestamp = (currentTime - keepPastSeconds) * 1_000_000
 
-    while (audioBuffer.length > 1 && audioBuffer[0].timestamp + audioBuffer[0].duration < minTimestamp) {
+    while (
+      audioBuffer.length > 1 &&
+      audioBuffer[0].timestamp + audioBuffer[0].duration < minTimestamp
+    ) {
       audioBuffer.shift()
     }
   }
