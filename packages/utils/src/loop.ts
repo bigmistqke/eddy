@@ -14,12 +14,6 @@ export interface Loop {
   stop(): void
 }
 
-// Check if we're in a worker (no requestAnimationFrame)
-const isWorker = typeof requestAnimationFrame === 'undefined'
-
-// ~60fps interval for workers
-const WORKER_INTERVAL_MS = 16
-
 /**
  * Create an animation frame loop.
  *
@@ -44,13 +38,13 @@ const WORKER_INTERVAL_MS = 16
  * loop.stop()
  * ```
  */
-export function createLoop(callback: (loop: Loop) => void): Loop {
+export function createLoop(callback: (loop: Loop, timestamp: number) => void): Loop {
   let loopId: number | null = null
 
-  function tick(): void {
-    callback(loop)
+  function tick(timestamp: DOMHighResTimeStamp): void {
+    callback(loop, timestamp)
     // Only continue if still running (callback might have called stop())
-    if (loopId !== null && !isWorker) {
+    if (loopId !== null) {
       loopId = requestAnimationFrame(tick)
     }
   }
@@ -62,20 +56,12 @@ export function createLoop(callback: (loop: Loop) => void): Loop {
 
     start() {
       if (loopId !== null) return
-      if (isWorker) {
-        loopId = setInterval(() => callback(loop), WORKER_INTERVAL_MS) as unknown as number
-      } else {
-        loopId = requestAnimationFrame(tick)
-      }
+      loopId = requestAnimationFrame(tick)
     },
 
     stop() {
       if (loopId === null) return
-      if (isWorker) {
-        clearInterval(loopId)
-      } else {
-        cancelAnimationFrame(loopId)
-      }
+      cancelAnimationFrame(loopId)
       loopId = null
     },
   }
