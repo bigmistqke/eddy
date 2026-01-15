@@ -23,6 +23,8 @@ export interface MuxerOptions {
   videoCodec?: 'vp8' | 'vp9' | 'av1'
   /** Video bitrate in bits/second (default: 2_000_000) */
   videoBitrate?: number
+  /** Keyframe interval in seconds (default: 5). Set to 0 for keyframe-only encoding. */
+  keyFrameInterval?: number
   /** Audio codec (default: 'opus') */
   audioCodec?: 'opus' | 'vorbis'
   /** Audio bitrate in bits/second (default: 128_000) */
@@ -105,6 +107,7 @@ export function createMuxer(options: MuxerOptions = {}): Muxer {
   const {
     videoCodec = 'vp9',
     videoBitrate = 2_000_000,
+    keyFrameInterval,
     audioCodec = 'opus',
     audioBitrate = 128_000,
     video = true,
@@ -233,7 +236,11 @@ export function createMuxer(options: MuxerOptions = {}): Muxer {
       output = new Output({ format: new WebMOutputFormat(), target: bufferTarget })
 
       if (video) {
-        videoSource = new VideoSampleSource({ codec: videoCodec, bitrate: videoBitrate })
+        videoSource = new VideoSampleSource({
+          codec: videoCodec,
+          bitrate: videoBitrate,
+          keyFrameInterval,
+        })
         output.addVideoTrack(videoSource)
       }
 
