@@ -2,11 +2,11 @@ import type { AudioTrackInfo, DemuxedSample } from '@eddy/media'
 import { createLoop, createPerfMonitor, debug } from '@eddy/utils'
 import {
   ALL_FORMATS,
-  BlobSource,
   EncodedPacketSink,
   Input,
   type EncodedPacket,
   type InputAudioTrack,
+  type Source,
 } from 'mediabunny'
 
 const log = debug('playback:create-audio-playback', false)
@@ -82,8 +82,8 @@ export interface AudioPlayback {
   >
   /** Current playback state */
   getState(): AudioPlaybackState
-  /** Load audio from buffer */
-  load(buffer: ArrayBuffer): Promise<{
+  /** Load audio from source */
+  load(source: Source): Promise<{
     duration: number
     audioTrack: AudioTrackInfo | null
   }>
@@ -527,8 +527,8 @@ export function createAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}
       return bufferedToAudioData(buffered)
     },
 
-    async load(buffer) {
-      log('load', { size: buffer.byteLength })
+    async load(source) {
+      log('load', { isSource: !(source instanceof ArrayBuffer) })
       _state = 'loading'
 
       const previousConfig = audioConfig
@@ -543,10 +543,9 @@ export function createAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}
       audioBuffer = []
       bufferPosition = 0
 
-      // Create input from buffer
-      const blob = new Blob([buffer])
+      // Create input from source
       input = new Input({
-        source: new BlobSource(blob),
+        source,
         formats: ALL_FORMATS,
       })
 

@@ -13,6 +13,6 @@
     "noEmit": true,
     "skipLibCheck": true,
     "verbatimModuleSyntax": true,
-    "lib": ["ESNext",]
+    "lib": ["ESNext", "DOM", "DOM.AsyncIterable", "WebWorker"]
   }
 }

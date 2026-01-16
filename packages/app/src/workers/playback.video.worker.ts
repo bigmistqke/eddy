@@ -2,6 +2,7 @@ import { expose, rpc, transfer, type RPC } from '@bigmistqke/rpc/messenger'
 import type { VideoTrackInfo } from '@eddy/media'
 import { debug } from '@eddy/utils'
 import { createVideoPlayback, type VideoPlaybackState } from '@eddy/video'
+import { createOPFSSource } from '~/lib/opfs'
 import { createScheduler, type PlaybackScheduler, type SchedulerBuffer } from '~/lib/scheduler'
 
 const log = debug('playback-worker', false)
@@ -15,8 +16,8 @@ export interface VideoPlaybackWorkerMethods {
   /** Set scheduler buffer for cross-worker coordination */
   setSchedulerBuffer(buffer: SchedulerBuffer): void
 
-  /** Load a blob for playback */
-  load(buffer: ArrayBuffer): Promise<{ duration: number; videoTrack: VideoTrackInfo | null }>
+  /** Load a clip from OPFS for playback */
+  load(clipId: string): Promise<{ duration: number; videoTrack: VideoTrackInfo | null }>
 
   /** Connect to compositor via MessagePort */
   connectToCompositor(id: string, port: MessagePort): void
@@ -105,11 +106,12 @@ expose<VideoPlaybackWorkerMethods>({
     scheduler = createScheduler(buffer).playback
   },
 
-  async load(buffer) {
-    log('load', { size: buffer.byteLength })
+  async load(clipId) {
+    log('load', { clipId })
 
-    // load() handles cleanup internally and reuses decoder if config matches
-    return playback.load(buffer)
+    // Create OPFS source and load
+    const source = await createOPFSSource(clipId)
+    return playback.load(source)
   },
 
   connectToCompositor(id, port) {

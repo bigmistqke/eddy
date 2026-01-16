@@ -70,8 +70,8 @@ export interface Playback {
   /** The audio scheduler (for routing to audio pipeline) */
   readonly audioScheduler: AudioScheduler | null
 
-  /** Load media from ArrayBuffer */
-  load(buffer: ArrayBuffer): Promise<MediaInfo>
+  /** Load media from OPFS by clipId */
+  load(clipId: string): Promise<MediaInfo>
 
   /** Start playback from time at speed */
   play(startTime: number, playbackSpeed?: number): void
@@ -162,14 +162,14 @@ export function createPlayback(config: PlaybackConfig): Playback {
       return audioScheduler
     },
 
-    async load(buffer) {
-      log('load', { size: buffer.byteLength })
+    async load(clipId) {
+      log('load', { clipId })
       state = 'loading'
 
-      // Load into both workers in parallel
+      // Load into both workers in parallel (they read from OPFS)
       const [videoResult, audioResult] = await Promise.all([
-        videoWorker.load(buffer),
-        audioWorker.load(buffer),
+        videoWorker.load(clipId),
+        audioWorker.load(clipId),
       ])
 
       hasVideo = !!videoResult.videoTrack

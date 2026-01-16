@@ -49,8 +49,8 @@ export interface PlayerActions {
   seek: (time: number) => Promise<void>
   /** Toggle loop */
   setLoop: (enabled: boolean) => void
-  /** Load a clip into a track. Returns the clipId. */
-  loadClip: (trackId: string, blob: Blob, clipId?: string) => Promise<string>
+  /** Load a clip into a track (reads from OPFS). Returns the clipId. */
+  loadClip: (trackId: string, clipId: string) => Promise<string>
   /** Clear a clip by clipId */
   clearClip: (clipId: string) => void
   /** Check if clip exists and is ready */
@@ -140,8 +140,6 @@ interface ClipEntry {
   playback: Playback
   duration: number
   state: 'idle' | 'loading' | 'ready' | 'playing' | 'paused'
-  /** Stored buffer for gapless loop handoff */
-  buffer: ArrayBuffer | null
   /** Playback being prepared for loop transition */
   nextPlayback: Playback | null
   /** Whether nextPlayback is ready to take over */
@@ -301,7 +299,6 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
       playback,
       duration: 0,
       state: 'idle',
-      buffer: null,
       nextPlayback: null,
       nextPlaybackReady: false,
     }
@@ -378,13 +375,9 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
    * until the exact moment of handoff.
    */
   async function prepareNextPlayback(clip: ClipEntry): Promise<void> {
-    // Skip if already preparing or no buffer stored
+    // Skip if already preparing
     if (clip.nextPlayback) {
       log('prepareNextPlayback: already has nextPlayback')
-      return
-    }
-    if (!clip.buffer) {
-      log('prepareNextPlayback: no buffer stored!', clip.clipId)
       return
     }
 
@@ -414,8 +407,8 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
     setClips(clip.clipId, 'nextPlaybackReady', false)
 
     try {
-      // Load the same buffer
-      await nextPlayback.load(clip.buffer)
+      // Load from OPFS using the same clipId
+      await nextPlayback.load(clip.clipId)
 
       // DON'T connect to compositor yet - let old playback keep sending frames
       // Just seek to 0 to buffer frames internally
@@ -524,7 +517,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
     // Proactively prepare next playbacks when approaching end with looping enabled
     if (playing && looping && duration > 0 && time >= duration - LOOP_PREPARE_AHEAD) {
       const playingClips = Object.values(clips).filter(
-        clip => clip.state === 'playing' && !clip.nextPlayback && clip.buffer,
+        clip => clip.state === 'playing' && !clip.nextPlayback,
       )
       for (const clip of playingClips) {
         prepareNextPlayback(clip)
@@ -715,33 +708,28 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
       }
     },
 
-    async loadClip(trackId: string, blob: Blob, clipId?: string): Promise<string> {
-      // Generate clipId if not provided
-      const resolvedClipId = clipId ?? `clip-${trackId}-${Date.now()}`
-      log('loadClip', { trackId, clipId: resolvedClipId, blobSize: blob.size })
+    async loadClip(trackId: string, clipId: string): Promise<string> {
+      log('loadClip', { trackId, clipId })
 
       // Ensure track exists (for audio routing)
       getOrCreateTrack(trackId)
 
       // Get or create clip entry
-      const clip = getOrCreateClip(resolvedClipId, trackId)
-      setClips(resolvedClipId, 'state', 'loading')
+      const clip = getOrCreateClip(clipId, trackId)
+      setClips(clipId, 'state', 'loading')
 
-      // Convert blob to ArrayBuffer and load into playback
-      const buffer = await blob.arrayBuffer()
-      const { duration } = await clip.playback.load(buffer)
+      // Load from OPFS (workers read the file directly)
+      const { duration } = await clip.playback.load(clipId)
 
-      // Store buffer for gapless loop handoff
-      setClips(resolvedClipId, 'buffer', buffer)
-      setClips(resolvedClipId, 'duration', duration)
-      setClips(resolvedClipId, 'state', 'ready')
+      setClips(clipId, 'duration', duration)
+      setClips(clipId, 'state', 'ready')
 
       // Seek to current time (or 0) to show initial frame
       const currentTime = clock.time()
       await clip.playback.seek(currentTime)
 
-      log('loadClip complete', { clipId: resolvedClipId, duration })
-      return resolvedClipId
+      log('loadClip complete', { clipId, duration })
+      return clipId
     },
 
     clearClip(clipId: string): void {

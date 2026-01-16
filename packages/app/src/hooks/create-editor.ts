@@ -17,6 +17,7 @@ import { action, defer, hold } from '~/hooks/action'
 import { deepResource } from '~/hooks/deep-resource'
 import { resource } from '~/hooks/resource'
 import { getProjectByRkey, getStemBlob, publishProject } from '~/lib/atproto/crud'
+import { readClipBlob, writeBlob } from '~/lib/opfs'
 import { createDebugInfo as initDebugInfo } from '~/lib/create-debug-info'
 import { createResourceMap } from '~/lib/create-resource-map'
 import { SCHEDULER_BUFFER } from '~/lib/scheduler'
@@ -188,8 +189,9 @@ export function createEditor(options: CreateEditorOptions) {
   const isSelectedTrack = createSelector(selectedTrackId)
   const isRecording = () => recordAction.pending()
 
-  // Resource map for stem blobs - fine-grained reactivity per clipId
-  const stemBlobs = createResourceMap(
+  // Resource map for stem clips - fetches from atproto and writes to OPFS
+  // Returns true when clip is ready in OPFS, null on failure
+  const stemClips = createResourceMap(
     // Derive clips that have stem sources from project store
     () =>
       project()
@@ -203,7 +205,12 @@ export function createEditor(options: CreateEditorOptions) {
       if (!agent) return null
 
       try {
-        return await getStemBlob(agent, clip.source.ref.uri)
+        const blob = await getStemBlob(agent, clip.source.ref.uri)
+        if (!blob) return null
+
+        // Write to OPFS so playback workers can read it
+        await writeBlob(clipId, blob)
+        return true
       } catch (err) {
         console.error(`Failed to fetch stem for clip ${clipId}:`, err)
         return null
@@ -252,12 +259,9 @@ export function createEditor(options: CreateEditorOptions) {
     return track?.audioPipeline ?? []
   }
 
-  function addRecording(trackId: string, blob: Blob, duration: number, offset: number) {
-    const clipId = `clip-${trackId}-${Date.now()}`
-
-    // Set localClips FIRST so the blob is available when the effect runs
-    // (Solid doesn't track store keys that don't exist when first accessed)
-    setLocalClips(clipId, { blob, duration })
+  function addRecording(trackId: string, clipId: string, duration: number, offset: number) {
+    // Track that this clip exists locally (blob is stored in OPFS)
+    setLocalClips(clipId, { duration })
 
     // Append new clip to existing clips (later clips have higher priority for punch-through)
     setProject(
@@ -322,10 +326,18 @@ export function createEditor(options: CreateEditorOptions) {
     setProject('updatedAt', new Date().toISOString())
   }
 
-  // Helper to get blob by clipId (from remote stems or local recordings)
-  // Uses fine-grained access - only subscribes to the specific clipId
-  function getClipBlob(clipId: string): Blob | undefined {
-    return stemBlobs.get(clipId) ?? localClips[clipId]?.blob
+  // Check if a clip is ready in OPFS (either local recording or fetched stem)
+  function isClipReady(clipId: string): boolean {
+    // Local recordings are tracked in localClips store
+    if (localClips[clipId]) return true
+    // Stems are ready when stemClips returns true (meaning written to OPFS)
+    return stemClips.get(clipId) === true
+  }
+
+  // Helper to get blob by clipId (all clips are stored in OPFS)
+  async function getClipBlob(clipId: string): Promise<Blob | undefined> {
+    const blob = await readClipBlob(clipId)
+    return blob ?? undefined
   }
 
   // Helper to get ArrayBuffer by clipId (for export)
@@ -335,7 +347,7 @@ export function createEditor(options: CreateEditorOptions) {
     const cached = clipBufferCache.get(clipId)
     if (cached) return cached
 
-    const blob = getClipBlob(clipId)
+    const blob = await getClipBlob(clipId)
     if (!blob) return undefined
 
     // Convert and cache
@@ -439,19 +451,22 @@ export function createEditor(options: CreateEditorOptions) {
     }) => {
       const _workers = assertedNotNullish(workers(), 'Workers not ready')
 
-      log('finalizing recording...')
-      const result = await _workers.muxer.finalize()
+      // Generate clipId before finalize (muxer writes to OPFS using this ID)
+      const clipId = `clip-${trackId}-${Date.now()}`
+
+      log('finalizing recording...', { clipId })
+      const result = await _workers.muxer.finalize(clipId)
       const duration = performance.now() - startTime
 
-      if (result.blob.size > 0) {
+      if (result.frameCount > 0) {
         log('recording finalized', {
-          blobSize: result.blob.size,
+          clipId: result.clipId,
           frameCount: result.frameCount,
           duration,
           timelineOffset,
         })
 
-        addRecording(trackId, result.blob, duration, timelineOffset)
+        addRecording(trackId, clipId, duration, timelineOffset)
       }
 
       // Reset muxer for next recording
@@ -477,7 +492,7 @@ export function createEditor(options: CreateEditorOptions) {
         // Skip clips that already have a stem source - they don't need to be re-uploaded
         if (clip.source?.type === 'stem') continue
 
-        const blob = getClipBlob(clip.id)
+        const blob = await getClipBlob(clip.id)
         const duration = clip.duration
         if (blob && duration) {
           clipBlobs.set(clip.id, { blob, duration })
@@ -524,19 +539,17 @@ export function createEditor(options: CreateEditorOptions) {
               currentClipId = newClipId
             }
 
-            // Load new clip if available
-            if (clip) {
-              const blob = getClipBlob(clip.id)
-              if (
-                blob &&
-                !_player.hasClipForTrack(trackId) &&
-                !_player.isLoadingForTrack(trackId)
-              ) {
-                log('loading clip into player', { trackId, clipId: clip.id })
-                _player.loadClip(trackId, blob, clip.id).catch(err => {
-                  console.error(`Failed to load clip for track ${trackId}:`, err)
-                })
-              }
+            // Load new clip if available and ready in OPFS
+            if (
+              clip &&
+              isClipReady(clip.id) &&
+              !_player.hasClipForTrack(trackId) &&
+              !_player.isLoadingForTrack(trackId)
+            ) {
+              log('loading clip into player', { trackId, clipId: clip.id })
+              _player.loadClip(trackId, clip.id).catch(err => {
+                console.error(`Failed to load clip for track ${trackId}:`, err)
+              })
             }
           })
 
@@ -729,7 +742,7 @@ export function createEditor(options: CreateEditorOptions) {
     getTrackPipeline,
     hasAnyRecording,
     isPlayerLoading: () => player.loading,
-    isProjectLoading: () => project.loading || stemBlobs.loading(),
+    isProjectLoading: () => project.loading || stemClips.loading(),
     isPublishing: publishAction.pending,
     isRecording,
     isSelectedTrack,
@@ -856,7 +869,7 @@ export function createEditor(options: CreateEditorOptions) {
       }
     },
 
-    downloadClip(trackId: string) {
+    async downloadClip(trackId: string) {
       const _player = player()
       const currentTime = _player?.time() ?? 0
       const clip = getClipAtTime(trackId, currentTime)
@@ -866,7 +879,7 @@ export function createEditor(options: CreateEditorOptions) {
         return
       }
 
-      const blob = getClipBlob(clip.id)
+      const blob = await getClipBlob(clip.id)
       if (!blob) {
         console.warn('No blob found for clip', clip.id)
         return
@@ -881,8 +894,10 @@ export function createEditor(options: CreateEditorOptions) {
     },
 
     /** Load a test clip into a track (for perf testing) */
-    loadTestClip(trackId: string, blob: Blob, duration: number, offset = 0) {
-      addRecording(trackId, blob, duration, offset)
+    async loadTestClip(trackId: string, blob: Blob, duration: number, offset = 0) {
+      const clipId = `clip-${trackId}-${Date.now()}`
+      await writeBlob(clipId, blob)
+      addRecording(trackId, clipId, duration, offset)
     },
 
     // Export

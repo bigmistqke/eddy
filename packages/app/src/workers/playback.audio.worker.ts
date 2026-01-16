@@ -7,6 +7,7 @@ import {
 } from '@eddy/audio'
 import type { AudioTrackInfo } from '@eddy/media'
 import { createLoop, debug } from '@eddy/utils'
+import { createOPFSSource } from '~/lib/opfs'
 
 const log = debug('audio-playback-worker', false)
 
@@ -21,8 +22,8 @@ export interface AudioPlaybackWorkerMethods {
     targetSampleRate: number,
   ): void
 
-  /** Load a blob for playback */
-  load(buffer: ArrayBuffer): Promise<{ duration: number; audioTrack: AudioTrackInfo | null }>
+  /** Load a clip from OPFS for playback */
+  load(clipId: string): Promise<{ duration: number; audioTrack: AudioTrackInfo | null }>
 
   /** Start playback from time at speed */
   play(startTime: number, playbackSpeed?: number): void
@@ -285,9 +286,12 @@ expose<AudioPlaybackWorkerMethods>({
     targetSampleRate = sampleRate
   },
 
-  async load(buffer) {
-    log('load', { size: buffer.byteLength })
-    return playback.load(buffer)
+  async load(clipId) {
+    log('load', { clipId })
+
+    // Create OPFS source and load
+    const source = await createOPFSSource(clipId)
+    return playback.load(source)
   },
 
   play(startTime, playbackSpeed = 1) {

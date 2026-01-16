@@ -1,6 +1,7 @@
 import { expose } from '@bigmistqke/rpc/messenger'
 import { createMuxer, type AudioFrameData, type Muxer, type VideoFrameData } from '@eddy/media'
 import { debug } from '@eddy/utils'
+import { writeBlob } from '~/lib/opfs'
 import { createScheduler, type RecorderScheduler, type SchedulerBuffer } from '~/lib/scheduler'
 
 const log = debug('muxer-worker', false)
@@ -36,9 +37,9 @@ export interface MuxerWorkerMethods {
 
   /**
    * Signal end of stream and finalize the output.
-   * Returns the encoded WebM blob.
+   * Writes the encoded WebM to OPFS and returns the clipId.
    */
-  finalize(): Promise<{ blob: Blob; frameCount: number }>
+  finalize(clipId: string): Promise<{ clipId: string; frameCount: number }>
 
   /** Reset state for next recording */
   reset(): void
@@ -112,18 +113,23 @@ expose<MuxerWorkerMethods>({
     log('pre-initialization complete')
   },
 
-  async finalize() {
-    log('finalizing', { captured: capturedFrameCount })
+  async finalize(clipId) {
+    log('finalizing', { clipId, captured: capturedFrameCount })
 
     if (!muxer) {
-      return { blob: new Blob(), frameCount: 0 }
+      return { clipId, frameCount: 0 }
     }
 
     const result = await muxer.finalize()
 
-    log('finalized', { frames: result.videoFrameCount, bytes: result.blob.size })
+    log('finalized', { clipId, frames: result.videoFrameCount, bytes: result.blob.size })
 
-    return { blob: result.blob, frameCount: result.videoFrameCount }
+    // Write to OPFS
+    await writeBlob(clipId, result.blob)
+
+    log('written to OPFS', { clipId })
+
+    return { clipId, frameCount: result.videoFrameCount }
   },
 
   reset() {

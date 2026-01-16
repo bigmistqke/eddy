@@ -2,11 +2,11 @@ import type { DemuxedSample, VideoTrackInfo } from '@eddy/media'
 import { assertedNotNullish, createLoop, createPerfMonitor, debug } from '@eddy/utils'
 import {
   ALL_FORMATS,
-  BlobSource,
   EncodedPacketSink,
   Input,
   type EncodedPacket,
   type InputVideoTrack,
+  type Source,
 } from 'mediabunny'
 import { createDecoder, type Decoder } from './create-decoder'
 import { dataToFrame, frameToData, type FrameData } from './frame-utils'
@@ -66,8 +66,8 @@ export interface VideoPlayback {
   >
   /** Current playback state */
   getState(): VideoPlaybackState
-  /** Load video from buffer */
-  load(buffer: ArrayBuffer): Promise<{
+  /** Load video from source */
+  load(source: Source): Promise<{
     duration: number
     videoTrack: VideoTrackInfo | null
   }>
@@ -506,8 +506,8 @@ export function createVideoPlayback({
       return dataToFrame(frameData)
     },
 
-    async load(buffer) {
-      log('load', { size: buffer.byteLength })
+    async load(source) {
+      log('load', { isSource: !(source instanceof ArrayBuffer) })
       _state = 'loading'
 
       // Store previous config to check for reuse
@@ -523,10 +523,9 @@ export function createVideoPlayback({
       frameBuffer = []
       bufferPosition = 0
 
-      // Create input from buffer
-      const blob = new Blob([buffer])
+      // Create input from source
       input = new Input({
-        source: new BlobSource(blob),
+        source,
         formats: ALL_FORMATS,
       })
 

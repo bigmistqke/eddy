@@ -1572,6 +1572,237 @@
       "created_at": "2026-01-14T17:10:16.821139+01:00",
       "updated_at": "2026-01-14T17:10:16.821139+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"ef2cd55\",\"confidence\":95}"
+    },
+    {
+      "id": 144,
+      "change_id": "e13f13f1-0533-45f4-b1f1-6168d67f1ea3",
+      "node_type": "action",
+      "title": "Explore VP9 keyframes-only muxing to fix decoder errors during export",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-14T17:23:54.787753+01:00",
+      "updated_at": "2026-01-14T17:23:54.787753+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 145,
+      "change_id": "143d0372-1417-4000-b6d6-c6ff5185ae01",
+      "node_type": "decision",
+      "title": "Effect system: nested chains with parallel + ref nodes",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-15T11:15:46.339064+01:00",
+      "updated_at": "2026-01-15T11:15:46.339064+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Design for effect/signal processing in lexicon:\\n\\nCore model:\\n- effect: individual processor (gain, eq, reverb, etc.)\\n- parallel: splits signal into sub-chains, mixes back with weights\\n- ref: references a reusable bus by id\\n\\nEffect chain is array (sequential by default):\\n[effect, effect, parallel, effect]\\n\\nParallel node enables split/merge:\\n{ type: 'parallel', chains: Effect[][], weights?: number[] }\\n\\nRef node enables composition:\\n{ type: 'ref', bus: string }\\n\\nProject-level busses for reuse:\\nbusses: { 'verb': [...], 'delay': [...] }\\n\\nBenefits:\\n- Linear by default, parallel when needed\\n- Reusable via refs\\n- Busses can compose other busses\\n- Serializable (no circular refs)\\n- DAW-like routing flexibility\"}"
+    },
+    {
+      "id": 146,
+      "change_id": "3753be98-3def-4617-a5ae-65c78010bd4f",
+      "node_type": "decision",
+      "title": "Lexicon model: clip/track/group separation",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-15T12:32:42.636194+01:00",
+      "updated_at": "2026-01-15T12:32:42.636194+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"Three temporospatial primitives with clear separation:\\n\\nclip (temporal):\\n- Pure time window into source\\n- source: stem | track | group\\n- offset, in, out\\n- Optional pipeline for effects\\n\\ntrack (spatial + timeline):\\n- Contains clips\\n- Optional viewport (for absolute positioning)\\n- Optional pipeline\\n\\ngroup (hierarchy + layout):\\n- Contains tracks | groups (recursive)\\n- Layout mode: grid | absolute | stack\\n- Members have blend mode for compositing\\n\\nEach level can have pipeline: { audio?, video? }\\nCascade implicit: clip → track → group → master\"}"
+    },
+    {
+      "id": 147,
+      "change_id": "a679a885-087c-4ef7-93cd-f5741e066556",
+      "node_type": "decision",
+      "title": "Signal graph: bus nodes with weighted outputs",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-15T12:33:04.517933+01:00",
+      "updated_at": "2026-01-15T12:33:04.517933+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"Two-layer architecture separating editing from processing:\\n\\nLayer 1: Temporospatial (editing)\\n- clip, track, group define WHAT plays WHERE and WHEN\\n\\nLayer 2: Signal graph (processing)\\n- Everything is a bus node: { id, effects, output }\\n- Outputs are weighted edges: [{ ref: busId, amount: number }]\\n- Multiple outputs = split/send\\n- Effects chain within each bus\\n\\nBus shape:\\n{\\n  type: 'bus',\\n  id: string,\\n  effects: Effect[],\\n  output: { ref: string, amount: number }[]\\n}\\n\\nSame model for audio and video:\\n- Audio: WebAudio routing\\n- Video: shader chain, framebuffers\\n\\nRouting is explicit, uniform, graph-shaped.\"}"
+    },
+    {
+      "id": 148,
+      "change_id": "5f294284-c55b-46de-a5a8-1b6df518a198",
+      "node_type": "decision",
+      "title": "Effect chains: parallel + expand for composition",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-15T12:34:26.476856+01:00",
+      "updated_at": "2026-01-15T12:34:26.476856+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Effect chains support composition:\\n\\neffect types:\\n- Regular effects (gain, eq, blur, glsl, etc.)\\n- parallel: split signal into sub-chains, mix back with weights\\n- expand: inline a reusable chain template (macro, not shared)\\n\\nChain templates (project-level, for reuse):\\nchains: {\\n  'my-eq': [{ type: 'eq' }, { type: 'comp' }]\\n}\\n\\nexpand = copy-paste inline (each use is independent)\\nbus routing = shared destination (signals mix)\"}"
+    },
+    {
+      "id": 149,
+      "change_id": "2b48ef21-4113-4310-9fe1-a7731a3b35a3",
+      "node_type": "decision",
+      "title": "Blend modes: composite concern on group members",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-15T12:34:58.762546+01:00",
+      "updated_at": "2026-01-15T12:34:58.762546+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Blend modes are compositing, not signal processing.\\n\\nBlend mode needs two things: layer AND what's underneath.\\nCannot be an effect on a single signal chain.\\n\\nLives on group membership:\\ngroup: {\\n  members: [\\n    { id: 'track1' },\\n    { id: 'track2', blendMode: 'multiply' },\\n    { id: 'track3', blendMode: 'screen', opacity: 0.5 },\\n  ]\\n}\\n\\nWhy:\\n- \\\"How does THIS member combine into THIS group\\\"\\n- Compositor's concern, not signal processing\\n- Same track could appear in different groups with different blend modes\\n\\nSeparation:\\n- Effects (processing) → bus graph\\n- Routing (signal flow) → bus outputs\\n- Compositing (layer combine) → group members\\n- Layout (space) → group layout\\n- Time → clip\"}"
+    },
+    {
+      "id": 150,
+      "change_id": "ee944d4b-7626-40ad-b449-17f19c8f862f",
+      "node_type": "decision",
+      "title": "Routing: explicit send vs route types",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-15T13:10:28.041706+01:00",
+      "updated_at": "2026-01-15T13:10:28.041706+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Two operations for connecting to busses:\\n\\nsend: parallel copy, signal continues\\n{ \\\"type\\\": \\\"send\\\", \\\"ref\\\": \\\"reverb\\\", \\\"amount\\\": 0.3 }\\n\\nroute: final destination, signal ends (always 100%)\\n{ \\\"type\\\": \\\"route\\\", \\\"ref\\\": \\\"track1-audio\\\" }\\n\\nChosen approach: explicit types\\n- Clearer intent, self-documenting\\n- Common DAW terminology\\n- route is obviously terminal\\n- Prevents dead code mistakes\\n\\nAlternative considered: passthrough param\\n{ \\\"ref\\\": \\\"bus\\\", \\\"amount\\\": 0.3, \\\"passthrough\\\": 1 }  // send\\n{ \\\"ref\\\": \\\"bus\\\", \\\"amount\\\": 1, \\\"passthrough\\\": 0 }    // route\\n- More flexible (partial passthrough possible)\\n- But less readable, easier to make mistakes\\n- Could revisit if we need partial passthrough (0.5)\"}"
+    },
+    {
+      "id": 151,
+      "change_id": "54d7a335-2ed8-4fdb-9085-cc0985f06565",
+      "node_type": "outcome",
+      "title": "Committed: refactor: consolidate tsconfigs and clean up package dependencies",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-16T22:30:08.060833+01:00",
+      "updated_at": "2026-01-16T22:30:08.060833+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"7104271\",\"confidence\":95}"
+    },
+    {
+      "id": 152,
+      "change_id": "cbaf517a-3dde-4f82-8a37-338367ebe807",
+      "node_type": "outcome",
+      "title": "Committed: refactor: remove perf monitoring and reorganize utils",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-16T22:30:08.171696+01:00",
+      "updated_at": "2026-01-16T22:30:08.171696+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"d2921a7\",\"confidence\":95}"
+    },
+    {
+      "id": 153,
+      "change_id": "8635a37c-a3ff-49af-82fd-b696fdc69edf",
+      "node_type": "outcome",
+      "title": "Committed: chore: sync deciduous graph",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-16T22:30:08.285901+01:00",
+      "updated_at": "2026-01-16T22:30:08.285901+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"572cfe2\",\"confidence\":95}"
+    },
+    {
+      "id": 154,
+      "change_id": "38c02c05-2983-4760-b7ad-fb1c203edc5e",
+      "node_type": "outcome",
+      "title": "Committed: docs: add diagonjs-powered architecture diagram generation",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-16T23:08:30.338088+01:00",
+      "updated_at": "2026-01-16T23:08:30.338088+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"3f03fe6\",\"confidence\":95}"
+    },
+    {
+      "id": 155,
+      "change_id": "9fc2f944-5233-4322-afcb-5c27fcb600d2",
+      "node_type": "goal",
+      "title": "Implement OPFS storage for clips to eliminate memory overhead",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T00:49:01.598189+01:00",
+      "updated_at": "2026-01-17T00:49:01.598189+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"User asked about memory usage - discovered we were serializing blobs twice when passing to workers. User wanted to explore OPFS to avoid keeping blobs in memory. Recording should write directly to OPFS, playback workers should read from OPFS.\"}"
+    },
+    {
+      "id": 156,
+      "change_id": "f38ce9d0-8e73-441e-9912-eddb955406d1",
+      "node_type": "action",
+      "title": "Create OPFS module with paths, write, and source utilities",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T00:49:08.516268+01:00",
+      "updated_at": "2026-01-17T00:49:08.516268+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 157,
+      "change_id": "3212bc67-329f-433b-8fa1-0cb902551f1c",
+      "node_type": "action",
+      "title": "Refactor playback to use Source interface instead of ArrayBuffer",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T00:49:08.682270+01:00",
+      "updated_at": "2026-01-17T00:49:08.682270+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 158,
+      "change_id": "facefee6-2e84-4545-90fe-a94281fd896f",
+      "node_type": "action",
+      "title": "Update muxer to write to OPFS after finalize",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T00:49:08.810154+01:00",
+      "updated_at": "2026-01-17T00:49:08.810154+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 159,
+      "change_id": "0d4d23c7-b00a-411c-9de4-bd062ae3a3a5",
+      "node_type": "action",
+      "title": "Update stemClips resourceMap to write fetched blobs to OPFS",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T00:49:08.930257+01:00",
+      "updated_at": "2026-01-17T00:49:08.930257+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 160,
+      "change_id": "3e28dff7-b461-4d16-8c00-d35c79a967c5",
+      "node_type": "action",
+      "title": "Remove buffer storage from ClipEntry - workers read from OPFS for gapless handoff",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T00:49:09.049121+01:00",
+      "updated_at": "2026-01-17T00:49:09.049121+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 161,
+      "change_id": "7dcb1f7c-d507-4ce3-adf5-38ba17fb8c41",
+      "node_type": "observation",
+      "title": "OPFS architecture: resourceMap for async fetching with OPFS write, isClipReady() sync check in effects, async methods for user-initiated actions",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T00:49:20.193484+01:00",
+      "updated_at": "2026-01-17T00:49:20.193484+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 162,
+      "change_id": "19a165eb-fae9-4b71-b296-bf8b1748ed04",
+      "node_type": "observation",
+      "title": "All clips now stored in OPFS - local recordings via muxer, remote stems via stemClips resourceMap. Workers read via createOPFSSource(clipId)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T00:49:20.313035+01:00",
+      "updated_at": "2026-01-17T00:49:20.313035+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 163,
+      "change_id": "16a8c532-08d4-4d64-add6-3b75b8dcbf19",
+      "node_type": "observation",
+      "title": "SyncAccessHandle is exclusive - only one per file. Switched to BlobSource with getFile() for concurrent reads (gapless loop handoff)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T00:51:26.481271+01:00",
+      "updated_at": "2026-01-17T00:51:26.481271+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 164,
+      "change_id": "6214d652-534b-496d-9c31-35ea30b6c671",
+      "node_type": "outcome",
+      "title": "OPFS storage working - recording writes to OPFS, playback reads via BlobSource, gapless loop handoff works",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T00:51:37.060366+01:00",
+      "updated_at": "2026-01-17T00:51:37.060366+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -3004,6 +3235,149 @@
       "weight": 1.0,
       "rationale": "Code organization",
       "created_at": "2026-01-14T17:10:28.111056+01:00"
+    },
+    {
+      "id": 131,
+      "from_node_id": 146,
+      "to_node_id": 147,
+      "from_change_id": "3753be98-3def-4617-a5ae-65c78010bd4f",
+      "to_change_id": "a679a885-087c-4ef7-93cd-f5741e066556",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Signal graph processes editing primitives",
+      "created_at": "2026-01-15T12:35:04.770678+01:00"
+    },
+    {
+      "id": 132,
+      "from_node_id": 147,
+      "to_node_id": 148,
+      "from_change_id": "a679a885-087c-4ef7-93cd-f5741e066556",
+      "to_change_id": "5f294284-c55b-46de-a5a8-1b6df518a198",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Effects live in bus nodes",
+      "created_at": "2026-01-15T12:35:04.780229+01:00"
+    },
+    {
+      "id": 133,
+      "from_node_id": 146,
+      "to_node_id": 149,
+      "from_change_id": "3753be98-3def-4617-a5ae-65c78010bd4f",
+      "to_change_id": "2b48ef21-4113-4310-9fe1-a7731a3b35a3",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Blend modes on group members",
+      "created_at": "2026-01-15T12:35:04.789342+01:00"
+    },
+    {
+      "id": 134,
+      "from_node_id": 147,
+      "to_node_id": 150,
+      "from_change_id": "a679a885-087c-4ef7-93cd-f5741e066556",
+      "to_change_id": "ee944d4b-7626-40ad-b449-17f19c8f862f",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Routing semantics for bus connections",
+      "created_at": "2026-01-15T13:10:33.374989+01:00"
+    },
+    {
+      "id": 135,
+      "from_node_id": 155,
+      "to_node_id": 156,
+      "from_change_id": "9fc2f944-5233-4322-afcb-5c27fcb600d2",
+      "to_change_id": "f38ce9d0-8e73-441e-9912-eddb955406d1",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "OPFS module creation",
+      "created_at": "2026-01-17T00:49:13.937038+01:00"
+    },
+    {
+      "id": 136,
+      "from_node_id": 155,
+      "to_node_id": 157,
+      "from_change_id": "9fc2f944-5233-4322-afcb-5c27fcb600d2",
+      "to_change_id": "3212bc67-329f-433b-8fa1-0cb902551f1c",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Source interface for OPFS reads",
+      "created_at": "2026-01-17T00:49:13.947742+01:00"
+    },
+    {
+      "id": 137,
+      "from_node_id": 155,
+      "to_node_id": 158,
+      "from_change_id": "9fc2f944-5233-4322-afcb-5c27fcb600d2",
+      "to_change_id": "facefee6-2e84-4545-90fe-a94281fd896f",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Recording writes to OPFS",
+      "created_at": "2026-01-17T00:49:13.956757+01:00"
+    },
+    {
+      "id": 138,
+      "from_node_id": 155,
+      "to_node_id": 159,
+      "from_change_id": "9fc2f944-5233-4322-afcb-5c27fcb600d2",
+      "to_change_id": "0d4d23c7-b00a-411c-9de4-bd062ae3a3a5",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Remote stems write to OPFS",
+      "created_at": "2026-01-17T00:49:13.965610+01:00"
+    },
+    {
+      "id": 139,
+      "from_node_id": 155,
+      "to_node_id": 160,
+      "from_change_id": "9fc2f944-5233-4322-afcb-5c27fcb600d2",
+      "to_change_id": "3e28dff7-b461-4d16-8c00-d35c79a967c5",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Eliminate in-memory buffer storage",
+      "created_at": "2026-01-17T00:49:13.973958+01:00"
+    },
+    {
+      "id": 140,
+      "from_node_id": 155,
+      "to_node_id": 161,
+      "from_change_id": "9fc2f944-5233-4322-afcb-5c27fcb600d2",
+      "to_change_id": "7dcb1f7c-d507-4ce3-adf5-38ba17fb8c41",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Architecture pattern",
+      "created_at": "2026-01-17T00:49:24.562733+01:00"
+    },
+    {
+      "id": 141,
+      "from_node_id": 155,
+      "to_node_id": 162,
+      "from_change_id": "9fc2f944-5233-4322-afcb-5c27fcb600d2",
+      "to_change_id": "19a165eb-fae9-4b71-b296-bf8b1748ed04",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Unified storage approach",
+      "created_at": "2026-01-17T00:49:24.571379+01:00"
+    },
+    {
+      "id": 142,
+      "from_node_id": 155,
+      "to_node_id": 163,
+      "from_change_id": "9fc2f944-5233-4322-afcb-5c27fcb600d2",
+      "to_change_id": "16a8c532-08d4-4d64-add6-3b75b8dcbf19",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Bug fix",
+      "created_at": "2026-01-17T00:51:26.587991+01:00"
+    },
+    {
+      "id": 143,
+      "from_node_id": 155,
+      "to_node_id": 164,
+      "from_change_id": "9fc2f944-5233-4322-afcb-5c27fcb600d2",
+      "to_change_id": "6214d652-534b-496d-9c31-35ea30b6c671",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation complete",
+      "created_at": "2026-01-17T00:51:37.183293+01:00"
     }
   ]
 }
