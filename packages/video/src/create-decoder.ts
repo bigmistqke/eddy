@@ -183,7 +183,7 @@ export function createDecoder({
       // Create encoded chunk
       const chunk = new EncodedVideoChunk({
         type: sample.isKeyframe ? 'key' : 'delta',
-        timestamp: sample.pts * 1_000_000,
+        timestamp: sample.timestamp * 1_000_000,
         duration: sample.duration * 1_000_000,
         data: sample.data,
       })
@@ -210,7 +210,7 @@ export function createDecoder({
           console.error('[playback:decoder] decode error', {
             error,
             isKeyframe: sample.isKeyframe,
-            pts: sample.pts,
+            pts: sample.timestamp,
             decoderState: decoder?.state,
           })
 
@@ -220,10 +220,10 @@ export function createDecoder({
 
           // If decoder closed due to error, signal recovery needed
           if (decoder?.state === 'closed') {
-            pendingRecoveryTime = sample.pts
-            log('decoder closed, will request keyframe recovery', { pts: sample.pts })
+            pendingRecoveryTime = sample.timestamp
+            log('decoder closed, will request keyframe recovery', { pts: sample.timestamp })
             init()
-            return { type: 'needs-keyframe', time: sample.pts } as DecodeResult
+            return { type: 'needs-keyframe', time: sample.timestamp } as DecodeResult
           }
 
           // For other errors, skip

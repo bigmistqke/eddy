@@ -1,6 +1,6 @@
-import { AudioEffect } from '@eddy/lexicons'
+import type { AudioEffect } from '@eddy/lexicons'
 import { getAudioContext } from './context'
-import { EffectChain, createEffectChain } from './create-effect-chain'
+import { type EffectChain, createEffectChain } from './create-effect-chain'
 import { getMasterMixer } from './mixer'
 
 export interface AudioBus {

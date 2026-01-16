@@ -1,4 +1,4 @@
-import { AudioEffect } from '@eddy/lexicons'
+import type { AudioEffect } from '@eddy/lexicons'
 import { debug } from '@eddy/utils'
 import { audioElements, type AudioElement } from './audio-elements'
 

@@ -119,7 +119,7 @@ export async function createVideoDecoder(
 
       const chunk = new EncodedVideoChunk({
         type: sample.isKeyframe ? 'key' : 'delta',
-        timestamp: sample.pts * 1_000_000, // Convert to microseconds
+        timestamp: sample.timestamp * 1_000_000, // Convert to microseconds
         duration: sample.duration * 1_000_000,
         data: sample.data,
       })
@@ -152,7 +152,7 @@ export async function createVideoDecoder(
       for (const sample of samples) {
         const chunk = new EncodedVideoChunk({
           type: sample.isKeyframe ? 'key' : 'delta',
-          timestamp: sample.pts * 1_000_000,
+          timestamp: sample.timestamp * 1_000_000,
           duration: sample.duration * 1_000_000,
           data: sample.data,
         })

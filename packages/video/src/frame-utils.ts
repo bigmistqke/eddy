@@ -158,7 +158,7 @@ export async function frameToData(frame: VideoFrame, sample: DemuxedSample): Pro
     codedHeight: frame.codedHeight,
     displayWidth: frame.displayWidth,
     displayHeight: frame.displayHeight,
-    timestamp: sample.pts * 1_000_000,
+    timestamp: sample.timestamp * 1_000_000,
     duration: sample.duration * 1_000_000,
     layout,
   }

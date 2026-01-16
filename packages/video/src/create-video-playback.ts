@@ -98,8 +98,7 @@ function packetToSample(packet: EncodedPacket, trackId: number): DemuxedSample {
   return {
     number: 0,
     trackId,
-    pts: packet.timestamp,
-    dts: packet.timestamp,
+    timestamp: packet.timestamp,
     duration: packet.duration,
     isKeyframe: packet.type === 'key',
     data: packet.data,
@@ -122,7 +121,10 @@ function configsMatch(a: VideoDecoderConfig | null, b: VideoDecoderConfig | null
 /**
  * Create a new playback engine instance
  */
-export function createVideoPlayback({ onFrame, shouldSkipDeltaFrame }: VideoPlaybackConfig = {}): VideoPlayback {
+export function createVideoPlayback({
+  onFrame,
+  shouldSkipDeltaFrame,
+}: VideoPlaybackConfig = {}): VideoPlayback {
   const perf = createPerfMonitor()
 
   // Demuxer state
@@ -245,7 +247,7 @@ export function createVideoPlayback({ onFrame, shouldSkipDeltaFrame }: VideoPlay
               frameBuffer.splice(insertIndex, 0, data)
             }
 
-            bufferPosition = sample.pts + sample.duration
+            bufferPosition = sample.timestamp + sample.duration
             decoded++
 
             // Trim old frames (keep max buffer size)
@@ -257,7 +259,7 @@ export function createVideoPlayback({ onFrame, shouldSkipDeltaFrame }: VideoPlay
 
           case 'skipped':
             // Delta frame skipped due to backpressure or not ready
-            log('bufferAhead: frame skipped', { reason: result.reason, pts: sample.pts })
+            log('bufferAhead: frame skipped', { reason: result.reason, pts: sample.timestamp })
             // For 'not-ready', we need a keyframe - but bufferAhead has frame limits
             // Return early and let getFrameAtTime call seekToTime which has no limits
             if (result.reason === 'not-ready') {
@@ -342,7 +344,7 @@ export function createVideoPlayback({ onFrame, shouldSkipDeltaFrame }: VideoPlay
           frameBuffer.splice(insertIndex, 0, data)
         }
 
-        bufferPosition = sample.pts + sample.duration
+        bufferPosition = sample.timestamp + sample.duration
 
         // Trim old frames if buffer too large
         while (frameBuffer.length > BUFFER_MAX_FRAMES) {
@@ -493,7 +495,10 @@ export function createVideoPlayback({ onFrame, shouldSkipDeltaFrame }: VideoPlay
       // Get frame data from buffer
       frameData = findFrameData(time, true)
       if (!frameData) {
-        log('getFrameAtTime: no frame after seek/buffer', { time, bufferLength: frameBuffer.length })
+        log('getFrameAtTime: no frame after seek/buffer', {
+          time,
+          bufferLength: frameBuffer.length,
+        })
         return null
       }
 
