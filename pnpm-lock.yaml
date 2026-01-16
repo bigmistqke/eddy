@@ -10,10 +10,6 @@ overrides:
 importers:
 
   .:
-    dependencies:
-      '@bigmistqke/rpc':
-        specifier: link:../rpc/packages/rpc
-        version: link:../rpc/packages/rpc
     devDependencies:
       diagonjs:
         specifier: ^1.6.1
@@ -39,9 +35,6 @@ importers:
       '@bigmistqke/solid-whenever':
         specifier: ^0.1.1
         version: 0.1.1(solid-js@1.9.10)
-      '@bigmistqke/view.gl':
-        specifier: ^0.1.9
-        version: 0.1.9
       '@eddy/audio':
         specifier: workspace:*
         version: link:../audio
@@ -72,6 +65,9 @@ importers:
       solid-js:
         specifier: ^1.9.0
         version: 1.9.10
+      valibot:
+        specifier: ^1.2.0
+        version: 1.2.0(typescript@5.9.3)
     devDependencies:
       '@types/audioworklet':
         specifier: ^0.0.92
@@ -148,9 +144,6 @@ importers:
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
-      vite:
-        specifier: ^6.4.1
-        version: 6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)
 
   packages/utils:
     dependencies:
@@ -180,9 +173,6 @@ importers:
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
-      vite:
-        specifier: ^6.4.1
-        version: 6.4.1(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)
 
 packages:
 

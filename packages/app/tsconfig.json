@@ -1,16 +1,14 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
     "types": ["vite/client", "node", "@types/audioworklet"],
-    "noEmit": true,
+    "lib": ["ESNext", "DOM"],
     "isolatedModules": true,
     "resolveJsonModule": true,
     "allowArbitraryExtensions": true,
-    "verbatimModuleSyntax": true,
-    "baseUrl": ".",
     "paths": {
       "~/*": ["src/*"]
     }

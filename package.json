@@ -23,8 +23,5 @@
     "@types/audioworklet": "^0.0.92",
     "puppeteer": "^24.34.0",
     "typescript": "^5.7.0"
-  },
-  "dependencies": {
-    "@bigmistqke/rpc": "^0.1.2"
   }
 }
