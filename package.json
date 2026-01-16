@@ -19,6 +19,7 @@
     "sync-issues": "node --experimental-strip-types scripts/sync-graph-to-issues.ts"
   },
   "devDependencies": {
+    "diagonjs": "^1.6.1",
     "@types/audioworklet": "^0.0.92",
     "puppeteer": "^24.34.0",
     "typescript": "^5.7.0"
