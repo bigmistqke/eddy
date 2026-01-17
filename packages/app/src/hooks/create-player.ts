@@ -4,6 +4,7 @@ import type { Project } from '@eddy/lexicons'
 import { createLoop, debug, getGlobalPerfMonitor } from '@eddy/utils'
 import { createEffect, createMemo, createSignal, on, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
+import { createAheadScheduler, SCHEDULE_AHEAD } from '~/lib/create-ahead-scheduler'
 import {
   createPlayback,
   type AudioWorkerRPC,
@@ -140,10 +141,6 @@ interface ClipEntry {
   playback: Playback
   duration: number
   state: 'idle' | 'loading' | 'ready' | 'playing' | 'paused'
-  /** Playback being prepared for loop transition */
-  nextPlayback: Playback | null
-  /** Whether nextPlayback is ready to take over */
-  nextPlaybackReady: boolean
 }
 
 /**
@@ -232,8 +229,15 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
   const [tracks, setTracks] = createStore<Record<string, TrackEntry>>({})
 
   // Clip entries - keyed by clipId (playback workers)
-  // Note: Use unwrap() when accessing worker RPC methods to avoid SolidJS proxy issues
   const [clips, setClips] = createStore<Record<string, ClipEntry>>({})
+
+  // Ahead scheduler for pre-buffering playbacks (used for looping)
+  const aheadScheduler = createAheadScheduler({
+    videoWorkerPool,
+    audioWorkerPool,
+    schedulerBuffer,
+    getAudioDestination: trackId => tracks[trackId]?.audioPipeline.effectChain.input,
+  })
 
   /** Get or create a track entry (audio pipeline only) */
   function getOrCreateTrack(trackId: string): TrackEntry {
@@ -299,8 +303,6 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
       playback,
       duration: 0,
       state: 'idle',
-      nextPlayback: null,
-      nextPlaybackReady: false,
     }
     setClips(clipId, newClip)
 
@@ -325,12 +327,8 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
     videoWorkerPool.release(clip.playback.pooledVideoWorker)
     audioWorkerPool.release(clip.playback.pooledAudioWorker)
 
-    // Release nextPlayback workers if exists
-    if (clip.nextPlayback) {
-      clip.nextPlayback.destroy()
-      videoWorkerPool.release(clip.nextPlayback.pooledVideoWorker)
-      audioWorkerPool.release(clip.nextPlayback.pooledAudioWorker)
-    }
+    // Cancel any scheduled playback for this clip
+    aheadScheduler.cancel(clipId)
 
     setClips(clipId, undefined!)
   }
@@ -363,112 +361,42 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
     }),
   )
 
-  /** How far ahead to start preparing the next worker for loop (seconds) */
-  const LOOP_PREPARE_AHEAD = 2.0
-
   /**
-   * Prepare a fresh playback for gapless loop transition.
-   * Called when approaching end of clip with looping enabled.
-   *
-   * The new playback loads and buffers frames internally, but is NOT connected
-   * to the compositor yet. This allows the old playback to keep sending frames
-   * until the exact moment of handoff.
+   * Activate a scheduled playback for a clip.
+   * Swaps the current playback with the scheduled one, connects to compositor, and plays.
    */
-  async function prepareNextPlayback(clip: ClipEntry): Promise<void> {
-    // Skip if already preparing
-    if (clip.nextPlayback) {
-      log('prepareNextPlayback: already has nextPlayback')
-      return
-    }
+  function activateScheduledPlayback(clip: ClipEntry, mediaTime: number): void {
+    const newPlayback = aheadScheduler.activate(clip.clipId)
 
-    log('prepareNextPlayback: starting', clip.clipId)
-
-    // Get track's audio pipeline
-    const track = tracks[clip.trackId]
-    if (!track) {
-      log('prepareNextPlayback: no track found')
-      return
-    }
-
-    // Acquire fresh workers from pools
-    const videoWorker = videoWorkerPool.acquire()
-    const audioWorker = audioWorkerPool.acquire()
-
-    // Create new playback
-    const nextPlayback = createPlayback({
-      videoWorker,
-      audioWorker,
-      schedulerBuffer,
-      audioDestination: track.audioPipeline.effectChain.input,
-    })
-
-    // Store it immediately (to prevent duplicate preparations)
-    setClips(clip.clipId, 'nextPlayback', nextPlayback)
-    setClips(clip.clipId, 'nextPlaybackReady', false)
-
-    try {
-      // Load from OPFS using the same clipId
-      await nextPlayback.load(clip.clipId)
-
-      // DON'T connect to compositor yet - let old playback keep sending frames
-      // Just seek to 0 to buffer frames internally
-      await nextPlayback.seek(0)
-
-      setClips(clip.clipId, 'nextPlaybackReady', true)
-      log('prepareNextPlayback: ready', { clipId: clip.clipId })
-    } catch (error) {
-      log('prepareNextPlayback: failed', { clipId: clip.clipId, error })
-      // Clean up on failure
-      nextPlayback.destroy()
-      videoWorkerPool.release(videoWorker)
-      audioWorkerPool.release(audioWorker)
-      setClips(clip.clipId, 'nextPlayback', null)
-      setClips(clip.clipId, 'nextPlaybackReady', false)
-    }
-  }
-
-  /**
-   * Perform the playback handoff when loop occurs.
-   * Connects the new playback to compositor (which disconnects old playback),
-   * then starts playback.
-   */
-  function performLoopHandoff(clip: ClipEntry): void {
-    log('performLoopHandoff: starting', { clipId: clip.clipId })
-
-    if (!clip.nextPlayback || !clip.nextPlaybackReady) {
-      log('performLoopHandoff: nextPlayback not ready, falling back to seek')
-      // Fallback: seek current playback to 0
-      clip.playback.seek(0).then(() => {
-        clip.playback.play(0)
+    if (!newPlayback) {
+      log('activateScheduledPlayback: not ready, falling back to seek', { clipId: clip.clipId })
+      // Fallback: seek current playback
+      clip.playback.seek(mediaTime).then(() => {
+        clip.playback.play(mediaTime)
       })
       return
     }
 
-    log('performLoopHandoff: swapping playbacks')
+    log('activateScheduledPlayback: swapping playbacks', { clipId: clip.clipId, mediaTime })
 
     const oldPlayback = clip.playback
-    const newPlayback = clip.nextPlayback
 
-    // Connect new video worker to compositor (this closes old worker's port)
+    // Connect new video worker to compositor
     const channel = new MessageChannel()
     compositorRpc.connectPlaybackWorker(clip.clipId, transfer(channel.port1))
     newPlayback.pooledVideoWorker.rpc.connectToCompositor(clip.clipId, transfer(channel.port2))
 
-    // Start playing from 0 - frames are already buffered from prepareNextPlayback
-    newPlayback.play(0)
+    // Start playing - frames are already buffered
+    newPlayback.play(mediaTime)
 
-    // Replace entire clip entry to avoid SolidJS proxy issues with nested object updates
     setClips(clip.clipId, {
       playback: newPlayback,
-      nextPlayback: null,
-      nextPlaybackReady: false,
     })
 
     // Destroy old playback and release workers back to pools
     oldPlayback.destroy()
     videoWorkerPool.release(oldPlayback.pooledVideoWorker)
     audioWorkerPool.release(oldPlayback.pooledAudioWorker)
-    log('performLoopHandoff: done')
   }
 
   // Derived max duration from timeline or playback workers
@@ -506,21 +434,30 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
     // Detect loop reset (clock jumped backward while playing)
     if (playing && time < prevTime) {
       log('loop reset detected', { prevTime, time })
-      // Perform gapless handoff for all playing clips
+      // Activate scheduled playbacks for all playing clips
       const playingClips = Object.values(clips).filter(clip => clip.state === 'playing')
       for (const clip of playingClips) {
-        performLoopHandoff(clip)
+        activateScheduledPlayback(clip, 0)
       }
     }
     prevTime = time
 
-    // Proactively prepare next playbacks when approaching end with looping enabled
-    if (playing && looping && duration > 0 && time >= duration - LOOP_PREPARE_AHEAD) {
-      const playingClips = Object.values(clips).filter(
-        clip => clip.state === 'playing' && !clip.nextPlayback,
-      )
-      for (const clip of playingClips) {
-        prepareNextPlayback(clip)
+    // Schedule playbacks ahead when playing
+    if (playing && duration > 0) {
+      // Calculate schedule-ahead time (with modulo for looping)
+      const scheduleTime = looping ? (time + SCHEDULE_AHEAD) % duration : time + SCHEDULE_AHEAD
+
+      // Only schedule if we're approaching a transition point
+      // For looping: schedule when near the end (scheduleTime wraps to start)
+      const nearLoopEnd = looping && time + SCHEDULE_AHEAD >= duration
+
+      if (nearLoopEnd) {
+        const playingClips = Object.values(clips).filter(
+          clip => clip.state === 'playing' && !aheadScheduler.hasScheduled(clip.clipId),
+        )
+        for (const clip of playingClips) {
+          aheadScheduler.schedule(clip.clipId, clip.trackId, scheduleTime)
+        }
       }
     }
 
@@ -540,6 +477,9 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
 
   function destroy(): void {
     renderLoop.stop()
+
+    // Cancel all scheduled playbacks
+    aheadScheduler.destroy()
 
     // Remove all clips
     for (const clipId of Object.keys(clips)) {
@@ -633,17 +573,11 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
       log('stop')
       clock.stop()
 
+      // Cancel all scheduled playbacks
+      aheadScheduler.cancelAll()
+
       // Pause and seek all playbacks to 0
       for (const clip of Object.values(clips)) {
-        // Clean up nextPlayback if it exists
-        if (clip.nextPlayback) {
-          clip.nextPlayback.destroy()
-          videoWorkerPool.release(clip.nextPlayback.pooledVideoWorker)
-          audioWorkerPool.release(clip.nextPlayback.pooledAudioWorker)
-          setClips(clip.clipId, 'nextPlayback', null)
-          setClips(clip.clipId, 'nextPlaybackReady', false)
-        }
-
         if (clip.state === 'playing') {
           clip.playback.pause()
         }
@@ -693,18 +627,9 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
     setLoop(enabled: boolean) {
       clock.setLoop(enabled)
 
-      // Clean up any pending nextPlaybacks when looping is disabled
+      // Cancel all scheduled playbacks when looping is disabled
       if (!enabled) {
-        for (const clip of Object.values(clips)) {
-          if (clip.nextPlayback) {
-            log('setLoop: cleaning up nextPlayback', { clipId: clip.clipId })
-            clip.nextPlayback.destroy()
-            videoWorkerPool.release(clip.nextPlayback.pooledVideoWorker)
-            audioWorkerPool.release(clip.nextPlayback.pooledAudioWorker)
-            setClips(clip.clipId, 'nextPlayback', null)
-            setClips(clip.clipId, 'nextPlaybackReady', false)
-          }
-        }
+        aheadScheduler.cancelAll()
       }
     },
 
