@@ -8,7 +8,19 @@ import {
   FiUpload,
   FiVolume2,
 } from 'solid-icons/fi'
-import { type Component, createEffect, createMemo, createSignal, Index, onMount, Show } from 'solid-js'
+import {
+  type Component,
+  createEffect,
+  createMemo,
+  createSignal,
+  Index,
+  onMount,
+  Show,
+} from 'solid-js'
+import { useAuth } from '~/contexts/auth-context'
+import { createEditor } from '~/primitives/create-editor'
+import styles from './Editor.module.css'
+import { Track } from './Track'
 
 /** Format time in seconds to MM:SS.ms */
 function formatTime(seconds: number): string {
@@ -30,10 +42,6 @@ function parseTime(str: string): number | null {
 
   return mins * 60 + secs + ms / 100
 }
-import { createEditor } from '~/primitives/create-editor'
-import { useAuth } from '@eddy/atproto/auth-context'
-import styles from './Editor.module.css'
-import { Track } from './Track'
 
 interface EditorProps {
   handle?: string

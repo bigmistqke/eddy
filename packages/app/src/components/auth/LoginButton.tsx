@@ -1,6 +1,6 @@
 import { useAction, useSubmission } from '@solidjs/router'
 import { type Component, createSignal, Show } from 'solid-js'
-import { signInAction } from '@eddy/atproto/auth-context'
+import { signInAction } from './AuthProvider'
 import styles from './LoginButton.module.css'
 
 export const LoginButton: Component = () => {
