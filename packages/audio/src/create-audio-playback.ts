@@ -1,3 +1,10 @@
+/**
+ * CreateAudioPlayback
+ *
+ * Handles demuxing, decoding, and audio buffering for smooth audio playback.
+ * Uses a state machine with discriminated unions to prevent impossible states.
+ */
+
 import type { AudioTrackInfo, DemuxedSample } from '@eddy/media'
 import { createLoop, createPerfMonitor, debug } from '@eddy/utils'
 import {
@@ -54,6 +61,63 @@ interface BufferedAudio {
   channels: Float32Array[]
 }
 
+/** Preserved decoder state for reuse across loads */
+interface PreservedDecoder {
+  decoder: AudioDecoder
+  config: AudioDecoderConfig
+}
+
+/** Loaded resources (available in ready/playing/paused/seeking states) */
+interface LoadedResources {
+  input: Input
+  audioTrack: InputAudioTrack
+  audioSink: EncodedPacketSink
+  audioConfig: AudioDecoderConfig
+  duration: number
+  decoder: AudioDecoder
+  timing: PlaybackTiming
+  buffer: AudioBuffer
+}
+
+/** Playback timing interface */
+interface PlaybackTiming {
+  getCurrentTime(): number
+  start(mediaTime: number, playbackSpeed: number): void
+  pause(): number
+  setSpeed(speed: number): void
+  getSpeed(): number
+}
+
+/** Audio buffer interface */
+interface AudioBuffer {
+  insert(audio: BufferedAudio): void
+  findAt(timeSeconds: number): BufferedAudio | null
+  trimBefore(timeSeconds: number, keepPastSeconds?: number): void
+  clear(): void
+  getRange(): { start: number; end: number }
+  getLength(): number
+}
+
+/** State machine types */
+type PlaybackStateIdle = { type: 'idle'; preservedDecoder?: PreservedDecoder }
+type PlaybackStateLoading = { type: 'loading'; preservedDecoder?: PreservedDecoder }
+type PlaybackStateReady = { type: 'ready' } & LoadedResources
+type PlaybackStatePlaying = { type: 'playing' } & LoadedResources
+type PlaybackStatePaused = { type: 'paused'; pausedAt: number } & LoadedResources
+type PlaybackStateSeeking = {
+  type: 'seeking'
+  targetTime: number
+  wasPlaying: boolean
+} & LoadedResources
+
+type PlaybackStateMachine =
+  | PlaybackStateIdle
+  | PlaybackStateLoading
+  | PlaybackStateReady
+  | PlaybackStatePlaying
+  | PlaybackStatePaused
+  | PlaybackStateSeeking
+
 /**
  * AudioPlayback handles demuxing, decoding, and audio buffering
  * for smooth audio playback. It manages its own internal state and
@@ -65,10 +129,7 @@ export interface AudioPlayback {
   /** Audio duration in seconds */
   readonly audioDuration: number
   /** Get current buffer range */
-  getBufferRange(): {
-    start: number
-    end: number
-  }
+  getBufferRange(): { start: number; end: number }
   /** Get performance stats */
   getPerf(): Record<
     string,
@@ -106,6 +167,18 @@ export interface AudioPlayback {
 /*                                     Utils                                      */
 /*                                                                                */
 /**********************************************************************************/
+
+/** Check if state has loaded resources */
+function isLoaded(
+  state: PlaybackStateMachine,
+): state is PlaybackStateReady | PlaybackStatePlaying | PlaybackStatePaused | PlaybackStateSeeking {
+  return (
+    state.type === 'ready' ||
+    state.type === 'playing' ||
+    state.type === 'paused' ||
+    state.type === 'seeking'
+  )
+}
 
 /** Convert packet to sample format */
 function packetToSample(packet: EncodedPacket, trackId: number): DemuxedSample {
@@ -151,8 +224,8 @@ function audioDataToBuffered(audioData: AudioData): BufferedAudio {
     const interleaved = new Float32Array(tempBuffer)
     for (let ch = 0; ch < numberOfChannels; ch++) {
       const channelData = new Float32Array(numberOfFrames)
-      for (let i = 0; i < numberOfFrames; i++) {
-        channelData[i] = interleaved[i * numberOfChannels + ch]
+      for (let index = 0; index < numberOfFrames; index++) {
+        channelData[index] = interleaved[index * numberOfChannels + ch]
       }
       channels.push(channelData)
     }
@@ -163,8 +236,8 @@ function audioDataToBuffered(audioData: AudioData): BufferedAudio {
     const interleaved = new Int16Array(tempBuffer)
     for (let ch = 0; ch < numberOfChannels; ch++) {
       const channelData = new Float32Array(numberOfFrames)
-      for (let i = 0; i < numberOfFrames; i++) {
-        channelData[i] = interleaved[i * numberOfChannels + ch] / 32768
+      for (let index = 0; index < numberOfFrames; index++) {
+        channelData[index] = interleaved[index * numberOfChannels + ch] / 32768
       }
       channels.push(channelData)
     }
@@ -193,11 +266,9 @@ function audioDataToBuffered(audioData: AudioData): BufferedAudio {
 
 /** Convert buffered audio back to AudioData */
 function bufferedToAudioData(buffered: BufferedAudio): AudioData {
-  // Calculate total size for planar format
   const totalSamples = buffered.channels[0].length * buffered.numberOfChannels
   const data = new Float32Array(totalSamples)
 
-  // Copy channels in planar layout
   for (let ch = 0; ch < buffered.numberOfChannels; ch++) {
     data.set(buffered.channels[ch], ch * buffered.channels[0].length)
   }
@@ -214,71 +285,175 @@ function bufferedToAudioData(buffered: BufferedAudio): AudioData {
 
 /**********************************************************************************/
 /*                                                                                */
-/*                                 Create Playback                                */
+/*                             Create Playback Timing                             */
 /*                                                                                */
 /**********************************************************************************/
 
-/**
- * Create a new audio playback engine instance
- */
-export function createAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}): AudioPlayback {
-  const perf = createPerfMonitor()
-
-  // Demuxer state
-  let input: Input | null = null
-  let audioTrack: InputAudioTrack | null = null
-  let audioSink: EncodedPacketSink | null = null
-  let audioConfig: AudioDecoderConfig | null = null
-  let duration = 0
-
-  // Decoder
-  let decoder: AudioDecoder | null = null
-
-  // Buffer state
-  let audioBuffer: BufferedAudio[] = []
-  let bufferPosition = 0
-  let isBuffering = false
-
-  // Playback timing state
+/** Create playback timing manager */
+function createPlaybackTiming(): PlaybackTiming {
   let startWallTime = 0
   let startMediaTime = 0
   let speed = 1
+  let isRunning = false
 
-  // State tracking
-  let _state: AudioPlaybackState = 'idle'
+  return {
+    getCurrentTime(): number {
+      if (!isRunning) return startMediaTime
+      const elapsed = (performance.now() - startWallTime) / 1000
+      return startMediaTime + elapsed * speed
+    },
+
+    start(mediaTime: number, playbackSpeed: number): void {
+      startMediaTime = mediaTime
+      startWallTime = performance.now()
+      speed = playbackSpeed
+      isRunning = true
+    },
+
+    pause(): number {
+      const currentTime = this.getCurrentTime()
+      startMediaTime = currentTime
+      isRunning = false
+      return currentTime
+    },
+
+    setSpeed(newSpeed: number): void {
+      if (isRunning) {
+        startMediaTime = this.getCurrentTime()
+        startWallTime = performance.now()
+      }
+      speed = newSpeed
+    },
+
+    getSpeed(): number {
+      return speed
+    },
+  }
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                              Create Audio Buffer                               */
+/*                                                                                */
+/**********************************************************************************/
+
+/** Create audio buffer manager */
+function createAudioBuffer(maxSamples: number = BUFFER_MAX_SAMPLES): AudioBuffer {
+  let samples: BufferedAudio[] = []
+
+  return {
+    insert(audio: BufferedAudio): void {
+      const insertIndex = samples.findIndex(sample => sample.timestamp > audio.timestamp)
+      if (insertIndex === -1) {
+        samples.push(audio)
+      } else {
+        samples.splice(insertIndex, 0, audio)
+      }
+
+      while (samples.length > maxSamples) {
+        samples.shift()
+      }
+    },
+
+    findAt(timeSeconds: number): BufferedAudio | null {
+      if (samples.length === 0) return null
+
+      const timeUs = timeSeconds * 1_000_000
+      let best: BufferedAudio | null = null
+
+      for (const audio of samples) {
+        if (audio.timestamp <= timeUs && audio.timestamp + audio.duration > timeUs) {
+          best = audio
+          break
+        }
+        if (audio.timestamp <= timeUs) {
+          best = audio
+        }
+      }
+
+      return best
+    },
+
+    trimBefore(timeSeconds: number, keepPastSeconds = 0.5): void {
+      const minTimestamp = (timeSeconds - keepPastSeconds) * 1_000_000
+
+      while (samples.length > 1 && samples[0].timestamp + samples[0].duration < minTimestamp) {
+        samples.shift()
+      }
+    },
+
+    clear(): void {
+      samples = []
+    },
+
+    getRange(): { start: number; end: number } {
+      if (samples.length === 0) {
+        return { start: 0, end: 0 }
+      }
+      const lastAudio = samples[samples.length - 1]
+      return {
+        start: samples[0].timestamp / 1_000_000,
+        end: (lastAudio.timestamp + lastAudio.duration) / 1_000_000,
+      }
+    },
+
+    getLength(): number {
+      return samples.length
+    },
+  }
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                             Create Audio Playback                              */
+/*                                                                                */
+/**********************************************************************************/
+
+function transitionToPlaying(
+  loadedState: LoadedResources,
+  startTime: number,
+  playbackSpeed: number,
+): PlaybackStatePlaying {
+  loadedState.timing.start(startTime, playbackSpeed)
+  return { type: 'playing', ...loadedState }
+}
+
+function transitionToPaused(loadedState: LoadedResources): PlaybackStatePaused {
+  const pausedAt = loadedState.timing.pause()
+  return { type: 'paused', pausedAt, ...loadedState }
+}
+
+function transitionToSeeking(
+  loadedState: LoadedResources,
+  targetTime: number,
+  wasPlaying: boolean,
+): PlaybackStateSeeking {
+  return { type: 'seeking', targetTime, wasPlaying, ...loadedState }
+}
+
+/** Create a new audio playback engine instance */
+export function createAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}): AudioPlayback {
+  const perf = createPerfMonitor()
+
+  let state: PlaybackStateMachine = { type: 'idle' }
+
+  let bufferPosition = 0
+  let isBuffering = false
   let lastSentTimestamp: number | null = null
-
-  // Pending decode promises
   let pendingResolve: ((audioData: AudioData) => void) | null = null
 
-  function createDecoder(): void {
-    if (!audioConfig) return
-
-    decoder = new AudioDecoder({
+  function createDecoder(config: AudioDecoderConfig, buffer: AudioBuffer): AudioDecoder {
+    const decoder = new AudioDecoder({
       output: (audioData: AudioData) => {
         if (pendingResolve) {
           pendingResolve(audioData)
           pendingResolve = null
-        } else if (_state === 'playing' && onAudio) {
-          // During playback, send directly to ring buffer (no buffering bottleneck)
+        } else if (state.type === 'playing' && onAudio) {
           onAudio(audioData)
         } else {
-          // Buffer the audio for seeking/export
           const buffered = audioDataToBuffered(audioData)
           audioData.close()
-
-          // Insert in sorted order
-          const insertIndex = audioBuffer.findIndex(a => a.timestamp > buffered.timestamp)
-          if (insertIndex === -1) {
-            audioBuffer.push(buffered)
-          } else {
-            audioBuffer.splice(insertIndex, 0, buffered)
-          }
-
-          // Trim old audio
-          while (audioBuffer.length > BUFFER_MAX_SAMPLES) {
-            audioBuffer.shift()
-          }
+          buffer.insert(buffered)
         }
       },
       error: (error: DOMException) => {
@@ -286,21 +461,20 @@ export function createAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}
       },
     })
 
-    decoder.configure(audioConfig)
+    decoder.configure(config)
+    return decoder
   }
 
   function sendAudio(time: number): void {
-    if (!onAudio) return
+    if (!onAudio || !isLoaded(state)) return
 
-    const buffered = findBufferedAudio(time)
+    const buffered = state.buffer.findAt(time)
     if (!buffered) return
 
-    // Skip if same audio
     if (buffered.timestamp === lastSentTimestamp) {
       return
     }
 
-    // Create AudioData and send to callback
     perf.start('transferAudio')
     const audioData = bufferedToAudioData(buffered)
     lastSentTimestamp = buffered.timestamp
@@ -308,28 +482,11 @@ export function createAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}
     perf.end('transferAudio')
   }
 
-  function findBufferedAudio(timeSeconds: number): BufferedAudio | null {
-    if (audioBuffer.length === 0) return null
-
-    const timeUs = timeSeconds * 1_000_000
-    let best: BufferedAudio | null = null
-
-    for (const audio of audioBuffer) {
-      if (audio.timestamp <= timeUs && audio.timestamp + audio.duration > timeUs) {
-        best = audio
-        break
-      }
-      if (audio.timestamp <= timeUs) {
-        best = audio
-      }
-    }
-
-    return best
-  }
-
-  async function decodePacket(packet: EncodedPacket): Promise<AudioData | null> {
-    if (!decoder || !audioTrack) return null
-
+  async function decodePacket(
+    packet: EncodedPacket,
+    decoder: AudioDecoder,
+    audioTrack: InputAudioTrack,
+  ): Promise<AudioData | null> {
     const sample = packetToSample(packet, audioTrack.id)
     const chunk = new EncodedAudioChunk({
       type: 'key',
@@ -340,22 +497,24 @@ export function createAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}
 
     return new Promise(resolve => {
       pendingResolve = resolve
-      decoder!.decode(chunk)
+      decoder.decode(chunk)
     })
   }
 
   async function bufferAhead(fromTime: number): Promise<void> {
-    if (!audioSink || !audioTrack || !decoder) return
+    if (!isLoaded(state)) return
     if (isBuffering) return
+
+    const { audioSink, audioTrack, duration, decoder, buffer } = state
 
     const targetEnd = Math.min(fromTime + BUFFER_AHEAD_SECONDS, duration)
     if (bufferPosition >= targetEnd) return
 
     isBuffering = true
     perf.start('bufferAhead')
+
     log('bufferAhead', { fromTime, targetEnd, bufferPosition })
 
-    // Stream directly to onAudio (ring buffer) when callback is set
     const streamDirectly = !!onAudio
 
     try {
@@ -368,29 +527,16 @@ export function createAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}
 
       while (packet && packet.timestamp < targetEnd) {
         perf.start('decode')
-        const audioData = await decodePacket(packet)
+        const audioData = await decodePacket(packet, decoder, audioTrack)
         perf.end('decode')
 
         if (audioData) {
           if (streamDirectly) {
-            // Send directly to ring buffer during playback
             onAudio!(audioData)
           } else {
-            // Buffer for seeking/export
             const buffered = audioDataToBuffered(audioData)
             audioData.close()
-
-            // Insert in sorted order
-            const insertIndex = audioBuffer.findIndex(a => a.timestamp > buffered.timestamp)
-            if (insertIndex === -1) {
-              audioBuffer.push(buffered)
-            } else {
-              audioBuffer.splice(insertIndex, 0, buffered)
-            }
-
-            while (audioBuffer.length > BUFFER_MAX_SAMPLES) {
-              audioBuffer.shift()
-            }
+            buffer.insert(buffered)
           }
 
           bufferPosition = packet.timestamp + packet.duration
@@ -409,71 +555,49 @@ export function createAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}
   }
 
   async function seekToTime(time: number): Promise<void> {
+    if (!isLoaded(state)) return
+
     log('seekToTime: starting', { time })
 
-    // Clear buffer
-    audioBuffer = []
+    const { audioSink, audioConfig, decoder, buffer } = state
+
+    buffer.clear()
     lastSentTimestamp = null
     isBuffering = false
 
-    // Reset decoder
-    if (decoder && decoder.state !== 'closed') {
+    if (decoder.state !== 'closed') {
       decoder.reset()
-      if (audioConfig) {
-        decoder.configure(audioConfig)
-      }
+      decoder.configure(audioConfig)
     }
 
-    if (!audioSink || !audioTrack || !decoder) {
-      return
-    }
-
-    // For audio, all frames are keyframes, so we can seek directly
     const packet = await audioSink.getPacket(time)
     bufferPosition = packet?.timestamp ?? 0
 
-    // Buffer from seek position
     await bufferAhead(time)
 
-    log('seekToTime: done', { audioBuffered: audioBuffer.length })
-  }
-
-  function getCurrentMediaTime(): number {
-    if (!streamLoop.isRunning) return startMediaTime
-    const elapsed = (performance.now() - startWallTime) / 1000
-    return startMediaTime + elapsed * speed
-  }
-
-  function trimOldAudio(currentTime: number): void {
-    const keepPastSeconds = 0.5
-    const minTimestamp = (currentTime - keepPastSeconds) * 1_000_000
-
-    while (
-      audioBuffer.length > 1 &&
-      audioBuffer[0].timestamp + audioBuffer[0].duration < minTimestamp
-    ) {
-      audioBuffer.shift()
-    }
+    log('seekToTime: done', { audioBuffered: buffer.getLength() })
   }
 
   const streamLoop = createLoop(loop => {
-    const time = getCurrentMediaTime()
+    if (!isLoaded(state)) {
+      loop.stop()
+      return
+    }
+
+    const time = state.timing.getCurrentTime()
+    const { duration, buffer } = state
 
     if (duration > 0 && time >= duration) {
       log('streamLoop: reached end', { time, duration })
-      _state = 'paused'
+      const pausedAt = state.timing.pause()
+      state = { ...state, type: 'paused', pausedAt }
       loop.stop()
       onEnd?.()
       return
     }
 
-    // Send audio to callback
     sendAudio(time)
-
-    // Trim old audio
-    trimOldAudio(time)
-
-    // Buffer ahead
+    buffer.trimBefore(time)
     bufferAhead(time)
   })
 
@@ -483,11 +607,11 @@ export function createAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}
     },
 
     get audioDuration() {
-      return duration
+      return isLoaded(state) ? state.duration : 0
     },
 
-    getState() {
-      return _state
+    getState(): AudioPlaybackState {
+      return state.type
     },
 
     setAudioCallback(callback) {
@@ -495,10 +619,16 @@ export function createAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}
     },
 
     async getAudioAtTime(time) {
-      log('getAudioAtTime: start', { time, duration, bufferLength: audioBuffer.length })
+      if (!isLoaded(state)) {
+        log('getAudioAtTime: not loaded')
+        return null
+      }
 
-      // Check buffer first
-      let buffered = findBufferedAudio(time)
+      const { buffer, duration } = state
+
+      log('getAudioAtTime: start', { time, duration, bufferLength: buffer.getLength() })
+
+      let buffered = buffer.findAt(time)
       if (buffered) {
         const audioTime = buffered.timestamp / 1_000_000
         const audioDuration = buffered.duration / 1_000_000
@@ -514,12 +644,11 @@ export function createAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}
         return null
       }
 
-      // Need to seek/buffer
       await seekToTime(time)
 
-      buffered = findBufferedAudio(time)
+      buffered = buffer.findAt(time)
       if (!buffered) {
-        log('getAudioAtTime: no audio after seek', { time, bufferLength: audioBuffer.length })
+        log('getAudioAtTime: no audio after seek', { time, bufferLength: buffer.getLength() })
         return null
       }
 
@@ -528,132 +657,159 @@ export function createAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}
     },
 
     async load(source) {
-      log('load', { isSource: !(source instanceof ArrayBuffer) })
-      _state = 'loading'
+      log('load', { isSource: true })
 
-      const previousConfig = audioConfig
+      const preservedDecoder =
+        isLoaded(state) && state.decoder.state !== 'closed'
+          ? { decoder: state.decoder, config: state.audioConfig }
+          : state.type === 'idle' || state.type === 'loading'
+            ? state.preservedDecoder
+            : undefined
 
-      // Clean up previous
-      if (input) {
-        input[Symbol.dispose]?.()
-        input = null
+      if (isLoaded(state)) {
+        state.input[Symbol.dispose]?.()
       }
-      audioTrack = null
-      audioSink = null
-      audioBuffer = []
-      bufferPosition = 0
 
-      // Create input from source
-      input = new Input({
+      state = { type: 'loading', preservedDecoder }
+
+      const input = new Input({
         source,
         formats: ALL_FORMATS,
       })
 
-      // Get audio track
       const audioTracks = await input.getAudioTracks()
-      audioTrack = audioTracks[0] ?? null
+      const audioTrack = audioTracks[0] ?? null
 
-      let audioTrackInfo: AudioTrackInfo | null = null
-
-      if (audioTrack) {
-        audioSink = new EncodedPacketSink(audioTrack)
-        audioConfig = await audioTrack.getDecoderConfig()
-        duration = await audioTrack.computeDuration()
-
-        log('audioTrack info', {
-          id: audioTrack.id,
-          sampleRate: audioTrack.sampleRate,
-          channels: audioTrack.numberOfChannels,
-          duration,
-        })
-
-        const codecString = await audioTrack.getCodecParameterString()
-        audioTrackInfo = {
-          id: audioTrack.id,
-          index: 0,
-          codec: codecString ?? 'unknown',
-          sampleRate: audioTrack.sampleRate,
-          channelCount: audioTrack.numberOfChannels,
-          sampleSize: 16,
-          duration,
-          timescale: 1,
-          sampleCount: 0,
-          bitrate: 0,
-        }
-
-        // Reuse decoder if config matches
-        if (decoder && decoder.state !== 'closed' && configsMatch(previousConfig, audioConfig)) {
-          log('reusing decoder, config matches')
-          decoder.reset()
-          decoder.configure(audioConfig!)
-        } else {
-          if (decoder && decoder.state !== 'closed') {
-            decoder.close()
-          }
-          createDecoder()
-        }
+      if (!audioTrack) {
+        state = { type: 'idle' }
+        log('load complete: no audio track')
+        return { duration: 0, audioTrack: null }
       }
 
-      _state = 'ready'
-      log('load complete', { duration, hasAudio: !!audioTrack })
+      const audioSink = new EncodedPacketSink(audioTrack)
+      const audioConfig = await audioTrack.getDecoderConfig()
+      const duration = await audioTrack.computeDuration()
+
+      if (!audioConfig) {
+        state = { type: 'idle' }
+        log('load complete: no decoder config')
+        return { duration: 0, audioTrack: null }
+      }
+
+      log('audioTrack info', {
+        id: audioTrack.id,
+        sampleRate: audioTrack.sampleRate,
+        channels: audioTrack.numberOfChannels,
+        duration,
+      })
+
+      const codecString = await audioTrack.getCodecParameterString()
+      const audioTrackInfo: AudioTrackInfo = {
+        id: audioTrack.id,
+        index: 0,
+        codec: codecString ?? 'unknown',
+        sampleRate: audioTrack.sampleRate,
+        channelCount: audioTrack.numberOfChannels,
+        sampleSize: 16,
+        duration,
+        timescale: 1,
+        sampleCount: 0,
+        bitrate: 0,
+      }
+
+      const timing = createPlaybackTiming()
+      const buffer = createAudioBuffer()
+
+      bufferPosition = 0
+      isBuffering = false
+      lastSentTimestamp = null
+
+      let decoder: AudioDecoder
+      if (preservedDecoder && configsMatch(preservedDecoder.config, audioConfig)) {
+        log('reusing decoder, config matches')
+        decoder = preservedDecoder.decoder
+        decoder.reset()
+        decoder.configure(audioConfig)
+      } else {
+        if (preservedDecoder && preservedDecoder.decoder.state !== 'closed') {
+          preservedDecoder.decoder.close()
+        }
+        decoder = createDecoder(audioConfig, buffer)
+      }
+
+      state = {
+        type: 'ready',
+        input,
+        audioTrack,
+        audioSink,
+        audioConfig,
+        duration,
+        decoder,
+        timing,
+        buffer,
+      }
+
+      log('load complete', { duration, hasAudio: true })
 
       return { duration, audioTrack: audioTrackInfo }
     },
 
     play(startTime, playbackSpeed = 1) {
+      if (!isLoaded(state)) {
+        log('play: not loaded')
+        return
+      }
+
       log('play', { startTime, playbackSpeed })
 
-      startMediaTime = startTime
-      startWallTime = performance.now()
-      speed = playbackSpeed
-      _state = 'playing'
-
+      state = transitionToPlaying(state, startTime, playbackSpeed)
       streamLoop.start()
     },
 
     pause() {
+      if (!isLoaded(state)) {
+        log('pause: not loaded')
+        return
+      }
+
       log('pause', { isPlaying: streamLoop.isRunning })
 
-      startMediaTime = getCurrentMediaTime()
-      _state = 'paused'
-
+      state = transitionToPaused(state)
       streamLoop.stop()
     },
 
     async seek(time) {
-      log('seek', { time, hasAudioSink: !!audioSink })
+      if (!isLoaded(state)) {
+        log('seek: not loaded')
+        return
+      }
+
+      log('seek', { time })
       const wasPlaying = streamLoop.isRunning
 
       if (wasPlaying) {
         streamLoop.stop()
       }
 
-      _state = 'seeking'
+      state = transitionToSeeking(state, time, wasPlaying)
 
       await seekToTime(time)
-
-      startMediaTime = time
 
       sendAudio(time)
 
       if (wasPlaying) {
-        startWallTime = performance.now()
-        _state = 'playing'
+        state = transitionToPlaying(state, time, state.timing.getSpeed())
         streamLoop.start()
       } else {
-        _state = 'paused'
+        state = transitionToPaused(state)
       }
     },
 
     getBufferRange() {
-      if (audioBuffer.length === 0) {
+      if (!isLoaded(state)) {
         return { start: 0, end: 0 }
       }
-      const lastAudio = audioBuffer[audioBuffer.length - 1]
-      return {
-        start: audioBuffer[0].timestamp / 1_000_000,
-        end: (lastAudio.timestamp + lastAudio.duration) / 1_000_000,
-      }
+      return state.buffer.getRange()
     },
 
     getPerf() {
