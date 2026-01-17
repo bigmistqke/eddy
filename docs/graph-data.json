@@ -2298,6 +2298,17 @@
       "created_at": "2026-01-17T20:52:19.038449+01:00",
       "updated_at": "2026-01-17T20:52:19.038449+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 210,
+      "change_id": "ccd30177-6492-4f76-9562-8e3cd2f85253",
+      "node_type": "outcome",
+      "title": "Committed: feat: wire video effect pipeline from UI to compositor",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T23:30:29.420252+01:00",
+      "updated_at": "2026-01-17T23:30:29.420252+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"06e8789\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -4214,6 +4225,17 @@
       "weight": 1.0,
       "rationale": "Achieved",
       "created_at": "2026-01-17T20:52:23.027734+01:00"
+    },
+    {
+      "id": 175,
+      "from_node_id": 208,
+      "to_node_id": 210,
+      "from_change_id": "389b84d4-2987-478f-8a25-18433e656bee",
+      "to_change_id": "ccd30177-6492-4f76-9562-8e3cd2f85253",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-17T23:30:29.448055+01:00"
     }
   ]
 }

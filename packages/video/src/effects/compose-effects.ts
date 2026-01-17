@@ -70,6 +70,9 @@ export function composeEffects<TEffects extends VideoEffectToken[]>(
   const compiled = compile.toQuad(gl, fragmentShader)
   const program = compiled.program
 
+  // Activate program before setting initial uniform values
+  gl.useProgram(program)
+
   // Connect each effect to get its controls
   const controls = effects.map((effect) => effect.connect(gl, program)) as ComposedEffects<TEffects>['controls']
 
