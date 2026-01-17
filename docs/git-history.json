@@ -1,5 +1,21 @@
 [
   {
+    "hash": "b043cfae8a1b913f9f67d408c416c848689562b9",
+    "short_hash": "b043cfa",
+    "author": "bigmistqke",
+    "date": "2026-01-17T18:33:48+01:00",
+    "message": "refactor: rename create-* to make-* in video, media, and utils packages\n\nContinue naming convention alignment across remaining packages:\n- @eddy/video: compositor, decoder, playback → make-video-*\n- @eddy/media: demuxer, muxer → make-demuxer, make-muxer\n- @eddy/utils: loop → make-loop, perf → make-perf-monitor\n- @eddy/utils: extract debug and guards to separate modules\n- Update all import paths in workers and primitives",
+    "files_changed": 40
+  },
+  {
+    "hash": "1e4f14e1ceb52f9131ee7940e460f3c060d94799",
+    "short_hash": "1e4f14e",
+    "author": "bigmistqke",
+    "date": "2026-01-17T18:03:35+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
     "hash": "3348d8af14803541cffa8a3666e0b87ed6d250f7",
     "short_hash": "3348d8a",
     "author": "bigmistqke",
@@ -8,20 +24,12 @@
     "files_changed": 21
   },
   {
-    "hash": "b1512bda0f473885c883a580696738dac71352b3",
-    "short_hash": "b1512bd",
+    "hash": "3348d8af14803541cffa8a3666e0b87ed6d250f7",
+    "short_hash": "3348d8a",
     "author": "bigmistqke",
-    "date": "2026-01-17T17:55:51+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "4d31bef1f2d85fff4d3ef90c3bc4fef113e429b3",
-    "short_hash": "4d31bef",
-    "author": "bigmistqke",
-    "date": "2026-01-17T17:55:40+01:00",
-    "message": "refactor: consolidate layout-types into compile-layout-timeline\n\nMove all types from layout-types.ts directly into compile-layout-timeline.ts\nsince they're only used by this module and its consumers. Reduces file count\nand keeps related code together.",
-    "files_changed": 4
+    "date": "2026-01-17T18:03:22+01:00",
+    "message": "refactor: rename create-* to make-* in @eddy/audio package\n\nAlign audio package with naming convention established in app primitives:\n- audio-elements → audio-element-registry\n- create-audio-bus → make-audio-bus\n- create-audio-playback → make-audio-playback\n- create-effect-chain → make-effect-chain\n- audio-decoder → make-audio-decoder\n- ring-buffer → audio-ring-buffer\n- scheduler → make-audio-scheduler\n- offline-audio-mixer → make-offline-audio-mixer",
+    "files_changed": 21
   },
   {
     "hash": "4d31bef1f2d85fff4d3ef90c3bc4fef113e429b3",
