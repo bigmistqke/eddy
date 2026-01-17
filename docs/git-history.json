@@ -1,27 +1,43 @@
 [
   {
+    "hash": "c772d46f247343a2eac7b00a47386cb6150ff005",
+    "short_hash": "c772d46",
+    "author": "bigmistqke",
+    "date": "2026-01-17T18:48:46+01:00",
+    "message": "refactor: rename create-player to make-player\n\nPlayer is a factory function that creates instances, not a reactive hook.\nAlign with make-* naming convention for factory functions.",
+    "files_changed": 4
+  },
+  {
+    "hash": "9ca2b967cd406304566ab7ba191e5f2d3a47df4c",
+    "short_hash": "9ca2b96",
+    "author": "bigmistqke",
+    "date": "2026-01-17T18:48:41+01:00",
+    "message": "fix: update auth imports after context relocation\n\nUpdate imports to point to new auth locations after moving auth-context\nfrom @eddy/atproto to app components. Remove solid-js deps from atproto\npackage since it no longer contains SolidJS code.",
+    "files_changed": 6
+  },
+  {
+    "hash": "9ca2b967cd406304566ab7ba191e5f2d3a47df4c",
+    "short_hash": "9ca2b96",
+    "author": "bigmistqke",
+    "date": "2026-01-17T18:48:41+01:00",
+    "message": "fix: update auth imports after context relocation\n\nUpdate imports to point to new auth locations after moving auth-context\nfrom @eddy/atproto to app components. Remove solid-js deps from atproto\npackage since it no longer contains SolidJS code.",
+    "files_changed": 6
+  },
+  {
+    "hash": "b24ced6033473b5338211ec8e4317d0922e3f497",
+    "short_hash": "b24ced6",
+    "author": "bigmistqke",
+    "date": "2026-01-17T18:45:53+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
     "hash": "595d81ea8c51db166504343e3bacedeeca55347c",
     "short_hash": "595d81e",
     "author": "bigmistqke",
     "date": "2026-01-17T18:45:42+01:00",
     "message": "refactor: move auth context from @eddy/atproto to app components\n\nAuth context is SolidJS-specific UI code that belongs in the app, not\nthe atproto package which should remain framework-agnostic.",
     "files_changed": 8
-  },
-  {
-    "hash": "84954012b396d2ba6b4aa815ebcc476251b9d2f3",
-    "short_hash": "8495401",
-    "author": "bigmistqke",
-    "date": "2026-01-17T18:35:16+01:00",
-    "message": "refactor: rename mixer.ts to get-master-mixer.ts",
-    "files_changed": 4
-  },
-  {
-    "hash": "3e38b46479f1e075ac5a2ae1cabf056efc219a37",
-    "short_hash": "3e38b46",
-    "author": "bigmistqke",
-    "date": "2026-01-17T18:34:00+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
   },
   {
     "hash": "b043cfae8a1b913f9f67d408c416c848689562b9",
