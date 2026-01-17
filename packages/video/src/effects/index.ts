@@ -1,4 +1,5 @@
 export * from './types'
 export * from './compose-effects'
+export * from './make-effect-chain-cache'
 export * from './brightness'
 export * from './contrast'

@@ -32,3 +32,57 @@ export interface VideoEffectToken<TControls = EffectControls> {
 
 /** Factory function that creates a video effect token */
 export type VideoEffectFactory<TControls = EffectControls> = () => VideoEffectToken<TControls>
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                  Effect Chains                                 */
+/*                                                                                */
+/**********************************************************************************/
+
+/**
+ * A named effect chain - a sequence of effects that compiles to one shader.
+ * Multiple clips can reference the same chain by id.
+ */
+export interface VideoEffectChain {
+  /** Unique identifier for this chain */
+  id: string
+  /** Effects to apply in sequence */
+  effects: VideoEffectToken[]
+}
+
+/**
+ * A compiled effect chain ready for rendering.
+ * Created by composeEffects() and cached by the compositor.
+ */
+export interface CompiledEffectChain {
+  /** The compiled WebGL program */
+  program: WebGLProgram
+  /** View for base uniforms (u_video texture) */
+  view: {
+    uniforms: {
+      u_video: { set(value: number): void }
+    }
+    attributes: {
+      a_quad: { bind(): void }
+    }
+  }
+  /** Controls for each effect in the chain, in order */
+  controls: EffectControls[]
+}
+
+/**
+ * Manages compiled effect chains.
+ * Caches compiled shaders by chain id for reuse across clips.
+ */
+export interface EffectChainCache {
+  /** Get or compile a chain */
+  get(chain: VideoEffectChain): CompiledEffectChain
+  /** Get a chain by id (must already be compiled) */
+  getById(id: string): CompiledEffectChain | undefined
+  /** Check if a chain is compiled */
+  has(id: string): boolean
+  /** Delete a compiled chain */
+  delete(id: string): void
+  /** Clear all compiled chains */
+  clear(): void
+}
