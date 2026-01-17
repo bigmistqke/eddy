@@ -1,3 +1,10 @@
+/**
+ * CreateVideoPlayback
+ *
+ * Handles demuxing, decoding, and frame buffering for smooth video playback.
+ * Uses a state machine with discriminated unions to prevent impossible states.
+ */
+
 import type { DemuxedSample, VideoTrackInfo } from '@eddy/media'
 import { assertedNotNullish, createLoop, createPerfMonitor, debug } from '@eddy/utils'
 import {
@@ -24,7 +31,7 @@ const BUFFER_MAX_FRAMES = 30
 /*                                                                                */
 /**********************************************************************************/
 
-/** Worker state */
+/** Video playback state */
 export type VideoPlaybackState = 'idle' | 'loading' | 'ready' | 'playing' | 'paused' | 'seeking'
 
 /** Frame output callback */
@@ -38,6 +45,64 @@ export interface VideoPlaybackConfig {
   shouldSkipDeltaFrame?: () => boolean
 }
 
+/** Preserved decoder state for reuse across loads */
+interface PreservedDecoder {
+  decoder: Decoder
+  config: VideoDecoderConfig
+}
+
+/** Loaded resources (available in ready/playing/paused/seeking states) */
+interface LoadedResources {
+  input: Input
+  videoTrack: InputVideoTrack
+  videoSink: EncodedPacketSink
+  videoConfig: VideoDecoderConfig
+  duration: number
+  decoder: Decoder
+  timing: PlaybackTiming
+  frameBuffer: FrameBuffer
+}
+
+/** Playback timing interface */
+interface PlaybackTiming {
+  getCurrentTime(): number
+  start(mediaTime: number, playbackSpeed: number): void
+  pause(): number
+  setSpeed(speed: number): void
+  getSpeed(): number
+}
+
+/** Frame buffer interface */
+interface FrameBuffer {
+  insert(frame: FrameData): void
+  findAt(timeSeconds: number, strict?: boolean): FrameData | null
+  trimBefore(timeSeconds: number, keepPastSeconds?: number): void
+  clear(): void
+  getRange(): { start: number; end: number }
+  getLength(): number
+  getAll(): FrameData[]
+}
+
+/** State machine types */
+type PlaybackStateIdle = { type: 'idle'; preservedDecoder?: PreservedDecoder }
+type PlaybackStateLoading = { type: 'loading'; preservedDecoder?: PreservedDecoder }
+type PlaybackStateReady = { type: 'ready' } & LoadedResources
+type PlaybackStatePlaying = { type: 'playing' } & LoadedResources
+type PlaybackStatePaused = { type: 'paused'; pausedAt: number } & LoadedResources
+type PlaybackStateSeeking = {
+  type: 'seeking'
+  targetTime: number
+  wasPlaying: boolean
+} & LoadedResources
+
+type PlaybackStateMachine =
+  | PlaybackStateIdle
+  | PlaybackStateLoading
+  | PlaybackStateReady
+  | PlaybackStatePlaying
+  | PlaybackStatePaused
+  | PlaybackStateSeeking
+
 /**
  * VideoPlayback handles demuxing, decoding, and frame buffering
  * for smooth video playback. It manages its own internal state and
@@ -49,10 +114,7 @@ export interface VideoPlayback {
   /** Video duration in seconds */
   readonly videoDuration: number
   /** Get current buffer range */
-  getBufferRange(): {
-    start: number
-    end: number
-  }
+  getBufferRange(): { start: number; end: number }
   /** Get performance stats */
   getPerf(): Record<
     string,
@@ -93,6 +155,18 @@ export interface VideoPlayback {
 /*                                                                                */
 /**********************************************************************************/
 
+/** Check if state has loaded resources */
+function isLoaded(
+  state: PlaybackStateMachine,
+): state is PlaybackStateReady | PlaybackStatePlaying | PlaybackStatePaused | PlaybackStateSeeking {
+  return (
+    state.type === 'ready' ||
+    state.type === 'playing' ||
+    state.type === 'paused' ||
+    state.type === 'seeking'
+  )
+}
+
 /** Convert packet to sample format */
 function packetToSample(packet: EncodedPacket, trackId: number): DemuxedSample {
   return {
@@ -114,12 +188,161 @@ function configsMatch(a: VideoDecoderConfig | null, b: VideoDecoderConfig | null
 
 /**********************************************************************************/
 /*                                                                                */
-/*                                 Create Playback                                */
+/*                             Create Playback Timing                             */
 /*                                                                                */
 /**********************************************************************************/
 
+/** Create playback timing manager */
+function createPlaybackTiming(): PlaybackTiming {
+  let startWallTime = 0
+  let startMediaTime = 0
+  let speed = 1
+  let isRunning = false
+
+  return {
+    getCurrentTime(): number {
+      if (!isRunning) return startMediaTime
+      const elapsed = (performance.now() - startWallTime) / 1000
+      return startMediaTime + elapsed * speed
+    },
+
+    start(mediaTime: number, playbackSpeed: number): void {
+      startMediaTime = mediaTime
+      startWallTime = performance.now()
+      speed = playbackSpeed
+      isRunning = true
+    },
+
+    pause(): number {
+      const currentTime = this.getCurrentTime()
+      startMediaTime = currentTime
+      isRunning = false
+      return currentTime
+    },
+
+    setSpeed(newSpeed: number): void {
+      if (isRunning) {
+        startMediaTime = this.getCurrentTime()
+        startWallTime = performance.now()
+      }
+      speed = newSpeed
+    },
+
+    getSpeed(): number {
+      return speed
+    },
+  }
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                              Create Frame Buffer                               */
+/*                                                                                */
+/**********************************************************************************/
+
+/** Create frame buffer manager */
+function createFrameBuffer(maxFrames: number = BUFFER_MAX_FRAMES): FrameBuffer {
+  let frames: FrameData[] = []
+
+  return {
+    insert(frame: FrameData): void {
+      const insertIndex = frames.findIndex(f => f.timestamp > frame.timestamp)
+      if (insertIndex === -1) {
+        frames.push(frame)
+      } else {
+        frames.splice(insertIndex, 0, frame)
+      }
+
+      while (frames.length > maxFrames) {
+        frames.shift()
+      }
+    },
+
+    findAt(timeSeconds: number, strict = false): FrameData | null {
+      if (frames.length === 0) return null
+
+      const timeUs = timeSeconds * 1_000_000
+      let best: FrameData | null = null
+
+      for (const frame of frames) {
+        if (frame.timestamp <= timeUs) {
+          best = frame
+        } else {
+          break
+        }
+      }
+
+      // In strict mode (export), don't return future frames - they indicate stale buffer
+      // In playback mode, return first frame as fallback to avoid black flicker
+      if (!best && !strict) {
+        return frames[0]
+      }
+
+      return best
+    },
+
+    trimBefore(timeSeconds: number, keepPastSeconds = 0.5): void {
+      const minTimestamp = (timeSeconds - keepPastSeconds) * 1_000_000
+
+      while (frames.length > 1 && frames[0].timestamp < minTimestamp) {
+        frames.shift()
+      }
+    },
+
+    clear(): void {
+      frames = []
+    },
+
+    getRange(): { start: number; end: number } {
+      if (frames.length === 0) {
+        return { start: 0, end: 0 }
+      }
+      return {
+        start: frames[0].timestamp / 1_000_000,
+        end: frames[frames.length - 1].timestamp / 1_000_000,
+      }
+    },
+
+    getLength(): number {
+      return frames.length
+    },
+
+    getAll(): FrameData[] {
+      return frames
+    },
+  }
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                             Create Video Playback                              */
+/*                                                                                */
+/**********************************************************************************/
+
+function transitionToPlaying(
+  loadedState: LoadedResources,
+  startTime: number,
+  playbackSpeed: number,
+): PlaybackStatePlaying {
+  loadedState.timing.start(startTime, playbackSpeed)
+  return { type: 'playing', ...loadedState }
+}
+
+function transitionToPaused(loadedState: LoadedResources): PlaybackStatePaused {
+  const pausedAt = loadedState.timing.pause()
+  return { type: 'paused', pausedAt, ...loadedState }
+}
+
+function transitionToSeeking(
+  loadedState: LoadedResources,
+  targetTime: number,
+  wasPlaying: boolean,
+): PlaybackStateSeeking {
+  return { type: 'seeking', targetTime, wasPlaying, ...loadedState }
+}
+
 /**
- * Create a new playback engine instance
+ * Create a new video playback engine instance
  */
 export function createVideoPlayback({
   onFrame,
@@ -127,34 +350,16 @@ export function createVideoPlayback({
 }: VideoPlaybackConfig = {}): VideoPlayback {
   const perf = createPerfMonitor()
 
-  // Demuxer state
-  let input: Input | null = null
-  let videoTrack: InputVideoTrack | null = null
-  let videoSink: EncodedPacketSink | null = null
-  let videoConfig: VideoDecoderConfig | null = null
-  let duration = 0
+  let state: PlaybackStateMachine = { type: 'idle' }
 
-  // Decoder (managed wrapper)
-  let decoder: Decoder | null = null
-
-  // Buffer state (ring buffer of decoded frames)
-  let frameBuffer: FrameData[] = []
-  let bufferPosition = 0 // Where we've decoded up to (seconds)
-  let isBuffering = false // Lock to prevent concurrent buffer operations
-
-  // Playback timing state
-  let startWallTime = 0 // performance.now() when play started
-  let startMediaTime = 0 // media time when play started
-  let speed = 1
-
-  // State tracking
-  let _state: VideoPlaybackState = 'idle'
+  let bufferPosition = 0
+  let isBuffering = false
   let lastSentTimestamp: number | null = null
 
   function sendFrame(time: number): void {
-    if (!onFrame) return
+    if (!onFrame || !isLoaded(state)) return
 
-    const frameData = findFrameData(time)
+    const frameData = state.frameBuffer.findAt(time)
     if (!frameData) {
       // No frame available - clear if we had one
       if (lastSentTimestamp !== null) {
@@ -177,37 +382,11 @@ export function createVideoPlayback({
     perf.end('transferFrame')
   }
 
-  /**
-   * Find the best frame for a given time.
-   * @param strict - If true, only return frames at or before target time (for export).
-   *                 If false, return closest frame even if slightly in future (for playback).
-   */
-  function findFrameData(timeSeconds: number, strict = false): FrameData | null {
-    if (frameBuffer.length === 0) return null
-
-    const timeUs = timeSeconds * 1_000_000
-    let best: FrameData | null = null
-
-    for (const frame of frameBuffer) {
-      if (frame.timestamp <= timeUs) {
-        best = frame
-      } else {
-        break
-      }
-    }
-
-    // In strict mode (export), don't return future frames - they indicate stale buffer
-    // In playback mode, return first frame as fallback to avoid black flicker
-    if (!best && !strict) {
-      return frameBuffer[0]
-    }
-
-    return best
-  }
-
   async function bufferAhead(fromTime: number): Promise<void> {
-    if (!videoSink || !videoTrack || !decoder) return
-    if (isBuffering) return // Prevent concurrent buffering
+    if (!isLoaded(state)) return
+    if (isBuffering) return
+
+    const { videoSink, videoTrack, duration, decoder, frameBuffer } = state
 
     const targetEnd = Math.min(fromTime + BUFFER_AHEAD_SECONDS, duration)
     if (bufferPosition >= targetEnd) return
@@ -217,7 +396,6 @@ export function createVideoPlayback({
     log('bufferAhead', { fromTime, targetEnd, bufferPosition })
 
     try {
-      // Get packet at current buffer position
       perf.start('demux')
       let packet = await videoSink.getPacket(bufferPosition)
       if (!packet) {
@@ -230,7 +408,6 @@ export function createVideoPlayback({
         const sample = packetToSample(packet, videoTrack.id)
 
         perf.start('decode')
-        // decode() returns sync if frame ready, Promise if waiting
         const maybeResult = decoder.decode(sample)
         const result = maybeResult instanceof Promise ? await maybeResult : maybeResult
         perf.end('decode')
@@ -238,30 +415,14 @@ export function createVideoPlayback({
         switch (result.type) {
           case 'frame': {
             const data = await frameToData(result.frame, sample)
-
-            // Insert in sorted order
-            const insertIndex = frameBuffer.findIndex(f => f.timestamp > data.timestamp)
-            if (insertIndex === -1) {
-              frameBuffer.push(data)
-            } else {
-              frameBuffer.splice(insertIndex, 0, data)
-            }
-
+            frameBuffer.insert(data)
             bufferPosition = sample.timestamp + sample.duration
             decoded++
-
-            // Trim old frames (keep max buffer size)
-            while (frameBuffer.length > BUFFER_MAX_FRAMES) {
-              frameBuffer.shift()
-            }
             break
           }
 
           case 'skipped':
-            // Delta frame skipped due to backpressure or not ready
             log('bufferAhead: frame skipped', { reason: result.reason, pts: sample.timestamp })
-            // For 'not-ready', we need a keyframe - but bufferAhead has frame limits
-            // Return early and let getFrameAtTime call seekToTime which has no limits
             if (result.reason === 'not-ready') {
               log('bufferAhead: decoder not ready, returning to let seekToTime handle it')
               return
@@ -269,7 +430,6 @@ export function createVideoPlayback({
             break
 
           case 'needs-keyframe': {
-            // Decoder recovered from error, seek to keyframe
             log('bufferAhead: decoder needs keyframe', { time: result.time })
             const keyPacket = await videoSink.getKeyPacket(result.time)
             if (keyPacket) {
@@ -279,7 +439,7 @@ export function createVideoPlayback({
               })
               packet = keyPacket
               bufferPosition = keyPacket.timestamp
-              continue // Restart loop from keyframe
+              continue
             }
             break
           }
@@ -298,33 +458,26 @@ export function createVideoPlayback({
   }
 
   async function seekToTime(time: number): Promise<void> {
+    if (!isLoaded(state)) return
+
     log('seekToTime: starting', { time })
 
-    // Clear buffer
-    frameBuffer = []
+    const { videoSink, videoTrack, decoder, frameBuffer, duration } = state
+
+    frameBuffer.clear()
     lastSentTimestamp = null
     isBuffering = false
 
-    // Reset decoder
-    if (decoder) {
-      decoder.reset()
-    }
+    decoder.reset()
 
     log('seekToTime: decoder reset')
 
-    if (!videoSink || !videoTrack || !decoder) {
-      log('seekToTime: no videoSink/decoder, returning')
-      return
-    }
-
-    // Find keyframe before target
     log('seekToTime: getting keyframe packet')
     const keyPacket = await videoSink.getKeyPacket(time)
     bufferPosition = keyPacket?.timestamp ?? 0
 
     log('seekToTime: got keyframe, decoding to target', { keyframe: bufferPosition, target: time })
 
-    // Decode from keyframe until we reach the target time (no frame limit)
     const targetUs = time * 1_000_000
     let packet = keyPacket
 
@@ -335,23 +488,9 @@ export function createVideoPlayback({
 
       if (result.type === 'frame') {
         const data = await frameToData(result.frame, sample)
-
-        // Insert in sorted order
-        const insertIndex = frameBuffer.findIndex(f => f.timestamp > data.timestamp)
-        if (insertIndex === -1) {
-          frameBuffer.push(data)
-        } else {
-          frameBuffer.splice(insertIndex, 0, data)
-        }
-
+        frameBuffer.insert(data)
         bufferPosition = sample.timestamp + sample.duration
 
-        // Trim old frames if buffer too large
-        while (frameBuffer.length > BUFFER_MAX_FRAMES) {
-          frameBuffer.shift()
-        }
-
-        // Once we have a frame past target time, we can stop
         if (data.timestamp >= targetUs) {
           break
         }
@@ -363,56 +502,40 @@ export function createVideoPlayback({
       packet = await videoSink.getNextPacket(packet)
     }
 
-    log('seekToTime: done', { framesBuffered: frameBuffer.length })
-  }
-
-  function getCurrentMediaTime(): number {
-    if (!streamLoop.isRunning) return startMediaTime
-    const elapsed = (performance.now() - startWallTime) / 1000
-    return startMediaTime + elapsed * speed
-  }
-
-  function trimOldFrames(currentTime: number): void {
-    // Keep a small amount of past frames for seeking back slightly
-    const keepPastSeconds = 0.5
-    const minTimestamp = (currentTime - keepPastSeconds) * 1_000_000
-
-    while (frameBuffer.length > 1 && frameBuffer[0].timestamp < minTimestamp) {
-      frameBuffer.shift()
-    }
+    log('seekToTime: done', { framesBuffered: frameBuffer.getLength() })
   }
 
   const streamLoop = createLoop(loop => {
-    const time = getCurrentMediaTime()
-
-    // Check for end
-    if (duration > 0 && time >= duration) {
-      log('streamLoop: reached end', { time, duration })
-      _state = 'paused'
+    if (!isLoaded(state)) {
       loop.stop()
       return
     }
 
-    // Log buffer state periodically (every ~60 frames)
+    const time = state.timing.getCurrentTime()
+    const { duration, decoder, frameBuffer } = state
+
+    if (duration > 0 && time >= duration) {
+      log('streamLoop: reached end', { time, duration })
+      const pausedAt = state.timing.pause()
+      state = { ...state, type: 'paused', pausedAt }
+      loop.stop()
+      return
+    }
+
     if (Math.random() < 0.016) {
       log('streamLoop: status', {
         time,
-        bufferLength: frameBuffer.length,
+        bufferLength: frameBuffer.getLength(),
         bufferPosition,
         isBuffering,
-        decoderReady: decoder?.isReady,
-        decoderState: decoder?.state,
+        decoderReady: decoder.isReady,
+        decoderState: decoder.state,
         lastSentTimestamp,
       })
     }
 
-    // Send frame to callback
     sendFrame(time)
-
-    // Trim frames behind us to free memory
-    trimOldFrames(time)
-
-    // Buffer ahead
+    frameBuffer.trimBefore(time)
     bufferAhead(time)
   })
 
@@ -422,11 +545,11 @@ export function createVideoPlayback({
     },
 
     get videoDuration() {
-      return duration
+      return isLoaded(state) ? state.duration : 0
     },
 
-    getState() {
-      return _state
+    getState(): VideoPlaybackState {
+      return state.type
     },
 
     setFrameCallback(callback) {
@@ -434,70 +557,66 @@ export function createVideoPlayback({
     },
 
     async getFrameAtTime(time) {
-      log('getFrameAtTime: start', { time, duration, bufferLength: frameBuffer.length })
+      if (!isLoaded(state)) {
+        log('getFrameAtTime: not loaded')
+        return null
+      }
 
-      // First check if frame is already in buffer (common case for sequential export)
-      // Use strict mode - for export we need accurate timing, not fallback frames
-      let frameData = findFrameData(time, true)
+      const { frameBuffer, duration } = state
+
+      log('getFrameAtTime: start', { time, duration, bufferLength: frameBuffer.getLength() })
+
+      let frameData = frameBuffer.findAt(time, true)
 
       if (frameData) {
-        // Frame is in buffer - check if it's close enough to requested time
-        // At 30fps, frames are 33.3ms apart, so allow up to 1 frame duration
         const frameTime = frameData.timestamp / 1_000_000
-        const frameDuration = 1 / 30 // ~33.3ms
+        const frameDuration = 1 / 30
         if (time - frameTime < frameDuration) {
           log('getFrameAtTime: found in buffer', { time, frameTime })
-          // Proactively buffer ahead for future frames (non-blocking)
           bufferAhead(time)
           return dataToFrame(frameData)
         }
         log('getFrameAtTime: frame too old', { time, frameTime, diff: time - frameTime })
       }
 
-      // Check if time is past clip duration
       if (time > duration) {
         log('getFrameAtTime: time past duration, returning null', { time, duration })
         return null
       }
 
-      // Frame not in buffer or too far from target - need to seek/buffer
       const timeUs = time * 1_000_000
-      const bufferEnd = frameBuffer.length > 0 ? frameBuffer[frameBuffer.length - 1].timestamp : 0
-      const bufferStart = frameBuffer.length > 0 ? frameBuffer[0].timestamp : 0
+      const range = frameBuffer.getRange()
+      const bufferEnd = frameBuffer.getLength() > 0 ? range.end * 1_000_000 : 0
+      const bufferStart = frameBuffer.getLength() > 0 ? range.start * 1_000_000 : 0
 
       log('getFrameAtTime: buffer state', {
         timeUs,
         bufferStart,
         bufferEnd,
-        bufferLength: frameBuffer.length,
+        bufferLength: frameBuffer.getLength(),
       })
 
-      if (frameBuffer.length > 0 && timeUs >= bufferStart && timeUs <= bufferEnd + 1_000_000) {
-        // Time is within or just ahead of buffer - try buffering more
+      if (frameBuffer.getLength() > 0 && timeUs >= bufferStart && timeUs <= bufferEnd + 1_000_000) {
         log('getFrameAtTime: buffering ahead')
         await bufferAhead(time)
 
-        // Check if bufferAhead produced a usable frame
-        frameData = findFrameData(time, true)
+        frameData = frameBuffer.findAt(time, true)
         const frameTime = frameData ? frameData.timestamp / 1_000_000 : -1
         const frameDuration = 1 / 30
         if (!frameData || time - frameTime >= frameDuration) {
-          // bufferAhead didn't help (decoder might need keyframe) - do full seek
           log('getFrameAtTime: bufferAhead insufficient, falling back to seekToTime')
           await seekToTime(time)
         }
       } else {
-        // Need to seek (jumping to different position or empty buffer)
         log('getFrameAtTime: seeking')
         await seekToTime(time)
       }
 
-      // Get frame data from buffer
-      frameData = findFrameData(time, true)
+      frameData = frameBuffer.findAt(time, true)
       if (!frameData) {
         log('getFrameAtTime: no frame after seek/buffer', {
           time,
-          bufferLength: frameBuffer.length,
+          bufferLength: frameBuffer.getLength(),
         })
         return null
       }
@@ -507,156 +626,176 @@ export function createVideoPlayback({
     },
 
     async load(source) {
-      log('load', { isSource: !(source instanceof ArrayBuffer) })
-      _state = 'loading'
+      log('load', { isSource: true })
 
-      // Store previous config to check for reuse
-      const previousConfig = videoConfig
+      const preservedDecoder =
+        isLoaded(state) && state.decoder.state !== 'closed'
+          ? { decoder: state.decoder, config: state.videoConfig }
+          : state.type === 'idle' || state.type === 'loading'
+            ? state.preservedDecoder
+            : undefined
 
-      // Clean up previous input (but not decoder yet)
-      if (input) {
-        input[Symbol.dispose]?.()
-        input = null
+      if (isLoaded(state)) {
+        state.input[Symbol.dispose]?.()
       }
-      videoTrack = null
-      videoSink = null
-      frameBuffer = []
-      bufferPosition = 0
 
-      // Create input from source
-      input = new Input({
+      state = { type: 'loading', preservedDecoder }
+
+      const input = new Input({
         source,
         formats: ALL_FORMATS,
       })
 
-      // Get video track
       const videoTracks = await input.getVideoTracks()
-      videoTrack = videoTracks[0] ?? null
+      const videoTrack = videoTracks[0] ?? null
 
-      let videoTrackInfo: VideoTrackInfo | null = null
-
-      if (videoTrack) {
-        videoSink = new EncodedPacketSink(videoTrack)
-        videoConfig = await videoTrack.getDecoderConfig()
-        duration = await videoTrack.computeDuration()
-
-        log('videoTrack info', {
-          id: videoTrack.id,
-          codedWidth: videoTrack.codedWidth,
-          codedHeight: videoTrack.codedHeight,
-          duration,
-          videoConfig: videoConfig
-            ? {
-                codec: videoConfig.codec,
-                codedWidth: videoConfig.codedWidth,
-                codedHeight: videoConfig.codedHeight,
-                hasDescription: !!videoConfig.description,
-              }
-            : null,
-        })
-
-        // Log first packet to understand timestamp units
-        const firstPacket = await videoSink.getFirstPacket()
-        if (firstPacket) {
-          log('first packet', {
-            timestamp: firstPacket.timestamp,
-            duration: firstPacket.duration,
-            type: firstPacket.type,
-            dataSize: firstPacket.data.byteLength,
-          })
-        }
-
-        const codecString = await videoTrack.getCodecParameterString()
-        videoTrackInfo = {
-          id: videoTrack.id,
-          index: 0,
-          codec: codecString ?? 'unknown',
-          width: videoTrack.codedWidth,
-          height: videoTrack.codedHeight,
-          duration,
-          timescale: 1,
-          sampleCount: 0,
-          bitrate: 0,
-        }
-
-        // Reuse decoder if config matches, otherwise create new
-        if (decoder && configsMatch(previousConfig, videoConfig)) {
-          log('reusing decoder, config matches')
-          decoder.reset()
-        } else {
-          // Close old decoder if exists
-          if (decoder) {
-            decoder.close()
-          }
-          decoder = createDecoder({
-            videoConfig: assertedNotNullish(videoConfig, 'Expected videoConfig to be defined.'),
-            shouldSkipDeltaFrame,
-          })
-        }
+      if (!videoTrack) {
+        state = { type: 'idle' }
+        log('load complete: no video track')
+        return { duration: 0, videoTrack: null }
       }
 
-      _state = 'ready'
-      log('load complete', { duration, hasVideo: !!videoTrack })
+      const videoSink = new EncodedPacketSink(videoTrack)
+      const videoConfig = await videoTrack.getDecoderConfig()
+      const duration = await videoTrack.computeDuration()
+
+      if (!videoConfig) {
+        state = { type: 'idle' }
+        log('load complete: no decoder config')
+        return { duration: 0, videoTrack: null }
+      }
+
+      log('videoTrack info', {
+        id: videoTrack.id,
+        codedWidth: videoTrack.codedWidth,
+        codedHeight: videoTrack.codedHeight,
+        duration,
+        videoConfig: {
+          codec: videoConfig.codec,
+          codedWidth: videoConfig.codedWidth,
+          codedHeight: videoConfig.codedHeight,
+          hasDescription: !!videoConfig.description,
+        },
+      })
+
+      const firstPacket = await videoSink.getFirstPacket()
+      if (firstPacket) {
+        log('first packet', {
+          timestamp: firstPacket.timestamp,
+          duration: firstPacket.duration,
+          type: firstPacket.type,
+          dataSize: firstPacket.data.byteLength,
+        })
+      }
+
+      const codecString = await videoTrack.getCodecParameterString()
+      const videoTrackInfo: VideoTrackInfo = {
+        id: videoTrack.id,
+        index: 0,
+        codec: codecString ?? 'unknown',
+        width: videoTrack.codedWidth,
+        height: videoTrack.codedHeight,
+        duration,
+        timescale: 1,
+        sampleCount: 0,
+        bitrate: 0,
+      }
+
+      const timing = createPlaybackTiming()
+      const frameBuffer = createFrameBuffer()
+
+      bufferPosition = 0
+      isBuffering = false
+      lastSentTimestamp = null
+
+      let decoder: Decoder
+      if (preservedDecoder && configsMatch(preservedDecoder.config, videoConfig)) {
+        log('reusing decoder, config matches')
+        decoder = preservedDecoder.decoder
+        decoder.reset()
+      } else {
+        if (preservedDecoder) {
+          preservedDecoder.decoder.close()
+        }
+        decoder = createDecoder({
+          videoConfig: assertedNotNullish(videoConfig, 'Expected videoConfig to be defined.'),
+          shouldSkipDeltaFrame,
+        })
+      }
+
+      state = {
+        type: 'ready',
+        input,
+        videoTrack,
+        videoSink,
+        videoConfig,
+        duration,
+        decoder,
+        timing,
+        frameBuffer,
+      }
+
+      log('load complete', { duration, hasVideo: true })
 
       return { duration, videoTrack: videoTrackInfo }
     },
 
     play(startTime, playbackSpeed = 1) {
+      if (!isLoaded(state)) {
+        log('play: not loaded')
+        return
+      }
+
       log('play', { startTime, playbackSpeed })
 
-      startMediaTime = startTime
-      startWallTime = performance.now()
-      speed = playbackSpeed
-      _state = 'playing'
-
+      state = transitionToPlaying(state, startTime, playbackSpeed)
       streamLoop.start()
     },
 
     pause() {
+      if (!isLoaded(state)) {
+        log('pause: not loaded')
+        return
+      }
+
       log('pause', { isPlaying: streamLoop.isRunning })
 
-      // Capture current position
-      startMediaTime = getCurrentMediaTime()
-      _state = 'paused'
-
+      state = transitionToPaused(state)
       streamLoop.stop()
     },
 
     async seek(time) {
-      log('seek', { time, hasVideoSink: !!videoSink })
+      if (!isLoaded(state)) {
+        log('seek: not loaded')
+        return
+      }
+
+      log('seek', { time })
       const wasPlaying = streamLoop.isRunning
 
       if (wasPlaying) {
         streamLoop.stop()
       }
 
-      _state = 'seeking'
+      state = transitionToSeeking(state, time, wasPlaying)
 
       await seekToTime(time)
 
-      // Update position
-      startMediaTime = time
-
-      // Send frame at seek position
       sendFrame(time)
 
       if (wasPlaying) {
-        startWallTime = performance.now()
-        _state = 'playing'
+        state = transitionToPlaying(state, time, state.timing.getSpeed())
         streamLoop.start()
       } else {
-        _state = 'paused'
+        state = transitionToPaused(state)
       }
     },
 
     getBufferRange() {
-      if (frameBuffer.length === 0) {
+      if (!isLoaded(state)) {
         return { start: 0, end: 0 }
       }
-      return {
-        start: frameBuffer[0].timestamp / 1_000_000,
-        end: frameBuffer[frameBuffer.length - 1].timestamp / 1_000_000,
-      }
+      return state.frameBuffer.getRange()
     },
 
     getPerf() {
@@ -668,8 +807,10 @@ export function createVideoPlayback({
     },
 
     sendCurrentFrame(): void {
-      if (frameBuffer.length > 0) {
-        sendFrame(startMediaTime)
+      if (!isLoaded(state)) return
+      if (state.frameBuffer.getLength() > 0) {
+        const pausedAt = state.type === 'paused' ? state.pausedAt : state.timing.getCurrentTime()
+        sendFrame(pausedAt)
       }
     },
   } satisfies VideoPlayback

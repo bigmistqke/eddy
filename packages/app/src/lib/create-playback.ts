@@ -1,5 +1,8 @@
 /**
- * Orchestrated Playback - coordinates video and audio workers in lockstep
+ * CreatePlayback
+ *
+ * Orchestrated Playback - coordinates video and audio workers in lockstep.
+ * Uses a state machine with discriminated unions to prevent impossible states.
  *
  * This module provides a unified playback interface that:
  * - Manages separate video and audio workers
@@ -49,6 +52,30 @@ export interface MediaInfo {
   videoTrack: VideoTrackInfo | null
   audioTrack: AudioTrackInfo | null
 }
+
+/** Loaded resources (available in ready/playing/paused/seeking states) */
+interface LoadedResources {
+  duration: number
+  hasVideo: boolean
+  hasAudio: boolean
+  audioScheduler: AudioScheduler | null
+}
+
+/** State machine types */
+type PlaybackStateIdle = { type: 'idle' }
+type PlaybackStateLoading = { type: 'loading' }
+type PlaybackStateReady = { type: 'ready' } & LoadedResources
+type PlaybackStatePlaying = { type: 'playing' } & LoadedResources
+type PlaybackStatePaused = { type: 'paused' } & LoadedResources
+type PlaybackStateSeeking = { type: 'seeking'; wasPlaying: boolean } & LoadedResources
+
+type PlaybackStateMachine =
+  | PlaybackStateIdle
+  | PlaybackStateLoading
+  | PlaybackStateReady
+  | PlaybackStatePlaying
+  | PlaybackStatePaused
+  | PlaybackStateSeeking
 
 /**
  * Orchestrated playback interface for a single media clip.
@@ -103,9 +130,42 @@ export interface Playback {
 
 /**********************************************************************************/
 /*                                                                                */
+/*                                     Utils                                      */
+/*                                                                                */
+/**********************************************************************************/
+
+/** Check if state has loaded resources */
+function isLoaded(
+  state: PlaybackStateMachine,
+): state is PlaybackStateReady | PlaybackStatePlaying | PlaybackStatePaused | PlaybackStateSeeking {
+  return (
+    state.type === 'ready' ||
+    state.type === 'playing' ||
+    state.type === 'paused' ||
+    state.type === 'seeking'
+  )
+}
+
+/**********************************************************************************/
+/*                                                                                */
 /*                               Create Playback                                  */
 /*                                                                                */
 /**********************************************************************************/
+
+function transitionToPlaying(loadedState: LoadedResources): PlaybackStatePlaying {
+  return { type: 'playing', ...loadedState }
+}
+
+function transitionToPaused(loadedState: LoadedResources): PlaybackStatePaused {
+  return { type: 'paused', ...loadedState }
+}
+
+function transitionToSeeking(
+  loadedState: LoadedResources,
+  wasPlaying: boolean,
+): PlaybackStateSeeking {
+  return { type: 'seeking', wasPlaying, ...loadedState }
+}
 
 /**
  * Create an orchestrated playback instance that coordinates video and audio workers.
@@ -115,11 +175,7 @@ export function createPlayback(config: PlaybackConfig): Playback {
   const { videoWorker: pooledVideoWorker, audioWorker: pooledAudioWorker } = config
   log('createPlayback', { hasSchedulerBuffer: !!config.schedulerBuffer })
 
-  // State
-  let state: PlaybackState = 'idle'
-  let duration = 0
-  let hasVideo = false
-  let hasAudio = false
+  let state: PlaybackStateMachine = { type: 'idle' }
 
   // Get RPC interfaces from pooled workers
   const videoWorker = pooledVideoWorker.rpc
@@ -130,24 +186,21 @@ export function createPlayback(config: PlaybackConfig): Playback {
     videoWorker.setSchedulerBuffer(config.schedulerBuffer)
   }
 
-  // Audio scheduler (created after we know audio sample rate)
-  let audioScheduler: AudioScheduler | null = null
-
   return {
     get state() {
-      return state
+      return state.type
     },
 
     get duration() {
-      return duration
+      return isLoaded(state) ? state.duration : 0
     },
 
     get hasVideo() {
-      return hasVideo
+      return isLoaded(state) ? state.hasVideo : false
     },
 
     get hasAudio() {
-      return hasAudio
+      return isLoaded(state) ? state.hasAudio : false
     },
 
     get pooledVideoWorker() {
@@ -159,12 +212,12 @@ export function createPlayback(config: PlaybackConfig): Playback {
     },
 
     get audioScheduler() {
-      return audioScheduler
+      return isLoaded(state) ? state.audioScheduler : null
     },
 
     async load(clipId) {
       log('load', { clipId })
-      state = 'loading'
+      state = { type: 'loading' }
 
       // Load into both workers in parallel (they read from OPFS)
       const [videoResult, audioResult] = await Promise.all([
@@ -172,9 +225,9 @@ export function createPlayback(config: PlaybackConfig): Playback {
         audioWorker.load(clipId),
       ])
 
-      hasVideo = !!videoResult.videoTrack
-      hasAudio = !!audioResult.audioTrack
-      duration = Math.max(videoResult.duration, audioResult.duration)
+      const hasVideo = !!videoResult.videoTrack
+      const hasAudio = !!audioResult.audioTrack
+      const duration = Math.max(videoResult.duration, audioResult.duration)
 
       log('load complete', {
         hasVideo,
@@ -185,6 +238,7 @@ export function createPlayback(config: PlaybackConfig): Playback {
       })
 
       // Setup audio scheduler if we have audio
+      let audioScheduler: AudioScheduler | null = null
       if (hasAudio && audioResult.audioTrack) {
         const sampleRate = audioResult.audioTrack.sampleRate
         const channels = audioResult.audioTrack.channelCount
@@ -199,7 +253,11 @@ export function createPlayback(config: PlaybackConfig): Playback {
         // Pass ring buffer SharedArrayBuffers and target sample rate to audio worker
         // Worker writes decoded samples directly to ring buffer (lock-free)
         const contextSampleRate = audioScheduler.audioContext.sampleRate
-        audioWorker.setRingBuffer(audioScheduler.sampleBuffer, audioScheduler.controlBuffer, contextSampleRate)
+        audioWorker.setRingBuffer(
+          audioScheduler.sampleBuffer,
+          audioScheduler.controlBuffer,
+          contextSampleRate,
+        )
 
         log('audio routing setup via SharedArrayBuffer ring buffer', {
           sourceSampleRate: sampleRate,
@@ -208,7 +266,13 @@ export function createPlayback(config: PlaybackConfig): Playback {
         })
       }
 
-      state = 'ready'
+      state = {
+        type: 'ready',
+        duration,
+        hasVideo,
+        hasAudio,
+        audioScheduler,
+      }
 
       return {
         duration,
@@ -218,81 +282,96 @@ export function createPlayback(config: PlaybackConfig): Playback {
     },
 
     play(startTime, playbackSpeed = 1) {
-      log('play', { startTime, playbackSpeed, hasVideo, hasAudio })
+      if (!isLoaded(state)) {
+        log('play: not loaded')
+        return
+      }
 
-      state = 'playing'
+      log('play', { startTime, playbackSpeed, hasVideo: state.hasVideo, hasAudio: state.hasAudio })
 
       // Start both workers in lockstep
-      if (hasVideo) {
+      if (state.hasVideo) {
         videoWorker.play(startTime, playbackSpeed)
       }
-      if (hasAudio) {
+      if (state.hasAudio) {
         audioWorker.play(startTime, playbackSpeed)
-        audioScheduler?.play(startTime)
+        state.audioScheduler?.play(startTime)
       }
+
+      state = transitionToPlaying(state)
     },
 
     pause() {
+      if (!isLoaded(state)) {
+        log('pause: not loaded')
+        return
+      }
+
       log('pause')
 
-      state = 'paused'
-
       // Pause both workers
-      if (hasVideo) {
+      if (state.hasVideo) {
         videoWorker.pause()
       }
-      if (hasAudio) {
+      if (state.hasAudio) {
         audioWorker.pause()
-        audioScheduler?.pause()
+        state.audioScheduler?.pause()
       }
+
+      state = transitionToPaused(state)
     },
 
     async seek(time) {
-      log('seek', { time })
-      const wasPlaying = state === 'playing'
+      if (!isLoaded(state)) {
+        log('seek: not loaded')
+        return
+      }
 
-      state = 'seeking'
+      log('seek', { time })
+      const wasPlaying = state.type === 'playing'
 
       // Pause if playing
       if (wasPlaying) {
-        if (hasVideo) videoWorker.pause()
-        if (hasAudio) {
+        if (state.hasVideo) videoWorker.pause()
+        if (state.hasAudio) {
           audioWorker.pause()
-          audioScheduler?.pause()
+          state.audioScheduler?.pause()
         }
       }
 
+      state = transitionToSeeking(state, wasPlaying)
+
       // Seek both workers in parallel
       await Promise.all([
-        hasVideo ? videoWorker.seek(time) : Promise.resolve(),
-        hasAudio ? audioWorker.seek(time) : Promise.resolve(),
+        state.hasVideo ? videoWorker.seek(time) : Promise.resolve(),
+        state.hasAudio ? audioWorker.seek(time) : Promise.resolve(),
       ])
 
       // Seek audio scheduler
-      if (hasAudio) {
-        audioScheduler?.seek(time)
+      if (state.hasAudio) {
+        state.audioScheduler?.seek(time)
       }
 
       // Resume if was playing
       if (wasPlaying) {
-        state = 'playing'
-        if (hasVideo) videoWorker.play(time)
-        if (hasAudio) {
+        if (state.hasVideo) videoWorker.play(time)
+        if (state.hasAudio) {
           audioWorker.play(time)
-          audioScheduler?.play(time)
+          state.audioScheduler?.play(time)
         }
+        state = transitionToPlaying(state)
       } else {
-        state = 'paused'
+        state = transitionToPaused(state)
       }
     },
 
     async getVideoFrameAtTime(time) {
-      if (!hasVideo) return null
+      if (!isLoaded(state) || !state.hasVideo) return null
       return videoWorker.getFrameAtTime(time)
     },
 
     async getAudioAtTime(time) {
-      if (!hasAudio) return null
+      if (!isLoaded(state) || !state.hasAudio) return null
       return audioWorker.getAudioAtTime(time)
     },
 
@@ -310,14 +389,15 @@ export function createPlayback(config: PlaybackConfig): Playback {
       log('destroy')
 
       // Stop and destroy audio scheduler
-      audioScheduler?.stop()
-      audioScheduler?.destroy()
-      audioScheduler = null
+      if (isLoaded(state) && state.audioScheduler) {
+        state.audioScheduler.stop()
+        state.audioScheduler.destroy()
+      }
 
       // Note: Workers are pooled - caller is responsible for releasing them
       // We don't terminate them here
 
-      state = 'idle'
+      state = { type: 'idle' }
     },
   }
 }
