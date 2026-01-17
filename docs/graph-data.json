@@ -1814,6 +1814,61 @@
       "created_at": "2026-01-17T00:53:30.236549+01:00",
       "updated_at": "2026-01-17T00:53:30.236549+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"2c388ce\",\"confidence\":95}"
+    },
+    {
+      "id": 166,
+      "change_id": "6576c84b-1491-4398-a72e-20f55ff7dcec",
+      "node_type": "observation",
+      "title": "SyncAccessHandle vs BlobSource trade-off: SyncAccessHandle gives sync I/O but is exclusive (one handle per file). BlobSource allows concurrent reads with async overhead. Decode time is the bottleneck, not reads - BlobSource is sufficient.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T00:57:32.038663+01:00",
+      "updated_at": "2026-01-17T00:57:32.038663+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 167,
+      "change_id": "803ce0b4-b156-405c-8ba6-cc2b659a32ed",
+      "node_type": "action",
+      "title": "Add streamStemToOPFS to stream ATProto blobs directly to OPFS",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T01:05:20.491036+01:00",
+      "updated_at": "2026-01-17T01:05:20.491036+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 168,
+      "change_id": "e111b507-f751-4264-8ec9-c0c4c2d2769b",
+      "node_type": "outcome",
+      "title": "ATProto streaming to OPFS working - handles both CredentialSession and OAuthSession",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T01:20:38.054163+01:00",
+      "updated_at": "2026-01-17T01:20:38.054163+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 169,
+      "change_id": "8dd09f43-b5f8-498f-9d1b-c6c173e8b9b6",
+      "node_type": "observation",
+      "title": "ATProto Agent PDS URL: CredentialSession has dispatchUrl, OAuthSession has getTokenInfo().aud - both point to the user's PDS",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T01:20:46.515749+01:00",
+      "updated_at": "2026-01-17T01:20:46.515749+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 170,
+      "change_id": "22d3fe15-3051-44e8-921a-14c18805e8a2",
+      "node_type": "outcome",
+      "title": "Committed: feat: stream ATProto stems directly to OPFS",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T01:21:32.443320+01:00",
+      "updated_at": "2026-01-17T01:21:32.443320+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"6135811\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -3400,6 +3455,61 @@
       "weight": 1.0,
       "rationale": "Committed",
       "created_at": "2026-01-17T00:53:30.332604+01:00"
+    },
+    {
+      "id": 145,
+      "from_node_id": 155,
+      "to_node_id": 166,
+      "from_change_id": "9fc2f944-5233-4322-afcb-5c27fcb600d2",
+      "to_change_id": "6576c84b-1491-4398-a72e-20f55ff7dcec",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Design exploration",
+      "created_at": "2026-01-17T00:57:32.200459+01:00"
+    },
+    {
+      "id": 146,
+      "from_node_id": 155,
+      "to_node_id": 167,
+      "from_change_id": "9fc2f944-5233-4322-afcb-5c27fcb600d2",
+      "to_change_id": "803ce0b4-b156-405c-8ba6-cc2b659a32ed",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "ATProto streaming integration",
+      "created_at": "2026-01-17T01:05:20.584278+01:00"
+    },
+    {
+      "id": 147,
+      "from_node_id": 167,
+      "to_node_id": 168,
+      "from_change_id": "803ce0b4-b156-405c-8ba6-cc2b659a32ed",
+      "to_change_id": "e111b507-f751-4264-8ec9-c0c4c2d2769b",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation complete",
+      "created_at": "2026-01-17T01:20:38.153263+01:00"
+    },
+    {
+      "id": 148,
+      "from_node_id": 167,
+      "to_node_id": 169,
+      "from_change_id": "803ce0b4-b156-405c-8ba6-cc2b659a32ed",
+      "to_change_id": "8dd09f43-b5f8-498f-9d1b-c6c173e8b9b6",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Discovery",
+      "created_at": "2026-01-17T01:20:46.610898+01:00"
+    },
+    {
+      "id": 149,
+      "from_node_id": 167,
+      "to_node_id": 170,
+      "from_change_id": "803ce0b4-b156-405c-8ba6-cc2b659a32ed",
+      "to_change_id": "22d3fe15-3051-44e8-921a-14c18805e8a2",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-17T01:21:32.452622+01:00"
     }
   ]
 }
