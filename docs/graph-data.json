@@ -1924,6 +1924,28 @@
       "created_at": "2026-01-17T17:09:24.255395+01:00",
       "updated_at": "2026-01-17T17:09:24.255395+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"05767b3\",\"confidence\":95}"
+    },
+    {
+      "id": 176,
+      "change_id": "cdf3104d-096a-4cc5-9b5e-6d939c61025d",
+      "node_type": "action",
+      "title": "refactor: replace handoff with ahead-scheduler",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T17:33:05.262726+01:00",
+      "updated_at": "2026-01-17T17:33:05.262726+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 177,
+      "change_id": "04337169-7910-4220-9a8c-3f9d74ef811f",
+      "node_type": "outcome",
+      "title": "Committed: replace handoff mechanism with ahead-scheduler abstraction",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T17:33:09.508656+01:00",
+      "updated_at": "2026-01-17T17:33:09.508656+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"2bb395c\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -3598,6 +3620,17 @@
       "weight": 1.0,
       "rationale": "Committed",
       "created_at": "2026-01-17T17:09:30.021913+01:00"
+    },
+    {
+      "id": 153,
+      "from_node_id": 176,
+      "to_node_id": 177,
+      "from_change_id": "cdf3104d-096a-4cc5-9b5e-6d939c61025d",
+      "to_change_id": "04337169-7910-4220-9a8c-3f9d74ef811f",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-17T17:33:12.975189+01:00"
     }
   ]
 }
