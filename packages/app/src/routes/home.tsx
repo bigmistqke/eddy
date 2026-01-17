@@ -1,4 +1,4 @@
-import { deleteOrphanedStems, deleteProject, listProjects } from '@eddy/atproto/crud'
+import { deleteOrphanedStems, deleteProject, listProjects } from '@eddy/atproto'
 import { A } from '@solidjs/router'
 import { FiTrash2 } from 'solid-icons/fi'
 import { For, Show, useTransition } from 'solid-js'

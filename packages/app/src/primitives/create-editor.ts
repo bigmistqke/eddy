@@ -1,7 +1,7 @@
 import { $MESSENGER, rpc, transfer } from '@bigmistqke/rpc/messenger'
 import { every, whenEffect, whenMemo } from '@bigmistqke/solid-whenever'
 import type { Agent } from '@eddy/atproto'
-import { getProjectByRkey, publishProject, streamStemToOPFS } from '@eddy/atproto/crud'
+import { getProjectByRkey, publishProject, streamStemToOPFS } from '@eddy/atproto'
 import {
   decodeClipAudio,
   extractAudioChunk,

@@ -10,9 +10,6 @@
   "scripts": {
     "types": "tsc --noEmit"
   },
-  "dependencies": {
-    "@bigmistqke/view.gl": "^0.1.9"
-  },
   "devDependencies": {
     "typescript": "^5.7.0"
   }

@@ -5,6 +5,6 @@
     "rootDir": "./src",
     "lib": ["DOM"],  
   },
-  "include": ["src/**/*", "../app/src/components/auth/AuthProvider.tsx"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
