@@ -28,7 +28,7 @@ import { createClock, type Clock } from './create-clock'
 
 type CompositorRPC = RPC<CompositorWorkerMethods>
 
-const log = debug('create-player', false)
+const log = debug('make-player', false)
 const perf = getGlobalPerfMonitor()
 
 export interface PlayerState {
@@ -150,9 +150,9 @@ interface ClipEntry {
  * Create a player that manages compositor, playback workers, and audio pipelines.
  * Uses direct worker-to-worker frame transfer for video.
  */
-export async function createPlayer(options: CreatePlayerOptions): Promise<Player> {
+export async function makePlayer(options: CreatePlayerOptions): Promise<Player> {
   const { canvas: canvasElement, width, height, project, schedulerBuffer } = options
-  log('createPlayer', { width, height, schedulerBuffer })
+  log('makePlayer', { width, height, schedulerBuffer })
 
   // Set canvas size and transfer to worker
   canvasElement.width = width

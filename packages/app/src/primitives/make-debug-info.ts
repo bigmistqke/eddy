@@ -1,4 +1,4 @@
-import type { Player } from '~/primitives/create-player'
+import type { Player } from '~/primitives/make-player'
 
 export interface DebugInfo {
   player: Player

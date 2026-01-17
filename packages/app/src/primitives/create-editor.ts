@@ -26,7 +26,7 @@ import type { CaptureWorkerMethods } from '~/workers/capture.worker'
 import CaptureWorker from '~/workers/capture.worker?worker'
 import type { MuxerWorkerMethods } from '~/workers/muxer.worker'
 import MuxerWorker from '~/workers/muxer.worker?worker'
-import { createPlayer } from './create-player'
+import { makePlayer } from './make-player'
 
 const log = debug('create-editor', false)
 
@@ -134,7 +134,7 @@ export function createEditor(options: CreateEditorOptions) {
       () => project().canvas.height,
     ),
     async ([canvas, width, height], { onCleanup }) => {
-      const result = await createPlayer({
+      const result = await makePlayer({
         canvas,
         width,
         height,
