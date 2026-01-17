@@ -1,5 +1,5 @@
 /**
- * CreatePlayback
+ * MakePlayback
  *
  * Orchestrated Playback - coordinates video and audio workers in lockstep.
  * Uses a state machine with discriminated unions to prevent impossible states.
@@ -15,12 +15,12 @@ import type { RPC } from '@bigmistqke/rpc/messenger'
 import { createAudioScheduler, type AudioScheduler } from '@eddy/audio'
 import type { AudioTrackInfo, VideoTrackInfo } from '@eddy/media'
 import { debug } from '@eddy/utils'
-import type { SchedulerBuffer } from '~/lib/scheduler'
-import type { PooledWorker } from '~/lib/worker-pool'
+import type { SchedulerBuffer } from '~/primitives/make-scheduler'
+import type { PooledWorker } from '~/primitives/make-worker-pool'
 import type { AudioPlaybackWorkerMethods } from '~/workers/playback.audio.worker'
 import type { VideoPlaybackWorkerMethods } from '~/workers/playback.video.worker'
 
-const log = debug('create-playback', false)
+const log = debug('make-playback', false)
 
 export type VideoWorkerRPC = RPC<VideoPlaybackWorkerMethods>
 export type AudioWorkerRPC = RPC<AudioPlaybackWorkerMethods>
@@ -171,9 +171,9 @@ function transitionToSeeking(
  * Create an orchestrated playback instance that coordinates video and audio workers.
  * Workers are provided via pools - caller is responsible for releasing them.
  */
-export function createPlayback(config: PlaybackConfig): Playback {
+export function makePlayback(config: PlaybackConfig): Playback {
   const { videoWorker: pooledVideoWorker, audioWorker: pooledAudioWorker } = config
-  log('createPlayback', { hasSchedulerBuffer: !!config.schedulerBuffer })
+  log('makePlayback', { hasSchedulerBuffer: !!config.schedulerBuffer })
 
   let state: PlaybackStateMachine = { type: 'idle' }
 

@@ -2,7 +2,7 @@ import { A } from '@solidjs/router'
 import { type Component, Show } from 'solid-js'
 import { LoginButton } from '~/components/auth/LoginButton'
 import { UserMenu } from '~/components/auth/UserMenu'
-import { useAuth } from '~/lib/atproto/auth-context'
+import { useAuth } from '@eddy/atproto/auth-context'
 import styles from './Header.module.css'
 
 export const Header: Component = () => {

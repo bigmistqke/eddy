@@ -1,4 +1,4 @@
-import type { Player } from '~/hooks/create-player'
+import type { Player } from '~/primitives/create-player'
 
 export interface DebugInfo {
   player: Player
@@ -10,7 +10,7 @@ export interface DebugInfo {
   }
 }
 
-export function createDebugInfo(player: Player) {
+export function makeDebugInfo(player: Player) {
   ;(window as any).__EDDY_DEBUG__ = {
     player,
     getState: () => ({

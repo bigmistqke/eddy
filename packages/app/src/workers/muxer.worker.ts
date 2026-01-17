@@ -1,8 +1,8 @@
 import { expose } from '@bigmistqke/rpc/messenger'
 import { createMuxer, type AudioFrameData, type Muxer, type VideoFrameData } from '@eddy/media'
 import { debug } from '@eddy/utils'
-import { writeBlob } from '~/lib/opfs'
-import { createScheduler, type RecorderScheduler, type SchedulerBuffer } from '~/lib/scheduler'
+import { writeBlob } from '~/opfs'
+import { makeScheduler, type RecorderScheduler, type SchedulerBuffer } from '~/primitives/make-scheduler'
 
 const log = debug('muxer-worker', false)
 
@@ -80,7 +80,7 @@ function addAudioFrame(data: AudioFrameData) {
 expose<MuxerWorkerMethods>({
   setSchedulerBuffer(buffer) {
     log('setSchedulerBuffer')
-    scheduler = createScheduler(buffer as SchedulerBuffer).recorder
+    scheduler = makeScheduler(buffer as SchedulerBuffer).recorder
   },
 
   addVideoFrame,

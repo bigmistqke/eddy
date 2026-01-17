@@ -4,17 +4,17 @@ import type { Project } from '@eddy/lexicons'
 import { createLoop, debug, getGlobalPerfMonitor } from '@eddy/utils'
 import { createEffect, createMemo, createSignal, on, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
-import { createAheadScheduler, SCHEDULE_AHEAD } from '~/lib/create-ahead-scheduler'
+import { makeAheadScheduler, SCHEDULE_AHEAD } from '~/primitives/make-ahead-scheduler'
 import {
-  createPlayback,
+  makePlayback,
   type AudioWorkerRPC,
   type Playback,
   type VideoWorkerRPC,
-} from '~/lib/create-playback'
-import type { CompiledTimeline } from '~/lib/layout-types'
-import type { SchedulerBuffer } from '~/lib/scheduler'
-import { compileLayoutTimeline, injectPreviewClips } from '~/lib/timeline-compiler'
-import { createWorkerPool } from '~/lib/worker-pool'
+} from '~/primitives/make-playback'
+import type { CompiledTimeline } from '~/primitives/layout-types'
+import type { SchedulerBuffer } from '~/primitives/make-scheduler'
+import { compileLayoutTimeline, injectPreviewClips } from '~/primitives/compile-layout-timeline'
+import { makeWorkerPool } from '~/primitives/make-worker-pool'
 import type { CompositorWorkerMethods } from '~/workers/compositor.worker'
 import CompositorWorker from '~/workers/compositor.worker?worker'
 import type { AudioPlaybackWorkerMethods } from '~/workers/playback.audio.worker'
@@ -213,13 +213,13 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
   })
 
   // Worker pools for video and audio playback
-  const videoWorkerPool = createWorkerPool<VideoWorkerRPC>({
+  const videoWorkerPool = makeWorkerPool<VideoWorkerRPC>({
     create: () => new VideoPlaybackWorker(),
     wrap: worker => rpc<VideoPlaybackWorkerMethods>(worker),
     maxSize: 8,
   })
 
-  const audioWorkerPool = createWorkerPool<AudioWorkerRPC>({
+  const audioWorkerPool = makeWorkerPool<AudioWorkerRPC>({
     create: () => new AudioPlaybackWorker(),
     wrap: worker => rpc<AudioPlaybackWorkerMethods>(worker),
     maxSize: 8,
@@ -232,7 +232,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
   const [clips, setClips] = createStore<Record<string, ClipEntry>>({})
 
   // Ahead scheduler for pre-buffering playbacks (used for looping)
-  const aheadScheduler = createAheadScheduler({
+  const aheadScheduler = makeAheadScheduler({
     videoWorkerPool,
     audioWorkerPool,
     schedulerBuffer,
@@ -280,7 +280,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
     const audioWorker = audioWorkerPool.acquire()
 
     // Create orchestrated playback
-    const playback = createPlayback({
+    const playback = makePlayback({
       videoWorker,
       audioWorker,
       schedulerBuffer,

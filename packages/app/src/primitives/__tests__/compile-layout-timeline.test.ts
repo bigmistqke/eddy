@@ -6,7 +6,7 @@ import {
   getNextTransition,
   getPlacementsInRange,
   findSegmentAtTime,
-} from '../timeline-compiler'
+} from '../compile-layout-timeline'
 
 /** Create a minimal valid project for testing */
 function createTestProject(overrides: Partial<Project> = {}): Project {

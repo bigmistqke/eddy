@@ -1,5 +1,5 @@
 import { type Component, createSignal, Show } from 'solid-js'
-import { useAuth } from '~/lib/atproto/auth-context'
+import { useAuth } from '@eddy/atproto/auth-context'
 import styles from './UserMenu.module.css'
 
 export const UserMenu: Component = () => {

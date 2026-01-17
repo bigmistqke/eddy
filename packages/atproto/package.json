@@ -1,0 +1,28 @@
+{
+  "name": "@eddy/atproto",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./auth": "./src/auth.ts",
+    "./auth-context": "./src/auth-context.tsx",
+    "./crud": "./src/crud.ts"
+  },
+  "scripts": {
+    "types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@atproto/api": "^0.13.20",
+    "@atproto/oauth-client-browser": "^0.3.10",
+    "@eddy/lexicons": "workspace:*",
+    "@eddy/utils": "workspace:*",
+    "@solidjs/router": "^0.15.2",
+    "solid-js": "^1.9.3",
+    "valibot": "^1.0.0-beta.9"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

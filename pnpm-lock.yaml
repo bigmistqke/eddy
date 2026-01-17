@@ -23,18 +23,15 @@ importers:
 
   packages/app:
     dependencies:
-      '@atproto/api':
-        specifier: ^0.13.0
-        version: 0.13.35
-      '@atproto/oauth-client-browser':
-        specifier: ^0.3.0
-        version: 0.3.38
       '@bigmistqke/rpc':
         specifier: link:../../../rpc/packages/rpc
         version: link:../../../rpc/packages/rpc
       '@bigmistqke/solid-whenever':
         specifier: ^0.1.1
         version: 0.1.1(solid-js@1.9.10)
+      '@eddy/atproto':
+        specifier: workspace:*
+        version: link:../atproto
       '@eddy/audio':
         specifier: workspace:*
         version: link:../audio
@@ -87,6 +84,34 @@ importers:
       vitest:
         specifier: ^3.0.0
         version: 3.2.4(@types/node@22.19.3)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)
+
+  packages/atproto:
+    dependencies:
+      '@atproto/api':
+        specifier: ^0.13.20
+        version: 0.13.35
+      '@atproto/oauth-client-browser':
+        specifier: ^0.3.10
+        version: 0.3.38
+      '@eddy/lexicons':
+        specifier: workspace:*
+        version: link:../lexicons
+      '@eddy/utils':
+        specifier: workspace:*
+        version: link:../utils
+      '@solidjs/router':
+        specifier: ^0.15.2
+        version: 0.15.4(solid-js@1.9.10)
+      solid-js:
+        specifier: ^1.9.3
+        version: 1.9.10
+      valibot:
+        specifier: ^1.0.0-beta.9
+        version: 1.2.0(typescript@5.9.3)
+    devDependencies:
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
 
   packages/audio:
     dependencies:

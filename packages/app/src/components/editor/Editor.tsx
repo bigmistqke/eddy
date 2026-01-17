@@ -30,8 +30,8 @@ function parseTime(str: string): number | null {
 
   return mins * 60 + secs + ms / 100
 }
-import { createEditor } from '~/hooks/create-editor'
-import { useAuth } from '~/lib/atproto/auth-context'
+import { createEditor } from '~/primitives/create-editor'
+import { useAuth } from '@eddy/atproto/auth-context'
 import styles from './Editor.module.css'
 import { Track } from './Track'
 

@@ -1,5 +1,5 @@
 /**
- * CreateAheadScheduler
+ * MakeAheadScheduler
  *
  * Manages pre-buffering of playbacks ahead of time for gapless transitions.
  * Used for composition looping and potentially future clip transitions.
@@ -11,10 +11,10 @@
  * - Returns prepared playbacks on activation
  */
 
-import type { Playback } from '~/lib/create-playback'
-import { createPlayback, type AudioWorkerRPC, type VideoWorkerRPC } from '~/lib/create-playback'
-import type { SchedulerBuffer } from '~/lib/scheduler'
-import type { WorkerPool } from '~/lib/worker-pool'
+import type { Playback } from '~/primitives/make-playback'
+import { makePlayback, type AudioWorkerRPC, type VideoWorkerRPC } from '~/primitives/make-playback'
+import type { SchedulerBuffer } from '~/primitives/make-scheduler'
+import type { WorkerPool } from '~/primitives/make-worker-pool'
 import { debug } from '@eddy/utils'
 
 const log = debug('ahead-scheduler', false)
@@ -81,7 +81,7 @@ export interface AheadScheduler {
 /*                                                                                */
 /**********************************************************************************/
 
-export function createAheadScheduler(config: AheadSchedulerConfig): AheadScheduler {
+export function makeAheadScheduler(config: AheadSchedulerConfig): AheadScheduler {
   const { videoWorkerPool, audioWorkerPool, schedulerBuffer, getAudioDestination } = config
 
   // Scheduled playbacks keyed by clipId
@@ -125,7 +125,7 @@ export function createAheadScheduler(config: AheadSchedulerConfig): AheadSchedul
       const audioWorker = audioWorkerPool.acquire()
 
       // Create playback
-      const playback = createPlayback({
+      const playback = makePlayback({
         videoWorker,
         audioWorker,
         schedulerBuffer,

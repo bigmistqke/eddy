@@ -20,7 +20,7 @@ const LOW_THRESHOLD = 2 // signal idle when queue drops below this
  * Create scheduler from buffer.
  * Returns playback and recorder interfaces.
  */
-export function createScheduler(buffer: SchedulerBuffer) {
+export function makeScheduler(buffer: SchedulerBuffer) {
   const view = new Int32Array(buffer)
 
   return {
@@ -41,6 +41,6 @@ export function createScheduler(buffer: SchedulerBuffer) {
   }
 }
 
-export type Scheduler = ReturnType<typeof createScheduler>
+export type Scheduler = ReturnType<typeof makeScheduler>
 export type PlaybackScheduler = Scheduler['playback']
 export type RecorderScheduler = Scheduler['recorder']

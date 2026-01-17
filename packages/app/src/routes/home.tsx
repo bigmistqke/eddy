@@ -1,10 +1,10 @@
 import { A } from '@solidjs/router'
 import { FiTrash2 } from 'solid-icons/fi'
 import { For, Show, useTransition } from 'solid-js'
-import { action } from '~/hooks/action'
-import { resource } from '~/hooks/resource'
-import { useAuth } from '~/lib/atproto/auth-context'
-import { deleteOrphanedStems, deleteProject, listProjects } from '~/lib/atproto/crud'
+import { action } from '~/primitives/action'
+import { resource } from '~/primitives/resource'
+import { useAuth } from '@eddy/atproto/auth-context'
+import { deleteOrphanedStems, deleteProject, listProjects } from '@eddy/atproto/crud'
 import styles from './home.module.css'
 
 export default function Home() {

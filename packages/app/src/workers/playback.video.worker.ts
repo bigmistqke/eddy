@@ -2,8 +2,8 @@ import { expose, rpc, transfer, type RPC } from '@bigmistqke/rpc/messenger'
 import type { VideoTrackInfo } from '@eddy/media'
 import { debug } from '@eddy/utils'
 import { createVideoPlayback, type VideoPlaybackState } from '@eddy/video'
-import { createOPFSSource } from '~/lib/opfs'
-import { createScheduler, type PlaybackScheduler, type SchedulerBuffer } from '~/lib/scheduler'
+import { makeOPFSSource } from '~/opfs'
+import { makeScheduler, type PlaybackScheduler, type SchedulerBuffer } from '~/primitives/make-scheduler'
 
 const log = debug('playback-worker', false)
 
@@ -103,14 +103,14 @@ expose<VideoPlaybackWorkerMethods>({
   setSchedulerBuffer(buffer) {
     log('setSchedulerBuffer')
 
-    scheduler = createScheduler(buffer).playback
+    scheduler = makeScheduler(buffer).playback
   },
 
   async load(clipId) {
     log('load', { clipId })
 
     // Create OPFS source and load
-    const source = await createOPFSSource(clipId)
+    const source = await makeOPFSSource(clipId)
     return playback.load(source)
   },
 

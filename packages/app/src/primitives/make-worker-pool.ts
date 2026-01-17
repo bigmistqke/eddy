@@ -46,7 +46,7 @@ export interface WorkerPoolOptions<T> {
 /**
  * Create a generic worker pool
  */
-export function createWorkerPool<T>(options: WorkerPoolOptions<T>): WorkerPool<T> {
+export function makeWorkerPool<T>(options: WorkerPoolOptions<T>): WorkerPool<T> {
   const { create, wrap, reset, maxSize = 8 } = options
 
   const pool: PooledWorker<T>[] = []
