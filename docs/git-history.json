@@ -1,5 +1,21 @@
 [
   {
+    "hash": "3348d8af14803541cffa8a3666e0b87ed6d250f7",
+    "short_hash": "3348d8a",
+    "author": "bigmistqke",
+    "date": "2026-01-17T18:03:22+01:00",
+    "message": "refactor: rename create-* to make-* in @eddy/audio package\n\nAlign audio package with naming convention established in app primitives:\n- audio-elements → audio-element-registry\n- create-audio-bus → make-audio-bus\n- create-audio-playback → make-audio-playback\n- create-effect-chain → make-effect-chain\n- audio-decoder → make-audio-decoder\n- ring-buffer → audio-ring-buffer\n- scheduler → make-audio-scheduler\n- offline-audio-mixer → make-offline-audio-mixer",
+    "files_changed": 21
+  },
+  {
+    "hash": "b1512bda0f473885c883a580696738dac71352b3",
+    "short_hash": "b1512bd",
+    "author": "bigmistqke",
+    "date": "2026-01-17T17:55:51+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
     "hash": "4d31bef1f2d85fff4d3ef90c3bc4fef113e429b3",
     "short_hash": "4d31bef",
     "author": "bigmistqke",
@@ -8,20 +24,12 @@
     "files_changed": 4
   },
   {
-    "hash": "0c593e4b8b30f273d6f14bdb7098ac4fdc19f759",
-    "short_hash": "0c593e4",
+    "hash": "4d31bef1f2d85fff4d3ef90c3bc4fef113e429b3",
+    "short_hash": "4d31bef",
     "author": "bigmistqke",
-    "date": "2026-01-17T17:53:06+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "1773a45acb871d05f69a80aafd169c8489096761",
-    "short_hash": "1773a45",
-    "author": "bigmistqke",
-    "date": "2026-01-17T17:52:18+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
+    "date": "2026-01-17T17:55:40+01:00",
+    "message": "refactor: consolidate layout-types into compile-layout-timeline\n\nMove all types from layout-types.ts directly into compile-layout-timeline.ts\nsince they're only used by this module and its consumers. Reduces file count\nand keeps related code together.",
+    "files_changed": 4
   },
   {
     "hash": "9cb61d22fae6f3a011d4c5dcebca60feb6215bd8",
