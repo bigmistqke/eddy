@@ -1,10 +1,14 @@
 import { expose } from '@bigmistqke/rpc/messenger'
-import { createMuxer, type AudioFrameData, type Muxer, type VideoFrameData } from '@eddy/media'
+import { makeMuxer, type AudioFrameData, type Muxer, type VideoFrameData } from '@eddy/media'
 import { debug } from '@eddy/utils'
 import { writeBlob } from '~/opfs'
-import { makeScheduler, type RecorderScheduler, type SchedulerBuffer } from '~/primitives/make-scheduler'
+import {
+  makeScheduler,
+  type RecorderScheduler,
+  type SchedulerBuffer,
+} from '~/primitives/make-scheduler'
 
-const log = debug('muxer-worker', false)
+const log = debug('muxer.worker', false)
 
 export interface MuxerWorkerMethods {
   /**
@@ -107,7 +111,7 @@ expose<MuxerWorkerMethods>({
 
     log('pre-initializing VP9 + Opus encoders...')
 
-    muxer = createMuxer({ videoCodec: 'vp9', videoBitrate: 2_000_000, audio: true })
+    muxer = makeMuxer({ videoCodec: 'vp9', videoBitrate: 2_000_000, audio: true })
     await muxer.init()
 
     log('pre-initialization complete')

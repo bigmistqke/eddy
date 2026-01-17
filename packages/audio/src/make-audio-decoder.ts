@@ -1,7 +1,7 @@
 import type { AudioTrackInfo, DemuxedSample, Demuxer } from '@eddy/media'
 import { debug } from '@eddy/utils'
 
-const log = debug('audio-decoder', false)
+const log = debug('audio:make-audio-decoder', false)
 
 export interface AudioDecoderHandle {
   readonly config: AudioDecoderConfig
@@ -35,7 +35,7 @@ export interface AudioDecoderHandle {
   close(): void
 }
 
-export interface CreateAudioDecoderOptions {
+export interface MakeAudioDecoderOptions {
   /**
    * Called when audio data is decoded
    * If not provided, data is collected internally
@@ -54,7 +54,7 @@ export interface CreateAudioDecoderOptions {
 export async function makeAudioDecoder(
   demuxer: Demuxer,
   _trackInfo: AudioTrackInfo,
-  options: CreateAudioDecoderOptions = {},
+  options: MakeAudioDecoderOptions = {},
 ): Promise<AudioDecoderHandle> {
   log('createAudioDecoder')
 

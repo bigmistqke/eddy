@@ -1,7 +1,7 @@
 import { rpc, transfer, type RPC } from '@bigmistqke/rpc/messenger'
 import { makeAudioBus, type AudioBus } from '@eddy/audio'
 import type { Project } from '@eddy/lexicons'
-import { createLoop, debug, getGlobalPerfMonitor } from '@eddy/utils'
+import { debug, getGlobalPerfMonitor, makeLoop } from '@eddy/utils'
 import { createEffect, createMemo, createSignal, on, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import {
@@ -28,7 +28,7 @@ import { createClock, type Clock } from './create-clock'
 
 type CompositorRPC = RPC<CompositorWorkerMethods>
 
-const log = debug('player', false)
+const log = debug('create-player', false)
 const perf = getGlobalPerfMonitor()
 
 export interface PlayerState {
@@ -426,7 +426,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
    * Render loop - drives compositor rendering and handles looping.
    * Video frames are streamed directly from playback workers to compositor.
    */
-  const renderLoop = createLoop(() => {
+  const renderLoop = makeLoop(() => {
     perf.start('renderLoop')
 
     const time = clock.tick()

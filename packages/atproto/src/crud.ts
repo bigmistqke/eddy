@@ -1,6 +1,5 @@
 import type { Agent } from '@atproto/api'
 import {
-  type Clip,
   type ClipSource,
   type ClipSourceStem,
   type Project,
@@ -14,7 +13,7 @@ import {
 import { debug } from '@eddy/utils'
 import * as v from 'valibot'
 
-const log = debug('crud', false)
+const log = debug('atproto:crud', false)
 
 /** Check if a clip source is a stem reference */
 function isStemSource(source: ClipSource | undefined): source is ClipSourceStem {

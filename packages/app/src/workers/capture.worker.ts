@@ -2,7 +2,7 @@ import { expose, rpc } from '@bigmistqke/rpc/messenger'
 import type { AudioFrameData, VideoFrameData } from '@eddy/media'
 import { debug } from '@eddy/utils'
 
-const log = debug('capture-worker', false)
+const log = debug('capture.worker', false)
 
 export interface CaptureWorkerMethods {
   /** Set the muxer port for forwarding frames (called before start) */

@@ -38,7 +38,7 @@ export interface Loop {
  * loop.stop()
  * ```
  */
-export function createLoop(callback: (loop: Loop, timestamp: number) => void): Loop {
+export function makeLoop(callback: (loop: Loop, timestamp: number) => void): Loop {
   let loopId: number | null = null
 
   function tick(timestamp: DOMHighResTimeStamp): void {

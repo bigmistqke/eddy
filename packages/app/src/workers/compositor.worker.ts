@@ -1,6 +1,6 @@
 import { expose, type Transferred } from '@bigmistqke/rpc/messenger'
 import { debug } from '@eddy/utils'
-import { createCompositor, type Compositor } from '@eddy/video'
+import { makeVideoCompositor, type VideoCompositor } from '@eddy/video'
 import {
   getActivePlacements,
   PREVIEW_CLIP_ID,
@@ -8,7 +8,7 @@ import {
   type Placement,
 } from '~/primitives/compile-layout-timeline'
 
-const log = debug('compositor-worker', false)
+const log = debug('compositor.worker', false)
 
 /** Stats returned from render() for dropped frame tracking */
 export interface RenderStats {
@@ -67,8 +67,8 @@ export interface CompositorWorkerMethods {
 /**********************************************************************************/
 
 // Compositor engines
-let mainEngine: Compositor | null = null
-let captureEngine: Compositor | null = null
+let mainEngine: VideoCompositor | null = null
+let captureEngine: VideoCompositor | null = null
 
 // Current compiled timeline
 let compiledTimeline: CompiledTimeline | null = null
@@ -184,11 +184,11 @@ expose<CompositorWorkerMethods>({
     log('init', { width, height })
 
     // Main canvas (visible)
-    mainEngine = createCompositor(offscreenCanvas)
+    mainEngine = makeVideoCompositor(offscreenCanvas)
 
     // Capture canvas (for pre-rendering, same size)
     const captureCanvas = new OffscreenCanvas(width, height)
-    captureEngine = createCompositor(captureCanvas)
+    captureEngine = makeVideoCompositor(captureCanvas)
   },
 
   setTimeline(newTimeline) {

@@ -10,7 +10,7 @@ import {
   resumeAudioContext,
 } from '@eddy/audio'
 import type { AudioEffect, Clip, ClipSource, ClipSourceStem, Project, Track } from '@eddy/lexicons'
-import { createMuxer } from '@eddy/media'
+import { makeMuxer } from '@eddy/media'
 import { assertedNotNullish, debug } from '@eddy/utils'
 import { createEffect, createSelector, createSignal, mapArray, type Accessor } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
@@ -28,7 +28,7 @@ import type { MuxerWorkerMethods } from '~/workers/muxer.worker'
 import MuxerWorker from '~/workers/muxer.worker?worker'
 import { createPlayer } from './create-player'
 
-const log = debug('editor', false)
+const log = debug('create-editor', false)
 
 // Cache for clip ArrayBuffers (converted from Blobs)
 const clipBufferCache = new Map<string, ArrayBuffer>()
@@ -649,7 +649,7 @@ export function createEditor(options: CreateEditorOptions) {
       log('export: rendering video', { totalFrames, duration: timeline.duration })
 
       // Initialize muxer
-      const muxer = createMuxer({
+      const muxer = makeMuxer({
         videoBitrate: 2_000_000,
         audioBitrate: 128_000,
         audio: true,

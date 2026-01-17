@@ -1,13 +1,8 @@
 import { expose } from '@bigmistqke/rpc/messenger'
-import {
-  createDemuxer,
-  type Demuxer,
-  type DemuxedSample,
-  type DemuxerInfo,
-} from '@eddy/media'
+import { makeDemuxer, type DemuxedSample, type Demuxer, type DemuxerInfo } from '@eddy/media'
 import { debug } from '@eddy/utils'
 
-const log = debug('demux-worker', false)
+const log = debug('demux-worker.worker', false)
 
 export interface DemuxWorkerMethods {
   /** Initialize demuxer with file data */
@@ -50,7 +45,7 @@ expose<DemuxWorkerMethods>({
       demuxer.destroy()
     }
 
-    demuxer = await createDemuxer(buffer)
+    demuxer = await makeDemuxer(buffer)
     log('init complete', { duration: demuxer.info.duration })
 
     return demuxer.info

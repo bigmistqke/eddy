@@ -16,7 +16,7 @@ import {
 import type { RingBufferProcessorMethods } from './ring-buffer-processor'
 import workletURL from './ring-buffer-processor?worker&url'
 
-const log = debug('audio-scheduler', false)
+const log = debug('audio:make-audio-scheduler', false)
 
 /** Playback state */
 export type AudioSchedulerState = 'stopped' | 'playing' | 'paused'

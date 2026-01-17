@@ -1,10 +1,10 @@
 import type { AudioEffect } from '@eddy/lexicons'
-import { createDemuxer } from '@eddy/media'
+import { makeDemuxer } from '@eddy/media'
 import { debug } from '@eddy/utils'
 import { makeAudioDecoder } from './make-audio-decoder'
 import { makeEffectChain } from './make-effect-chain'
 
-const log = debug('offline-audio-mixer', false)
+const log = debug('audio:make-offline-audio-mixer', false)
 
 export interface TrackAudioConfig {
   /** Audio buffer containing decoded audio */
@@ -211,7 +211,7 @@ export async function decodeClipAudio(
 
   try {
     // Create demuxer
-    const demuxer = await createDemuxer(buffer)
+    const demuxer = await makeDemuxer(buffer)
 
     // Check for audio track
     if (demuxer.info.audioTracks.length === 0) {

@@ -9,7 +9,7 @@ import {
   type InputVideoTrack,
 } from 'mediabunny'
 
-const log = debug('demuxer', false)
+const log = debug('media:demuxer', false)
 
 export interface VideoTrackInfo {
   id: number
@@ -151,7 +151,7 @@ async function parseAudioTrack(track: InputAudioTrack, index: number): Promise<A
   }
 }
 
-export async function createDemuxer(source: ArrayBuffer | Blob): Promise<Demuxer> {
+export async function makeDemuxer(source: ArrayBuffer | Blob): Promise<Demuxer> {
   log('createDemuxer', {
     sourceType: source instanceof Blob ? 'Blob' : 'ArrayBuffer',
     size: source instanceof Blob ? source.size : source.byteLength,

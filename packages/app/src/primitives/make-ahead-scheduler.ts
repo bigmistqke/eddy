@@ -11,13 +11,13 @@
  * - Returns prepared playbacks on activation
  */
 
+import { debug } from '@eddy/utils'
 import type { Playback } from '~/primitives/make-playback'
 import { makePlayback, type AudioWorkerRPC, type VideoWorkerRPC } from '~/primitives/make-playback'
 import type { SchedulerBuffer } from '~/primitives/make-scheduler'
 import type { WorkerPool } from '~/primitives/make-worker-pool'
-import { debug } from '@eddy/utils'
 
-const log = debug('ahead-scheduler', false)
+const log = debug('make-ahead-scheduler', false)
 
 /** How far ahead to schedule (seconds) */
 export const SCHEDULE_AHEAD = 0.5

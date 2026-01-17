@@ -10,13 +10,13 @@ const log = debug('playback:create-decoder', false)
 /**********************************************************************************/
 
 /** Result of a decode operation */
-export type DecodeResult =
+export type VideoDecodeResult =
   | { type: 'frame'; frame: VideoFrame }
   | { type: 'skipped'; reason: 'not-ready' | 'backpressure' | 'external' }
   | { type: 'needs-keyframe'; time: number }
 
 /** Configuration for managed decoder */
-export interface DecoderConfig {
+export interface MakeVideoDecoderOptions {
   /** Video decoder configuration */
   videoConfig: VideoDecoderConfig
   /** Backpressure threshold for decode queue */
@@ -26,9 +26,9 @@ export interface DecoderConfig {
 }
 
 /** Managed video decoder with automatic recovery */
-export interface Decoder {
+export interface VideoDecoderHandle {
   /** Decode a sample - returns sync if frame ready, Promise if waiting */
-  decode(sample: DemuxedSample): DecodeResult | Promise<DecodeResult>
+  decode(sample: DemuxedSample): VideoDecodeResult | Promise<VideoDecodeResult>
   /** Reset decoder state (for seeking) */
   reset(): void
   /** Close decoder and release resources */
@@ -55,11 +55,11 @@ export interface Decoder {
  * - Backpressure-based frame skipping
  * - Promise-based frame output
  */
-export function createDecoder({
+export function makeVideoDecoder({
   videoConfig,
   queueThreshold = 3,
   shouldSkipDeltaFrame,
-}: DecoderConfig): Decoder {
+}: MakeVideoDecoderOptions): VideoDecoderHandle {
   let decoder: VideoDecoder | null = null
   let isReady = false
   let pendingRecoveryTime: number | null = null
@@ -147,7 +147,7 @@ export function createDecoder({
       return decoder?.state ?? 'none'
     },
 
-    decode(sample): DecodeResult | Promise<DecodeResult> {
+    decode(sample): VideoDecodeResult | Promise<VideoDecodeResult> {
       // Check if recovery is pending from previous error
       if (pendingRecoveryTime !== null) {
         const time = pendingRecoveryTime
@@ -204,7 +204,7 @@ export function createDecoder({
         .then(frame => {
           isReady = true
           log('decode success (async)', { timestamp: frame.timestamp })
-          return { type: 'frame', frame } as DecodeResult
+          return { type: 'frame', frame } as VideoDecodeResult
         })
         .catch(error => {
           console.error('[playback:decoder] decode error', {
@@ -223,11 +223,11 @@ export function createDecoder({
             pendingRecoveryTime = sample.timestamp
             log('decoder closed, will request keyframe recovery', { pts: sample.timestamp })
             init()
-            return { type: 'needs-keyframe', time: sample.timestamp } as DecodeResult
+            return { type: 'needs-keyframe', time: sample.timestamp } as VideoDecodeResult
           }
 
           // For other errors, skip
-          return { type: 'skipped', reason: 'not-ready' } as DecodeResult
+          return { type: 'skipped', reason: 'not-ready' } as VideoDecodeResult
         })
     },
 

@@ -1,11 +1,15 @@
 import { expose, rpc, transfer, type RPC } from '@bigmistqke/rpc/messenger'
 import type { VideoTrackInfo } from '@eddy/media'
 import { debug } from '@eddy/utils'
-import { createVideoPlayback, type VideoPlaybackState } from '@eddy/video'
+import { makeVideoPlayback, type VideoPlaybackState } from '@eddy/video'
 import { makeOPFSSource } from '~/opfs'
-import { makeScheduler, type PlaybackScheduler, type SchedulerBuffer } from '~/primitives/make-scheduler'
+import {
+  makeScheduler,
+  type PlaybackScheduler,
+  type SchedulerBuffer,
+} from '~/primitives/make-scheduler'
 
-const log = debug('playback-worker', false)
+const log = debug('playback.video.worker', false)
 
 /** Methods exposed by compositor worker (subset we need) */
 interface CompositorFrameMethods {
@@ -60,7 +64,7 @@ export interface VideoPlaybackWorkerMethods {
 const workerId = Math.random().toString(36).substring(2, 8)
 log('Worker created with ID:', workerId)
 
-const playback = createVideoPlayback({
+const playback = makeVideoPlayback({
   onFrame(frame) {
     if (compositor && clipId) {
       if (frame) {

@@ -7,7 +7,7 @@
 
 import { debug } from '@eddy/utils'
 
-const log = debug('worker-pool', false)
+const log = debug('make-worker-pool', false)
 
 export interface PooledWorker<T> {
   worker: Worker

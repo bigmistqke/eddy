@@ -1,7 +1,7 @@
 import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
 import { assertedNotNullish, debug } from '@eddy/utils'
 
-const log = debug('compositor:engine', false)
+const log = debug('video:compositor:engine', false)
 
 /** Viewport in canvas coordinates */
 export interface Viewport {
@@ -36,7 +36,7 @@ interface CompositorView {
  * Renders VideoFrames to an OffscreenCanvas with viewport positioning.
  */
 
-export interface Compositor {
+export interface VideoCompositor {
   /** Canvas width */
   readonly width: number
   /** Canvas height */
@@ -91,7 +91,7 @@ const fragmentShader = glsl`
 `
 
 /** Create a video texture with standard settings */
-function createVideoTexture(glCtx: WebGL2RenderingContext | WebGLRenderingContext): WebGLTexture {
+function makeVideoTexture(glCtx: WebGL2RenderingContext | WebGLRenderingContext): WebGLTexture {
   const texture = glCtx.createTexture()
   if (!texture) throw new Error('Failed to create texture')
 
@@ -117,7 +117,7 @@ function viewportToWebGL(viewport: Viewport, canvasHeight: number): Viewport {
 /**
  * Create a compositor engine for an OffscreenCanvas
  */
-export function createCompositor(canvas: OffscreenCanvas): Compositor {
+export function makeVideoCompositor(canvas: OffscreenCanvas): VideoCompositor {
   const gl = assertedNotNullish(
     canvas.getContext('webgl2') ?? canvas.getContext('webgl'),
     'WebGL not supported',
@@ -145,7 +145,7 @@ export function createCompositor(canvas: OffscreenCanvas): Compositor {
     // Get or create texture
     let texture = textures.get(placement.id)
     if (!texture) {
-      texture = createVideoTexture(gl)
+      texture = makeVideoTexture(gl)
       textures.set(placement.id, texture)
     }
 
@@ -186,7 +186,7 @@ export function createCompositor(canvas: OffscreenCanvas): Compositor {
     uploadFrame(id: string, frame: VideoFrame): void {
       let texture = textures.get(id)
       if (!texture) {
-        texture = createVideoTexture(gl)
+        texture = makeVideoTexture(gl)
         textures.set(id, texture)
       }
 

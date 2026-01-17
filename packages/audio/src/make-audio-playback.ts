@@ -6,7 +6,7 @@
  */
 
 import type { AudioTrackInfo, DemuxedSample } from '@eddy/media'
-import { createLoop, createPerfMonitor, debug } from '@eddy/utils'
+import { createPerfMonitor, debug, makeLoop } from '@eddy/utils'
 import {
   ALL_FORMATS,
   EncodedPacketSink,
@@ -16,7 +16,7 @@ import {
   type Source,
 } from 'mediabunny'
 
-const log = debug('playback:create-audio-playback', false)
+const log = debug('playback:make-audio-playback', false)
 
 /** Buffer configuration */
 const BUFFER_AHEAD_SECONDS = 2.0
@@ -578,7 +578,7 @@ export function makeAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}):
     log('seekToTime: done', { audioBuffered: buffer.getLength() })
   }
 
-  const streamLoop = createLoop(loop => {
+  const streamLoop = makeLoop(loop => {
     if (!isLoaded(state)) {
       loop.stop()
       return

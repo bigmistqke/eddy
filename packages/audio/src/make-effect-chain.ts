@@ -2,7 +2,7 @@ import type { AudioEffect } from '@eddy/lexicons'
 import { debug } from '@eddy/utils'
 import { AudioElementRegistry, type AudioElement } from './audio-element-registry'
 
-const log = debug('effect-chain', false)
+const log = debug('audio:make-effect-chain', false)
 
 /** Result of building effect nodes - the chain and control functions */
 export interface EffectChain {

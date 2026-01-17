@@ -16,7 +16,7 @@ import {
   WebMOutputFormat,
 } from 'mediabunny'
 
-const log = debug('muxer', false)
+const log = debug('media:muxer', false)
 
 export interface MuxerOptions {
   /** Video codec (default: 'vp9') */
@@ -103,7 +103,7 @@ export interface Muxer {
 /**
  * Create a muxer for encoding video/audio to WebM.
  */
-export function createMuxer(options: MuxerOptions = {}): Muxer {
+export function makeMuxer(options: MuxerOptions = {}): Muxer {
   const {
     videoCodec = 'vp9',
     videoBitrate = 2_000_000,
@@ -277,7 +277,12 @@ export function createMuxer(options: MuxerOptions = {}): Muxer {
       log('finalizing, video queue:', videoQueue.length, 'audio queue:', audioQueue.length)
 
       // Drain queues
-      while (videoQueue.length > 0 || audioQueue.length > 0 || isProcessingVideo || isProcessingAudio) {
+      while (
+        videoQueue.length > 0 ||
+        audioQueue.length > 0 ||
+        isProcessingVideo ||
+        isProcessingAudio
+      ) {
         if (videoQueue.length > 0 && !isProcessingVideo) {
           await processVideoQueue()
         }
@@ -294,12 +299,21 @@ export function createMuxer(options: MuxerOptions = {}): Muxer {
         await output.finalize()
 
         const buffer = bufferTarget.buffer
-        blob = buffer && buffer.byteLength > 0 ? new Blob([buffer], { type: 'video/webm' }) : new Blob()
+        blob =
+          buffer && buffer.byteLength > 0 ? new Blob([buffer], { type: 'video/webm' }) : new Blob()
       } else {
         blob = new Blob()
       }
 
-      log('finalized:', videoFrameCount, 'video frames,', audioFrameCount, 'audio frames,', blob.size, 'bytes')
+      log(
+        'finalized:',
+        videoFrameCount,
+        'video frames,',
+        audioFrameCount,
+        'audio frames,',
+        blob.size,
+        'bytes',
+      )
 
       return { blob, videoFrameCount, audioFrameCount }
     },

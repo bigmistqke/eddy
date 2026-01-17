@@ -6,7 +6,7 @@
  */
 
 import type { DemuxedSample, VideoTrackInfo } from '@eddy/media'
-import { assertedNotNullish, createLoop, createPerfMonitor, debug } from '@eddy/utils'
+import { assertedNotNullish, createPerfMonitor, debug, makeLoop } from '@eddy/utils'
 import {
   ALL_FORMATS,
   EncodedPacketSink,
@@ -15,8 +15,8 @@ import {
   type InputVideoTrack,
   type Source,
 } from 'mediabunny'
-import { createDecoder, type Decoder } from './create-decoder'
 import { dataToFrame, frameToData, type FrameData } from './frame-utils'
+import { makeVideoDecoder, type VideoDecoderHandle } from './make-video-decoder'
 
 const log = debug('playback:create-video-playback', false)
 
@@ -47,7 +47,7 @@ export interface VideoPlaybackConfig {
 
 /** Preserved decoder state for reuse across loads */
 interface PreservedDecoder {
-  decoder: Decoder
+  decoder: VideoDecoderHandle
   config: VideoDecoderConfig
 }
 
@@ -58,7 +58,7 @@ interface LoadedResources {
   videoSink: EncodedPacketSink
   videoConfig: VideoDecoderConfig
   duration: number
-  decoder: Decoder
+  decoder: VideoDecoderHandle
   timing: PlaybackTiming
   frameBuffer: FrameBuffer
 }
@@ -344,7 +344,7 @@ function transitionToSeeking(
 /**
  * Create a new video playback engine instance
  */
-export function createVideoPlayback({
+export function makeVideoPlayback({
   onFrame,
   shouldSkipDeltaFrame,
 }: VideoPlaybackConfig = {}): VideoPlayback {
@@ -505,7 +505,7 @@ export function createVideoPlayback({
     log('seekToTime: done', { framesBuffered: frameBuffer.getLength() })
   }
 
-  const streamLoop = createLoop(loop => {
+  const streamLoop = makeLoop(loop => {
     if (!isLoaded(state)) {
       loop.stop()
       return
@@ -708,7 +708,7 @@ export function createVideoPlayback({
       isBuffering = false
       lastSentTimestamp = null
 
-      let decoder: Decoder
+      let decoder: VideoDecoderHandle
       if (preservedDecoder && configsMatch(preservedDecoder.config, videoConfig)) {
         log('reusing decoder, config matches')
         decoder = preservedDecoder.decoder
@@ -717,7 +717,7 @@ export function createVideoPlayback({
         if (preservedDecoder) {
           preservedDecoder.decoder.close()
         }
-        decoder = createDecoder({
+        decoder = makeVideoDecoder({
           videoConfig: assertedNotNullish(videoConfig, 'Expected videoConfig to be defined.'),
           shouldSkipDeltaFrame,
         })

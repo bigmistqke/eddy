@@ -6,10 +6,10 @@ import {
   type RingBufferWriter,
 } from '@eddy/audio'
 import type { AudioTrackInfo } from '@eddy/media'
-import { createLoop, debug } from '@eddy/utils'
+import { debug, makeLoop } from '@eddy/utils'
 import { makeOPFSSource } from '~/opfs'
 
-const log = debug('audio-playback-worker', false)
+const log = debug('playback.audio.worker', false)
 
 /** Buffer ahead by this many seconds */
 const BUFFER_AHEAD_SECONDS = 0.5
@@ -239,7 +239,7 @@ function flushPendingSamples(): void {
 }
 
 // Scheduling loop - runs during playback to keep flushing samples
-const schedulingLoop = createLoop(() => {
+const schedulingLoop = makeLoop(() => {
   if (!isPlaying) {
     schedulingLoop.stop()
     return
