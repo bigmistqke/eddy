@@ -194,7 +194,20 @@ player().play()
 
 ### Naming
 
-No single-character variables:
+**Function prefixes:**
+
+- `make-*` = Factory functions that create instances (e.g., `makePlayer`, `makeEffectChain`)
+- `create-*` = SolidJS reactive primitives/hooks that integrate with reactivity (e.g., `createEditor`, `createClock`)
+
+```ts
+// Factory function - creates an instance
+export function makePlayer(options: Options): Player { ... }
+
+// Reactive primitive - integrates with SolidJS reactivity
+export function createEditor(project: Accessor<Project>): Editor { ... }
+```
+
+**No single-character variables:**
 
 ```ts
 // Good
@@ -213,10 +226,10 @@ Prefer `display: grid` over flexbox.
 Prefer factory functions returning object literals over classes:
 
 ```ts
-// Good - createX factory with closure
+// Good - makeX factory with closure
 function helperThatDoesntNeedState(frame: VideoFrame) { ... }
 
-export function createPlayback(config: Config): Playback {
+export function makePlayback(config: Config): Playback {
   // Private state
   let buffer: Frame[] = []
 
@@ -244,7 +257,7 @@ export class PlaybackEngine {
 
 Rules:
 
-- Factory function named `createX`, returns interface `X`
+- Factory function named `makeX`, returns interface `X`
 - Private state/functions inside closure
 - Pure helpers that don't need internal state go OUTSIDE the factory (top of file)
 - Public API is the returned object literal
