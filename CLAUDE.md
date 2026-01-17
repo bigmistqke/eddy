@@ -1,36 +1,181 @@
 # CLAUDE.md
 
-Work protocol for Claude Code. Project knowledge lives in the decision graph - use `/recover` to query it.
+# Project Instructions
 
-## Context Management
+## Decision Graph Workflow
 
-Auto-compaction loses context. Prefer manual deciduous-based recovery:
+**THIS IS MANDATORY. Log decisions IN REAL-TIME, not retroactively.**
 
-1. **Monitor context** - When approaching 80% capacity, proactively:
-   - Run `deciduous sync`
-   - Tell user: "Context is high - recommend `/clear` then `/recover`"
-   - Wait for user to `/clear` before continuing
+### The Core Rule
 
-2. **Safety net** - If auto-compaction triggers anyway:
-   - PreCompact hook syncs deciduous automatically
-   - Run `/recover` after compaction to restore context
+```
+BEFORE you do something -> Log what you're ABOUT to do
+AFTER it succeeds/fails -> Log the outcome
+CONNECT immediately -> Link every node to its parent
+AUDIT regularly -> Check for missing connections
+```
 
-3. **Manual workflow** (preferred):
-   ```
-   deciduous sync → /clear → /recover
-   ```
+### Behavioral Triggers - MUST LOG WHEN:
 
-## Workflow
+| Trigger                      | Log Type           | Example                        |
+| ---------------------------- | ------------------ | ------------------------------ |
+| User asks for a new feature  | `goal` **with -p** | "Add dark mode"                |
+| Choosing between approaches  | `decision`         | "Choose state management"      |
+| About to write/edit code     | `action`           | "Implementing Redux store"     |
+| Something worked or failed   | `outcome`          | "Redux integration successful" |
+| Notice something interesting | `observation`      | "Existing code uses hooks"     |
 
-- **Tickets** - One task at a time. After completing, ask user to confirm before proceeding
-- **Before committing** - List things for user to test, wait for confirmation
-- **Ask before committing** - Always ask permission before `git commit`
-- **Commit messages** - No Claude signature
-- **TypeScript checks** - Run `pnpm types` once when creating new files, don't repeatedly check
-- **Running TypeScript** - Use `node` directly (Node >=24 has native TS support): `node script.ts`
-- **Performance tests** - Run `pnpm perf --loop --duration=6000 --tracks=1 --headless` to test playback loop behavior
+### CRITICAL: Capture VERBATIM User Prompts
 
-## Code Conventions
+**Prompts must be the EXACT user message, not a summary.** When a user request triggers new work, capture their full message word-for-word.
+
+**BAD - summaries are useless for context recovery:**
+
+```bash
+# DON'T DO THIS - this is a summary, not a prompt
+deciduous add goal "Add auth" -p "User asked: add login to the app"
+```
+
+**GOOD - verbatim prompts enable full context recovery:**
+
+```bash
+# Use --prompt-stdin for multi-line prompts
+deciduous add goal "Add auth" -c 90 --prompt-stdin << 'EOF'
+I need to add user authentication to the app. Users should be able to sign up
+with email/password, and we need OAuth support for Google and GitHub. The auth
+should use JWT tokens with refresh token rotation.
+EOF
+
+# Or use the prompt command to update existing nodes
+deciduous prompt 42 << 'EOF'
+The full verbatim user message goes here...
+EOF
+```
+
+**When to capture prompts:**
+
+- Root `goal` nodes: YES - the FULL original request
+- Major direction changes: YES - when user redirects the work
+- Routine downstream nodes: NO - they inherit context via edges
+
+**Updating prompts on existing nodes:**
+
+```bash
+deciduous prompt <node_id> "full verbatim prompt here"
+cat prompt.txt | deciduous prompt <node_id>  # Multi-line from stdin
+```
+
+Prompts are viewable in the TUI detail panel (`deciduous tui`) and web viewer.
+
+### CRITICAL: Maintain Connections
+
+**The graph's value is in its CONNECTIONS, not just nodes.**
+
+| When you create... | IMMEDIATELY link to...            |
+| ------------------ | --------------------------------- |
+| `outcome`          | The action/goal it resolves       |
+| `action`           | The goal/decision that spawned it |
+| `option`           | Its parent decision               |
+| `observation`      | Related goal/action               |
+
+**Root `goal` nodes are the ONLY valid orphans.**
+
+### Quick Commands
+
+```bash
+deciduous add goal "Title" -c 90 -p "User's original request"
+deciduous add action "Title" -c 85
+deciduous link FROM TO -r "reason"  # DO THIS IMMEDIATELY!
+deciduous serve   # View live (auto-refreshes every 30s)
+deciduous sync    # Export for static hosting
+
+# Metadata flags
+# -c, --confidence 0-100   Confidence level
+# -p, --prompt "..."       Store the user prompt (use when semantically meaningful)
+# -f, --files "a.rs,b.rs"  Associate files
+# -b, --branch <name>      Git branch (auto-detected)
+# --commit <hash|HEAD>     Link to git commit (use HEAD for current commit)
+
+# Branch filtering
+deciduous nodes --branch main
+deciduous nodes -b feature-auth
+```
+
+### CRITICAL: Link Commits to Actions/Outcomes
+
+**After every git commit, link it to the decision graph!**
+
+```bash
+git commit -m "feat: add auth"
+deciduous add action "Implemented auth" -c 90 --commit HEAD
+deciduous link <goal_id> <action_id> -r "Implementation"
+```
+
+The `--commit HEAD` flag captures the commit hash and links it to the node. The web viewer will show commit messages, authors, and dates.
+
+### Git History & Deployment
+
+```bash
+# Export graph AND git history for web viewer
+deciduous sync
+
+# This creates:
+# - docs/graph-data.json (decision graph)
+# - docs/git-history.json (commit info for linked nodes)
+```
+
+To deploy to GitHub Pages:
+
+1. `deciduous sync` to export
+2. Push to GitHub
+3. Settings > Pages > Deploy from branch > /docs folder
+
+Your graph will be live at `https://<user>.github.io/<repo>/`
+
+### Branch-Based Grouping
+
+Nodes are auto-tagged with the current git branch. Configure in `.deciduous/config.toml`:
+
+```toml
+[branch]
+main_branches = ["main", "master"]
+auto_detect = true
+```
+
+### Audit Checklist (Before Every Sync)
+
+1. Does every **outcome** link back to what caused it?
+2. Does every **action** link to why you did it?
+3. Any **dangling outcomes** without parents?
+
+### Session Start Checklist
+
+```bash
+deciduous nodes    # What decisions exist?
+deciduous edges    # How are they connected? Any gaps?
+git status         # Current state
+```
+
+### Multi-User Sync
+
+Share decisions across teammates:
+
+```bash
+# Export your branch's decisions
+deciduous diff export --branch feature-x -o .deciduous/patches/my-feature.json
+
+# Apply patches from teammates (idempotent)
+deciduous diff apply .deciduous/patches/*.json
+
+# Preview before applying
+deciduous diff apply --dry-run .deciduous/patches/teammate.json
+```
+
+PR workflow: Export patch -> commit patch file -> PR -> teammates apply.
+
+# Project Preferences
+
+## Coding Style
 
 ### SolidJS Signals
 
@@ -98,6 +243,7 @@ export class PlaybackEngine {
 ```
 
 Rules:
+
 - Factory function named `createX`, returns interface `X`
 - Private state/functions inside closure
 - Pure helpers that don't need internal state go OUTSIDE the factory (top of file)
@@ -106,6 +252,7 @@ Rules:
 ### File Structure
 
 Order of sections in a file:
+
 1. JSDoc explaining the file (with capitalized name of main export)
 2. Imports
 3. Constants
@@ -175,39 +322,10 @@ SESSION END
 
 ### Autonomy Rules
 
-| Node Type | Ask First? | When |
-|-----------|------------|------|
-| `goal` | **YES** | User request starts new work |
-| `decision` | **YES** | Multiple valid approaches |
-| `action` | No | Before each logical change |
-| `outcome` | No | After success/failure |
-| `observation` | No | Every gotcha, learning, discovery |
-
-### GitHub Issue Sync
-
-Observations linked to decisions get posted to GitHub issues.
-
-```bash
-# Link a decision to an issue
-./scripts/link-issue.sh <node_id> <issue_number>
-
-# Sync observations to issues
-pnpm sync-issues --dry-run  # Preview
-pnpm sync-issues            # Post
-```
-
-### Quick Reference
-
-```bash
-/recover                    # Session start
-/work "Add feature X"       # Start work (asks first)
-/commit [msg]               # Commit + sync
-
-deciduous add goal "Title" -c 90 -p "prompt"
-deciduous add action "Title" -c 85
-deciduous add observation "Title" -c 80
-deciduous add outcome "Title" -c 90 --commit HEAD
-deciduous link <from> <to> -r "reason"
-deciduous sync
-deciduous nodes
-```
+| Node Type     | Ask First? | When                              |
+| ------------- | ---------- | --------------------------------- |
+| `goal`        | **YES**    | User request starts new work      |
+| `decision`    | **YES**    | Multiple valid approaches         |
+| `action`      | No         | Before each logical change        |
+| `outcome`     | No         | After success/failure             |
+| `observation` | No         | Every gotcha, learning, discovery |
