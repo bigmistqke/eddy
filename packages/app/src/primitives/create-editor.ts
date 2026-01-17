@@ -72,6 +72,7 @@ function createDefaultProject(): Project {
           { type: 'audio.gain', value: { value: 100 } },
           { type: 'audio.pan', value: { value: 50 } },
         ],
+        videoPipeline: [{ type: 'visual.brightness', value: { value: 50 } }],
       },
       {
         id: 'track-1',
@@ -81,6 +82,7 @@ function createDefaultProject(): Project {
           { type: 'audio.gain', value: { value: 100 } },
           { type: 'audio.pan', value: { value: 50 } },
         ],
+        videoPipeline: [{ type: 'visual.brightness', value: { value: 0 } }],
       },
       {
         id: 'track-2',
@@ -90,6 +92,7 @@ function createDefaultProject(): Project {
           { type: 'audio.gain', value: { value: 100 } },
           { type: 'audio.pan', value: { value: 50 } },
         ],
+        videoPipeline: [{ type: 'visual.brightness', value: { value: 0 } }],
       },
       {
         id: 'track-3',
@@ -99,6 +102,7 @@ function createDefaultProject(): Project {
           { type: 'audio.gain', value: { value: 100 } },
           { type: 'audio.pan', value: { value: 50 } },
         ],
+        videoPipeline: [{ type: 'visual.brightness', value: { value: 0 } }],
       },
     ],
     createdAt: new Date().toISOString(),
@@ -254,6 +258,40 @@ export function createEditor(options: CreateEditorOptions) {
   function getTrackPipeline(trackId: string): AudioEffect[] {
     const track = project().tracks.find(t => t.id === trackId)
     return track?.audioPipeline ?? []
+  }
+
+  // Video effect helpers (parallel to audio effects)
+  function setVideoEffectValue(trackId: string, effectIndex: number, value: number) {
+    // Update store
+    setProject(
+      'tracks',
+      t => t.id === trackId,
+      'videoPipeline',
+      effectIndex,
+      effect => {
+        if (effect && 'value' in effect && effect.value && 'value' in effect.value) {
+          return { ...effect, value: { ...effect.value, value: Math.round(value) } }
+        }
+        return effect
+      },
+    )
+
+    // Update compositor directly for immediate feedback
+    player()?.compositor.setTrackVideoEffectValue(trackId, effectIndex, value)
+  }
+
+  function getVideoEffectValue(trackId: string, effectIndex: number): number {
+    const track = project().tracks.find(t => t.id === trackId)
+    const effect = track?.videoPipeline?.[effectIndex]
+    if (effect && 'value' in effect && effect.value && 'value' in effect.value) {
+      return effect.value.value
+    }
+    return 0
+  }
+
+  function getVideoPipeline(trackId: string) {
+    const track = project().tracks.find(t => t.id === trackId)
+    return track?.videoPipeline ?? []
   }
 
   function addRecording(trackId: string, clipId: string, duration: number, offset: number) {
@@ -550,7 +588,7 @@ export function createEditor(options: CreateEditorOptions) {
             }
           })
 
-          // Effect for volume/pan
+          // Effect for audio volume/pan
           createEffect(() => {
             const pipeline = getTrackPipeline(trackId)
 
@@ -564,6 +602,21 @@ export function createEditor(options: CreateEditorOptions) {
                 _player.setPan(trackId, (value - 0.5) * 2)
               }
             }
+          })
+
+          // Effect for video pipeline
+          createEffect(() => {
+            const pipeline = getVideoPipeline(trackId)
+
+            // Send pipeline to compositor (creates/updates effect chain)
+            // Extract value object as Record<string, number> params for factory
+            _player.compositor.setTrackVideoPipeline(
+              trackId,
+              pipeline.map(effect => ({
+                type: effect.type,
+                value: 'value' in effect ? (effect.value as { value: number }) : undefined,
+              })),
+            )
           })
         },
       ),
@@ -737,6 +790,8 @@ export function createEditor(options: CreateEditorOptions) {
     },
     getEffectValue,
     getTrackPipeline,
+    getVideoEffectValue,
+    getVideoPipeline,
     hasAnyRecording,
     isPlayerLoading: () => player.loading,
     isProjectLoading: () => project.loading || stemClips.loading(),
@@ -858,6 +913,8 @@ export function createEditor(options: CreateEditorOptions) {
       }
       player()?.setPan(trackId, value)
     },
+
+    setVideoEffectValue,
 
     toggleLoop() {
       const _player = player()

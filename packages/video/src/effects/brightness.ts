@@ -2,18 +2,24 @@
  * Brightness Effect
  *
  * Adjusts the brightness of the video by adding a value to RGB channels.
- * Range: -1.0 (black) to 1.0 (white), default 0.0 (no change)
+ * Lexicon value: -100 to 100 (0 = no change)
+ * Shader value: -1.0 to 1.0
  */
 
 import { view } from '@bigmistqke/view.gl'
 import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
 import type { VideoEffectToken } from './types'
+import { registerVideoEffect, type VideoEffectParams } from './video-effect-registry'
 
 export interface BrightnessControls {
   setBrightness: (value: number) => void
 }
 
-export function makeBrightnessEffect(): VideoEffectToken<BrightnessControls> {
+/**
+ * Create a brightness effect.
+ * @param initialValue - Initial brightness (-100 to 100, default 0)
+ */
+export function makeBrightnessEffect(initialValue = 0): VideoEffectToken<BrightnessControls> {
   const brightness = Symbol('brightness')
   const apply = Symbol('applyBrightness')
 
@@ -30,9 +36,18 @@ export function makeBrightnessEffect(): VideoEffectToken<BrightnessControls> {
     apply,
     connect(gl, program) {
       const v = view(gl, program, compile.toSchema(fragment))
-      return {
-        setBrightness: (value: number) => v.uniforms[brightness].set(value),
-      }
+      // Convert from lexicon scale (-100 to 100) to shader scale (-1 to 1)
+      const setBrightness = (value: number) => v.uniforms[brightness].set(value / 100)
+      // Apply initial value
+      setBrightness(initialValue)
+      return { setBrightness }
     },
   }
+}
+
+/** Register brightness effect with the video effect registry */
+export function registerBrightnessEffect(): void {
+  registerVideoEffect('visual.brightness', (params: VideoEffectParams) => {
+    return makeBrightnessEffect(params.value ?? 0)
+  })
 }

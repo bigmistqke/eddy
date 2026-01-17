@@ -108,15 +108,12 @@ interface ClipInfo {
   speed: number
 }
 
-/** Resolve a Value (static or curve ref) to a number at a given time */
+/** Resolve a Value to a number at a given time */
 function resolveValue(value: Value | undefined, defaultValue: number, _time = 0): number {
   if (!value) return defaultValue
-  if ('value' in value) {
-    // Static value - scaled by 100 in lexicon
-    return value.value / 100
-  }
-  // Curve ref - for now return min as default (TODO: implement curve evaluation)
-  return (value.min ?? 0) / 100
+  // Static value - scaled by 100 in lexicon
+  // TODO: Add curve ref evaluation when curve system is implemented
+  return value.value / 100
 }
 
 /** Check if a member is a void placeholder */

@@ -8,20 +8,20 @@
     "files_changed": 4
   },
   {
+    "hash": "8d526015af8327df27b821e2d376f7e37a7d4ffb",
+    "short_hash": "8d52601",
+    "author": "bigmistqke",
+    "date": "2026-01-17T20:02:07+01:00",
+    "message": "feat: integrate video effect chains into compositor\n\n- Add VideoEffectChain, CompiledEffectChain types\n- Add makeEffectChainCache for caching compiled shaders\n- Compositor now manages effect chains by id\n- Placements can reference effectChainId (passthrough default)\n- Each unique chain compiles to one shader, no framebuffers needed",
+    "files_changed": 4
+  },
+  {
     "hash": "6d2457be5874ef30fdde4b490b0a4d0f8abb8142",
     "short_hash": "6d2457b",
     "author": "bigmistqke",
     "date": "2026-01-17T19:55:44+01:00",
     "message": "chore: sync deciduous graph",
     "files_changed": 2
-  },
-  {
-    "hash": "bbbb582884160d93b762c6f089130b30a682e52a",
-    "short_hash": "bbbb582",
-    "author": "bigmistqke",
-    "date": "2026-01-17T19:55:31+01:00",
-    "message": "feat: add composable video effects system with Symbol-based GLSL composition\n\nTwo-phase pattern using view.gl:\n- Effects define GLSL fragments with Symbol-based unique names\n- compile.toSchema() extracts schema from GLSL (no duplication)\n- composeEffects() chains effects into single shader program\n- Includes brightness and contrast effects as examples",
-    "files_changed": 8
   },
   {
     "hash": "3bfa262123ae75427fd1d3f22efde718ac7d48bc",

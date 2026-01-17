@@ -1,7 +1,29 @@
 import clsx from 'clsx'
 import { FiDownload, FiTrash2 } from 'solid-icons/fi'
-import type { Component } from 'solid-js'
+import { type Component, For } from 'solid-js'
 import styles from './Track.module.css'
+
+/** Effect metadata for rendering sliders */
+interface EffectMeta {
+  label: string
+  min: number
+  max: number
+  step: number
+  defaultValue: number
+}
+
+/** Map effect types to their UI metadata */
+const VIDEO_EFFECT_META: Record<string, EffectMeta> = {
+  'visual.brightness': { label: 'Bri', min: -100, max: 100, step: 1, defaultValue: 0 },
+  'visual.contrast': { label: 'Con', min: 0, max: 200, step: 1, defaultValue: 100 },
+  'visual.saturation': { label: 'Sat', min: 0, max: 200, step: 1, defaultValue: 100 },
+}
+
+/** Video effect from pipeline */
+interface VideoEffect {
+  type: string
+  value?: { value: number }
+}
 
 interface TrackProps {
   trackId: string
@@ -11,11 +33,16 @@ interface TrackProps {
   isSelected: boolean
   isRecording: boolean
   isLoading: boolean
+  // Audio controls
   volume: number
   pan: number
-  onSelect: () => void
   onVolumeChange: (value: number) => void
   onPanChange: (value: number) => void
+  // Video pipeline
+  videoPipeline: VideoEffect[]
+  onVideoEffectChange: (effectIndex: number, value: number) => void
+  // Actions
+  onSelect: () => void
   onClear: () => void
   onDownload: () => void
 }
@@ -50,6 +77,7 @@ export const Track: Component<TrackProps> = props => {
 
       <div class={styles.body}>
         <div class={styles.sliders}>
+          {/* Audio controls */}
           <label class={styles.slider}>
             <span>Vol</span>
             <input
@@ -74,6 +102,30 @@ export const Track: Component<TrackProps> = props => {
               onClick={e => e.stopPropagation()}
             />
           </label>
+          {/* Video controls - generated from pipeline */}
+          <For each={props.videoPipeline}>
+            {(effect, index) => {
+              const meta = VIDEO_EFFECT_META[effect.type]
+              if (!meta) return null
+
+              const value = () => effect.value?.value ?? meta.defaultValue
+
+              return (
+                <label class={styles.slider}>
+                  <span>{meta.label}</span>
+                  <input
+                    type="range"
+                    min={meta.min}
+                    max={meta.max}
+                    step={meta.step}
+                    value={value()}
+                    onInput={e => props.onVideoEffectChange(index(), parseFloat(e.target.value))}
+                    onClick={e => e.stopPropagation()}
+                  />
+                </label>
+              )
+            }}
+          </For>
         </div>
 
         <div class={styles.controls}>

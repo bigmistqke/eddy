@@ -2199,6 +2199,105 @@
       "created_at": "2026-01-17T20:02:11.569700+01:00",
       "updated_at": "2026-01-17T20:02:11.569700+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"8d52601\",\"confidence\":95}"
+    },
+    {
+      "id": 201,
+      "change_id": "5e353f2b-0bb5-4a54-a0f2-3e24e521c4b1",
+      "node_type": "goal",
+      "title": "Add UI to control video effects",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T20:03:02.981810+01:00",
+      "updated_at": "2026-01-17T20:03:02.981810+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"now add ui to add/drive these effects\"}"
+    },
+    {
+      "id": 202,
+      "change_id": "6ea83c39-1be1-47c3-9c63-b49b7904bae9",
+      "node_type": "action",
+      "title": "Add video effects UI with registry and track controls",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T20:04:39.513808+01:00",
+      "updated_at": "2026-01-17T20:04:39.513808+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":80}"
+    },
+    {
+      "id": 203,
+      "change_id": "86fa29f4-725b-4dff-981a-0641bd5ab1d7",
+      "node_type": "goal",
+      "title": "Simplify effect system and add cascading pipelines",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T20:41:40.647672+01:00",
+      "updated_at": "2026-01-17T20:41:40.647672+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"1. let's ignore curveRef for now and comment it out of the lexicon 2. let's support cascading for both audio and video pipeline -> effect.video on a track should be applied to all clips, same with effect.audio -> add goals\"}"
+    },
+    {
+      "id": 204,
+      "change_id": "0bffea94-7774-4d95-9e83-978fc52c19f9",
+      "node_type": "action",
+      "title": "Simplified lexicon by commenting out curveRef",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T20:43:48.011927+01:00",
+      "updated_at": "2026-01-17T20:43:48.011927+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 205,
+      "change_id": "483a4e37-0a24-4c7c-a741-edfc59ff6c30",
+      "node_type": "decision",
+      "title": "Design cascading effect pipeline architecture",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T20:44:30.815307+01:00",
+      "updated_at": "2026-01-17T20:44:30.815307+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 206,
+      "change_id": "68d3159f-7106-4e47-99ce-e890ae5e4cf0",
+      "node_type": "observation",
+      "title": "Audio cascading already works - tracks have AudioBus that all clips route through",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T20:45:35.827293+01:00",
+      "updated_at": "2026-01-17T20:45:35.827293+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 207,
+      "change_id": "bf3ebbbe-63c1-44b1-9766-62f5507d86db",
+      "node_type": "observation",
+      "title": "Video compositor supports effectChainId per placement but not wired up yet",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T20:45:41.637796+01:00",
+      "updated_at": "2026-01-17T20:45:41.637796+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 208,
+      "change_id": "389b84d4-2987-478f-8a25-18433e656bee",
+      "node_type": "action",
+      "title": "Wire video pipeline to compositor worker for cascading effects",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T20:47:14.856718+01:00",
+      "updated_at": "2026-01-17T20:47:14.856718+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 209,
+      "change_id": "6f195fc7-3573-4af1-bcec-59efa42281ef",
+      "node_type": "outcome",
+      "title": "Video pipeline cascading wired up - effects apply to all clips on track",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T20:52:19.038449+01:00",
+      "updated_at": "2026-01-17T20:52:19.038449+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     }
   ],
   "edges": [
@@ -4038,6 +4137,83 @@
       "weight": 1.0,
       "rationale": "Committed",
       "created_at": "2026-01-17T20:02:14.655876+01:00"
+    },
+    {
+      "id": 168,
+      "from_node_id": 201,
+      "to_node_id": 202,
+      "from_change_id": "5e353f2b-0bb5-4a54-a0f2-3e24e521c4b1",
+      "to_change_id": "6ea83c39-1be1-47c3-9c63-b49b7904bae9",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-01-17T20:04:44.801377+01:00"
+    },
+    {
+      "id": 169,
+      "from_node_id": 203,
+      "to_node_id": 204,
+      "from_change_id": "86fa29f4-725b-4dff-981a-0641bd5ab1d7",
+      "to_change_id": "0bffea94-7774-4d95-9e83-978fc52c19f9",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-01-17T20:43:48.073159+01:00"
+    },
+    {
+      "id": 170,
+      "from_node_id": 205,
+      "to_node_id": 206,
+      "from_change_id": "483a4e37-0a24-4c7c-a741-edfc59ff6c30",
+      "to_change_id": "68d3159f-7106-4e47-99ce-e890ae5e4cf0",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Discovery",
+      "created_at": "2026-01-17T20:45:35.869676+01:00"
+    },
+    {
+      "id": 171,
+      "from_node_id": 205,
+      "to_node_id": 207,
+      "from_change_id": "483a4e37-0a24-4c7c-a741-edfc59ff6c30",
+      "to_change_id": "bf3ebbbe-63c1-44b1-9766-62f5507d86db",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Discovery",
+      "created_at": "2026-01-17T20:45:41.662398+01:00"
+    },
+    {
+      "id": 172,
+      "from_node_id": 205,
+      "to_node_id": 208,
+      "from_change_id": "483a4e37-0a24-4c7c-a741-edfc59ff6c30",
+      "to_change_id": "389b84d4-2987-478f-8a25-18433e656bee",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-01-17T20:47:14.918622+01:00"
+    },
+    {
+      "id": 173,
+      "from_node_id": 208,
+      "to_node_id": 209,
+      "from_change_id": "389b84d4-2987-478f-8a25-18433e656bee",
+      "to_change_id": "6f195fc7-3573-4af1-bcec-59efa42281ef",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Completed",
+      "created_at": "2026-01-17T20:52:19.063540+01:00"
+    },
+    {
+      "id": 174,
+      "from_node_id": 203,
+      "to_node_id": 209,
+      "from_change_id": "86fa29f4-725b-4dff-981a-0641bd5ab1d7",
+      "to_change_id": "6f195fc7-3573-4af1-bcec-59efa42281ef",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Achieved",
+      "created_at": "2026-01-17T20:52:23.027734+01:00"
     }
   ]
 }

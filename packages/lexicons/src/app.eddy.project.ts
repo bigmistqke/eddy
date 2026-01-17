@@ -79,7 +79,7 @@ export default {
             type: 'array',
             items: {
               type: 'union',
-              refs: ['#visualEffect.transform', '#visualEffect.opacity', '#visualEffect.custom'],
+              refs: ['#visualEffect.transform', '#visualEffect.opacity', '#visualEffect.brightness', '#visualEffect.contrast', '#visualEffect.saturation', '#visualEffect.custom'],
             },
             maxLength: 16,
             description: 'Master video output effects',
@@ -312,6 +312,7 @@ export default {
       },
     },
 
+    /* TODO: Re-enable when curve system is implemented
     curveRef: {
       type: 'object',
       description: 'Reference to a curve with output scaling. Values scaled by 100.',
@@ -350,6 +351,7 @@ export default {
         },
       },
     },
+    */
 
     group: {
       type: 'object',
@@ -381,7 +383,7 @@ export default {
           type: 'array',
           items: {
             type: 'union',
-            refs: ['#visualEffect.transform', '#visualEffect.opacity', '#visualEffect.custom'],
+            refs: ['#visualEffect.transform', '#visualEffect.opacity', '#visualEffect.brightness', '#visualEffect.contrast', '#visualEffect.saturation', '#visualEffect.custom'],
           },
           maxLength: 16,
           description: 'Visual effects applied to the composited group',
@@ -429,12 +431,12 @@ export default {
         },
         gap: {
           type: 'union',
-          refs: ['#staticValue', '#curveRef'],
+          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
           description: 'Gap between cells (0-1 relative to group size)',
         },
         padding: {
           type: 'union',
-          refs: ['#staticValue', '#curveRef'],
+          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
           description: 'Padding around grid (0-1 relative to group size)',
         },
       },
@@ -471,19 +473,19 @@ export default {
           type: 'array',
           items: {
             type: 'union',
-            refs: ['#visualEffect.transform', '#visualEffect.opacity', '#visualEffect.custom'],
+            refs: ['#visualEffect.transform', '#visualEffect.opacity', '#visualEffect.brightness', '#visualEffect.contrast', '#visualEffect.saturation', '#visualEffect.custom'],
           },
           maxLength: 16,
           description: 'Track-level video effect chain',
         },
         muted: {
           type: 'union',
-          refs: ['#staticValue', '#curveRef'],
+          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
           description: 'Mute track',
         },
         solo: {
           type: 'union',
-          refs: ['#staticValue', '#curveRef'],
+          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
           description: 'Solo track',
         },
       },
@@ -549,12 +551,12 @@ export default {
         },
         speed: {
           type: 'union',
-          refs: ['#staticValue', '#curveRef'],
+          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
           description: 'Playback speed multiplier (0.1-10)',
         },
         reverse: {
           type: 'union',
-          refs: ['#staticValue', '#curveRef'],
+          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
           description: 'Play clip in reverse',
         },
         audioPipeline: {
@@ -570,7 +572,7 @@ export default {
           type: 'array',
           items: {
             type: 'union',
-            refs: ['#visualEffect.transform', '#visualEffect.opacity', '#visualEffect.custom'],
+            refs: ['#visualEffect.transform', '#visualEffect.opacity', '#visualEffect.brightness', '#visualEffect.contrast', '#visualEffect.saturation', '#visualEffect.custom'],
           },
           maxLength: 16,
           description: 'Clip-level video effects (curves are clip-relative)',
@@ -583,10 +585,10 @@ export default {
       required: ['type', 'value'],
       properties: {
         type: { type: 'string', const: 'audio.gain' },
-        enabled: { type: 'union', refs: ['#staticValue', '#curveRef'] },
+        enabled: { type: 'union', refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */ },
         value: {
           type: 'union',
-          refs: ['#staticValue', '#curveRef'],
+          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
           description: 'Volume (0-1, where 1 = unity gain)',
         },
       },
@@ -597,10 +599,10 @@ export default {
       required: ['type', 'value'],
       properties: {
         type: { type: 'string', const: 'audio.pan' },
-        enabled: { type: 'union', refs: ['#staticValue', '#curveRef'] },
+        enabled: { type: 'union', refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */ },
         value: {
           type: 'union',
-          refs: ['#staticValue', '#curveRef'],
+          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
           description: 'Stereo position (0 = left, 0.5 = center, 1 = right)',
         },
       },
@@ -615,7 +617,7 @@ export default {
           type: 'string',
           description: "Custom effect identifier (e.g., 'audio.vendor.effectName')",
         },
-        enabled: { type: 'union', refs: ['#staticValue', '#curveRef'] },
+        enabled: { type: 'union', refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */ },
         params: {
           type: 'unknown',
           description: 'Effect-specific parameters',
@@ -629,20 +631,20 @@ export default {
       required: ['type'],
       properties: {
         type: { type: 'string', const: 'audio.reverb' },
-        enabled: { type: 'union', refs: ['#staticValue', '#curveRef'] },
+        enabled: { type: 'union', refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */ },
         mix: {
           type: 'union',
-          refs: ['#staticValue', '#curveRef'],
+          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
           description: 'Wet/dry mix (0 = dry, 100 = wet)',
         },
         decay: {
           type: 'union',
-          refs: ['#staticValue', '#curveRef'],
+          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
           description: 'Decay time scaled by 100 (e.g., 200 = 2 seconds)',
         },
         preDelay: {
           type: 'union',
-          refs: ['#staticValue', '#curveRef'],
+          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
           description: 'Pre-delay in milliseconds (0-100)',
         },
       },
@@ -653,35 +655,35 @@ export default {
       required: ['type'],
       properties: {
         type: { type: 'string', const: 'visual.transform' },
-        enabled: { type: 'union', refs: ['#staticValue', '#curveRef'] },
+        enabled: { type: 'union', refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */ },
         x: {
           type: 'union',
-          refs: ['#staticValue', '#curveRef'],
+          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
           description: 'X offset (0-1 relative to canvas)',
         },
         y: {
           type: 'union',
-          refs: ['#staticValue', '#curveRef'],
+          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
           description: 'Y offset (0-1 relative to canvas)',
         },
         scale: {
           type: 'union',
-          refs: ['#staticValue', '#curveRef'],
+          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
           description: 'Uniform scale (0-1, where 1 = 100%)',
         },
         rotation: {
           type: 'union',
-          refs: ['#staticValue', '#curveRef'],
+          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
           description: 'Rotation (0-1, where 1 = 360 degrees)',
         },
         anchorX: {
           type: 'union',
-          refs: ['#staticValue', '#curveRef'],
+          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
           description: 'Transform anchor X (0-1)',
         },
         anchorY: {
           type: 'union',
-          refs: ['#staticValue', '#curveRef'],
+          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
           description: 'Transform anchor Y (0-1)',
         },
       },
@@ -692,16 +694,61 @@ export default {
       required: ['type', 'value'],
       properties: {
         type: { type: 'string', const: 'visual.opacity' },
-        enabled: { type: 'union', refs: ['#staticValue', '#curveRef'] },
+        enabled: { type: 'union', refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */ },
         value: {
           type: 'union',
-          refs: ['#staticValue', '#curveRef'],
+          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
           description: 'Opacity (0-1)',
         },
         blendMode: {
           type: 'string',
           enum: ['normal', 'multiply', 'screen', 'overlay', 'add'],
           default: 'normal',
+        },
+      },
+    },
+
+    'visualEffect.brightness': {
+      type: 'object',
+      description: 'Brightness adjustment effect',
+      required: ['type', 'value'],
+      properties: {
+        type: { type: 'string', const: 'visual.brightness' },
+        enabled: { type: 'union', refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */ },
+        value: {
+          type: 'union',
+          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
+          description: 'Brightness adjustment (-100 to 100, 0 = no change)',
+        },
+      },
+    },
+
+    'visualEffect.contrast': {
+      type: 'object',
+      description: 'Contrast adjustment effect',
+      required: ['type', 'value'],
+      properties: {
+        type: { type: 'string', const: 'visual.contrast' },
+        enabled: { type: 'union', refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */ },
+        value: {
+          type: 'union',
+          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
+          description: 'Contrast multiplier (0-200, 100 = no change)',
+        },
+      },
+    },
+
+    'visualEffect.saturation': {
+      type: 'object',
+      description: 'Saturation adjustment effect',
+      required: ['type', 'value'],
+      properties: {
+        type: { type: 'string', const: 'visual.saturation' },
+        enabled: { type: 'union', refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */ },
+        value: {
+          type: 'union',
+          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
+          description: 'Saturation multiplier (0-200, 100 = no change, 0 = grayscale)',
         },
       },
     },
@@ -715,7 +762,7 @@ export default {
           type: 'string',
           description: "Custom effect identifier (e.g., 'visual.vendor.effectName')",
         },
-        enabled: { type: 'union', refs: ['#staticValue', '#curveRef'] },
+        enabled: { type: 'union', refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */ },
         params: {
           type: 'unknown',
           description: 'Effect-specific parameters',

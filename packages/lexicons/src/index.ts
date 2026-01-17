@@ -22,7 +22,8 @@ export type ClipSourceStem = v.InferOutput<(typeof projectValidators)['clipSourc
 export type ClipSourceGroup = v.InferOutput<(typeof projectValidators)['clipSource.group']>
 export type ClipSource = ClipSourceStem | ClipSourceGroup
 export type StaticValue = v.InferOutput<typeof projectValidators.staticValue>
-export type CurveRef = v.InferOutput<typeof projectValidators.curveRef>
+// TODO: Re-enable when curve system is implemented
+// export type CurveRef = v.InferOutput<typeof projectValidators.curveRef>
 export type StemRef = v.InferOutput<AtprotoRefs['com.atproto.repo.strongRef']>
 
 // Group types
@@ -49,7 +50,7 @@ export type CurveEnvelope = v.InferOutput<(typeof projectValidators)['curve.enve
 export type CurveLfo = v.InferOutput<(typeof projectValidators)['curve.lfo']>
 export type Curve = CurveKeyframe | CurveEnvelope | CurveLfo
 
-export type Value = StaticValue | CurveRef
+export type Value = StaticValue // TODO: add | CurveRef when curve system is implemented
 
 export type Stem = v.InferOutput<typeof stemValidators.main>
 export type AudioMeta = v.InferOutput<typeof stemValidators.audioMeta>
