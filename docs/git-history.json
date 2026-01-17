@@ -1,27 +1,27 @@
 [
   {
+    "hash": "ca22c8ede5ccc07293b5f4944cd55544b3c13f24",
+    "short_hash": "ca22c8e",
+    "author": "bigmistqke",
+    "date": "2026-01-17T19:34:17+01:00",
+    "message": "feat: add extensible audio effect system with reverb\n\n- Add AudioElement interface with flexible params and multi-node support\n- Add makeAudioElementRegistration utility for idempotent registration\n- Extract gain/pan to effects/ directory with register* pattern\n- Implement reverb effect with mix, decay, preDelay params\n- Add audioEffect.reverb to lexicon schema\n- Consumer calls registerBuiltInAudioEffects() to register effects\n\nEffects are self-contained modules that export a registration function,\nmaking it easy to add new effects via PR.",
+    "files_changed": 12
+  },
+  {
+    "hash": "82a3512c68a5b82dc72cee4f9c4f1cee1e9647ef",
+    "short_hash": "82a3512",
+    "author": "bigmistqke",
+    "date": "2026-01-17T18:55:02+01:00",
+    "message": "chore: rename context to audio-context",
+    "files_changed": 5
+  },
+  {
     "hash": "3bfa262123ae75427fd1d3f22efde718ac7d48bc",
     "short_hash": "3bfa262",
     "author": "bigmistqke",
     "date": "2026-01-17T18:54:04+01:00",
     "message": "chore: clean up unused exports, dependencies, and files\n\n- Simplify atproto imports to use main export instead of subpaths\n- Remove unused subpath exports from atproto package.json\n- Remove unused deps: @bigmistqke/rpc from audio, @bigmistqke/view.gl from utils\n- Delete unused files: app/src/utils.ts, scripts/seed-deciduous.ts",
     "files_changed": 8
-  },
-  {
-    "hash": "3b3f25df5d3ad0302ad371fa26f7bedcb97b358e",
-    "short_hash": "3b3f25d",
-    "author": "bigmistqke",
-    "date": "2026-01-17T18:48:58+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "c772d46f247343a2eac7b00a47386cb6150ff005",
-    "short_hash": "c772d46",
-    "author": "bigmistqke",
-    "date": "2026-01-17T18:48:46+01:00",
-    "message": "refactor: rename create-player to make-player\n\nPlayer is a factory function that creates instances, not a reactive hook.\nAlign with make-* naming convention for factory functions.",
-    "files_changed": 4
   },
   {
     "hash": "c772d46f247343a2eac7b00a47386cb6150ff005",

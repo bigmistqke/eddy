@@ -369,9 +369,9 @@
       "node_type": "decision",
       "title": "How to handle demuxing/decoding performance for smooth playback + recording",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:58:35.745178+01:00",
-      "updated_at": "2026-01-09T02:58:35.745178+01:00",
+      "updated_at": "2026-01-17T18:57:30.103880+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":75,\"issue\":1}"
     },
     {
@@ -622,9 +622,9 @@
       "node_type": "decision",
       "title": "Which edit-friendly codec/format to use for fast seeking and decode?",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T03:59:35.656694+01:00",
-      "updated_at": "2026-01-09T03:59:35.656694+01:00",
+      "updated_at": "2026-01-17T18:57:30.130905+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Sub-decision under Option D (node 38).\\n\\nRequirements for edit-friendly codec:\\n1. All keyframes (intra-frame only) - instant seeking\\n2. Fast decode - ideally hardware accelerated  \\n3. WebCodecs support - must work in browser\\n4. Reasonable file size - mobile-friendly\\n5. Good quality - no generation loss during editing\\n\\nThis is a critical architectural decision affecting:\\n- Recording format (what we capture to)\\n- Storage format (what we save)\\n- Playback format (what we decode)\\n- Export format (what we output)\\n\\nMay need different formats for different stages.\",\"issue\":1}"
     },
     {
@@ -688,9 +688,9 @@
       "node_type": "decision",
       "title": "Layout resolver architecture: track-centric slots vs layout-segment-centric placements",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T11:47:53.003939+01:00",
-      "updated_at": "2026-01-09T11:47:53.003939+01:00",
+      "updated_at": "2026-01-17T18:57:30.146725+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -1469,9 +1469,9 @@
       "node_type": "decision",
       "title": "How to handle overlapping clip layering within a track",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-14T16:10:03.803203+01:00",
-      "updated_at": "2026-01-14T16:10:03.803203+01:00",
+      "updated_at": "2026-01-17T18:57:30.155121+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"When recording over existing clips in a track, how should we determine which clip renders on top?\\n\\nCurrent behavior: clips array iteration order determines placement order.\\nQuestion: Should later clips be \\\"on top\\\"? How to handle explicit reordering?\"}"
     },
     {
@@ -2056,6 +2056,28 @@
       "created_at": "2026-01-17T18:54:08.185903+01:00",
       "updated_at": "2026-01-17T18:54:08.185903+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"3bfa262\",\"confidence\":95}"
+    },
+    {
+      "id": 188,
+      "change_id": "75c4db65-3319-494a-97a7-9b8cf6ea0869",
+      "node_type": "goal",
+      "title": "Add repeat property to clips",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T19:02:30.537978+01:00",
+      "updated_at": "2026-01-17T19:02:30.537978+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"repeat to clip -> repeats the clip (looping style) -> can be Infinity -> loops forever -> or number\"}"
+    },
+    {
+      "id": 189,
+      "change_id": "90354962-348d-4d65-8485-89b866ebd6bf",
+      "node_type": "observation",
+      "title": "eddy/mini as proving ground for effect pipeline - single track/clip validates lexicon effect schema before multi-track complexity in app",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T19:16:34.121949+01:00",
+      "updated_at": "2026-01-17T19:16:34.121949+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     }
   ],
   "edges": [
@@ -3752,6 +3774,50 @@
       "weight": 1.0,
       "rationale": "Implementation complete",
       "created_at": "2026-01-17T17:52:41.764223+01:00"
+    },
+    {
+      "id": 155,
+      "from_node_id": 145,
+      "to_node_id": 189,
+      "from_change_id": "143d0372-1417-4000-b6d6-c6ff5185ae01",
+      "to_change_id": "90354962-348d-4d65-8485-89b866ebd6bf",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "mini validates effect system design",
+      "created_at": "2026-01-17T19:16:39.866644+01:00"
+    },
+    {
+      "id": 156,
+      "from_node_id": 146,
+      "to_node_id": 189,
+      "from_change_id": "3753be98-3def-4617-a5ae-65c78010bd4f",
+      "to_change_id": "90354962-348d-4d65-8485-89b866ebd6bf",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "mini tests lexicon model",
+      "created_at": "2026-01-17T19:16:39.876594+01:00"
+    },
+    {
+      "id": 157,
+      "from_node_id": 148,
+      "to_node_id": 189,
+      "from_change_id": "5f294284-c55b-46de-a5a8-1b6df518a198",
+      "to_change_id": "90354962-348d-4d65-8485-89b866ebd6bf",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "mini starts with linear chains",
+      "created_at": "2026-01-17T19:16:39.885747+01:00"
+    },
+    {
+      "id": 158,
+      "from_node_id": 188,
+      "to_node_id": 189,
+      "from_change_id": "75c4db65-3319-494a-97a7-9b8cf6ea0869",
+      "to_change_id": "90354962-348d-4d65-8485-89b866ebd6bf",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "mini can test repeat feature",
+      "created_at": "2026-01-17T19:16:39.896028+01:00"
     }
   ]
 }
