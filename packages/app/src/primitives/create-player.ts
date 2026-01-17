@@ -1,9 +1,14 @@
 import { rpc, transfer, type RPC } from '@bigmistqke/rpc/messenger'
-import { createAudioBus, type AudioBus } from '@eddy/audio'
+import { makeAudioBus, type AudioBus } from '@eddy/audio'
 import type { Project } from '@eddy/lexicons'
 import { createLoop, debug, getGlobalPerfMonitor } from '@eddy/utils'
 import { createEffect, createMemo, createSignal, on, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
+import {
+  compileLayoutTimeline,
+  injectPreviewClips,
+  type CompiledTimeline,
+} from '~/primitives/compile-layout-timeline'
 import { makeAheadScheduler, SCHEDULE_AHEAD } from '~/primitives/make-ahead-scheduler'
 import {
   makePlayback,
@@ -12,11 +17,6 @@ import {
   type VideoWorkerRPC,
 } from '~/primitives/make-playback'
 import type { SchedulerBuffer } from '~/primitives/make-scheduler'
-import {
-  compileLayoutTimeline,
-  injectPreviewClips,
-  type CompiledTimeline,
-} from '~/primitives/compile-layout-timeline'
 import { makeWorkerPool } from '~/primitives/make-worker-pool'
 import type { CompositorWorkerMethods } from '~/workers/compositor.worker'
 import CompositorWorker from '~/workers/compositor.worker?worker'
@@ -258,7 +258,7 @@ export async function createPlayer(options: CreatePlayerOptions): Promise<Player
 
     const newTrack: TrackEntry = {
       trackId,
-      audioPipeline: createAudioBus(effects),
+      audioPipeline: makeAudioBus(effects),
     }
     setTracks(trackId, newTrack)
 

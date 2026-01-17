@@ -1,8 +1,8 @@
 import type { AudioEffect } from '@eddy/lexicons'
 import { createDemuxer } from '@eddy/media'
 import { debug } from '@eddy/utils'
-import { createAudioDecoder } from './audio-decoder'
-import { createEffectChain } from './create-effect-chain'
+import { makeAudioDecoder } from './make-audio-decoder'
+import { makeEffectChain } from './make-effect-chain'
 
 const log = debug('offline-audio-mixer', false)
 
@@ -26,7 +26,7 @@ export interface OfflineAudioMixer {
  * Create an offline audio mixer using OfflineAudioContext
  * Renders all audio faster than real-time with effects applied via the element system
  */
-export function createOfflineAudioMixer(duration: number, sampleRate = 48000): OfflineAudioMixer {
+export function makeOfflineAudioMixer(duration: number, sampleRate = 48000): OfflineAudioMixer {
   const tracks: TrackAudioConfig[] = []
 
   return {
@@ -56,7 +56,7 @@ export function createOfflineAudioMixer(duration: number, sampleRate = 48000): O
         source.buffer = track.buffer
 
         // Build effect nodes using the element system
-        const pipeline = createEffectChain(offlineCtx, track.effects)
+        const pipeline = makeEffectChain(offlineCtx, track.effects)
 
         // Connect: source -> pipeline -> destination
         source.connect(pipeline.input)
@@ -238,7 +238,7 @@ export async function decodeClipAudio(
     }
 
     // Create decoder
-    const decoder = await createAudioDecoder(demuxer, audioTrack)
+    const decoder = await makeAudioDecoder(demuxer, audioTrack)
 
     // Decode all samples
     const audioDataArray = await decoder.decodeAll(samples)

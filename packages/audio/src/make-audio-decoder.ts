@@ -51,7 +51,7 @@ export interface CreateAudioDecoderOptions {
 /**
  * Create an AudioDecoder for an audio track
  */
-export async function createAudioDecoder(
+export async function makeAudioDecoder(
   demuxer: Demuxer,
   _trackInfo: AudioTrackInfo,
   options: CreateAudioDecoderOptions = {},

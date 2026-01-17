@@ -1,11 +1,12 @@
-import type { Agent } from '@eddy/atproto'
 import { $MESSENGER, rpc, transfer } from '@bigmistqke/rpc/messenger'
 import { every, whenEffect, whenMemo } from '@bigmistqke/solid-whenever'
+import type { Agent } from '@eddy/atproto'
+import { getProjectByRkey, publishProject, streamStemToOPFS } from '@eddy/atproto/crud'
 import {
-  createOfflineAudioMixer,
   decodeClipAudio,
   extractAudioChunk,
   getMasterMixer,
+  makeOfflineAudioMixer,
   resumeAudioContext,
 } from '@eddy/audio'
 import type { AudioEffect, Clip, ClipSource, ClipSourceStem, Project, Track } from '@eddy/lexicons'
@@ -13,15 +14,14 @@ import { createMuxer } from '@eddy/media'
 import { assertedNotNullish, debug } from '@eddy/utils'
 import { createEffect, createSelector, createSignal, mapArray, type Accessor } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
-import { action, defer, hold } from '~/primitives/action'
-import { deepResource } from '~/primitives/deep-resource'
-import { resource } from '~/primitives/resource'
-import { getProjectByRkey, publishProject, streamStemToOPFS } from '@eddy/atproto/crud'
 import { createWritableStream, readClipBlob, writeBlob } from '~/opfs'
-import { makeDebugInfo as initDebugInfo } from '~/primitives/make-debug-info'
-import { createResourceMap } from '~/primitives/create-resource-map'
-import { SCHEDULER_BUFFER } from '~/primitives/make-scheduler'
+import { action, defer, hold } from '~/primitives/action'
 import { getActivePlacements } from '~/primitives/compile-layout-timeline'
+import { createResourceMap } from '~/primitives/create-resource-map'
+import { deepResource } from '~/primitives/deep-resource'
+import { makeDebugInfo as initDebugInfo } from '~/primitives/make-debug-info'
+import { SCHEDULER_BUFFER } from '~/primitives/make-scheduler'
+import { resource } from '~/primitives/resource'
 import type { CaptureWorkerMethods } from '~/workers/capture.worker'
 import CaptureWorker from '~/workers/capture.worker?worker'
 import type { MuxerWorkerMethods } from '~/workers/muxer.worker'
@@ -607,7 +607,7 @@ export function createEditor(options: CreateEditorOptions) {
     .phase('audio', async ({ project: _project, timeline }, { setProgress }) => {
       log('export: preparing audio')
       const sampleRate = 48000
-      const audioMixer = createOfflineAudioMixer(timeline.duration, sampleRate)
+      const audioMixer = makeOfflineAudioMixer(timeline.duration, sampleRate)
       let hasAudio = false
       let clipIndex = 0
       const totalClips = _project.tracks.reduce((sum, t) => sum + t.clips.length, 0)

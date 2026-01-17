@@ -432,7 +432,7 @@ function transitionToSeeking(
 }
 
 /** Create a new audio playback engine instance */
-export function createAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}): AudioPlayback {
+export function makeAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}): AudioPlayback {
   const perf = createPerfMonitor()
 
   let state: PlaybackStateMachine = { type: 'idle' }

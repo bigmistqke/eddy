@@ -10,7 +10,7 @@ export interface AudioElement {
 export type AudioElementFactory = (ctx: BaseAudioContext, params: { value: number }) => AudioElement
 
 /** Registry of audio element factories by effect type */
-export const audioElements: Record<string, AudioElementFactory> = {
+export const AudioElementRegistry: Record<string, AudioElementFactory> = {
   'audio.gain': (ctx, params) => {
     const node = ctx.createGain()
     // params.value is 0-100, convert to 0-1
@@ -41,5 +41,5 @@ export const audioElements: Record<string, AudioElementFactory> = {
  * Use for custom effects like EQ, reverb, compression, etc.
  */
 export function registerAudioElement(type: string, factory: AudioElementFactory): void {
-  audioElements[type] = factory
+  AudioElementRegistry[type] = factory
 }

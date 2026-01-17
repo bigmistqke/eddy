@@ -1,7 +1,7 @@
 import { expose, transfer } from '@bigmistqke/rpc/messenger'
 import {
-  createAudioPlayback,
-  createRingBufferWriter,
+  makeAudioPlayback,
+  makeAudioRingBufferWriter,
   type AudioPlaybackState,
   type RingBufferWriter,
 } from '@eddy/audio'
@@ -253,7 +253,7 @@ const schedulingLoop = createLoop(() => {
 /*                                                                                */
 /**********************************************************************************/
 
-const playback = createAudioPlayback({
+const playback = makeAudioPlayback({
   onAudio(audioData) {
     // Schedule the audio instead of writing directly
     scheduleAudio(audioData)
@@ -282,7 +282,7 @@ expose<AudioPlaybackWorkerMethods>({
 
   setRingBuffer(sampleBuffer, controlBuffer, sampleRate) {
     log('setRingBuffer', { targetSampleRate: sampleRate })
-    ringBufferWriter = createRingBufferWriter(sampleBuffer, controlBuffer)
+    ringBufferWriter = makeAudioRingBufferWriter(sampleBuffer, controlBuffer)
     targetSampleRate = sampleRate
   },
 

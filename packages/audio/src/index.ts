@@ -5,56 +5,60 @@ export { getAudioContext, resumeAudioContext } from './context'
 export { getMasterMixer, type MasterMixer } from './mixer'
 
 // Effect Chain
-export { createEffectChain, type EffectChain } from './create-effect-chain'
+export { makeEffectChain, type EffectChain } from './make-effect-chain'
 
-export { registerAudioElement, type AudioElement, type AudioElementFactory } from './audio-elements'
+export {
+  registerAudioElement,
+  type AudioElement,
+  type AudioElementFactory,
+} from './audio-element-registry'
 
 // Audio Bus
-export { createAudioBus, type AudioBus } from './create-audio-bus'
+export { makeAudioBus, type AudioBus } from './make-audio-bus'
 
 // Audio Decoder
 export {
-  createAudioDecoder,
   isAudioCodecSupported,
   isAudioDecoderSupported,
+  makeAudioDecoder,
   type AudioDecoderHandle,
   type CreateAudioDecoderOptions,
-} from './audio-decoder'
+} from './make-audio-decoder'
 
 // Ring Buffer
 export {
-  createAudioRingBuffer,
-  createRingBufferReader,
-  createRingBufferWriter,
+  makeAudioRingBuffer,
+  makeAudioRingBufferReader,
+  makeAudioRingBufferWriter,
   type AudioRingBuffer,
   type RingBufferWriter,
-} from './ring-buffer'
+} from './audio-ring-buffer'
 
 // Scheduler
 export {
-  createAudioScheduler,
   isWebAudioSupported,
+  makeAudioScheduler,
   type AudioScheduler,
   type AudioSchedulerOptions,
   type AudioSchedulerState,
-} from './scheduler'
+} from './make-audio-scheduler'
 
 // Playback
 export {
-  createAudioPlayback,
+  makeAudioPlayback,
   type AudioCallback,
   type AudioPlayback,
   type AudioPlaybackConfig,
   type AudioPlaybackState,
   type EndCallback,
-} from './create-audio-playback'
+} from './make-audio-playback'
 
 // Offline Mixer
 export {
   audioDataArrayToBuffer,
-  createOfflineAudioMixer,
   decodeClipAudio,
   extractAudioChunk,
+  makeOfflineAudioMixer,
   type OfflineAudioMixer,
   type TrackAudioConfig,
-} from './offline-audio-mixer'
+} from './make-offline-audio-mixer'

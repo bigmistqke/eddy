@@ -8,7 +8,11 @@
 
 import { rpc } from '@bigmistqke/rpc/messenger'
 import { debug } from '@eddy/utils'
-import { createAudioRingBuffer, createRingBufferWriter, type AudioRingBuffer } from './ring-buffer'
+import {
+  makeAudioRingBuffer,
+  makeAudioRingBufferWriter,
+  type AudioRingBuffer,
+} from './audio-ring-buffer'
 import type { RingBufferProcessorMethods } from './ring-buffer-processor'
 import workletURL from './ring-buffer-processor?worker&url'
 
@@ -155,7 +159,7 @@ function extractAudioSamples(audioData: AudioData): Float32Array[] {
 /**
  * Create an audio scheduler using ring buffer and AudioWorklet
  */
-export async function createAudioScheduler(
+export async function makeAudioScheduler(
   options: AudioSchedulerOptions = {},
 ): Promise<AudioScheduler> {
   log('createAudioScheduler')
@@ -167,7 +171,8 @@ export async function createAudioScheduler(
   // Get context from destination, or create our own with matching sample rate
   const ownsContext = !options.destination
   const audioContext =
-    (options.destination?.context as AudioContext) ?? new AudioContext({ sampleRate: sourceSampleRate })
+    (options.destination?.context as AudioContext) ??
+    new AudioContext({ sampleRate: sourceSampleRate })
   const destination = options.destination ?? audioContext.destination
 
   // Use the actual AudioContext sample rate
@@ -181,11 +186,13 @@ export async function createAudioScheduler(
   // When external, the worker writes directly - we only need control access
   const usingExternalBuffer = !!options.ringBuffer
   const ringBuffer = usingExternalBuffer
-    ? createRingBufferWriter(options.ringBuffer!.sampleBuffer, options.ringBuffer!.controlBuffer)
-    : createAudioRingBuffer(bufferCapacity, channels)
+    ? makeAudioRingBufferWriter(options.ringBuffer!.sampleBuffer, options.ringBuffer!.controlBuffer)
+    : makeAudioRingBuffer(bufferCapacity, channels)
 
-  const sampleBuffer = options.ringBuffer?.sampleBuffer ?? (ringBuffer as AudioRingBuffer).sampleBuffer
-  const controlBuffer = options.ringBuffer?.controlBuffer ?? (ringBuffer as AudioRingBuffer).controlBuffer
+  const sampleBuffer =
+    options.ringBuffer?.sampleBuffer ?? (ringBuffer as AudioRingBuffer).sampleBuffer
+  const controlBuffer =
+    options.ringBuffer?.controlBuffer ?? (ringBuffer as AudioRingBuffer).controlBuffer
 
   // Load worklet processor
   await audioContext.audioWorklet.addModule(workletURL)

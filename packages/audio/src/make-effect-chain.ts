@@ -1,6 +1,6 @@
 import type { AudioEffect } from '@eddy/lexicons'
 import { debug } from '@eddy/utils'
-import { audioElements, type AudioElement } from './audio-elements'
+import { AudioElementRegistry, type AudioElement } from './audio-element-registry'
 
 const log = debug('effect-chain', false)
 
@@ -25,12 +25,12 @@ export interface EffectChain {
  * Works with any BaseAudioContext (live or offline).
  * Walks the effects array and creates nodes using registered element factories.
  */
-export function createEffectChain(ctx: BaseAudioContext, effects: AudioEffect[]): EffectChain {
+export function makeEffectChain(ctx: BaseAudioContext, effects: AudioEffect[]): EffectChain {
   const elements = new Map<string, AudioElement>()
   const nodes: AudioNode[] = []
 
   for (const effect of effects) {
-    const factory = audioElements[effect.type]
+    const factory = AudioElementRegistry[effect.type]
     if (!factory) {
       log('unknown effect type, skipping', { type: effect.type })
       continue

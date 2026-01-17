@@ -44,7 +44,7 @@ export interface AudioRingBuffer {
  * @param capacity - Buffer size in frames (samples per channel)
  * @param channels - Number of audio channels (default: 2 for stereo)
  */
-export function createAudioRingBuffer(capacity: number, channels: number = 2): AudioRingBuffer {
+export function makeAudioRingBuffer(capacity: number, channels: number = 2): AudioRingBuffer {
   // Sample buffer: capacity * channels * 4 bytes per float
   const sampleBuffer = new SharedArrayBuffer(capacity * channels * Float32Array.BYTES_PER_ELEMENT)
   const samples = new Float32Array(sampleBuffer)
@@ -129,7 +129,7 @@ export function createAudioRingBuffer(capacity: number, channels: number = 2): A
  * Worker-side ring buffer writer
  * Used by audio decoding workers to write samples to the shared buffer
  */
-export function createRingBufferWriter(
+export function makeAudioRingBufferWriter(
   sampleBuffer: SharedArrayBuffer,
   controlBuffer: SharedArrayBuffer,
 ) {
@@ -188,13 +188,13 @@ export function createRingBufferWriter(
   }
 }
 
-export type RingBufferWriter = ReturnType<typeof createRingBufferWriter>
+export type RingBufferWriter = ReturnType<typeof makeAudioRingBufferWriter>
 
 /**
  * Worklet-side ring buffer reader
  * This is used inside the AudioWorkletProcessor
  */
-export function createRingBufferReader(
+export function makeAudioRingBufferReader(
   sampleBuffer: SharedArrayBuffer,
   controlBuffer: SharedArrayBuffer,
 ) {

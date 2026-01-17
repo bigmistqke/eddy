@@ -12,7 +12,7 @@
  */
 
 import type { RPC } from '@bigmistqke/rpc/messenger'
-import { createAudioScheduler, type AudioScheduler } from '@eddy/audio'
+import { makeAudioScheduler, type AudioScheduler } from '@eddy/audio'
 import type { AudioTrackInfo, VideoTrackInfo } from '@eddy/media'
 import { debug } from '@eddy/utils'
 import type { SchedulerBuffer } from '~/primitives/make-scheduler'
@@ -244,7 +244,7 @@ export function makePlayback(config: PlaybackConfig): Playback {
         const channels = audioResult.audioTrack.channelCount
 
         // Create audio scheduler (creates ring buffer internally)
-        audioScheduler = await createAudioScheduler({
+        audioScheduler = await makeAudioScheduler({
           sampleRate,
           channels,
           destination: config.audioDestination,

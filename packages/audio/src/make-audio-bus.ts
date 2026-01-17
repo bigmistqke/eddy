@@ -1,6 +1,6 @@
 import type { AudioEffect } from '@eddy/lexicons'
 import { getAudioContext } from './context'
-import { type EffectChain, createEffectChain } from './create-effect-chain'
+import { type EffectChain, makeEffectChain } from './make-effect-chain'
 import { getMasterMixer } from './mixer'
 
 export interface AudioBus {
@@ -24,12 +24,12 @@ const connectedElements = new WeakMap<HTMLMediaElement, MediaElementAudioSourceN
  * Uses the element system to build effect nodes from effects.
  * Connects to master mixer automatically.
  */
-export function createAudioBus(effects: AudioEffect[]): AudioBus {
+export function makeAudioBus(effects: AudioEffect[]): AudioBus {
   const ctx = getAudioContext()
   const mixer = getMasterMixer()
 
   // Build effect nodes using the element system
-  const pipeline = createEffectChain(ctx, effects)
+  const pipeline = makeEffectChain(ctx, effects)
 
   // Connect pipeline output to master mixer
   pipeline.output.connect(mixer.getInputNode())
