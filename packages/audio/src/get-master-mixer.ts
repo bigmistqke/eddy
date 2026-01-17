@@ -1,5 +1,5 @@
 import { debug } from '@eddy/utils'
-import { getAudioContext } from './context'
+import { getAudioContext } from './audio-context'
 
 const log = debug('audio:mixer', false)
 

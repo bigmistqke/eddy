@@ -1,5 +1,5 @@
 import type { AudioEffect } from '@eddy/lexicons'
-import { getAudioContext } from './context'
+import { getAudioContext } from './audio-context'
 import { getMasterMixer } from './get-master-mixer'
 import { type EffectChain, makeEffectChain } from './make-effect-chain'
 

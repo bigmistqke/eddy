@@ -1,6 +1,6 @@
+export * from './audio-context'
 export * from './audio-element-registry'
 export * from './audio-ring-buffer'
-export * from './context'
 export * from './get-master-mixer'
 export * from './make-audio-bus'
 export * from './make-audio-decoder'
