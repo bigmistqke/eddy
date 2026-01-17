@@ -1,26 +1,42 @@
 [
   {
+    "hash": "9cb61d22fae6f3a011d4c5dcebca60feb6215bd8",
+    "short_hash": "9cb61d2",
+    "author": "bigmistqke",
+    "date": "2026-01-17T17:52:15+01:00",
+    "message": "docs: expand decision graph workflow in CLAUDE.md\n\n- Add detailed behavioral triggers table\n- Document verbatim prompt capture requirements\n- Add connection maintenance guidelines\n- Include quick commands reference\n- Add branch-based grouping and audit checklist\n- Document session lifecycle and autonomy rules",
+    "files_changed": 1
+  },
+  {
+    "hash": "9cb61d22fae6f3a011d4c5dcebca60feb6215bd8",
+    "short_hash": "9cb61d2",
+    "author": "bigmistqke",
+    "date": "2026-01-17T17:52:15+01:00",
+    "message": "docs: expand decision graph workflow in CLAUDE.md\n\n- Add detailed behavioral triggers table\n- Document verbatim prompt capture requirements\n- Add connection maintenance guidelines\n- Include quick commands reference\n- Add branch-based grouping and audit checklist\n- Document session lifecycle and autonomy rules",
+    "files_changed": 1
+  },
+  {
+    "hash": "6dac56d8aa9ce98c844643cef1a31703b43d7eec",
+    "short_hash": "6dac56d",
+    "author": "bigmistqke",
+    "date": "2026-01-17T17:52:08+01:00",
+    "message": "refactor: reorganize app modules and extract atproto package\n\n- Extract ATProto auth/crud to @eddy/atproto package\n- Move hooks/ and lib/ modules to primitives/ directory\n- Move opfs utilities to dedicated opfs/ directory\n- Rename create-* to make-* for factory functions (ahead-scheduler,\n  debug-info, playback, scheduler, worker-pool, opfs-source)\n- Rename timeline-compiler to compile-layout-timeline\n- Update all import paths across components, workers, and routes",
+    "files_changed": 60
+  },
+  {
+    "hash": "6dac56d8aa9ce98c844643cef1a31703b43d7eec",
+    "short_hash": "6dac56d",
+    "author": "bigmistqke",
+    "date": "2026-01-17T17:52:08+01:00",
+    "message": "refactor: reorganize app modules and extract atproto package\n\n- Extract ATProto auth/crud to @eddy/atproto package\n- Move hooks/ and lib/ modules to primitives/ directory\n- Move opfs utilities to dedicated opfs/ directory\n- Rename create-* to make-* for factory functions (ahead-scheduler,\n  debug-info, playback, scheduler, worker-pool, opfs-source)\n- Rename timeline-compiler to compile-layout-timeline\n- Update all import paths across components, workers, and routes",
+    "files_changed": 60
+  },
+  {
     "hash": "2bb395cad9425dc059254ac302fb2d3370f9ed3b",
     "short_hash": "2bb395c",
     "author": "bigmistqke",
     "date": "2026-01-17T17:32:56+01:00",
     "message": "refactor: replace handoff mechanism with ahead-scheduler abstraction\n\n- Extract scheduling logic into createAheadScheduler module\n- Reduce SCHEDULE_AHEAD from 2.0s to 0.5s\n- Use modulo for schedule time calculation when looping\n- Remove nextPlayback/nextPlaybackReady from ClipEntry\n- Simplify player code by delegating to scheduler",
-    "files_changed": 2
-  },
-  {
-    "hash": "ddee4aab625b1fc9b0fc27c1f29b533a8ff229e3",
-    "short_hash": "ddee4aa",
-    "author": "bigmistqke",
-    "date": "2026-01-17T17:09:37+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "05767b3db8bd7245fb5886439cbd475d07ce0af2",
-    "short_hash": "05767b3",
-    "author": "bigmistqke",
-    "date": "2026-01-17T17:09:06+01:00",
-    "message": "refactor: use discriminated union state machine in video/playback modules\n\n- create-video-playback.ts: Add PlaybackStateMachine, LoadedResources,\n  isLoaded() guard, createPlaybackTiming(), createFrameBuffer()\n- create-playback.ts: Add PlaybackStateMachine, LoadedResources,\n  isLoaded() guard, transition functions for state changes",
     "files_changed": 2
   },
   {
