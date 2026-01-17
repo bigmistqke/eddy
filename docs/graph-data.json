@@ -2012,6 +2012,17 @@
       "created_at": "2026-01-17T18:33:53.274741+01:00",
       "updated_at": "2026-01-17T18:33:53.274741+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"b043cfa\",\"confidence\":95}"
+    },
+    {
+      "id": 184,
+      "change_id": "15886360-f54a-445b-bc1c-900e868bb07b",
+      "node_type": "outcome",
+      "title": "Committed: move auth context from @eddy/atproto to app components",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T18:45:46.935927+01:00",
+      "updated_at": "2026-01-17T18:45:46.935927+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"595d81e\",\"confidence\":95}"
     }
   ],
   "edges": [
