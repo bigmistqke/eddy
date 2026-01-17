@@ -1869,6 +1869,17 @@
       "created_at": "2026-01-17T01:21:32.443320+01:00",
       "updated_at": "2026-01-17T01:21:32.443320+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"6135811\",\"confidence\":95}"
+    },
+    {
+      "id": 171,
+      "change_id": "4f6bfdfc-072f-49a3-bfff-3402c4ac90d3",
+      "node_type": "observation",
+      "title": "mediabunny audio format support: WebM (Opus/Vorbis), OGG (Opus/Vorbis/FLAC), MP4/M4A (AAC/MP3/FLAC), FLAC, ADTS. For audio-only: OGG/Opus (best quality/size), M4A/AAC (most universal), WebM/Opus (simplest pipeline)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T01:37:32.579419+01:00",
+      "updated_at": "2026-01-17T01:37:32.579419+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     }
   ],
   "edges": [
@@ -3510,6 +3521,17 @@
       "weight": 1.0,
       "rationale": "Committed",
       "created_at": "2026-01-17T01:21:32.452622+01:00"
+    },
+    {
+      "id": 150,
+      "from_node_id": 155,
+      "to_node_id": 171,
+      "from_change_id": "9fc2f944-5233-4322-afcb-5c27fcb600d2",
+      "to_change_id": "4f6bfdfc-072f-49a3-bfff-3402c4ac90d3",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Future: audio-only recordings",
+      "created_at": "2026-01-17T01:37:32.688262+01:00"
     }
   ]
 }

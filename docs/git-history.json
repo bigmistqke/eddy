@@ -8,20 +8,20 @@
     "files_changed": 2
   },
   {
+    "hash": "6135811b67134517275d8aeb4dddfbafea6ff5af",
+    "short_hash": "6135811",
+    "author": "bigmistqke",
+    "date": "2026-01-17T01:21:27+01:00",
+    "message": "feat: stream ATProto stems directly to OPFS\n\n- Add streamStemToOPFS() that pipes fetch response to OPFS writable stream\n- Add getPdsUrl() helper that works with both CredentialSession and OAuthSession\n- Update stemClips resourceMap to use streaming instead of blob + writeBlob\n- Avoids loading entire blob into JS heap memory",
+    "files_changed": 2
+  },
+  {
     "hash": "0cf5d80ab60f31d1370689afa8b45fcfb0736cbc",
     "short_hash": "0cf5d80",
     "author": "bigmistqke",
     "date": "2026-01-17T00:53:36+01:00",
     "message": "chore: sync deciduous graph",
     "files_changed": 2
-  },
-  {
-    "hash": "2c388ce52a1a5404331124dfd9a5607b28c6829a",
-    "short_hash": "2c388ce",
-    "author": "bigmistqke",
-    "date": "2026-01-17T00:53:24+01:00",
-    "message": "feat: add OPFS storage for clips to eliminate memory overhead\n\n- Add OPFS module (paths, write, create-opfs-source)\n- Muxer writes to OPFS after finalize instead of returning blob\n- Playback workers read from OPFS via BlobSource (allows concurrent reads)\n- Player loadClip accepts clipId instead of blob\n- stemClips resourceMap writes fetched blobs to OPFS\n- Remove in-memory buffer storage from ClipEntry",
-    "files_changed": 16
   },
   {
     "hash": "2c388ce52a1a5404331124dfd9a5607b28c6829a",
