@@ -1,11 +1,27 @@
 [
   {
-    "hash": "9cb61d22fae6f3a011d4c5dcebca60feb6215bd8",
-    "short_hash": "9cb61d2",
+    "hash": "4d31bef1f2d85fff4d3ef90c3bc4fef113e429b3",
+    "short_hash": "4d31bef",
     "author": "bigmistqke",
-    "date": "2026-01-17T17:52:15+01:00",
-    "message": "docs: expand decision graph workflow in CLAUDE.md\n\n- Add detailed behavioral triggers table\n- Document verbatim prompt capture requirements\n- Add connection maintenance guidelines\n- Include quick commands reference\n- Add branch-based grouping and audit checklist\n- Document session lifecycle and autonomy rules",
-    "files_changed": 1
+    "date": "2026-01-17T17:55:40+01:00",
+    "message": "refactor: consolidate layout-types into compile-layout-timeline\n\nMove all types from layout-types.ts directly into compile-layout-timeline.ts\nsince they're only used by this module and its consumers. Reduces file count\nand keeps related code together.",
+    "files_changed": 4
+  },
+  {
+    "hash": "0c593e4b8b30f273d6f14bdb7098ac4fdc19f759",
+    "short_hash": "0c593e4",
+    "author": "bigmistqke",
+    "date": "2026-01-17T17:53:06+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
+    "hash": "1773a45acb871d05f69a80aafd169c8489096761",
+    "short_hash": "1773a45",
+    "author": "bigmistqke",
+    "date": "2026-01-17T17:52:18+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
   },
   {
     "hash": "9cb61d22fae6f3a011d4c5dcebca60feb6215bd8",
@@ -14,14 +30,6 @@
     "date": "2026-01-17T17:52:15+01:00",
     "message": "docs: expand decision graph workflow in CLAUDE.md\n\n- Add detailed behavioral triggers table\n- Document verbatim prompt capture requirements\n- Add connection maintenance guidelines\n- Include quick commands reference\n- Add branch-based grouping and audit checklist\n- Document session lifecycle and autonomy rules",
     "files_changed": 1
-  },
-  {
-    "hash": "6dac56d8aa9ce98c844643cef1a31703b43d7eec",
-    "short_hash": "6dac56d",
-    "author": "bigmistqke",
-    "date": "2026-01-17T17:52:08+01:00",
-    "message": "refactor: reorganize app modules and extract atproto package\n\n- Extract ATProto auth/crud to @eddy/atproto package\n- Move hooks/ and lib/ modules to primitives/ directory\n- Move opfs utilities to dedicated opfs/ directory\n- Rename create-* to make-* for factory functions (ahead-scheduler,\n  debug-info, playback, scheduler, worker-pool, opfs-source)\n- Rename timeline-compiler to compile-layout-timeline\n- Update all import paths across components, workers, and routes",
-    "files_changed": 60
   },
   {
     "hash": "6dac56d8aa9ce98c844643cef1a31703b43d7eec",
