@@ -1,26 +1,42 @@
 [
   {
-    "hash": "6135811b67134517275d8aeb4dddfbafea6ff5af",
-    "short_hash": "6135811",
+    "hash": "05767b3db8bd7245fb5886439cbd475d07ce0af2",
+    "short_hash": "05767b3",
     "author": "bigmistqke",
-    "date": "2026-01-17T01:21:27+01:00",
-    "message": "feat: stream ATProto stems directly to OPFS\n\n- Add streamStemToOPFS() that pipes fetch response to OPFS writable stream\n- Add getPdsUrl() helper that works with both CredentialSession and OAuthSession\n- Update stemClips resourceMap to use streaming instead of blob + writeBlob\n- Avoids loading entire blob into JS heap memory",
+    "date": "2026-01-17T17:09:06+01:00",
+    "message": "refactor: use discriminated union state machine in video/playback modules\n\n- create-video-playback.ts: Add PlaybackStateMachine, LoadedResources,\n  isLoaded() guard, createPlaybackTiming(), createFrameBuffer()\n- create-playback.ts: Add PlaybackStateMachine, LoadedResources,\n  isLoaded() guard, transition functions for state changes",
     "files_changed": 2
   },
   {
-    "hash": "6135811b67134517275d8aeb4dddfbafea6ff5af",
-    "short_hash": "6135811",
+    "hash": "dfc35080632079356ebbf06f54ffdc943e0ab263",
+    "short_hash": "dfc3508",
     "author": "bigmistqke",
-    "date": "2026-01-17T01:21:27+01:00",
-    "message": "feat: stream ATProto stems directly to OPFS\n\n- Add streamStemToOPFS() that pipes fetch response to OPFS writable stream\n- Add getPdsUrl() helper that works with both CredentialSession and OAuthSession\n- Update stemClips resourceMap to use streaming instead of blob + writeBlob\n- Avoids loading entire blob into JS heap memory",
-    "files_changed": 2
-  },
-  {
-    "hash": "0cf5d80ab60f31d1370689afa8b45fcfb0736cbc",
-    "short_hash": "0cf5d80",
-    "author": "bigmistqke",
-    "date": "2026-01-17T00:53:36+01:00",
+    "date": "2026-01-17T16:57:02+01:00",
     "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
+    "hash": "973725d3df4ba6796d6958ed5575e1ff159c6027",
+    "short_hash": "973725d",
+    "author": "bigmistqke",
+    "date": "2026-01-17T16:56:59+01:00",
+    "message": "refactor: use discriminated union state machine in create-audio-playback\n\n- Add PlaybackStateMachine type with idle/loading/ready/playing/paused/seeking states\n- Extract LoadedResources interface for states with loaded audio\n- Add isLoaded() type guard for state narrowing\n- Extract createPlaybackTiming() and createAudioBuffer() as separate factories\n- Add transition functions for state changes\n- Enable decoder reuse via PreservedDecoder",
+    "files_changed": 1
+  },
+  {
+    "hash": "973725d3df4ba6796d6958ed5575e1ff159c6027",
+    "short_hash": "973725d",
+    "author": "bigmistqke",
+    "date": "2026-01-17T16:56:59+01:00",
+    "message": "refactor: use discriminated union state machine in create-audio-playback\n\n- Add PlaybackStateMachine type with idle/loading/ready/playing/paused/seeking states\n- Extract LoadedResources interface for states with loaded audio\n- Add isLoaded() type guard for state narrowing\n- Extract createPlaybackTiming() and createAudioBuffer() as separate factories\n- Add transition functions for state changes\n- Enable decoder reuse via PreservedDecoder",
+    "files_changed": 1
+  },
+  {
+    "hash": "6135811b67134517275d8aeb4dddfbafea6ff5af",
+    "short_hash": "6135811",
+    "author": "bigmistqke",
+    "date": "2026-01-17T01:21:27+01:00",
+    "message": "feat: stream ATProto stems directly to OPFS\n\n- Add streamStemToOPFS() that pipes fetch response to OPFS writable stream\n- Add getPdsUrl() helper that works with both CredentialSession and OAuthSession\n- Update stemClips resourceMap to use streaming instead of blob + writeBlob\n- Avoids loading entire blob into JS heap memory",
     "files_changed": 2
   },
   {

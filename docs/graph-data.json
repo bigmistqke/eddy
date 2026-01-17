@@ -1880,6 +1880,50 @@
       "created_at": "2026-01-17T01:37:32.579419+01:00",
       "updated_at": "2026-01-17T01:37:32.579419+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 172,
+      "change_id": "2a16e1f5-2ac4-4cf7-9c6e-a4748e3d5afd",
+      "node_type": "action",
+      "title": "refactor: apply discriminated union state machine to create-audio-playback",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T16:57:13.901543+01:00",
+      "updated_at": "2026-01-17T16:57:13.901543+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 173,
+      "change_id": "96b5a20d-a5bb-49b7-9c00-b3118d6d4354",
+      "node_type": "outcome",
+      "title": "Committed: discriminated union state machine refactor for audio playback",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T16:57:17.631271+01:00",
+      "updated_at": "2026-01-17T16:57:17.631271+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"973725d\",\"confidence\":95}"
+    },
+    {
+      "id": 174,
+      "change_id": "ed5f895f-95cf-4526-872e-bd4461391eb3",
+      "node_type": "action",
+      "title": "refactor: apply state machine pattern to video and playback modules",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T17:09:24.222222+01:00",
+      "updated_at": "2026-01-17T17:09:24.222222+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 175,
+      "change_id": "f0e392eb-1433-4a62-adfe-cb6c09968646",
+      "node_type": "outcome",
+      "title": "Committed state machine refactors for create-video-playback and create-playback",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T17:09:24.255395+01:00",
+      "updated_at": "2026-01-17T17:09:24.255395+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"05767b3\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -3532,6 +3576,28 @@
       "weight": 1.0,
       "rationale": "Future: audio-only recordings",
       "created_at": "2026-01-17T01:37:32.688262+01:00"
+    },
+    {
+      "id": 151,
+      "from_node_id": 172,
+      "to_node_id": 173,
+      "from_change_id": "2a16e1f5-2ac4-4cf7-9c6e-a4748e3d5afd",
+      "to_change_id": "96b5a20d-a5bb-49b7-9c00-b3118d6d4354",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-17T16:57:21.382141+01:00"
+    },
+    {
+      "id": 152,
+      "from_node_id": 174,
+      "to_node_id": 175,
+      "from_change_id": "ed5f895f-95cf-4526-872e-bd4461391eb3",
+      "to_change_id": "f0e392eb-1433-4a62-adfe-cb6c09968646",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-17T17:09:30.021913+01:00"
     }
   ]
 }
