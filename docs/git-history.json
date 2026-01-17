@@ -1,5 +1,29 @@
 [
   {
+    "hash": "3bfa262123ae75427fd1d3f22efde718ac7d48bc",
+    "short_hash": "3bfa262",
+    "author": "bigmistqke",
+    "date": "2026-01-17T18:54:04+01:00",
+    "message": "chore: clean up unused exports, dependencies, and files\n\n- Simplify atproto imports to use main export instead of subpaths\n- Remove unused subpath exports from atproto package.json\n- Remove unused deps: @bigmistqke/rpc from audio, @bigmistqke/view.gl from utils\n- Delete unused files: app/src/utils.ts, scripts/seed-deciduous.ts",
+    "files_changed": 8
+  },
+  {
+    "hash": "3b3f25df5d3ad0302ad371fa26f7bedcb97b358e",
+    "short_hash": "3b3f25d",
+    "author": "bigmistqke",
+    "date": "2026-01-17T18:48:58+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
+    "hash": "c772d46f247343a2eac7b00a47386cb6150ff005",
+    "short_hash": "c772d46",
+    "author": "bigmistqke",
+    "date": "2026-01-17T18:48:46+01:00",
+    "message": "refactor: rename create-player to make-player\n\nPlayer is a factory function that creates instances, not a reactive hook.\nAlign with make-* naming convention for factory functions.",
+    "files_changed": 4
+  },
+  {
     "hash": "c772d46f247343a2eac7b00a47386cb6150ff005",
     "short_hash": "c772d46",
     "author": "bigmistqke",
@@ -14,22 +38,6 @@
     "date": "2026-01-17T18:48:41+01:00",
     "message": "fix: update auth imports after context relocation\n\nUpdate imports to point to new auth locations after moving auth-context\nfrom @eddy/atproto to app components. Remove solid-js deps from atproto\npackage since it no longer contains SolidJS code.",
     "files_changed": 6
-  },
-  {
-    "hash": "9ca2b967cd406304566ab7ba191e5f2d3a47df4c",
-    "short_hash": "9ca2b96",
-    "author": "bigmistqke",
-    "date": "2026-01-17T18:48:41+01:00",
-    "message": "fix: update auth imports after context relocation\n\nUpdate imports to point to new auth locations after moving auth-context\nfrom @eddy/atproto to app components. Remove solid-js deps from atproto\npackage since it no longer contains SolidJS code.",
-    "files_changed": 6
-  },
-  {
-    "hash": "b24ced6033473b5338211ec8e4317d0922e3f497",
-    "short_hash": "b24ced6",
-    "author": "bigmistqke",
-    "date": "2026-01-17T18:45:53+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
   },
   {
     "hash": "595d81ea8c51db166504343e3bacedeeca55347c",
