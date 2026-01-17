@@ -2074,10 +2074,87 @@
       "node_type": "observation",
       "title": "eddy/mini as proving ground for effect pipeline - single track/clip validates lexicon effect schema before multi-track complexity in app",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T19:16:34.121949+01:00",
-      "updated_at": "2026-01-17T19:16:34.121949+01:00",
+      "updated_at": "2026-01-17T19:41:54.514786+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 190,
+      "change_id": "2a0b5b4f-c903-4f5d-a6e1-6b414c280f60",
+      "node_type": "observation",
+      "title": "Video effects prototyping directly in eddy/app - eddy/mini deferred to later",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T19:41:54.626733+01:00",
+      "updated_at": "2026-01-17T19:41:54.626733+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 191,
+      "change_id": "8d3cfc48-9ec0-413e-9c73-f87dc32a70e5",
+      "node_type": "goal",
+      "title": "Explore composable video effects with view.gl Symbol pattern",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T19:42:30.797944+01:00",
+      "updated_at": "2026-01-17T19:42:30.797944+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"i want to explore video effects -> the trick is -> @bigmistqke/view.gl has support for symbol usage to prevent naming conflicts + you can create a view from a program + the little piece of glsl code the visual effect has -> so you can create a snake that eats its own tail: you compose a shader from concatenating little snippets -> you create a program from it (that references these little snippets) -> it generates a program -> you pass it back to all the functions that generated the glsl code -> they pass it to view(....) -> now they have setters to control these uniforms/attributes with\"}"
+    },
+    {
+      "id": 192,
+      "change_id": "e8b15d62-c926-42de-8976-256d109b7c7d",
+      "node_type": "observation",
+      "title": "compile.toQuad() uses simple vertex shader - later can add vertex effects by switching to compile() with custom vertex shader",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T19:43:37.838044+01:00",
+      "updated_at": "2026-01-17T19:43:37.838044+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 193,
+      "change_id": "179ffb87-4a5e-42ff-b4f3-bf660a574ab7",
+      "node_type": "observation",
+      "title": "compile.toSchema(fragment) extracts schema from GLSL - single source of truth, no manual schema duplication",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T19:48:04.530871+01:00",
+      "updated_at": "2026-01-17T19:48:04.530871+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 194,
+      "change_id": "fbed641a-ca0e-43cd-af51-46ddbe4ccb80",
+      "node_type": "action",
+      "title": "Create video effects system with Symbol-based GLSL composition",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T19:49:00.581923+01:00",
+      "updated_at": "2026-01-17T19:49:00.581923+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 195,
+      "change_id": "3bbbfcb1-a3b9-4a5c-a113-86bbafb5c1e3",
+      "node_type": "observation",
+      "title": "Video effects could follow audio bus pattern - each unique effect chain compiles to one shader program, clips route to effect buses",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T19:54:18.380629+01:00",
+      "updated_at": "2026-01-17T19:54:18.380629+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":80}"
+    },
+    {
+      "id": 196,
+      "change_id": "344b82b9-c472-45d6-9361-718eb65c634b",
+      "node_type": "outcome",
+      "title": "Video effects prototype complete - types, brightness/contrast effects, compose function. Compositor integration deferred pending bus architecture.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-17T19:54:29.238436+01:00",
+      "updated_at": "2026-01-17T19:54:29.238436+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     }
   ],
   "edges": [
@@ -3818,6 +3895,72 @@
       "weight": 1.0,
       "rationale": "mini can test repeat feature",
       "created_at": "2026-01-17T19:16:39.896028+01:00"
+    },
+    {
+      "id": 159,
+      "from_node_id": 189,
+      "to_node_id": 190,
+      "from_change_id": "90354962-348d-4d65-8485-89b866ebd6bf",
+      "to_change_id": "2a0b5b4f-c903-4f5d-a6e1-6b414c280f60",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Supersedes - direction changed",
+      "created_at": "2026-01-17T19:41:59.144703+01:00"
+    },
+    {
+      "id": 160,
+      "from_node_id": 191,
+      "to_node_id": 192,
+      "from_change_id": "8d3cfc48-9ec0-413e-9c73-f87dc32a70e5",
+      "to_change_id": "e8b15d62-c926-42de-8976-256d109b7c7d",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Future consideration",
+      "created_at": "2026-01-17T19:43:43.413133+01:00"
+    },
+    {
+      "id": 161,
+      "from_node_id": 191,
+      "to_node_id": 193,
+      "from_change_id": "8d3cfc48-9ec0-413e-9c73-f87dc32a70e5",
+      "to_change_id": "179ffb87-4a5e-42ff-b4f3-bf660a574ab7",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Key design insight",
+      "created_at": "2026-01-17T19:48:08.031932+01:00"
+    },
+    {
+      "id": 162,
+      "from_node_id": 191,
+      "to_node_id": 194,
+      "from_change_id": "8d3cfc48-9ec0-413e-9c73-f87dc32a70e5",
+      "to_change_id": "fbed641a-ca0e-43cd-af51-46ddbe4ccb80",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-01-17T19:49:09.181858+01:00"
+    },
+    {
+      "id": 163,
+      "from_node_id": 191,
+      "to_node_id": 195,
+      "from_change_id": "8d3cfc48-9ec0-413e-9c73-f87dc32a70e5",
+      "to_change_id": "3bbbfcb1-a3b9-4a5c-a113-86bbafb5c1e3",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Architecture consideration",
+      "created_at": "2026-01-17T19:54:24.820257+01:00"
+    },
+    {
+      "id": 164,
+      "from_node_id": 194,
+      "to_node_id": 196,
+      "from_change_id": "fbed641a-ca0e-43cd-af51-46ddbe4ccb80",
+      "to_change_id": "344b82b9-c472-45d6-9361-718eb65c634b",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Result",
+      "created_at": "2026-01-17T19:54:32.743421+01:00"
     }
   ]
 }

@@ -1,19 +1,19 @@
 [
   {
+    "hash": "77923303bbb86d117a357efb6fc035bd2df2dd3a",
+    "short_hash": "7792330",
+    "author": "bigmistqke",
+    "date": "2026-01-17T19:34:22+01:00",
+    "message": "docs: add make-* vs create-* naming convention to CLAUDE.md",
+    "files_changed": 1
+  },
+  {
     "hash": "ca22c8ede5ccc07293b5f4944cd55544b3c13f24",
     "short_hash": "ca22c8e",
     "author": "bigmistqke",
     "date": "2026-01-17T19:34:17+01:00",
     "message": "feat: add extensible audio effect system with reverb\n\n- Add AudioElement interface with flexible params and multi-node support\n- Add makeAudioElementRegistration utility for idempotent registration\n- Extract gain/pan to effects/ directory with register* pattern\n- Implement reverb effect with mix, decay, preDelay params\n- Add audioEffect.reverb to lexicon schema\n- Consumer calls registerBuiltInAudioEffects() to register effects\n\nEffects are self-contained modules that export a registration function,\nmaking it easy to add new effects via PR.",
     "files_changed": 12
-  },
-  {
-    "hash": "82a3512c68a5b82dc72cee4f9c4f1cee1e9647ef",
-    "short_hash": "82a3512",
-    "author": "bigmistqke",
-    "date": "2026-01-17T18:55:02+01:00",
-    "message": "chore: rename context to audio-context",
-    "files_changed": 5
   },
   {
     "hash": "3bfa262123ae75427fd1d3f22efde718ac7d48bc",
