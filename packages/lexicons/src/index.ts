@@ -33,8 +33,9 @@ export type LayoutGrid = v.InferOutput<(typeof projectValidators)['layout.grid']
 
 export type AudioEffectGain = v.InferOutput<(typeof projectValidators)['audioEffect.gain']>
 export type AudioEffectPan = v.InferOutput<(typeof projectValidators)['audioEffect.pan']>
+export type AudioEffectReverb = v.InferOutput<(typeof projectValidators)['audioEffect.reverb']>
 export type AudioEffectCustom = v.InferOutput<(typeof projectValidators)['audioEffect.custom']>
-export type AudioEffect = AudioEffectGain | AudioEffectPan | AudioEffectCustom
+export type AudioEffect = AudioEffectGain | AudioEffectPan | AudioEffectReverb | AudioEffectCustom
 
 export type VisualEffectTransform = v.InferOutput<
   (typeof projectValidators)['visualEffect.transform']

@@ -1,6 +1,10 @@
-import type { AudioEffect } from '@eddy/lexicons'
+import type { AudioEffect, StaticValue } from '@eddy/lexicons'
 import { debug } from '@eddy/utils'
-import { AudioElementRegistry, type AudioElement } from './audio-element-registry'
+import {
+  AudioElementRegistry,
+  type AudioElement,
+  type AudioElementParams,
+} from './audio-element-registry'
 
 const log = debug('audio:make-effect-chain', false)
 
@@ -12,11 +16,60 @@ export interface EffectChain {
   output: AudioNode
   /** Map of effect type to its control functions */
   elements: Map<string, AudioElement>
+  /** Dispose all elements */
+  dispose: () => void
 }
 
 /**********************************************************************************/
 /*                                                                                */
-/*                               Create Effect Chain                              */
+/*                                     Utils                                      */
+/*                                                                                */
+/**********************************************************************************/
+
+/** Check if value is a StaticValue (has 'value' property) */
+function isStaticValue(value: unknown): value is StaticValue {
+  return typeof value === 'object' && value !== null && 'value' in value
+}
+
+/** Extract numeric value from StaticValue or CurveRef, defaulting to provided default */
+function extractValue(value: unknown, defaultValue: number): number {
+  if (isStaticValue(value)) {
+    return value.value
+  }
+  // CurveRef - for now return default (TODO: implement curve evaluation)
+  return defaultValue
+}
+
+/** Extract all params from an effect definition */
+function extractParams(effect: AudioEffect): AudioElementParams {
+  const params: AudioElementParams = {}
+
+  // Handle built-in effects with 'value' property
+  if ('value' in effect) {
+    params.value = extractValue(effect.value, 100)
+  }
+
+  // Handle custom effects with 'params' object
+  if ('params' in effect && typeof effect.params === 'object' && effect.params !== null) {
+    for (const [key, value] of Object.entries(effect.params)) {
+      params[key] = extractValue(value, 0)
+    }
+  }
+
+  // Handle effects with named params (like reverb with mix, decay, etc.)
+  for (const [key, value] of Object.entries(effect)) {
+    if (key === 'type' || key === 'enabled' || key === 'params' || key === 'value') continue
+    if (isStaticValue(value)) {
+      params[key] = value.value
+    }
+  }
+
+  return params
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                Make Effect Chain                               */
 /*                                                                                */
 /**********************************************************************************/
 
@@ -27,7 +80,7 @@ export interface EffectChain {
  */
 export function makeEffectChain(ctx: BaseAudioContext, effects: AudioEffect[]): EffectChain {
   const elements = new Map<string, AudioElement>()
-  const nodes: AudioNode[] = []
+  const nodeSequence: { input: AudioNode; output: AudioNode }[] = []
 
   for (const effect of effects) {
     const factory = AudioElementRegistry[effect.type]
@@ -36,43 +89,43 @@ export function makeEffectChain(ctx: BaseAudioContext, effects: AudioEffect[]): 
       continue
     }
 
-    // Extract value from effect (handles StaticValue vs CurveRef)
-    // AudioEffectGain and AudioEffectPan have 'value' property
-    // AudioEffectCustom has 'params' instead
-    let value = 100 // Default
-    if ('value' in effect && effect.value && 'value' in effect.value) {
-      // StaticValue: { value: number } - values are scaled by 100
-      value = effect.value.value
-    }
-    const params = { value }
-
+    const params = extractParams(effect)
     const element = factory(ctx, params)
     elements.set(effect.type, element)
-    nodes.push(element.node)
+    nodeSequence.push({
+      input: element.node,
+      output: element.output ?? element.node,
+    })
 
     log('created element', { type: effect.type, params })
   }
 
   // If no nodes created, create a pass-through gain node
-  if (nodes.length === 0) {
+  if (nodeSequence.length === 0) {
     const passthrough = ctx.createGain()
     return {
       input: passthrough,
       output: passthrough,
       elements,
+      dispose: () => {},
     }
   }
 
-  // Connect nodes in sequence: node[0] -> node[1] -> ... -> node[n]
-  for (let i = 0; i < nodes.length - 1; i++) {
-    nodes[i].connect(nodes[i + 1])
+  // Connect nodes in sequence: output[0] -> input[1] -> ... -> output[n]
+  for (let i = 0; i < nodeSequence.length - 1; i++) {
+    nodeSequence[i].output.connect(nodeSequence[i + 1].input)
   }
 
-  log('built pipeline', { nodeCount: nodes.length })
+  log('built pipeline', { nodeCount: nodeSequence.length })
 
   return {
-    input: nodes[0],
-    output: nodes[nodes.length - 1],
+    input: nodeSequence[0].input,
+    output: nodeSequence[nodeSequence.length - 1].output,
     elements,
+    dispose: () => {
+      for (const element of elements.values()) {
+        element.dispose?.()
+      }
+    },
   }
 }

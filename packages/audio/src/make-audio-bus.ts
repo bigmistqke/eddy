@@ -43,7 +43,7 @@ export function makeAudioBus(effects: AudioEffect[]): AudioBus {
       // value: 0-1
       const gainElement = pipeline.elements.get('audio.gain')
       if (gainElement) {
-        gainElement.setValue(value)
+        gainElement.setParam('value', value)
       }
     },
 
@@ -51,7 +51,7 @@ export function makeAudioBus(effects: AudioEffect[]): AudioBus {
       // value: -1 (left) to 1 (right)
       const panElement = pipeline.elements.get('audio.pan')
       if (panElement) {
-        panElement.setValue(value)
+        panElement.setParam('value', value)
       }
     },
 

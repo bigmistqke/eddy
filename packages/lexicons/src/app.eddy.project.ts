@@ -70,7 +70,7 @@ export default {
             type: 'array',
             items: {
               type: 'union',
-              refs: ['#audioEffect.pan', '#audioEffect.gain', '#audioEffect.custom'],
+              refs: ['#audioEffect.pan', '#audioEffect.gain', '#audioEffect.reverb', '#audioEffect.custom'],
             },
             maxLength: 16,
             description: 'Master audio bus effects',
@@ -462,7 +462,7 @@ export default {
           type: 'array',
           items: {
             type: 'union',
-            refs: ['#audioEffect.pan', '#audioEffect.gain', '#audioEffect.custom'],
+            refs: ['#audioEffect.pan', '#audioEffect.gain', '#audioEffect.reverb', '#audioEffect.custom'],
           },
           maxLength: 16,
           description: 'Track-level audio effect chain',
@@ -561,7 +561,7 @@ export default {
           type: 'array',
           items: {
             type: 'union',
-            refs: ['#audioEffect.pan', '#audioEffect.gain', '#audioEffect.custom'],
+            refs: ['#audioEffect.pan', '#audioEffect.gain', '#audioEffect.reverb', '#audioEffect.custom'],
           },
           maxLength: 16,
           description: 'Clip-level audio effects (curves are clip-relative)',
@@ -619,6 +619,31 @@ export default {
         params: {
           type: 'unknown',
           description: 'Effect-specific parameters',
+        },
+      },
+    },
+
+    'audioEffect.reverb': {
+      type: 'object',
+      description: 'Convolution-based reverb effect with wet/dry mix',
+      required: ['type'],
+      properties: {
+        type: { type: 'string', const: 'audio.reverb' },
+        enabled: { type: 'union', refs: ['#staticValue', '#curveRef'] },
+        mix: {
+          type: 'union',
+          refs: ['#staticValue', '#curveRef'],
+          description: 'Wet/dry mix (0 = dry, 100 = wet)',
+        },
+        decay: {
+          type: 'union',
+          refs: ['#staticValue', '#curveRef'],
+          description: 'Decay time scaled by 100 (e.g., 200 = 2 seconds)',
+        },
+        preDelay: {
+          type: 'union',
+          refs: ['#staticValue', '#curveRef'],
+          description: 'Pre-delay in milliseconds (0-100)',
         },
       },
     },
