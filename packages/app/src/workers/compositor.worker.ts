@@ -1,9 +1,12 @@
 import { expose, type Transferred } from '@bigmistqke/rpc/messenger'
 import { debug } from '@eddy/utils'
 import { createCompositor, type Compositor } from '@eddy/video'
-import type { CompiledTimeline, Placement } from '~/primitives/layout-types'
-import { PREVIEW_CLIP_ID } from '~/primitives/layout-types'
-import { getActivePlacements } from '~/primitives/compile-layout-timeline'
+import {
+  getActivePlacements,
+  PREVIEW_CLIP_ID,
+  type CompiledTimeline,
+  type Placement,
+} from '~/primitives/compile-layout-timeline'
 
 const log = debug('compositor-worker', false)
 

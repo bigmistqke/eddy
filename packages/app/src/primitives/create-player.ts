@@ -11,9 +11,12 @@ import {
   type Playback,
   type VideoWorkerRPC,
 } from '~/primitives/make-playback'
-import type { CompiledTimeline } from '~/primitives/layout-types'
 import type { SchedulerBuffer } from '~/primitives/make-scheduler'
-import { compileLayoutTimeline, injectPreviewClips } from '~/primitives/compile-layout-timeline'
+import {
+  compileLayoutTimeline,
+  injectPreviewClips,
+  type CompiledTimeline,
+} from '~/primitives/compile-layout-timeline'
 import { makeWorkerPool } from '~/primitives/make-worker-pool'
 import type { CompositorWorkerMethods } from '~/workers/compositor.worker'
 import CompositorWorker from '~/workers/compositor.worker?worker'
