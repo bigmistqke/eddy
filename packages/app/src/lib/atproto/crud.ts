@@ -125,6 +125,66 @@ export async function getStemBlob(agent: Agent, stemUri: string): Promise<Blob> 
   return new Blob([blobResponse.data as BlobPart], { type: stem.value.mimeType })
 }
 
+/** Get the PDS URL from an agent (works with both CredentialSession and OAuthSession) */
+async function getPdsUrl(agent: Agent): Promise<URL> {
+  const sessionManager = agent.sessionManager as {
+    // CredentialSession
+    dispatchUrl?: URL
+    // OAuthSession
+    getTokenInfo?: () => Promise<{ aud: string }>
+  }
+
+  // CredentialSession exposes dispatchUrl directly
+  if (sessionManager.dispatchUrl) {
+    return sessionManager.dispatchUrl
+  }
+
+  // OAuthSession has getTokenInfo which returns the PDS URL as 'aud'
+  if (sessionManager.getTokenInfo) {
+    const tokenInfo = await sessionManager.getTokenInfo()
+    return new URL(tokenInfo.aud)
+  }
+
+  throw new Error('Cannot determine PDS URL from agent session')
+}
+
+/** Stream a stem directly from ATProto to OPFS (avoids loading blob into memory) */
+export async function streamStemToOPFS(
+  agent: Agent,
+  stemUri: string,
+  clipId: string,
+  createWritableStream: (clipId: string) => Promise<FileSystemWritableFileStream>,
+): Promise<void> {
+  const { repo } = parseAtUri(stemUri)
+  const stem = await getStem(agent, stemUri)
+  const blob = stem.value.blob
+
+  // Handle both BlobRef (ref is CID) and untyped (cid is string) formats
+  const blobCid = 'ref' in blob ? blob.ref.toString() : blob.cid
+
+  log('streaming blob to OPFS', { did: repo, cid: blobCid, clipId })
+
+  // Construct the blob URL and fetch with streaming
+  const pdsUrl = await getPdsUrl(agent)
+  const url = new URL('/xrpc/com.atproto.sync.getBlob', pdsUrl)
+  url.searchParams.set('did', repo)
+  url.searchParams.set('cid', blobCid)
+
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch blob: ${response.status} ${response.statusText}`)
+  }
+  if (!response.body) {
+    throw new Error('Response body is null')
+  }
+
+  // Stream directly to OPFS
+  const writable = await createWritableStream(clipId)
+  await response.body.pipeTo(writable)
+
+  log('streamed blob to OPFS', { clipId })
+}
+
 export async function listProjects(agent: Agent): Promise<ProjectListItem[]> {
   const response = await agent.com.atproto.repo.listRecords({
     repo: agent.assertDid,

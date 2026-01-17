@@ -16,8 +16,8 @@ import { createStore, produce } from 'solid-js/store'
 import { action, defer, hold } from '~/hooks/action'
 import { deepResource } from '~/hooks/deep-resource'
 import { resource } from '~/hooks/resource'
-import { getProjectByRkey, getStemBlob, publishProject } from '~/lib/atproto/crud'
-import { readClipBlob, writeBlob } from '~/lib/opfs'
+import { getProjectByRkey, publishProject, streamStemToOPFS } from '~/lib/atproto/crud'
+import { createWritableStream, readClipBlob, writeBlob } from '~/lib/opfs'
 import { createDebugInfo as initDebugInfo } from '~/lib/create-debug-info'
 import { createResourceMap } from '~/lib/create-resource-map'
 import { SCHEDULER_BUFFER } from '~/lib/scheduler'
@@ -189,7 +189,7 @@ export function createEditor(options: CreateEditorOptions) {
   const isSelectedTrack = createSelector(selectedTrackId)
   const isRecording = () => recordAction.pending()
 
-  // Resource map for stem clips - fetches from atproto and writes to OPFS
+  // Resource map for stem clips - streams from atproto directly to OPFS
   // Returns true when clip is ready in OPFS, null on failure
   const stemClips = createResourceMap(
     // Derive clips that have stem sources from project store
@@ -205,11 +205,8 @@ export function createEditor(options: CreateEditorOptions) {
       if (!agent) return null
 
       try {
-        const blob = await getStemBlob(agent, clip.source.ref.uri)
-        if (!blob) return null
-
-        // Write to OPFS so playback workers can read it
-        await writeBlob(clipId, blob)
+        // Stream directly from ATProto to OPFS (avoids loading blob into memory)
+        await streamStemToOPFS(agent, clip.source.ref.uri, clipId, createWritableStream)
         return true
       } catch (err) {
         console.error(`Failed to fetch stem for clip ${clipId}:`, err)
