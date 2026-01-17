@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "allPepper-memory-bank": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@allpepper/memory-bank-mcp@latest"],
+      "env": {
+        "MEMORY_BANK_ROOT": "/Users/bigmistqke/Documents/GitHub/eddy/.memory-bank"
+      }
+    }
+  },
+  "hooks": {
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/pre-compact-sync.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

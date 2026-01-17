@@ -2,6 +2,24 @@
 
 Work protocol for Claude Code. Project knowledge lives in the decision graph - use `/recover` to query it.
 
+## Context Management
+
+Auto-compaction loses context. Prefer manual deciduous-based recovery:
+
+1. **Monitor context** - When approaching 80% capacity, proactively:
+   - Run `deciduous sync`
+   - Tell user: "Context is high - recommend `/clear` then `/recover`"
+   - Wait for user to `/clear` before continuing
+
+2. **Safety net** - If auto-compaction triggers anyway:
+   - PreCompact hook syncs deciduous automatically
+   - Run `/recover` after compaction to restore context
+
+3. **Manual workflow** (preferred):
+   ```
+   deciduous sync → /clear → /recover
+   ```
+
 ## Workflow
 
 - **Tickets** - One task at a time. After completing, ask user to confirm before proceeding
@@ -84,6 +102,31 @@ Rules:
 - Private state/functions inside closure
 - Pure helpers that don't need internal state go OUTSIDE the factory (top of file)
 - Public API is the returned object literal
+
+### File Structure
+
+Order of sections in a file:
+1. JSDoc explaining the file (with capitalized name of main export)
+2. Imports
+3. Constants
+4. All types
+5. Utils
+6. Named private modules
+7. Main export
+
+Section titles use block comment format with spaced capitalized function name:
+
+```ts
+/**********************************************************************************/
+/*                                                                                */
+/*                             Create Playback Timing                             */
+/*                                                                                */
+/**********************************************************************************/
+
+function createPlaybackTiming() { ... }
+```
+
+Note: Barrel files (index.ts re-exports) do NOT need JSDoc explanation at top.
 
 ## Decision Graph
 
