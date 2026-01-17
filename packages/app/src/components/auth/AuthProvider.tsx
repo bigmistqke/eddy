@@ -1,8 +1,7 @@
-import type { Agent } from '@atproto/api'
-import type { OAuthSession } from '@atproto/oauth-client-browser'
+import { initSession, makeAgent, signIn } from '@eddy/atproto'
 import { action, createAsync, query } from '@solidjs/router'
-import { createContext, createMemo, createSignal, type ParentComponent, useContext } from 'solid-js'
-import { createAgent, signIn as doSignIn, initSession } from './auth'
+import { createMemo, createSignal, type ParentComponent } from 'solid-js'
+import { AuthContext } from '~/contexts/auth-context'
 
 const getSession = query(async () => {
   const session = await initSession()
@@ -10,18 +9,9 @@ const getSession = query(async () => {
 }, 'session')
 
 export const signInAction = action(async (handle: string) => {
-  await doSignIn(handle)
+  await signIn(handle)
   return { ok: true }
 })
-
-interface AuthContextValue {
-  session: () => OAuthSession | null | undefined
-  agent: () => Agent | null
-  loading: () => boolean
-  signOut: () => void
-}
-
-const AuthContext = createContext<AuthContextValue>()
 
 export const AuthProvider: ParentComponent = props => {
   const session = createAsync(() => getSession())
@@ -34,7 +24,7 @@ export const AuthProvider: ParentComponent = props => {
 
   const agent = createMemo(() => {
     const _activeSession = activeSession()
-    return _activeSession ? createAgent(_activeSession) : null
+    return _activeSession ? makeAgent(_activeSession) : null
   })
 
   const loading = () => session() === undefined && !manualSignOut()
@@ -48,12 +38,4 @@ export const AuthProvider: ParentComponent = props => {
       {props.children}
     </AuthContext.Provider>
   )
-}
-
-export function useAuth(): AuthContextValue {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
 }

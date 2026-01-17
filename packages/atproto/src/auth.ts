@@ -23,7 +23,7 @@ export async function getOAuthClient(): Promise<BrowserOAuthClient> {
   return oauthClient
 }
 
-export function createAgent(session: OAuthSession): Agent {
+export function makeAgent(session: OAuthSession): Agent {
   return new Agent(session)
 }
 

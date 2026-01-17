@@ -212,7 +212,7 @@ export async function uploadBlob(agent: Agent, blob: Blob) {
   return response.data.blob
 }
 
-export async function createStemRecord(
+export async function makeStemRecord(
   agent: Agent,
   blob: Blob,
   duration: number,
@@ -257,7 +257,7 @@ async function cloneStem(agent: Agent, stemUri: string): Promise<StemRef> {
   // Fetch the blob and get duration from original stem record
   const [blob, stem] = await Promise.all([getStemBlob(agent, stemUri), getStem(agent, stemUri)])
 
-  return createStemRecord(agent, blob, stem.value.duration)
+  return makeStemRecord(agent, blob, stem.value.duration)
 }
 
 export async function publishProject(
@@ -279,7 +279,7 @@ export async function publishProject(
       // Case 1: New local recording - create stem
       const localBlob = clipBlobs.get(clip.id)
       if (localBlob) {
-        const stemRecord = await createStemRecord(agent, localBlob.blob, localBlob.duration)
+        const stemRecord = await makeStemRecord(agent, localBlob.blob, localBlob.duration)
         stemRefs.set(clip.id, stemRecord)
         return
       }

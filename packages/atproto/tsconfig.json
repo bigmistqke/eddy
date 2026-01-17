@@ -3,10 +3,8 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
-    "lib": ["DOM"],
-    "jsx": "preserve",
-    "jsxImportSource": "solid-js"
+    "lib": ["DOM"],  
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../app/src/components/auth/AuthProvider.tsx"],
   "exclude": ["node_modules", "dist"]
 }
