@@ -34,12 +34,6 @@ export interface VideoEffectType<TControls = EffectControls> {
   ): TControls
 }
 
-/**********************************************************************************/
-/*                                                                                */
-/*                                  Effect Chains                                 */
-/*                                                                                */
-/**********************************************************************************/
-
 /** An effect instance in a chain */
 export interface EffectInstance {
   /** Effect type name (e.g., 'visual.brightness') */

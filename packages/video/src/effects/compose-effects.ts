@@ -83,7 +83,7 @@ export function composeEffectTypes(
 
           return glsl`color = ${effectType.apply}(color, ${index});`
         })
-      : [glsl`/* no effects */`]
+      : ['/* no effects */']
 
   // Step 5: Build fragment shader (each type's fragment included once)
   const uniqueFragments = Array.from(effectTypes.values()).map(et => et.fragment)

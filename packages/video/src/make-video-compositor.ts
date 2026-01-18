@@ -341,7 +341,7 @@ export function makeVideoCompositor(canvas: OffscreenCanvas): VideoCompositor {
       const existing = effectChains.get(chain.id)
       if (existing) return existing
 
-      // Compile the effect chain using new deduplication-aware composer
+      // Compile the effect chain
       const result = composeEffectTypes(gl, chain.effects)
       const compiled: CompiledEffectChain = {
         program: result.program,
