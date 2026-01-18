@@ -2096,9 +2096,9 @@
       "node_type": "goal",
       "title": "Explore composable video effects with view.gl Symbol pattern",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T19:42:30.797944+01:00",
-      "updated_at": "2026-01-17T19:42:30.797944+01:00",
+      "updated_at": "2026-01-18T13:49:40.995121+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"i want to explore video effects -> the trick is -> @bigmistqke/view.gl has support for symbol usage to prevent naming conflicts + you can create a view from a program + the little piece of glsl code the visual effect has -> so you can create a snake that eats its own tail: you compose a shader from concatenating little snippets -> you create a program from it (that references these little snippets) -> it generates a program -> you pass it back to all the functions that generated the glsl code -> they pass it to view(....) -> now they have setters to control these uniforms/attributes with\"}"
     },
     {
@@ -2228,9 +2228,9 @@
       "node_type": "goal",
       "title": "Simplify effect system and add cascading pipelines",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T20:41:40.647672+01:00",
-      "updated_at": "2026-01-17T20:41:40.647672+01:00",
+      "updated_at": "2026-01-18T13:49:41.003974+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"1. let's ignore curveRef for now and comment it out of the lexicon 2. let's support cascading for both audio and video pipeline -> effect.video on a track should be applied to all clips, same with effect.audio -> add goals\"}"
     },
     {
@@ -2349,9 +2349,9 @@
       "node_type": "action",
       "title": "Integrated cascading video effects into compiled timeline",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T01:57:40.257142+01:00",
-      "updated_at": "2026-01-18T01:57:40.257142+01:00",
+      "updated_at": "2026-01-18T13:49:41.012299+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"d9c7f58\",\"confidence\":90}"
     },
     {
@@ -2386,6 +2386,17 @@
       "created_at": "2026-01-18T03:38:08.032405+01:00",
       "updated_at": "2026-01-18T03:38:08.032405+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"6aaaef1\",\"confidence\":95}"
+    },
+    {
+      "id": 218,
+      "change_id": "c6eadcb5-823d-41cc-a6a9-f2b0ee0c2c93",
+      "node_type": "outcome",
+      "title": "Committed: chore minor cleanups in video effects code",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T13:49:33.553689+01:00",
+      "updated_at": "2026-01-18T13:49:33.553689+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"29f6cc2\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -4390,6 +4401,17 @@
       "weight": 1.0,
       "rationale": "Committed",
       "created_at": "2026-01-18T03:38:08.042735+01:00"
+    },
+    {
+      "id": 183,
+      "from_node_id": 203,
+      "to_node_id": 218,
+      "from_change_id": "86fa29f4-725b-4dff-981a-0641bd5ab1d7",
+      "to_change_id": "c6eadcb5-823d-41cc-a6a9-f2b0ee0c2c93",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Cleanup after implementation",
+      "created_at": "2026-01-18T13:49:33.578789+01:00"
     }
   ]
 }

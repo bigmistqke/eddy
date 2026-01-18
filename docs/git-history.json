@@ -1,19 +1,27 @@
 [
   {
-    "hash": "fd3cfdd5797d3b0db175c97a4114540ee7cb7ab9",
-    "short_hash": "fd3cfdd",
+    "hash": "29f6cc22ef23220bcbd66c3ebc89f941f0ac5e8e",
+    "short_hash": "29f6cc2",
     "author": "bigmistqke",
-    "date": "2026-01-18T04:15:21+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
+    "date": "2026-01-18T13:49:12+01:00",
+    "message": "chore: minor cleanups in video effects code\n\n- Remove glsl tag from no-effects comment string\n- Remove redundant section header comment\n- Simplify code comment",
+    "files_changed": 3
   },
   {
-    "hash": "3e91906fb8d578ab50ca1a80e85586f37295e5ce",
-    "short_hash": "3e91906",
+    "hash": "aa8c1d54230a558a88a49eecaaf04e38433bf5fe",
+    "short_hash": "aa8c1d5",
     "author": "bigmistqke",
-    "date": "2026-01-18T04:15:09+01:00",
-    "message": "refactor: support multi-parameter video effects with initialValues record",
-    "files_changed": 7
+    "date": "2026-01-18T04:23:14+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 1
+  },
+  {
+    "hash": "fa3b2d37f9dea857225ad523713c384d96065e0d",
+    "short_hash": "fa3b2d3",
+    "author": "bigmistqke",
+    "date": "2026-01-18T04:23:06+01:00",
+    "message": "refactor: organize effects into catalog directory and relocate chain types",
+    "files_changed": 9
   },
   {
     "hash": "6aaaef199e611ea6fdf1de4d6e76548ca6682c70",
