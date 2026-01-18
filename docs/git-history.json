@@ -1,5 +1,21 @@
 [
   {
+    "hash": "49b795b7307d3fff92d1196497981dc8134013a5",
+    "short_hash": "49b795b",
+    "author": "bigmistqke",
+    "date": "2026-01-18T13:57:40+01:00",
+    "message": "refactor: separate effect manager from compositor\n\nEffect chain compilation now handled by makeEffectManager(gl), keeping\nmakeVideoCompositor focused on texture rendering. Worker wires them together.",
+    "files_changed": 4
+  },
+  {
+    "hash": "cb878929861e4d3fb7bc50ef2deca347371679b0",
+    "short_hash": "cb87892",
+    "author": "bigmistqke",
+    "date": "2026-01-18T13:49:50+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
     "hash": "29f6cc22ef23220bcbd66c3ebc89f941f0ac5e8e",
     "short_hash": "29f6cc2",
     "author": "bigmistqke",
@@ -8,20 +24,12 @@
     "files_changed": 3
   },
   {
-    "hash": "aa8c1d54230a558a88a49eecaaf04e38433bf5fe",
-    "short_hash": "aa8c1d5",
+    "hash": "29f6cc22ef23220bcbd66c3ebc89f941f0ac5e8e",
+    "short_hash": "29f6cc2",
     "author": "bigmistqke",
-    "date": "2026-01-18T04:23:14+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 1
-  },
-  {
-    "hash": "fa3b2d37f9dea857225ad523713c384d96065e0d",
-    "short_hash": "fa3b2d3",
-    "author": "bigmistqke",
-    "date": "2026-01-18T04:23:06+01:00",
-    "message": "refactor: organize effects into catalog directory and relocate chain types",
-    "files_changed": 9
+    "date": "2026-01-18T13:49:12+01:00",
+    "message": "chore: minor cleanups in video effects code\n\n- Remove glsl tag from no-effects comment string\n- Remove redundant section header comment\n- Simplify code comment",
+    "files_changed": 3
   },
   {
     "hash": "6aaaef199e611ea6fdf1de4d6e76548ca6682c70",

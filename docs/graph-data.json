@@ -2397,6 +2397,39 @@
       "created_at": "2026-01-18T13:49:33.553689+01:00",
       "updated_at": "2026-01-18T13:49:33.553689+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"29f6cc2\",\"confidence\":95}"
+    },
+    {
+      "id": 219,
+      "change_id": "68ffa2c4-3695-4842-87c8-e6e7d39ae0a8",
+      "node_type": "action",
+      "title": "Refactor: separate effect manager from compositor",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-01-18T13:52:51.732469+01:00",
+      "updated_at": "2026-01-18T13:57:52.349632+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 220,
+      "change_id": "3a6a5689-8d5a-43ef-8124-498702038a9b",
+      "node_type": "outcome",
+      "title": "Separated effect manager from compositor - cleaner separation of concerns",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T13:56:23.551485+01:00",
+      "updated_at": "2026-01-18T13:56:23.551485+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 221,
+      "change_id": "a6100546-6688-44c0-b245-36f17829c7ee",
+      "node_type": "outcome",
+      "title": "Committed: refactor separate effect manager from compositor",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T13:57:52.417773+01:00",
+      "updated_at": "2026-01-18T13:57:52.417773+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"49b795b\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -4412,6 +4445,28 @@
       "weight": 1.0,
       "rationale": "Cleanup after implementation",
       "created_at": "2026-01-18T13:49:33.578789+01:00"
+    },
+    {
+      "id": 184,
+      "from_node_id": 219,
+      "to_node_id": 220,
+      "from_change_id": "68ffa2c4-3695-4842-87c8-e6e7d39ae0a8",
+      "to_change_id": "3a6a5689-8d5a-43ef-8124-498702038a9b",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation complete",
+      "created_at": "2026-01-18T13:56:23.574054+01:00"
+    },
+    {
+      "id": 185,
+      "from_node_id": 219,
+      "to_node_id": 221,
+      "from_change_id": "68ffa2c4-3695-4842-87c8-e6e7d39ae0a8",
+      "to_change_id": "a6100546-6688-44c0-b245-36f17829c7ee",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-18T13:57:52.439611+01:00"
     }
   ]
 }
