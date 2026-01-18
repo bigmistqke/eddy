@@ -1,13 +1,13 @@
-export * from './brightness'
+export * from './catalog/brightness'
+export * from './catalog/contrast'
+export * from './catalog/saturation'
 export * from './compose-effects'
-export * from './contrast'
-export * from './saturation'
 export * from './types'
 export * from './video-effect-registry'
 
-import { registerBrightnessEffect } from './brightness'
-import { registerContrastEffect } from './contrast'
-import { registerSaturationEffect } from './saturation'
+import { registerBrightnessEffect } from './catalog/brightness'
+import { registerContrastEffect } from './catalog/contrast'
+import { registerSaturationEffect } from './catalog/saturation'
 
 /** Register all built-in video effects with the registry */
 export function registerBuiltInVideoEffects(): void {

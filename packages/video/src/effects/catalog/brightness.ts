@@ -8,8 +8,8 @@
 
 import { view } from '@bigmistqke/view.gl'
 import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
-import type { VideoEffectType } from './types'
-import { registerVideoEffect } from './video-effect-registry'
+import type { VideoEffectType } from '../types'
+import { registerVideoEffect } from '../video-effect-registry'
 
 export interface BrightnessControls {
   setBrightness: (value: number) => void

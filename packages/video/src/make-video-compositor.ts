@@ -1,7 +1,7 @@
 import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
 import { assertedNotNullish, debug } from '@eddy/utils'
+import type { EffectControls, EffectInstance } from './effects'
 import { composeEffectTypes } from './effects/compose-effects'
-import type { CompiledEffectChain, VideoEffectChain } from './effects/types'
 
 const log = debug('video:make-video-compositor', false)
 
@@ -35,6 +35,37 @@ interface CompositorView {
   attributes: {
     a_quad: { bind(): void }
   }
+}
+
+/**
+ * A named effect chain - a sequence of effect instances that compiles to one shader.
+ * Multiple clips can reference the same chain by id.
+ */
+export interface VideoEffectChain {
+  /** Unique identifier for this chain */
+  id: string
+  /** Effect instances to apply in sequence */
+  effects: EffectInstance[]
+}
+
+/**
+ * A compiled effect chain ready for rendering.
+ * Created by composeEffectTypes() and cached by the compositor.
+ */
+export interface CompiledEffectChain {
+  /** The compiled WebGL program */
+  program: WebGLProgram
+  /** View for base uniforms (u_video texture) */
+  view: {
+    uniforms: {
+      u_video: { set(value: number): void }
+    }
+    attributes: {
+      a_quad: { bind(): void }
+    }
+  }
+  /** Controls for each effect instance in the chain, in order */
+  controls: EffectControls[]
 }
 
 /**
@@ -215,16 +246,6 @@ export function makeVideoCompositor(canvas: OffscreenCanvas): VideoCompositor {
           const setterKey = Object.keys(controls).find(key => key.startsWith('set'))
           if (setterKey && typeof controls[setterKey] === 'function') {
             controls[setterKey](value)
-            // Debug: log every ~60 frames
-            if (Math.random() < 0.02) {
-              log('set effect value', {
-                effectChainId: placement.effectChainId,
-                index: i,
-                value,
-                setterKey,
-                controls: controls[setterKey],
-              })
-            }
           }
         }
       }
