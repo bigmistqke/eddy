@@ -435,7 +435,7 @@ export default {
           type: 'array',
           items: {
             type: 'union',
-            refs: ['#audioEffect.pan', '#audioEffect.gain', '#audioEffect.reverb', '#audioEffect.custom'],
+            refs: ['app.eddy.audioEffect#pan', 'app.eddy.audioEffect#gain', 'app.eddy.audioEffect#reverb', 'app.eddy.audioEffect#custom'],
           },
           maxLength: 16,
           description: 'Group-level audio effect chain',
@@ -444,7 +444,7 @@ export default {
           type: 'array',
           items: {
             type: 'union',
-            refs: ['#visualEffect.transform', '#visualEffect.opacity', '#visualEffect.brightness', '#visualEffect.contrast', '#visualEffect.saturation', '#visualEffect.colorize', '#visualEffect.custom'],
+            refs: ['app.eddy.visualEffect#transform', 'app.eddy.visualEffect#opacity', 'app.eddy.visualEffect#brightness', 'app.eddy.visualEffect#contrast', 'app.eddy.visualEffect#saturation', 'app.eddy.visualEffect#colorize', 'app.eddy.visualEffect#custom'],
           },
           maxLength: 16,
           description: 'Visual effects applied to the composited group',
@@ -525,7 +525,7 @@ export default {
           type: 'array',
           items: {
             type: 'union',
-            refs: ['#audioEffect.pan', '#audioEffect.gain', '#audioEffect.reverb', '#audioEffect.custom'],
+            refs: ['app.eddy.audioEffect#pan', 'app.eddy.audioEffect#gain', 'app.eddy.audioEffect#reverb', 'app.eddy.audioEffect#custom'],
           },
           maxLength: 16,
           description: 'Track-level audio effect chain',
@@ -534,7 +534,7 @@ export default {
           type: 'array',
           items: {
             type: 'union',
-            refs: ['#visualEffect.transform', '#visualEffect.opacity', '#visualEffect.brightness', '#visualEffect.contrast', '#visualEffect.saturation', '#visualEffect.colorize', '#visualEffect.custom'],
+            refs: ['app.eddy.visualEffect#transform', 'app.eddy.visualEffect#opacity', 'app.eddy.visualEffect#brightness', 'app.eddy.visualEffect#contrast', 'app.eddy.visualEffect#saturation', 'app.eddy.visualEffect#colorize', 'app.eddy.visualEffect#custom'],
           },
           maxLength: 16,
           description: 'Track-level video effect chain',
@@ -624,7 +624,7 @@ export default {
           type: 'array',
           items: {
             type: 'union',
-            refs: ['#audioEffect.pan', '#audioEffect.gain', '#audioEffect.reverb', '#audioEffect.custom'],
+            refs: ['app.eddy.audioEffect#pan', 'app.eddy.audioEffect#gain', 'app.eddy.audioEffect#reverb', 'app.eddy.audioEffect#custom'],
           },
           maxLength: 16,
           description: 'Clip-level audio effects (curves are clip-relative)',
@@ -633,287 +633,10 @@ export default {
           type: 'array',
           items: {
             type: 'union',
-            refs: ['#visualEffect.transform', '#visualEffect.opacity', '#visualEffect.brightness', '#visualEffect.contrast', '#visualEffect.saturation', '#visualEffect.colorize', '#visualEffect.custom'],
+            refs: ['app.eddy.visualEffect#transform', 'app.eddy.visualEffect#opacity', 'app.eddy.visualEffect#brightness', 'app.eddy.visualEffect#contrast', 'app.eddy.visualEffect#saturation', 'app.eddy.visualEffect#colorize', 'app.eddy.visualEffect#custom'],
           },
           maxLength: 16,
           description: 'Clip-level video effects (curves are clip-relative)',
-        },
-      },
-    },
-
-    // Audio effect params defs
-    'audioEffect.gain.params': {
-      type: 'object',
-      required: ['value'],
-      properties: {
-        value: {
-          type: 'union',
-          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
-          description: 'Volume (0-100, where 100 = unity gain)',
-        },
-      },
-    },
-
-    'audioEffect.pan.params': {
-      type: 'object',
-      required: ['value'],
-      properties: {
-        value: {
-          type: 'union',
-          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
-          description: 'Stereo position (0 = left, 50 = center, 100 = right)',
-        },
-      },
-    },
-
-    'audioEffect.reverb.params': {
-      type: 'object',
-      properties: {
-        mix: {
-          type: 'union',
-          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
-          description: 'Wet/dry mix (0 = dry, 100 = wet)',
-        },
-        decay: {
-          type: 'union',
-          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
-          description: 'Decay time scaled by 100 (e.g., 200 = 2 seconds)',
-        },
-        preDelay: {
-          type: 'union',
-          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
-          description: 'Pre-delay in milliseconds (0-100)',
-        },
-      },
-    },
-
-    'audioEffect.gain': {
-      type: 'object',
-      required: ['type', 'params'],
-      properties: {
-        type: { type: 'string', const: 'audio.gain' },
-        enabled: { type: 'union', refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */ },
-        params: { type: 'ref', ref: '#audioEffect.gain.params' },
-      },
-    },
-
-    'audioEffect.pan': {
-      type: 'object',
-      required: ['type', 'params'],
-      properties: {
-        type: { type: 'string', const: 'audio.pan' },
-        enabled: { type: 'union', refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */ },
-        params: { type: 'ref', ref: '#audioEffect.pan.params' },
-      },
-    },
-
-    'audioEffect.custom': {
-      type: 'object',
-      description: 'Custom or third-party audio effect',
-      required: ['type'],
-      properties: {
-        type: {
-          type: 'string',
-          description: "Custom effect identifier (e.g., 'audio.vendor.effectName')",
-        },
-        enabled: { type: 'union', refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */ },
-      },
-    },
-
-    'audioEffect.reverb': {
-      type: 'object',
-      description: 'Convolution-based reverb effect with wet/dry mix',
-      required: ['type', 'params'],
-      properties: {
-        type: { type: 'string', const: 'audio.reverb' },
-        enabled: { type: 'union', refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */ },
-        params: { type: 'ref', ref: '#audioEffect.reverb.params' },
-      },
-    },
-
-    // Visual effect params defs
-    'visualEffect.transform.params': {
-      type: 'object',
-      properties: {
-        x: {
-          type: 'union',
-          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
-          description: 'X offset (0-1 relative to canvas)',
-        },
-        y: {
-          type: 'union',
-          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
-          description: 'Y offset (0-1 relative to canvas)',
-        },
-        scale: {
-          type: 'union',
-          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
-          description: 'Uniform scale (0-1, where 1 = 100%)',
-        },
-        rotation: {
-          type: 'union',
-          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
-          description: 'Rotation (0-1, where 1 = 360 degrees)',
-        },
-        anchorX: {
-          type: 'union',
-          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
-          description: 'Transform anchor X (0-1)',
-        },
-        anchorY: {
-          type: 'union',
-          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
-          description: 'Transform anchor Y (0-1)',
-        },
-      },
-    },
-
-    'visualEffect.transform': {
-      type: 'object',
-      required: ['type', 'params'],
-      properties: {
-        type: { type: 'string', const: 'visual.transform' },
-        enabled: { type: 'union', refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */ },
-        params: { type: 'ref', ref: '#visualEffect.transform.params' },
-      },
-    },
-
-    'visualEffect.opacity.params': {
-      type: 'object',
-      required: ['value'],
-      properties: {
-        value: {
-          type: 'union',
-          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
-          description: 'Opacity (0-100)',
-        },
-        blendMode: {
-          type: 'ref',
-          ref: '#staticBlendMode',
-        },
-      },
-    },
-
-    'visualEffect.brightness.params': {
-      type: 'object',
-      required: ['value'],
-      properties: {
-        value: {
-          type: 'union',
-          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
-          description: 'Brightness adjustment (-100 to 100, 0 = no change)',
-        },
-      },
-    },
-
-    'visualEffect.contrast.params': {
-      type: 'object',
-      required: ['value'],
-      properties: {
-        value: {
-          type: 'union',
-          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
-          description: 'Contrast multiplier (0-200, 100 = no change)',
-        },
-      },
-    },
-
-    'visualEffect.saturation.params': {
-      type: 'object',
-      required: ['value'],
-      properties: {
-        value: {
-          type: 'union',
-          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
-          description: 'Saturation multiplier (0-200, 100 = no change, 0 = grayscale)',
-        },
-      },
-    },
-
-    'visualEffect.colorize.params': {
-      type: 'object',
-      required: ['color'],
-      properties: {
-        color: {
-          type: 'union',
-          refs: ['#staticVec3'] /* TODO: add '#curveVec3' back when curve system is implemented */,
-          description: 'Tint color as RGB, each component 0-100 (e.g., [100, 0, 0] = red)',
-        },
-        intensity: {
-          type: 'union',
-          refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */,
-          description: 'Colorize intensity (0 = original, 100 = full tint)',
-        },
-      },
-    },
-
-    'visualEffect.opacity': {
-      type: 'object',
-      required: ['type', 'params'],
-      properties: {
-        type: { type: 'string', const: 'visual.opacity' },
-        enabled: { type: 'union', refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */ },
-        params: { type: 'ref', ref: '#visualEffect.opacity.params' },
-      },
-    },
-
-    'visualEffect.brightness': {
-      type: 'object',
-      description: 'Brightness adjustment effect',
-      required: ['type', 'params'],
-      properties: {
-        type: { type: 'string', const: 'visual.brightness' },
-        enabled: { type: 'union', refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */ },
-        params: { type: 'ref', ref: '#visualEffect.brightness.params' },
-      },
-    },
-
-    'visualEffect.contrast': {
-      type: 'object',
-      description: 'Contrast adjustment effect',
-      required: ['type', 'params'],
-      properties: {
-        type: { type: 'string', const: 'visual.contrast' },
-        enabled: { type: 'union', refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */ },
-        params: { type: 'ref', ref: '#visualEffect.contrast.params' },
-      },
-    },
-
-    'visualEffect.saturation': {
-      type: 'object',
-      description: 'Saturation adjustment effect',
-      required: ['type', 'params'],
-      properties: {
-        type: { type: 'string', const: 'visual.saturation' },
-        enabled: { type: 'union', refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */ },
-        params: { type: 'ref', ref: '#visualEffect.saturation.params' },
-      },
-    },
-
-    'visualEffect.colorize': {
-      type: 'object',
-      description: 'Colorize/tint effect that blends a color over the image',
-      required: ['type', 'params'],
-      properties: {
-        type: { type: 'string', const: 'visual.colorize' },
-        enabled: { type: 'union', refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */ },
-        params: { type: 'ref', ref: '#visualEffect.colorize.params' },
-      },
-    },
-
-    'visualEffect.custom': {
-      type: 'object',
-      description: 'Custom or third-party visual effect',
-      required: ['type'],
-      properties: {
-        type: {
-          type: 'string',
-          description: "Custom effect identifier (e.g., 'visual.vendor.effectName')",
-        },
-        enabled: { type: 'union', refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */ },
-        params: {
-          type: 'ref',
-          ref: '#customParams',
         },
       },
     },
