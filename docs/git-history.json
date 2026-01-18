@@ -1,5 +1,21 @@
 [
   {
+    "hash": "6fab7aa8318198d0e17de1e9f8f989ed6d6c1a41",
+    "short_hash": "6fab7aa",
+    "author": "bigmistqke",
+    "date": "2026-01-18T17:52:49+01:00",
+    "message": "feat: implement audio cascade with root group as master\n\n- Add audioPipeline to Group schema, rename pipeline → videoPipeline\n- Remove masterAudioPipeline/masterVideoPipeline from project (root group serves as master)\n- Modify makeAudioBus to accept optional destination for hierarchy chaining\n- Add group audio buses in player with track → group → parent group routing\n- Add setMasterVolume/getMasterVolume/setMasterPan via root group's audio bus\n- Add useMediaStreamOutput/useDirectOutput to AudioBus for recording\n- Delete getMasterMixer singleton - functionality moved to root group\n- Update default project with gain effect on root group",
+    "files_changed": 7
+  },
+  {
+    "hash": "2ed844fcf5a8ff5ac66bce99f2efbe09a304bd8c",
+    "short_hash": "2ed844f",
+    "author": "bigmistqke",
+    "date": "2026-01-18T17:23:44+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
     "hash": "a8055cda1902ce8c54135fa881465d6adba7437f",
     "short_hash": "a8055cd",
     "author": "bigmistqke",
@@ -8,20 +24,12 @@
     "files_changed": 5
   },
   {
-    "hash": "05512f28dad81b8ceb20d4438bf0789909f56b02",
-    "short_hash": "05512f2",
+    "hash": "a8055cda1902ce8c54135fa881465d6adba7437f",
+    "short_hash": "a8055cd",
     "author": "bigmistqke",
-    "date": "2026-01-18T17:10:13+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "2474e6cfb738b9def59dd844fbc9c8fc7e29ec5c",
-    "short_hash": "2474e6c",
-    "author": "bigmistqke",
-    "date": "2026-01-18T17:09:59+01:00",
-    "message": "refactor: consolidate effect-registry into effect-manager and simplify EffectInstance to string",
-    "files_changed": 11
+    "date": "2026-01-18T17:23:31+01:00",
+    "message": "refactor: pre-compute effectKeys in timeline compiler\n\nAvoids redundant mapping on hot render path. Placement now includes\neffectKeys array and effectId (renamed from effectSignature).",
+    "files_changed": 5
   },
   {
     "hash": "2474e6cfb738b9def59dd844fbc9c8fc7e29ec5c",

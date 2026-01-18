@@ -102,13 +102,13 @@ export interface CompositorWorkerMethods {
 /*                                                                                */
 /**********************************************************************************/
 
-// Compositor engines
-let mainEngine: VideoCompositor | null = null
-let captureEngine: VideoCompositor | null = null
+// Compositors
+let mainCompositor: VideoCompositor | null = null
+let captureCompositor: VideoCompositor | null = null
 
-// Effect managers (one per engine, sharing GL context)
-let mainEffects: EffectManager | null = null
-let captureEffects: EffectManager | null = null
+// Effect managers (one per compositor, sharing GL context)
+let mainEffectManager: EffectManager | null = null
+let captureEffectManager: EffectManager | null = null
 
 // Current compiled timeline
 let compiledTimeline: CompiledTimeline | null = null
@@ -263,13 +263,13 @@ expose<CompositorWorkerMethods>({
     log('init', { width, height })
 
     // Main canvas (visible)
-    mainEngine = makeVideoCompositor(offscreenCanvas)
-    mainEffects = makeEffectManager(mainEngine.gl, effectRegistry)
+    mainCompositor = makeVideoCompositor(offscreenCanvas)
+    mainEffectManager = makeEffectManager(mainCompositor.gl, effectRegistry)
 
     // Capture canvas (for pre-rendering, same size)
     const captureCanvas = new OffscreenCanvas(width, height)
-    captureEngine = makeVideoCompositor(captureCanvas)
-    captureEffects = makeEffectManager(captureEngine.gl, effectRegistry)
+    captureCompositor = makeVideoCompositor(captureCanvas)
+    captureEffectManager = makeEffectManager(captureCompositor.gl, effectRegistry)
   },
 
   setTimeline(newTimeline) {
@@ -347,10 +347,10 @@ expose<CompositorWorkerMethods>({
   },
 
   render(time): RenderStats {
-    if (!mainEngine || !mainEffects || !compiledTimeline) return renderStats
+    if (!mainCompositor || !mainEffectManager || !compiledTimeline) return renderStats
 
     // Clear canvas
-    mainEngine.clear()
+    mainCompositor.clear()
 
     // Query timeline for active placements at this time
     const activePlacements = getActivePlacements(compiledTimeline, time)
@@ -372,12 +372,12 @@ expose<CompositorWorkerMethods>({
       const textureKey = isPreview ? `preview-${placement.trackId}` : placement.clipId
 
       // Get or compile effect chain from placement's signature
-      const effectChain = getOrCompileEffectChain(mainEffects, placement)
+      const effectChain = getOrCompileEffectChain(mainEffectManager, placement)
 
       // Resolve current effect values from refs
       const effectValues = effectChain ? resolveEffectValues(placement.effectRefs) : undefined
 
-      mainEngine.renderPlacement({
+      mainCompositor.renderPlacement({
         id: textureKey,
         frame,
         viewport: placement.viewport,
@@ -390,15 +390,15 @@ expose<CompositorWorkerMethods>({
   },
 
   renderToCaptureCanvas(time) {
-    if (!captureEngine || !captureEffects || !compiledTimeline) return
+    if (!captureCompositor || !captureEffectManager || !compiledTimeline) return
 
     // Query timeline for active placements
     const activePlacements = getActivePlacements(compiledTimeline, time)
 
     // Render using pre-uploaded textures
-    captureEngine.renderById(
+    captureCompositor.renderById(
       activePlacements.map(({ placement }) => {
-        const effectChain = getOrCompileEffectChain(captureEffects!, placement)
+        const effectChain = getOrCompileEffectChain(captureEffectManager!, placement)
         return {
           id: placement.clipId,
           viewport: placement.viewport,
@@ -409,10 +409,10 @@ expose<CompositorWorkerMethods>({
   },
 
   renderAndCapture(time) {
-    if (!mainEngine || !mainEffects || !compiledTimeline) return null
+    if (!mainCompositor || !mainEffectManager || !compiledTimeline) return null
 
     // Clear canvas
-    mainEngine.clear()
+    mainCompositor.clear()
 
     // Query timeline for active placements at this time
     const activePlacements = getActivePlacements(compiledTimeline, time)
@@ -431,12 +431,12 @@ expose<CompositorWorkerMethods>({
       const textureKey = isPreview ? `preview-${placement.trackId}` : placement.clipId
 
       // Get or compile effect chain from placement's signature
-      const effectChain = getOrCompileEffectChain(mainEffects, placement)
+      const effectChain = getOrCompileEffectChain(mainEffectManager, placement)
 
       // Resolve current effect values from refs
       const values = effectChain ? resolveEffectValues(placement.effectRefs) : undefined
 
-      mainEngine.renderPlacement({
+      mainCompositor.renderPlacement({
         id: textureKey,
         frame,
         viewport: placement.viewport,
@@ -446,11 +446,11 @@ expose<CompositorWorkerMethods>({
     }
 
     // Capture the frame (timestamp in microseconds)
-    return mainEngine.captureFrame(time * 1_000_000)
+    return mainCompositor.captureFrame(time * 1_000_000)
   },
 
   renderFramesAndCapture(time, frameEntries) {
-    if (!mainEngine || !mainEffects || !compiledTimeline) return null
+    if (!mainCompositor || !mainEffectManager || !compiledTimeline) return null
 
     // Build a temporary frame map from the provided frames
     const exportFrames = new Map<string, VideoFrame>()
@@ -459,7 +459,7 @@ expose<CompositorWorkerMethods>({
     }
 
     // Clear canvas
-    mainEngine.clear()
+    mainCompositor.clear()
 
     // Query timeline for active placements at this time
     const activePlacements = getActivePlacements(compiledTimeline, time)
@@ -470,12 +470,12 @@ expose<CompositorWorkerMethods>({
       if (!frame) continue
 
       // Get or compile effect chain from placement's signature
-      const effectChain = getOrCompileEffectChain(mainEffects, placement)
+      const effectChain = getOrCompileEffectChain(mainEffectManager, placement)
 
       // Resolve current effect values from refs
       const values = effectChain ? resolveEffectValues(placement.effectRefs) : undefined
 
-      mainEngine.renderPlacement({
+      mainCompositor.renderPlacement({
         id: placement.clipId,
         frame,
         viewport: placement.viewport,
@@ -485,7 +485,7 @@ expose<CompositorWorkerMethods>({
     }
 
     // Capture the frame (timestamp in microseconds)
-    const capturedFrame = mainEngine.captureFrame(time * 1_000_000)
+    const capturedFrame = mainCompositor.captureFrame(time * 1_000_000)
 
     // Close the provided frames (they were transferred to us)
     for (const frame of exportFrames.values()) {
@@ -519,26 +519,17 @@ expose<CompositorWorkerMethods>({
     }
     playbackWorkerPorts.clear()
 
+    // Destroy compositors
+    mainCompositor?.destroy()
+    captureCompositor?.destroy()
+
     // Destroy effect managers
-    if (mainEffects) {
-      mainEffects.destroy()
-      mainEffects = null
-    }
+    mainEffectManager?.destroy()
+    captureEffectManager?.destroy()
 
-    if (captureEffects) {
-      captureEffects.destroy()
-      captureEffects = null
-    }
-
-    // Destroy engines
-    if (mainEngine) {
-      mainEngine.destroy()
-      mainEngine = null
-    }
-
-    if (captureEngine) {
-      captureEngine.destroy()
-      captureEngine = null
-    }
+    mainCompositor = null
+    mainEffectManager = null
+    captureEffectManager = null
+    captureCompositor = null
   },
 })

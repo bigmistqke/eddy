@@ -2518,6 +2518,138 @@
       "created_at": "2026-01-18T17:23:36.655360+01:00",
       "updated_at": "2026-01-18T17:23:36.655360+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"a8055cd\",\"confidence\":95}"
+    },
+    {
+      "id": 230,
+      "change_id": "a5e9b5ec-f696-4f4d-a02d-c4b539accb3e",
+      "node_type": "observation",
+      "title": "Audio pipeline lacks cascading support that video has",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T17:30:33.763133+01:00",
+      "updated_at": "2026-01-18T17:30:33.763133+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"can you analyze the audio pipeline? do we need to implement similar stuff or do we already have support (also cascading of group -> track -> clip and more complex scenarios)\"}"
+    },
+    {
+      "id": 231,
+      "change_id": "843e39b2-9c4c-4f8d-80d2-6f05e894bd46",
+      "node_type": "observation",
+      "title": "Audio cascade architecture: Web Audio graph supports clip→track→group→master routing",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T17:30:39.322107+01:00",
+      "updated_at": "2026-01-18T17:30:39.322107+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 232,
+      "change_id": "0d6a7103-44e7-4a71-91d2-f4daa6929408",
+      "node_type": "goal",
+      "title": "Implement full audio cascade: clip → track → group → master effects",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T17:31:30.248154+01:00",
+      "updated_at": "2026-01-18T17:31:30.248154+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"add goal to improve the audio pipeline (including group effects and the like)\\n\\nContext from exploration:\\n- Video has full cascade: clip → track → group (nested) → master\\n- Audio currently only: clip → track → master (no group, master unused)\\n- Web Audio API naturally supports graph routing with automatic summing\\n- Need: clip effects, group audio buses, nested group hierarchy, master effects\"}"
+    },
+    {
+      "id": 233,
+      "change_id": "00f778e8-b01c-4fc9-a07f-1f7e4ffade43",
+      "node_type": "action",
+      "title": "Add audioPipeline to Group schema in lexicon",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T17:34:46.552488+01:00",
+      "updated_at": "2026-01-18T17:34:46.552488+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 234,
+      "change_id": "4a20ff48-0594-4a63-a331-3d5a2ffbba76",
+      "node_type": "action",
+      "title": "Modify makeAudioBus to accept optional destination",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T17:36:04.691768+01:00",
+      "updated_at": "2026-01-18T17:36:04.691768+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 235,
+      "change_id": "d0a27220-8d14-4500-99d1-a896097b6a15",
+      "node_type": "action",
+      "title": "Add group audio buses and wire hierarchy in make-player",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T17:36:50.546023+01:00",
+      "updated_at": "2026-01-18T17:36:50.546023+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 236,
+      "change_id": "80074642-c870-4434-959a-0ffccd883168",
+      "node_type": "action",
+      "title": "Remove masterAudioPipeline and masterVideoPipeline - use rootGroup instead",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T17:40:15.970833+01:00",
+      "updated_at": "2026-01-18T17:40:15.970833+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 237,
+      "change_id": "93240b9f-af5a-4646-a61e-73510eb9a2ee",
+      "node_type": "observation",
+      "title": "Root group serves as master - simplifies hierarchy, removes need for separate masterAudioPipeline/masterVideoPipeline",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T17:41:30.240470+01:00",
+      "updated_at": "2026-01-18T17:41:30.240470+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 238,
+      "change_id": "fc9c250d-1271-4500-8106-14c8ff105e6d",
+      "node_type": "action",
+      "title": "Move setMasterVolume control to root group's audio bus via player",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T17:42:49.177461+01:00",
+      "updated_at": "2026-01-18T17:42:49.177461+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 239,
+      "change_id": "4a60381f-d982-4904-9a60-7f0b702fa11d",
+      "node_type": "action",
+      "title": "Remove getMasterMixer - root group connects directly to AudioContext.destination",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T17:43:29.983897+01:00",
+      "updated_at": "2026-01-18T17:43:29.983897+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 240,
+      "change_id": "b806183c-0459-47af-a5c1-212947c23e93",
+      "node_type": "outcome",
+      "title": "Removed getMasterMixer - root group now handles master volume and MediaStream output routing",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T17:46:59.331899+01:00",
+      "updated_at": "2026-01-18T17:46:59.331899+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 241,
+      "change_id": "fd9eda0b-606b-4e03-a2af-f29580df5248",
+      "node_type": "outcome",
+      "title": "Committed: feat: implement audio cascade with root group as master",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T17:52:58.352299+01:00",
+      "updated_at": "2026-01-18T17:52:58.352299+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"6fab7aa\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -4621,6 +4753,138 @@
       "weight": 1.0,
       "rationale": "Committed",
       "created_at": "2026-01-18T17:23:36.666644+01:00"
+    },
+    {
+      "id": 192,
+      "from_node_id": 225,
+      "to_node_id": 230,
+      "from_change_id": "dd21c8f8-941a-47f8-9c2a-31ea22cab47a",
+      "to_change_id": "a5e9b5ec-f696-4f4d-a02d-c4b539accb3e",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Related discovery during effects refactor",
+      "created_at": "2026-01-18T17:30:45.556590+01:00"
+    },
+    {
+      "id": 193,
+      "from_node_id": 230,
+      "to_node_id": 231,
+      "from_change_id": "a5e9b5ec-f696-4f4d-a02d-c4b539accb3e",
+      "to_change_id": "843e39b2-9c4c-4f8d-80d2-6f05e894bd46",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Architecture insight",
+      "created_at": "2026-01-18T17:30:45.566626+01:00"
+    },
+    {
+      "id": 194,
+      "from_node_id": 231,
+      "to_node_id": 232,
+      "from_change_id": "843e39b2-9c4c-4f8d-80d2-6f05e894bd46",
+      "to_change_id": "0d6a7103-44e7-4a71-91d2-f4daa6929408",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Goal to address gap",
+      "created_at": "2026-01-18T17:31:35.250186+01:00"
+    },
+    {
+      "id": 195,
+      "from_node_id": 232,
+      "to_node_id": 233,
+      "from_change_id": "0d6a7103-44e7-4a71-91d2-f4daa6929408",
+      "to_change_id": "00f778e8-b01c-4fc9-a07f-1f7e4ffade43",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Schema update for group audio",
+      "created_at": "2026-01-18T17:35:07.613245+01:00"
+    },
+    {
+      "id": 196,
+      "from_node_id": 232,
+      "to_node_id": 234,
+      "from_change_id": "0d6a7103-44e7-4a71-91d2-f4daa6929408",
+      "to_change_id": "4a20ff48-0594-4a63-a331-3d5a2ffbba76",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation step",
+      "created_at": "2026-01-18T17:36:16.929006+01:00"
+    },
+    {
+      "id": 197,
+      "from_node_id": 232,
+      "to_node_id": 235,
+      "from_change_id": "0d6a7103-44e7-4a71-91d2-f4daa6929408",
+      "to_change_id": "d0a27220-8d14-4500-99d1-a896097b6a15",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation step",
+      "created_at": "2026-01-18T17:36:59.971290+01:00"
+    },
+    {
+      "id": 198,
+      "from_node_id": 232,
+      "to_node_id": 236,
+      "from_change_id": "0d6a7103-44e7-4a71-91d2-f4daa6929408",
+      "to_change_id": "80074642-c870-4434-959a-0ffccd883168",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Schema simplification",
+      "created_at": "2026-01-18T17:40:22.593628+01:00"
+    },
+    {
+      "id": 199,
+      "from_node_id": 236,
+      "to_node_id": 237,
+      "from_change_id": "80074642-c870-4434-959a-0ffccd883168",
+      "to_change_id": "93240b9f-af5a-4646-a61e-73510eb9a2ee",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Design rationale",
+      "created_at": "2026-01-18T17:41:37.502772+01:00"
+    },
+    {
+      "id": 200,
+      "from_node_id": 232,
+      "to_node_id": 238,
+      "from_change_id": "0d6a7103-44e7-4a71-91d2-f4daa6929408",
+      "to_change_id": "fc9c250d-1271-4500-8106-14c8ff105e6d",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation step",
+      "created_at": "2026-01-18T17:42:55.199926+01:00"
+    },
+    {
+      "id": 201,
+      "from_node_id": 232,
+      "to_node_id": 239,
+      "from_change_id": "0d6a7103-44e7-4a71-91d2-f4daa6929408",
+      "to_change_id": "4a60381f-d982-4904-9a60-7f0b702fa11d",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Simplification",
+      "created_at": "2026-01-18T17:43:36.530023+01:00"
+    },
+    {
+      "id": 202,
+      "from_node_id": 239,
+      "to_node_id": 240,
+      "from_change_id": "4a60381f-d982-4904-9a60-7f0b702fa11d",
+      "to_change_id": "b806183c-0459-47af-a5c1-212947c23e93",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Completed",
+      "created_at": "2026-01-18T17:47:06.384365+01:00"
+    },
+    {
+      "id": 203,
+      "from_node_id": 232,
+      "to_node_id": 241,
+      "from_change_id": "0d6a7103-44e7-4a71-91d2-f4daa6929408",
+      "to_change_id": "fd9eda0b-606b-4e03-a2af-f29580df5248",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Goal completed",
+      "created_at": "2026-01-18T17:53:03.364160+01:00"
     }
   ]
 }
