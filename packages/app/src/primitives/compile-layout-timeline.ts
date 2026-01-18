@@ -10,7 +10,7 @@
  * - Timeline: sorted segments for binary search by time
  */
 
-import type { Clip, Group, Project, Track, Value, VisualEffect } from '@eddy/lexicons'
+import type { Clip, Group, Project, Track, Value } from '@eddy/lexicons'
 
 /**********************************************************************************/
 /*                                                                                */
