@@ -8,7 +8,7 @@
 
 import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
 import type { EffectControls, EffectInstance, VideoEffectType } from './types'
-import { createVideoEffectType } from './video-effect-registry'
+import { createVideoEffectFromRegistry } from './video-effect-registry'
 
 /** Result of composing effect types */
 export interface ComposedEffectTypes {
@@ -38,9 +38,9 @@ export interface ComposedEffectTypes {
  * @example
  * ```ts
  * const composed = composeEffectTypes(gl, [
- *   { type: 'visual.brightness', initialValue: 10 },
- *   { type: 'visual.contrast', initialValue: 120 },
- *   { type: 'visual.brightness', initialValue: -5 },
+ *   { type: 'visual.brightness', initialValues: { brightness: 10 } },
+ *   { type: 'visual.contrast', initialValues: { contrast: 120 } },
+ *   { type: 'visual.brightness', initialValues: { brightness: -5 } },
  * ])
  * // Shader has: applyBrightness once (size=2), applyContrast once (size=1)
  * // Calls: applyBrightness(color, 0), applyContrast(color, 0), applyBrightness(color, 1)
@@ -59,7 +59,7 @@ export function composeEffectTypes(
   // Step 2: Create each effect type once with the correct size
   const effectTypes = new Map<string, VideoEffectType>()
   for (const [type, count] of typeCounts) {
-    const effectType = createVideoEffectType(type, count)
+    const effectType = createVideoEffectFromRegistry(type, count)
     if (effectType) {
       effectTypes.set(type, effectType)
     }
@@ -124,7 +124,7 @@ export function composeEffectTypes(
     const index = typeInstanceIndex.get(instance.type)!
     typeInstanceIndex.set(instance.type, index + 1)
 
-    return effectType.connectInstance(gl, program, index, instance.initialValue)
+    return effectType.connect(gl, program, index, instance.initialValues)
   })
 
   return {

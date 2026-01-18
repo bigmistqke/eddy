@@ -149,7 +149,6 @@ function getOrCompileEffectChain(
   // Build effect instances from refs
   const effects: EffectInstance[] = refs.map(ref => ({
     type: ref.effectType,
-    initialValue: 0,
   }))
 
   if (effects.length === 0) return null

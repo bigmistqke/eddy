@@ -9,7 +9,7 @@
 import { view } from '@bigmistqke/view.gl'
 import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
 import type { VideoEffectType } from './types'
-import { registerVideoEffectType } from './video-effect-registry'
+import { registerVideoEffect } from './video-effect-registry'
 
 export interface BrightnessControls {
   setBrightness: (value: number) => void
@@ -31,21 +31,24 @@ export function makeBrightnessEffect(size: number): VideoEffectType<BrightnessCo
       return vec4(color.rgb + ${brightness}[index], color.a);
     }
   `
+  const schema = compile.toSchema(fragment)
 
   return {
     fragment,
     apply,
-    connectInstance(gl, program, instanceIndex, initialValue = 0) {
-      const v = view(gl, program, compile.toSchema(fragment))
+    connect(gl, program, index, initialValues) {
+      const {
+        uniforms: { [brightness]: set },
+      } = view(gl, program, schema)
+
       // Convert from lexicon scale (-100 to 100) to shader scale (-1 to 1)
-      const setBrightness = (value: number) => v.uniforms[brightness][instanceIndex].set(value / 100)
-      setBrightness(initialValue)
+      const setBrightness = (value: number) => set[index].set(value / 100)
+      setBrightness(initialValues?.brightness ?? 0)
+
       return { setBrightness }
     },
   }
 }
 
-/** Register brightness effect type with the registry */
-export function registerBrightnessEffect(): void {
-  registerVideoEffectType('visual.brightness', makeBrightnessEffect)
-}
+export const registerBrightnessEffect = () =>
+  registerVideoEffect('visual.brightness', makeBrightnessEffect)

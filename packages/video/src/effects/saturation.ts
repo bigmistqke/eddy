@@ -9,7 +9,7 @@
 import { view } from '@bigmistqke/view.gl'
 import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
 import type { VideoEffectType } from './types'
-import { registerVideoEffectType } from './video-effect-registry'
+import { registerVideoEffect } from './video-effect-registry'
 
 export interface SaturationControls {
   setSaturation: (value: number) => void
@@ -32,22 +32,24 @@ export function makeSaturationEffect(size: number): VideoEffectType<SaturationCo
       return vec4(mix(vec3(gray), color.rgb, ${saturation}[index]), color.a);
     }
   `
+  const schema = compile.toSchema(fragment)
 
   return {
     fragment,
     apply,
-    connectInstance(gl, program, instanceIndex, initialValue = 100) {
-      const v = view(gl, program, compile.toSchema(fragment))
+    connect(gl, program, index, initialValues) {
+      const {
+        uniforms: { [saturation]: set },
+      } = view(gl, program, schema)
+
       // Convert from lexicon scale (0-200) to shader scale (0-2)
-      const setSaturation = (value: number) => v.uniforms[saturation][instanceIndex].set(value / 100)
-      // Apply initial value
-      setSaturation(initialValue)
+      const setSaturation = (value: number) => set[index].set(value / 100)
+      setSaturation(initialValues?.saturation ?? 100)
+
       return { setSaturation }
     },
   }
 }
 
-/** Register saturation effect type with the registry */
-export function registerSaturationEffect(): void {
-  registerVideoEffectType('visual.saturation', makeSaturationEffect)
-}
+export const registerSaturationEffect = () =>
+  registerVideoEffect('visual.saturation', makeSaturationEffect)

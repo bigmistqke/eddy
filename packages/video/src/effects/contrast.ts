@@ -9,7 +9,7 @@
 import { view } from '@bigmistqke/view.gl'
 import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
 import type { VideoEffectType } from './types'
-import { registerVideoEffectType } from './video-effect-registry'
+import { registerVideoEffect } from './video-effect-registry'
 
 export interface ContrastControls {
   setContrast: (value: number) => void
@@ -31,22 +31,24 @@ export function makeContrastEffect(size: number): VideoEffectType<ContrastContro
       return vec4((color.rgb - 0.5) * ${contrast}[index] + 0.5, color.a);
     }
   `
+  const schema = compile.toSchema(fragment)
 
   return {
     fragment,
     apply,
-    connectInstance(gl, program, instanceIndex, initialValue = 100) {
-      const v = view(gl, program, compile.toSchema(fragment))
+    connect(gl, program, index, initialValues) {
+      const {
+        uniforms: { [contrast]: set },
+      } = view(gl, program, schema)
+
       // Convert from lexicon scale (0-200) to shader scale (0-2)
-      const setContrast = (value: number) => v.uniforms[contrast][instanceIndex].set(value / 100)
-      // Apply initial value
-      setContrast(initialValue)
+      const setContrast = (value: number) => set[index].set(value / 100)
+      setContrast(initialValues?.contrast ?? 100)
+
       return { setContrast }
     },
   }
 }
 
-/** Register contrast effect type with the registry */
-export function registerContrastEffect(): void {
-  registerVideoEffectType('visual.contrast', makeContrastEffect)
-}
+export const registerContrastEffect = () =>
+  registerVideoEffect('visual.contrast', makeContrastEffect)

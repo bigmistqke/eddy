@@ -48,16 +48,18 @@ export interface VideoEffectType<TControls = EffectControls> {
   /** Symbol for the apply function: vec4 ${apply}(vec4 color, int index) */
   apply: symbol
   /** Connect a specific instance to the compiled program */
-  connectInstance(
+  connect(
     gl: WebGL2RenderingContext | WebGLRenderingContext,
     program: WebGLProgram,
     instanceIndex: number,
-    initialValue?: number,
+    initialValues?: Record<string, number>,
   ): TControls
 }
 
 /** Factory function that creates a video effect type with given size */
-export type VideoEffectTypeFactory<TControls = EffectControls> = (size: number) => VideoEffectType<TControls>
+export type VideoEffectTypeFactory<TControls = EffectControls> = (
+  size: number,
+) => VideoEffectType<TControls>
 
 /**********************************************************************************/
 /*                                                                                */
@@ -69,8 +71,8 @@ export type VideoEffectTypeFactory<TControls = EffectControls> = (size: number) 
 export interface EffectInstance {
   /** Effect type name (e.g., 'visual.brightness') */
   type: string
-  /** Initial value for this instance */
-  initialValue?: number
+  /** Initial values for this instance's uniforms */
+  initialValues?: Record<string, number>
 }
 
 /**
