@@ -180,8 +180,7 @@ export async function makePlayer(options: CreatePlayerOptions): Promise<Player> 
     renderToCaptureCanvas: compositorRpc.renderToCaptureCanvas,
     renderAndCapture: compositorRpc.renderAndCapture,
     renderFramesAndCapture: compositorRpc.renderFramesAndCapture,
-    setTrackVideoPipeline: compositorRpc.setTrackVideoPipeline,
-    setTrackVideoEffectValue: compositorRpc.setTrackVideoEffectValue,
+    setEffectValue: compositorRpc.setEffectValue,
 
     setPreviewStream(trackId: string, stream: MediaStream | null) {
       // Clean up existing processor

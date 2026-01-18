@@ -277,7 +277,7 @@ export function createEditor(options: CreateEditorOptions) {
     )
 
     // Update compositor directly for immediate feedback
-    player()?.compositor.setTrackVideoEffectValue(trackId, effectIndex, value)
+    player()?.compositor.setEffectValue('track', trackId, effectIndex, value)
   }
 
   function getVideoEffectValue(trackId: string, effectIndex: number): number {
@@ -604,19 +604,17 @@ export function createEditor(options: CreateEditorOptions) {
             }
           })
 
-          // Effect for video pipeline
+          // Effect for video pipeline - send values to compositor
           createEffect(() => {
             const pipeline = getVideoPipeline(trackId)
 
-            // Send pipeline to compositor (creates/updates effect chain)
-            // Extract value object as Record<string, number> params for factory
-            _player.compositor.setTrackVideoPipeline(
-              trackId,
-              pipeline.map(effect => ({
-                type: effect.type,
-                value: 'value' in effect ? (effect.value as { value: number }) : undefined,
-              })),
-            )
+            // Send each effect's value to compositor
+            for (let effectIndex = 0; effectIndex < pipeline.length; effectIndex++) {
+              const effect = pipeline[effectIndex]
+              if ('value' in effect && effect.value && 'value' in effect.value) {
+                _player.compositor.setEffectValue('track', trackId, effectIndex, effect.value.value)
+              }
+            }
           })
         },
       ),

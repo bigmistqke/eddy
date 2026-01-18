@@ -10,13 +10,25 @@
  * - Timeline: sorted segments for binary search by time
  */
 
-import type { Group, Project, Track, Value } from '@eddy/lexicons'
+import type { Clip, Group, Project, Track, Value, VisualEffect } from '@eddy/lexicons'
 
 /**********************************************************************************/
 /*                                                                                */
 /*                                     Types                                      */
 /*                                                                                */
 /**********************************************************************************/
+
+/** Reference to an effect value for runtime lookup */
+export interface EffectRef {
+  /** Where this effect lives: clip, track, group, or master */
+  sourceType: 'clip' | 'track' | 'group' | 'master'
+  /** ID of the source (clipId, trackId, groupId, or 'master') */
+  sourceId: string
+  /** Index within that source's videoPipeline array */
+  effectIndex: number
+  /** Effect type for validation/debugging */
+  effectType: string
+}
 
 /** Viewport defines where to render on the canvas */
 export interface Viewport {
@@ -41,6 +53,11 @@ export interface Placement {
   in: number // Start time in source (seconds)
   out: number // End time in source (seconds)
   speed: number // Playback rate (1 = normal)
+
+  /** Video effect signature - hash of effect types for shader caching */
+  effectSignature: string
+  /** References to effect values for runtime lookup (cascade order: clip → track → group... → master) */
+  effectRefs: EffectRef[]
 }
 
 /**
@@ -106,6 +123,10 @@ interface ClipInfo {
   sourceIn: number // Source start time
   sourceOut: number // Source end time
   speed: number
+  /** Video effect signature for shader caching */
+  effectSignature: string
+  /** Effect references for value lookup (cascade order: clip → track → group... → master) */
+  effectRefs: EffectRef[]
 }
 
 /** Resolve a Value to a number at a given time */
@@ -127,6 +148,110 @@ function getRootGroup(project: Project): Group | undefined {
     return project.groups.find(g => g.id === project.rootGroup)
   }
   return project.groups[0]
+}
+
+/** Build a map from member ID (track or group) to parent group */
+function buildParentMap(project: Project): Map<string, Group> {
+  const parentMap = new Map<string, Group>()
+  for (const group of project.groups) {
+    for (const member of group.members) {
+      if (!isVoidMember(member)) {
+        const memberId = (member as { id: string }).id
+        parentMap.set(memberId, group)
+      }
+    }
+  }
+  return parentMap
+}
+
+/** Build a map from group ID to Group */
+function buildGroupMap(project: Project): Map<string, Group> {
+  const groupMap = new Map<string, Group>()
+  for (const group of project.groups) {
+    groupMap.set(group.id, group)
+  }
+  return groupMap
+}
+
+/**
+ * Collect cascaded video effects for a clip.
+ * Walks up the hierarchy: clip → track → group → parent groups... → master
+ */
+function collectCascadedEffects(
+  clip: Clip,
+  track: Track,
+  parentMap: Map<string, Group>,
+  groupMap: Map<string, Group>,
+  project: Project,
+): EffectRef[] {
+  const refs: EffectRef[] = []
+
+  // 1. Clip effects
+  if (clip.videoPipeline) {
+    for (let index = 0; index < clip.videoPipeline.length; index++) {
+      const effect = clip.videoPipeline[index]
+      refs.push({
+        sourceType: 'clip',
+        sourceId: clip.id,
+        effectIndex: index,
+        effectType: effect.type,
+      })
+    }
+  }
+
+  // 2. Track effects
+  if (track.videoPipeline) {
+    for (let index = 0; index < track.videoPipeline.length; index++) {
+      const effect = track.videoPipeline[index]
+      refs.push({
+        sourceType: 'track',
+        sourceId: track.id,
+        effectIndex: index,
+        effectType: effect.type,
+      })
+    }
+  }
+
+  // 3. Walk up group hierarchy
+  let currentId: string = track.id
+  let parentGroup = parentMap.get(currentId)
+
+  while (parentGroup) {
+    if (parentGroup.pipeline) {
+      for (let index = 0; index < parentGroup.pipeline.length; index++) {
+        const effect = parentGroup.pipeline[index]
+        refs.push({
+          sourceType: 'group',
+          sourceId: parentGroup.id,
+          effectIndex: index,
+          effectType: effect.type,
+        })
+      }
+    }
+    currentId = parentGroup.id
+    parentGroup = parentMap.get(currentId)
+  }
+
+  // 4. Master effects
+  if (project.masterVideoPipeline) {
+    for (let index = 0; index < project.masterVideoPipeline.length; index++) {
+      const effect = project.masterVideoPipeline[index]
+      refs.push({
+        sourceType: 'master',
+        sourceId: 'master',
+        effectIndex: index,
+        effectType: effect.type,
+      })
+    }
+  }
+
+  return refs
+}
+
+/** Generate effect signature from effect refs (for shader caching) */
+function generateEffectSignature(effectRefs: EffectRef[]): string {
+  if (effectRefs.length === 0) return ''
+  return effectRefs.map(ref => ref.effectType).join('|')
 }
 
 /** Calculate viewport for a grid cell */
@@ -179,11 +304,13 @@ function collectClipInfos(project: Project, canvasSize: CanvasSize): ClipInfo[] 
   const rootGroup = getRootGroup(project)
   if (!rootGroup) return []
 
-  // Build track lookup map
+  // Build lookup maps
   const trackMap = new Map<string, Track>()
   for (const track of project.tracks) {
     trackMap.set(track.id, track)
   }
+  const parentMap = buildParentMap(project)
+  const groupMap = buildGroupMap(project)
 
   const clipInfos: ClipInfo[] = []
 
@@ -226,6 +353,10 @@ function collectClipInfos(project: Project, canvasSize: CanvasSize): ClipInfo[] 
       const sourceIn = (clip.sourceOffset ?? 0) / 1000
       const sourceOut = sourceIn + clip.duration / 1000
 
+      // Collect cascaded video effects
+      const effectRefs = collectCascadedEffects(clip, track, parentMap, groupMap, project)
+      const effectSignature = generateEffectSignature(effectRefs)
+
       clipInfos.push({
         clipId: clip.id,
         trackId: track.id,
@@ -235,6 +366,8 @@ function collectClipInfos(project: Project, canvasSize: CanvasSize): ClipInfo[] 
         sourceIn,
         sourceOut,
         speed,
+        effectSignature,
+        effectRefs,
       })
     }
 
@@ -292,6 +425,8 @@ function buildSegments(clipInfos: ClipInfo[]): LayoutSegment[] {
         in: clip.sourceIn + segmentOffsetInClip,
         out: clip.sourceOut,
         speed: clip.speed,
+        effectSignature: clip.effectSignature,
+        effectRefs: clip.effectRefs,
       })
     }
 

@@ -12,6 +12,7 @@ import {
   getActivePlacements,
   PREVIEW_CLIP_ID,
   type CompiledTimeline,
+  type EffectRef,
   type Placement,
 } from '~/primitives/compile-layout-timeline'
 
@@ -32,12 +33,6 @@ export interface RenderStats {
   stale: number
 }
 
-/** Video effect from pipeline (simplified for worker transport) */
-interface VideoPipelineEffect {
-  type: string
-  value?: { value: number }
-}
-
 export interface CompositorWorkerMethods {
   /** Initialize with OffscreenCanvas */
   init(canvas: OffscreenCanvas, width: number, height: number): Promise<void>
@@ -45,11 +40,19 @@ export interface CompositorWorkerMethods {
   /** Set the compiled layout timeline */
   setTimeline(timeline: CompiledTimeline): void
 
-  /** Set video effect pipeline for a track */
-  setTrackVideoPipeline(trackId: string, pipeline: VideoPipelineEffect[]): void
-
-  /** Update a single video effect value for a track */
-  setTrackVideoEffectValue(trackId: string, effectIndex: number, value: number): void
+  /**
+   * Set an effect value by source coordinates.
+   * @param sourceType - 'clip' | 'track' | 'group' | 'master'
+   * @param sourceId - ID of the source (clipId, trackId, groupId, or 'master')
+   * @param effectIndex - Index within that source's effect pipeline
+   * @param value - The effect value (already scaled appropriately)
+   */
+  setEffectValue(
+    sourceType: 'clip' | 'track' | 'group' | 'master',
+    sourceId: string,
+    effectIndex: number,
+    value: number,
+  ): void
 
   /** Set a preview stream for a track (continuously reads latest frame) */
   setPreviewStream(trackId: string, stream: ReadableStream<VideoFrame> | null): void
@@ -113,15 +116,56 @@ interface LastFrameInfo {
 }
 const lastRenderedFrame = new Map<string, LastFrameInfo>()
 
-// Track video effect chains per trackId
-// Stores the pipeline definition, compiled chain, and current values
-interface TrackVideoEffects {
-  pipeline: VideoPipelineEffect[]
-  compiled: CompiledEffectChain | null
-  /** Current effect values (one per effect in pipeline) */
-  values: number[]
+// Effect chains cached by effectSignature (hash of effect types)
+const effectChainsBySignature = new Map<string, CompiledEffectChain>()
+
+// Effect values keyed by "sourceType:sourceId:effectIndex"
+const effectValues = new Map<string, number>()
+
+/** Convert EffectRef to lookup key */
+function effectRefToKey(ref: EffectRef): string {
+  return `${ref.sourceType}:${ref.sourceId}:${ref.effectIndex}`
 }
-const trackVideoEffects = new Map<string, TrackVideoEffects>()
+
+/** Resolve effect values from effectRefs */
+function resolveEffectValues(refs: EffectRef[]): number[] {
+  return refs.map(ref => effectValues.get(effectRefToKey(ref)) ?? 0)
+}
+
+/**
+ * Get or compile an effect chain for a given signature.
+ * Compiles lazily on first encounter.
+ */
+function getOrCompileEffectChain(
+  engine: VideoCompositor,
+  signature: string,
+  refs: EffectRef[],
+): CompiledEffectChain | null {
+  if (!signature || refs.length === 0) return null
+
+  // Check cache
+  const cached = effectChainsBySignature.get(signature)
+  if (cached) return cached
+
+  // Compile from effect types in refs
+  const effects: VideoEffectToken[] = []
+  for (const ref of refs) {
+    const token = createVideoEffect(ref.effectType, { value: 0 })
+    if (token) {
+      effects.push(token)
+    }
+  }
+
+  if (effects.length === 0) return null
+
+  // Register with compositor (uses signature as ID for caching)
+  const compiled = engine.registerEffectChain({ id: signature, effects })
+  effectChainsBySignature.set(signature, compiled)
+
+  log('Compiled effect chain', { signature, effectCount: effects.length })
+
+  return compiled
+}
 
 let renderStats: RenderStats = { expected: 0, rendered: 0, dropped: 0, stale: 0 }
 
@@ -231,54 +275,10 @@ expose<CompositorWorkerMethods>({
     })
   },
 
-  setTrackVideoPipeline(trackId, pipeline) {
-    log('setTrackVideoPipeline', { trackId, effectCount: pipeline.length })
-
-    // Extract initial values from pipeline
-    const values = pipeline.map(effect => effect.value?.value ?? 0)
-
-    if (!mainEngine) {
-      log('setTrackVideoPipeline: no engine yet, storing for later')
-      trackVideoEffects.set(trackId, { pipeline, compiled: null, values })
-      return
-    }
-
-    // Create effect tokens from pipeline
-    const effects: VideoEffectToken[] = []
-    for (const effect of pipeline) {
-      const token = createVideoEffect(effect.type, { value: effect.value?.value ?? 0 })
-      if (token) {
-        effects.push(token)
-      }
-    }
-
-    if (effects.length === 0) {
-      // No effects - remove any existing chain
-      if (mainEngine.hasEffectChain(trackId)) {
-        mainEngine.deleteEffectChain(trackId)
-      }
-      trackVideoEffects.delete(trackId)
-      return
-    }
-
-    // Register effect chain with compositor (or get existing)
-    const compiled = mainEngine.registerEffectChain({ id: trackId, effects })
-
-    trackVideoEffects.set(trackId, { pipeline, compiled, values })
-
-    log('setTrackVideoPipeline: registered chain', { trackId, effectCount: effects.length })
-  },
-
-  setTrackVideoEffectValue(trackId, effectIndex, value) {
-    const trackEffects = trackVideoEffects.get(trackId)
-    if (!trackEffects) {
-      log('setTrackVideoEffectValue: no track effects for track', { trackId })
-      return
-    }
-
-    // Just mutate the values array - uniforms are set at render time
-    trackEffects.values[effectIndex] = value
-    log('setTrackVideoEffectValue', { trackId, effectIndex, value })
+  setEffectValue(sourceType, sourceId, effectIndex, value) {
+    const key = `${sourceType}:${sourceId}:${effectIndex}`
+    effectValues.set(key, value)
+    log('setEffectValue', { key, value })
   },
 
   setPreviewStream(trackId, stream) {
@@ -366,16 +366,22 @@ expose<CompositorWorkerMethods>({
       // Use trackId for texture key when preview (avoids collision with playback textures)
       const textureKey = isPreview ? `preview-${placement.trackId}` : placement.clipId
 
-      // Get track's effect chain and values if registered
-      const trackEffects = trackVideoEffects.get(placement.trackId)
-      const effectChainId = trackEffects?.compiled ? placement.trackId : undefined
+      // Get or compile effect chain from placement's signature
+      const effectChain = getOrCompileEffectChain(
+        mainEngine,
+        placement.effectSignature,
+        placement.effectRefs,
+      )
+
+      // Resolve current effect values from refs
+      const values = effectChain ? resolveEffectValues(placement.effectRefs) : undefined
 
       mainEngine.renderPlacement({
         id: textureKey,
         frame,
         viewport: placement.viewport,
-        effectChainId,
-        effectValues: trackEffects?.values,
+        effectChainId: effectChain ? placement.effectSignature : undefined,
+        effectValues: values,
       })
     }
 
@@ -393,9 +399,7 @@ expose<CompositorWorkerMethods>({
       activePlacements.map(({ placement }) => ({
         id: placement.clipId,
         viewport: placement.viewport,
-        effectChainId: captureEngine!.hasEffectChain(placement.trackId)
-          ? placement.trackId
-          : undefined,
+        effectChainId: placement.effectSignature || undefined,
       })),
     )
   },
@@ -422,16 +426,22 @@ expose<CompositorWorkerMethods>({
       // Use trackId for texture key when preview (avoids collision with playback textures)
       const textureKey = isPreview ? `preview-${placement.trackId}` : placement.clipId
 
-      // Get track's effect chain and values if registered
-      const trackEffects = trackVideoEffects.get(placement.trackId)
-      const effectChainId = trackEffects?.compiled ? placement.trackId : undefined
+      // Get or compile effect chain from placement's signature
+      const effectChain = getOrCompileEffectChain(
+        mainEngine,
+        placement.effectSignature,
+        placement.effectRefs,
+      )
+
+      // Resolve current effect values from refs
+      const values = effectChain ? resolveEffectValues(placement.effectRefs) : undefined
 
       mainEngine.renderPlacement({
         id: textureKey,
         frame,
         viewport: placement.viewport,
-        effectChainId,
-        effectValues: trackEffects?.values,
+        effectChainId: effectChain ? placement.effectSignature : undefined,
+        effectValues: values,
       })
     }
 
@@ -459,16 +469,22 @@ expose<CompositorWorkerMethods>({
       const frame = exportFrames.get(placement.clipId)
       if (!frame) continue
 
-      // Get track's effect chain and values if registered
-      const trackEffects = trackVideoEffects.get(placement.trackId)
-      const effectChainId = trackEffects?.compiled ? placement.trackId : undefined
+      // Get or compile effect chain from placement's signature
+      const effectChain = getOrCompileEffectChain(
+        mainEngine,
+        placement.effectSignature,
+        placement.effectRefs,
+      )
+
+      // Resolve current effect values from refs
+      const values = effectChain ? resolveEffectValues(placement.effectRefs) : undefined
 
       mainEngine.renderPlacement({
         id: placement.clipId,
         frame,
         viewport: placement.viewport,
-        effectChainId,
-        effectValues: trackEffects?.values,
+        effectChainId: effectChain ? placement.effectSignature : undefined,
+        effectValues: values,
       })
     }
 
