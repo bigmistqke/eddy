@@ -12,7 +12,7 @@ import type { VideoEffectType } from '../types'
 import { registerVideoEffect } from '../video-effect-registry'
 
 export interface BrightnessControls {
-  setBrightness: (value: number) => void
+  setBrightness(value: number): void
 }
 
 const brightness = Symbol('brightness')
@@ -38,13 +38,14 @@ export function makeBrightnessEffect(size: number): VideoEffectType<BrightnessCo
     apply,
     connect(gl, program, index) {
       const {
-        uniforms: { [brightness]: set },
+        uniforms: { [brightness]: setBrightness },
       } = view(gl, program, schema)
-
-      // Convert from lexicon scale (-100 to 100) to shader scale (-1 to 1)
-      const setBrightness = (value: number) => set[index].set(value / 100)
-
-      return { setBrightness }
+      return {
+        /** Convert from lexicon scale (-100 to 100) to shader scale (-1 to 1) */
+        setBrightness(value: number) {
+          setBrightness[index].set(value / 100)
+        },
+      }
     },
   }
 }

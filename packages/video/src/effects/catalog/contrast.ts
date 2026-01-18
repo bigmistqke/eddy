@@ -38,13 +38,14 @@ export function makeContrastEffect(size: number): VideoEffectType<ContrastContro
     apply,
     connect(gl, program, index) {
       const {
-        uniforms: { [contrast]: set },
+        uniforms: { [contrast]: setContrast },
       } = view(gl, program, schema)
-
-      // Convert from lexicon scale (0-200) to shader scale (0-2)
-      const setContrast = (value: number) => set[index].set(value / 100)
-
-      return { setContrast }
+      return {
+        // Convert from lexicon scale (0-200) to shader scale (0-2)
+        setContrast(value: number) {
+          setContrast[index].set(value / 100)
+        },
+      }
     },
   }
 }

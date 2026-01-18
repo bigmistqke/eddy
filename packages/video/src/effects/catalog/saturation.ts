@@ -39,13 +39,13 @@ export function makeSaturationEffect(size: number): VideoEffectType<SaturationCo
     apply,
     connect(gl, program, index) {
       const {
-        uniforms: { [saturation]: set },
+        uniforms: { [saturation]: setSaturation },
       } = view(gl, program, schema)
-
-      // Convert from lexicon scale (0-200) to shader scale (0-2)
-      const setSaturation = (value: number) => set[index].set(value / 100)
-
-      return { setSaturation }
+      return {
+        setSaturation(value: number) {
+          setSaturation[index].set(value / 100)
+        },
+      }
     },
   }
 }
