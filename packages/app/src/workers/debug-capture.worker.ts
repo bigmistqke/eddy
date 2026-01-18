@@ -2,7 +2,7 @@ import { expose, rpc } from '@bigmistqke/rpc/messenger'
 import { debug } from '@eddy/utils'
 import type { MuxerFrameData, MuxerInitConfig } from './debug-muxer.worker'
 
-const log = debug('debug-capture.worker', true)
+const log = debug('debug-capture.worker', false)
 
 export interface CaptureWorkerMethods {
   /** Set the muxer port for forwarding frames (called before start) */

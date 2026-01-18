@@ -2,7 +2,7 @@ import { expose } from '@bigmistqke/rpc/messenger'
 import { debug } from '@eddy/utils'
 import { BufferTarget, Output, VideoSample, VideoSampleSource, WebMOutputFormat } from 'mediabunny'
 
-const log = debug('debug-muxer.worker', true)
+const log = debug('debug-muxer.worker', false)
 
 export interface MuxerInitConfig {
   format: VideoPixelFormat

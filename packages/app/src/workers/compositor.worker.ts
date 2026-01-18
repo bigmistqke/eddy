@@ -18,7 +18,7 @@ import {
 // Register built-in video effects
 registerBuiltInVideoEffects()
 
-const log = debug('compositor.worker', true)
+const log = debug('compositor.worker', false)
 
 /** Stats returned from render() for dropped frame tracking */
 export interface RenderStats {
