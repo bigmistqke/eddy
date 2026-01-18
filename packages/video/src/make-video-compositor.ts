@@ -3,7 +3,7 @@ import { assertedNotNullish, debug } from '@eddy/utils'
 import { composeEffects } from './effects/compose-effects'
 import type { CompiledEffectChain, VideoEffectChain } from './effects/types'
 
-const log = debug('video:compositor:engine', false)
+const log = debug('video:make-video-compositor', false)
 
 /** Viewport in canvas coordinates */
 export interface Viewport {
@@ -23,6 +23,8 @@ export interface RenderPlacement {
   viewport: Viewport
   /** Effect chain to apply (undefined = passthrough, no effects) */
   effectChainId?: string
+  /** Current effect values to set before rendering (one per effect in chain) */
+  effectValues?: number[]
 }
 
 // View type with our specific uniforms
@@ -88,6 +90,8 @@ export interface VideoCompositor {
   getEffectChain(id: string): CompiledEffectChain | undefined
   /** Remove an effect chain */
   deleteEffectChain(id: string): void
+  /** Activate an effect chain (bind its program) - must be called before updating controls */
+  activateEffectChain(id: string): void
 }
 
 /**********************************************************************************/
@@ -173,10 +177,9 @@ export function makeVideoCompositor(canvas: OffscreenCanvas): VideoCompositor {
 
   /** Switch to a different shader program if needed */
   function useChain(chain: CompiledEffectChain): void {
-    if (currentProgram !== chain.program) {
-      currentProgram = chain.program
-      gl.useProgram(currentProgram)
-    }
+    // Always bind program - composeEffects may have called gl.useProgram during chain registration
+    currentProgram = chain.program
+    gl.useProgram(currentProgram)
   }
 
   function clear(r = 0.1, g = 0.1, b = 0.1, a = 1.0): void {
@@ -201,6 +204,31 @@ export function makeVideoCompositor(canvas: OffscreenCanvas): VideoCompositor {
     // Get and use the effect chain
     const chain = getChain(placement.effectChainId)
     useChain(chain)
+
+    // Set effect values if provided (must happen after useChain binds the program)
+    if (placement.effectValues && chain.controls.length > 0) {
+      for (let i = 0; i < chain.controls.length; i++) {
+        const controls = chain.controls[i]
+        const value = placement.effectValues[i]
+
+        if (controls && value !== undefined) {
+          const setterKey = Object.keys(controls).find(key => key.startsWith('set'))
+          if (setterKey && typeof controls[setterKey] === 'function') {
+            controls[setterKey](value)
+            // Debug: log every ~60 frames
+            if (Math.random() < 0.02) {
+              log('set effect value', {
+                effectChainId: placement.effectChainId,
+                index: i,
+                value,
+                setterKey,
+                controls: controls[setterKey],
+              })
+            }
+          }
+        }
+      }
+    }
 
     // Convert viewport to WebGL coordinates (y flipped)
     const vp = viewportToWebGL(placement.viewport, canvas.height)
@@ -243,7 +271,9 @@ export function makeVideoCompositor(canvas: OffscreenCanvas): VideoCompositor {
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, frame)
     },
 
-    renderById(placements: Array<{ id: string; viewport: Viewport; effectChainId?: string }>): void {
+    renderById(
+      placements: Array<{ id: string; viewport: Viewport; effectChainId?: string }>,
+    ): void {
       clear()
 
       for (const placement of placements) {
@@ -298,7 +328,19 @@ export function makeVideoCompositor(canvas: OffscreenCanvas): VideoCompositor {
         controls: result.controls as CompiledEffectChain['controls'],
       }
       effectChains.set(chain.id, compiled)
-      log('Registered effect chain', chain.id, chain.effects.length, 'effects')
+
+      // Debug: Check if programs are shared across chains
+      const allPrograms = [...effectChains.values()].map(c => c.program)
+      const uniquePrograms = new Set(allPrograms).size
+      log('Registered effect chain', {
+        chainId: chain.id,
+        effectCount: chain.effects.length,
+        totalChains: effectChains.size,
+        uniquePrograms,
+        programsShared: uniquePrograms < effectChains.size,
+        compiled,
+      })
+
       return compiled
     },
 
@@ -316,6 +358,13 @@ export function makeVideoCompositor(canvas: OffscreenCanvas): VideoCompositor {
       if (chain) {
         gl.deleteProgram(chain.program)
         effectChains.delete(id)
+      }
+    },
+
+    activateEffectChain(id: string): void {
+      const chain = effectChains.get(id)
+      if (chain) {
+        useChain(chain)
       }
     },
 

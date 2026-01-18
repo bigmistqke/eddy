@@ -1,10 +1,9 @@
-export * from './types'
-export * from './compose-effects'
-export * from './make-effect-chain-cache'
-export * from './video-effect-registry'
 export * from './brightness'
+export * from './compose-effects'
 export * from './contrast'
 export * from './saturation'
+export * from './types'
+export * from './video-effect-registry'
 
 import { registerBrightnessEffect } from './brightness'
 import { registerContrastEffect } from './contrast'

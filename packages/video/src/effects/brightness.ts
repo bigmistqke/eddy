@@ -15,14 +15,14 @@ export interface BrightnessControls {
   setBrightness: (value: number) => void
 }
 
+const brightness = Symbol('brightness')
+const apply = Symbol('applyBrightness')
+
 /**
  * Create a brightness effect.
  * @param initialValue - Initial brightness (-100 to 100, default 0)
  */
 export function makeBrightnessEffect(initialValue = 0): VideoEffectToken<BrightnessControls> {
-  const brightness = Symbol('brightness')
-  const apply = Symbol('applyBrightness')
-
   const fragment = glsl`
     ${uniform.float(brightness)}
 

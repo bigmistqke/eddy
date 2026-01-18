@@ -15,14 +15,14 @@ export interface SaturationControls {
   setSaturation: (value: number) => void
 }
 
+const saturation = Symbol('saturation')
+const apply = Symbol('applySaturation')
+
 /**
  * Create a saturation effect.
  * @param initialValue - Initial saturation (0 to 200, default 100 = no change)
  */
 export function makeSaturationEffect(initialValue = 100): VideoEffectToken<SaturationControls> {
-  const saturation = Symbol('saturation')
-  const apply = Symbol('applySaturation')
-
   const fragment = glsl`
     ${uniform.float(saturation)}
 

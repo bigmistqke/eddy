@@ -18,7 +18,7 @@ import {
 // Register built-in video effects
 registerBuiltInVideoEffects()
 
-const log = debug('compositor.worker', false)
+const log = debug('compositor.worker', true)
 
 /** Stats returned from render() for dropped frame tracking */
 export interface RenderStats {
@@ -114,10 +114,12 @@ interface LastFrameInfo {
 const lastRenderedFrame = new Map<string, LastFrameInfo>()
 
 // Track video effect chains per trackId
-// Stores the pipeline definition and compiled chain
+// Stores the pipeline definition, compiled chain, and current values
 interface TrackVideoEffects {
   pipeline: VideoPipelineEffect[]
   compiled: CompiledEffectChain | null
+  /** Current effect values (one per effect in pipeline) */
+  values: number[]
 }
 const trackVideoEffects = new Map<string, TrackVideoEffects>()
 
@@ -232,9 +234,12 @@ expose<CompositorWorkerMethods>({
   setTrackVideoPipeline(trackId, pipeline) {
     log('setTrackVideoPipeline', { trackId, effectCount: pipeline.length })
 
+    // Extract initial values from pipeline
+    const values = pipeline.map(effect => effect.value?.value ?? 0)
+
     if (!mainEngine) {
       log('setTrackVideoPipeline: no engine yet, storing for later')
-      trackVideoEffects.set(trackId, { pipeline, compiled: null })
+      trackVideoEffects.set(trackId, { pipeline, compiled: null, values })
       return
     }
 
@@ -259,48 +264,21 @@ expose<CompositorWorkerMethods>({
     // Register effect chain with compositor (or get existing)
     const compiled = mainEngine.registerEffectChain({ id: trackId, effects })
 
-    // If chain already existed, update values from pipeline
-    // (registerEffectChain returns cached chain, so new token initial values weren't applied)
-    const existing = trackVideoEffects.get(trackId)
-    if (existing?.compiled === compiled) {
-      // Chain was cached - update each effect's value
-      for (let i = 0; i < pipeline.length; i++) {
-        const value = pipeline[i].value?.value ?? 0
-        const controls = compiled.controls[i]
-        if (controls) {
-          const setterKey = Object.keys(controls).find(key => key.startsWith('set'))
-          if (setterKey && typeof (controls as Record<string, unknown>)[setterKey] === 'function') {
-            ;(controls as Record<string, (v: number) => void>)[setterKey](value)
-          }
-        }
-      }
-    }
-
-    trackVideoEffects.set(trackId, { pipeline, compiled })
+    trackVideoEffects.set(trackId, { pipeline, compiled, values })
 
     log('setTrackVideoPipeline: registered chain', { trackId, effectCount: effects.length })
   },
 
   setTrackVideoEffectValue(trackId, effectIndex, value) {
     const trackEffects = trackVideoEffects.get(trackId)
-    if (!trackEffects?.compiled) {
-      log('setTrackVideoEffectValue: no compiled chain for track', { trackId })
+    if (!trackEffects) {
+      log('setTrackVideoEffectValue: no track effects for track', { trackId })
       return
     }
 
-    const controls = trackEffects.compiled.controls[effectIndex]
-    if (!controls) {
-      log('setTrackVideoEffectValue: no controls at index', { trackId, effectIndex })
-      return
-    }
-
-    // Update the control - find the setter method
-    // Controls have methods like setBrightness, setContrast, etc.
-    const setterKey = Object.keys(controls).find(key => key.startsWith('set'))
-    if (setterKey && typeof controls[setterKey] === 'function') {
-      controls[setterKey](value)
-      log('setTrackVideoEffectValue', { trackId, effectIndex, value })
-    }
+    // Just mutate the values array - uniforms are set at render time
+    trackEffects.values[effectIndex] = value
+    log('setTrackVideoEffectValue', { trackId, effectIndex, value })
   },
 
   setPreviewStream(trackId, stream) {
@@ -388,16 +366,16 @@ expose<CompositorWorkerMethods>({
       // Use trackId for texture key when preview (avoids collision with playback textures)
       const textureKey = isPreview ? `preview-${placement.trackId}` : placement.clipId
 
-      // Use track's effect chain if registered
-      const effectChainId = mainEngine.hasEffectChain(placement.trackId)
-        ? placement.trackId
-        : undefined
+      // Get track's effect chain and values if registered
+      const trackEffects = trackVideoEffects.get(placement.trackId)
+      const effectChainId = trackEffects?.compiled ? placement.trackId : undefined
 
       mainEngine.renderPlacement({
         id: textureKey,
         frame,
         viewport: placement.viewport,
         effectChainId,
+        effectValues: trackEffects?.values,
       })
     }
 
@@ -444,16 +422,16 @@ expose<CompositorWorkerMethods>({
       // Use trackId for texture key when preview (avoids collision with playback textures)
       const textureKey = isPreview ? `preview-${placement.trackId}` : placement.clipId
 
-      // Use track's effect chain if registered
-      const effectChainId = mainEngine.hasEffectChain(placement.trackId)
-        ? placement.trackId
-        : undefined
+      // Get track's effect chain and values if registered
+      const trackEffects = trackVideoEffects.get(placement.trackId)
+      const effectChainId = trackEffects?.compiled ? placement.trackId : undefined
 
       mainEngine.renderPlacement({
         id: textureKey,
         frame,
         viewport: placement.viewport,
         effectChainId,
+        effectValues: trackEffects?.values,
       })
     }
 
@@ -481,16 +459,16 @@ expose<CompositorWorkerMethods>({
       const frame = exportFrames.get(placement.clipId)
       if (!frame) continue
 
-      // Use track's effect chain if registered
-      const effectChainId = mainEngine.hasEffectChain(placement.trackId)
-        ? placement.trackId
-        : undefined
+      // Get track's effect chain and values if registered
+      const trackEffects = trackVideoEffects.get(placement.trackId)
+      const effectChainId = trackEffects?.compiled ? placement.trackId : undefined
 
       mainEngine.renderPlacement({
         id: placement.clipId,
         frame,
         viewport: placement.viewport,
         effectChainId,
+        effectValues: trackEffects?.values,
       })
     }
 

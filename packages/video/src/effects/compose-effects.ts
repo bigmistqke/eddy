@@ -10,7 +10,7 @@
  */
 
 import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
-import type { EffectControls, VideoEffectToken } from './types'
+import type { VideoEffectToken } from './types'
 
 /** Result of composing effects */
 export interface ComposedEffects<TEffects extends VideoEffectToken[]> {
@@ -47,14 +47,14 @@ export function composeEffects<TEffects extends VideoEffectToken[]>(
 
   const effectChain =
     effects.length > 0
-      ? effects.map((effect) => glsl`color = ${effect.apply}(color);`)
+      ? effects.map(effect => glsl`color = ${effect.apply}(color);`)
       : [glsl`/* no effects */`]
 
   const fragmentShader = glsl`
     precision mediump float;
 
     ${uniform.sampler2D('u_video')}
-    ${effects.map((effect) => effect.fragment)}
+    ${effects.map(effect => effect.fragment)}
 
     varying vec2 v_uv;
 
@@ -74,7 +74,9 @@ export function composeEffects<TEffects extends VideoEffectToken[]>(
   gl.useProgram(program)
 
   // Connect each effect to get its controls
-  const controls = effects.map((effect) => effect.connect(gl, program)) as ComposedEffects<TEffects>['controls']
+  const controls = effects.map(effect =>
+    effect.connect(gl, program),
+  ) as ComposedEffects<TEffects>['controls']
 
   return {
     program,

@@ -15,14 +15,14 @@ export interface ContrastControls {
   setContrast: (value: number) => void
 }
 
+const contrast = Symbol('contrast')
+const apply = Symbol('applyContrast')
+
 /**
  * Create a contrast effect.
  * @param initialValue - Initial contrast (0 to 200, default 100 = no change)
  */
 export function makeContrastEffect(initialValue = 100): VideoEffectToken<ContrastControls> {
-  const contrast = Symbol('contrast')
-  const apply = Symbol('applyContrast')
-
   const fragment = glsl`
     ${uniform.float(contrast)}
 
