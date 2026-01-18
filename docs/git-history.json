@@ -1,5 +1,29 @@
 [
   {
+    "hash": "35229ef411b60b6816c4f75ba9b30edad5570594",
+    "short_hash": "35229ef",
+    "author": "bigmistqke",
+    "date": "2026-01-18T01:29:01+01:00",
+    "message": "fix: move effect symbols to module scope for stable shader identities\n\n- Move Symbol declarations outside factory functions so all effect\n  instances share the same Symbol (fixes multi-track effect bug)\n- Store effect values in array, set uniforms at render time\n- Remove unused make-effect-chain-cache.ts\n- Add activateEffectChain method to compositor\n- Enhanced debug logging",
+    "files_changed": 8
+  },
+  {
+    "hash": "3fd7cc459161622347e4256511e367a599db7c44",
+    "short_hash": "3fd7cc4",
+    "author": "bigmistqke",
+    "date": "2026-01-17T23:58:54+01:00",
+    "message": "fix: activate program before setting initial effect uniform values\n\nWebGL requires gl.useProgram() to be called before setting uniforms.\nWithout this, initial effect values were silently ignored.",
+    "files_changed": 3
+  },
+  {
+    "hash": "3fd7cc459161622347e4256511e367a599db7c44",
+    "short_hash": "3fd7cc4",
+    "author": "bigmistqke",
+    "date": "2026-01-17T23:58:54+01:00",
+    "message": "fix: activate program before setting initial effect uniform values\n\nWebGL requires gl.useProgram() to be called before setting uniforms.\nWithout this, initial effect values were silently ignored.",
+    "files_changed": 3
+  },
+  {
     "hash": "06e87899038eda2321e2ea20d6161d5d2e3418c5",
     "short_hash": "06e8789",
     "author": "bigmistqke",
@@ -8,20 +32,12 @@
     "files_changed": 16
   },
   {
-    "hash": "f8b1570000782608541e120791a41f8e50338afb",
-    "short_hash": "f8b1570",
+    "hash": "06e87899038eda2321e2ea20d6161d5d2e3418c5",
+    "short_hash": "06e8789",
     "author": "bigmistqke",
-    "date": "2026-01-17T20:02:21+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "8d526015af8327df27b821e2d376f7e37a7d4ffb",
-    "short_hash": "8d52601",
-    "author": "bigmistqke",
-    "date": "2026-01-17T20:02:07+01:00",
-    "message": "feat: integrate video effect chains into compositor\n\n- Add VideoEffectChain, CompiledEffectChain types\n- Add makeEffectChainCache for caching compiled shaders\n- Compositor now manages effect chains by id\n- Placements can reference effectChainId (passthrough default)\n- Each unique chain compiles to one shader, no framebuffers needed",
-    "files_changed": 4
+    "date": "2026-01-17T23:30:18+01:00",
+    "message": "feat: wire video effect pipeline from UI to compositor\n\n- Add video effect registry with brightness, contrast, saturation\n- Add videoPipeline to track data model in lexicon\n- Generate video effect sliders dynamically from pipeline\n- Compositor worker registers/updates effect chains per track\n- Comment out curveRef for now (simplify to static values only)",
+    "files_changed": 16
   },
   {
     "hash": "8d526015af8327df27b821e2d376f7e37a7d4ffb",
