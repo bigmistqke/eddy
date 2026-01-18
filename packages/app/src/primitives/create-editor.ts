@@ -5,7 +5,6 @@ import { getProjectByRkey, publishProject, streamStemToOPFS } from '@eddy/atprot
 import {
   decodeClipAudio,
   extractAudioChunk,
-  getMasterMixer,
   makeOfflineAudioMixer,
   resumeAudioContext,
 } from '@eddy/audio'
@@ -61,6 +60,7 @@ function createDefaultProject(): Project {
           columns: 2,
           rows: 2,
         },
+        audioPipeline: [{ type: 'audio.gain', value: { value: 100 } }],
       },
     ],
     tracks: [
@@ -459,9 +459,8 @@ export function createEditor(options: CreateEditorOptions) {
 
     // Route playback audio through MediaStream output during recording.
     // Avoids Chrome bug where AudioContext.destination interferes with getUserMedia capture.
-    const mixer = getMasterMixer()
-    mixer.useMediaStreamOutput()
-    onCleanup(() => mixer.useDirectOutput())
+    _player.useMasterMediaStreamOutput()
+    onCleanup(() => _player.useMasterDirectOutput())
 
     // Mute the track being recorded to (so existing clips don't play audio)
     // The new recording's audio comes from the capture stream, not this pipeline
@@ -625,7 +624,10 @@ export function createEditor(options: CreateEditorOptions) {
     )
   })
 
-  createEffect(() => getMasterMixer().setMasterVolume(masterVolume()))
+  createEffect(() => {
+    const _player = player()
+    if (_player) _player.setMasterVolume(masterVolume())
+  })
 
   /** Trigger download of a blob */
   function downloadBlob(blob: Blob, filename: string): void {

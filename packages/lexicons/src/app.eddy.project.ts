@@ -66,24 +66,6 @@ export default {
             items: { type: 'ref', ref: '#track' },
             maxLength: 32,
           },
-          masterAudioPipeline: {
-            type: 'array',
-            items: {
-              type: 'union',
-              refs: ['#audioEffect.pan', '#audioEffect.gain', '#audioEffect.reverb', '#audioEffect.custom'],
-            },
-            maxLength: 16,
-            description: 'Master audio bus effects',
-          },
-          masterVideoPipeline: {
-            type: 'array',
-            items: {
-              type: 'union',
-              refs: ['#visualEffect.transform', '#visualEffect.opacity', '#visualEffect.brightness', '#visualEffect.contrast', '#visualEffect.saturation', '#visualEffect.custom'],
-            },
-            maxLength: 16,
-            description: 'Master video output effects',
-          },
           parent: {
             type: 'ref',
             ref: 'com.atproto.repo.strongRef',
@@ -379,7 +361,16 @@ export default {
           ref: '#layout.grid',
           description: 'Optional grid layout. If omitted, members stack on top of each other.',
         },
-        pipeline: {
+        audioPipeline: {
+          type: 'array',
+          items: {
+            type: 'union',
+            refs: ['#audioEffect.pan', '#audioEffect.gain', '#audioEffect.reverb', '#audioEffect.custom'],
+          },
+          maxLength: 16,
+          description: 'Group-level audio effect chain',
+        },
+        videoPipeline: {
           type: 'array',
           items: {
             type: 'union',

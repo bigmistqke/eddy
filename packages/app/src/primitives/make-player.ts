@@ -1,6 +1,6 @@
 import { rpc, transfer, type RPC } from '@bigmistqke/rpc/messenger'
-import { makeAudioBus, type AudioBus } from '@eddy/audio'
-import type { Project } from '@eddy/lexicons'
+import { makeAudioBus, type AudioBus, type AudioBusConfig } from '@eddy/audio'
+import type { Group, Project } from '@eddy/lexicons'
 import { debug, getGlobalPerfMonitor, makeLoop } from '@eddy/utils'
 import { createEffect, createMemo, createSignal, on, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
@@ -75,6 +75,16 @@ export interface PlayerActions {
   setVolume: (trackId: string, value: number) => void
   /** Set track pan */
   setPan: (trackId: string, value: number) => void
+  /** Set master volume (root group's audio bus) */
+  setMasterVolume: (value: number) => void
+  /** Get master volume (root group's audio bus) */
+  getMasterVolume: () => number
+  /** Set master pan (root group's audio bus) */
+  setMasterPan: (value: number) => void
+  /** Route master output through MediaStream (for recording) */
+  useMasterMediaStreamOutput: () => void
+  /** Route master output directly to destination */
+  useMasterDirectOutput: () => void
   /** Clean up all resources */
   destroy: () => void
   /** Stop the render loop (for export) */
@@ -105,8 +115,10 @@ export interface Player extends PlayerState, PlayerActions {
   clock: Clock
   /** Current layout timeline (reactive) */
   timeline: Accessor<CompiledTimeline>
-  /** Get audio pipeline by trackId */
+  /** Get track audio pipeline by trackId */
   getAudioPipeline: (trackId: string) => AudioBus | undefined
+  /** Get group audio pipeline by groupId */
+  getGroupAudioPipeline: (groupId: string) => AudioBus | undefined
   /** Performance logging */
   logPerf: () => void
   resetPerf: () => void
@@ -128,6 +140,12 @@ export interface CreatePlayerOptions {
   height: number
   project: Accessor<Project>
   schedulerBuffer: SchedulerBuffer
+}
+
+/** Group entry for audio routing */
+interface GroupEntry {
+  groupId: string
+  audioPipeline: AudioBus
 }
 
 /** Track entry for audio routing */
@@ -229,11 +247,72 @@ export async function makePlayer(options: CreatePlayerOptions): Promise<Player> 
     maxSize: 8,
   })
 
+  // Group entries - keyed by groupId (audio routing)
+  const [groups, setGroups] = createStore<Record<string, GroupEntry>>({})
+
   // Track entries - keyed by trackId (audio routing only)
   const [tracks, setTracks] = createStore<Record<string, TrackEntry>>({})
 
   // Clip entries - keyed by clipId (playback workers)
   const [clips, setClips] = createStore<Record<string, ClipEntry>>({})
+
+  /** Build a map from member ID (track or group) to parent group */
+  function buildParentMap(): Map<string, Group> {
+    const parentMap = new Map<string, Group>()
+    for (const group of project().groups) {
+      for (const member of group.members) {
+        if ('id' in member && member.id) {
+          parentMap.set(member.id, group)
+        }
+      }
+    }
+    return parentMap
+  }
+
+  /** Get the root group from project */
+  function getRootGroup(): Group | undefined {
+    const proj = project()
+    if (proj.rootGroup) {
+      return proj.groups.find(g => g.id === proj.rootGroup)
+    }
+    return proj.groups[0]
+  }
+
+  /** Get or create a group entry (audio pipeline) */
+  function getOrCreateGroup(groupId: string): GroupEntry {
+    const group = groups[groupId]
+
+    if (group) {
+      return group
+    }
+
+    log('creating group entry', { groupId })
+
+    // Look up group's audio effects from project
+    const projectGroup = project().groups.find(g => g.id === groupId)
+    const effects = projectGroup?.audioPipeline ?? []
+
+    // Find parent group to route to (or master if root)
+    const parentMap = buildParentMap()
+    const parentGroup = parentMap.get(groupId)
+    const rootGroup = getRootGroup()
+
+    let destination: AudioNode | undefined
+    if (parentGroup && parentGroup.id !== groupId) {
+      // Route to parent group's audio bus
+      const parentEntry = getOrCreateGroup(parentGroup.id)
+      destination = parentEntry.audioPipeline.effectChain.input
+    }
+    // If no parent (root group), destination is undefined → routes to master
+
+    const newGroup: GroupEntry = {
+      groupId,
+      audioPipeline: makeAudioBus({ effects, destination }),
+    }
+    setGroups(groupId, newGroup)
+
+    return newGroup
+  }
 
   // Ahead scheduler for pre-buffering playbacks (used for looping)
   const aheadScheduler = makeAheadScheduler({
@@ -257,9 +336,21 @@ export async function makePlayer(options: CreatePlayerOptions): Promise<Player> 
     const projectTrack = project().tracks.find(t => t.id === trackId)
     const effects = projectTrack?.audioPipeline ?? []
 
+    // Find parent group to route to
+    const parentMap = buildParentMap()
+    const parentGroup = parentMap.get(trackId)
+
+    let destination: AudioNode | undefined
+    if (parentGroup) {
+      // Route to parent group's audio bus
+      const groupEntry = getOrCreateGroup(parentGroup.id)
+      destination = groupEntry.audioPipeline.effectChain.input
+    }
+    // If no parent group, destination is undefined → routes to master
+
     const newTrack: TrackEntry = {
       trackId,
-      audioPipeline: makeAudioBus(effects),
+      audioPipeline: makeAudioBus({ effects, destination }),
     }
     setTracks(trackId, newTrack)
 
@@ -356,6 +447,20 @@ export async function makePlayer(options: CreatePlayerOptions): Promise<Player> 
     track.audioPipeline.disconnect()
 
     setTracks(trackId, undefined!)
+  }
+
+  /** Remove a group entry */
+  function removeGroup(groupId: string): void {
+    const group = groups[groupId]
+
+    if (!group) return
+
+    log('removing group entry', { groupId })
+
+    // Disconnect audio pipeline
+    group.audioPipeline.disconnect()
+
+    setGroups(groupId, undefined!)
   }
 
   // Sync timeline with compositor when project changes
@@ -493,6 +598,11 @@ export async function makePlayer(options: CreatePlayerOptions): Promise<Player> 
     // Remove all tracks
     for (const trackId of Object.keys(tracks)) {
       removeTrack(trackId)
+    }
+
+    // Remove all groups
+    for (const groupId of Object.keys(groups)) {
+      removeGroup(groupId)
     }
 
     // Destroy worker pools
@@ -728,8 +838,45 @@ export async function makePlayer(options: CreatePlayerOptions): Promise<Player> 
       tracks[trackId]?.audioPipeline.setPan(value)
     },
 
+    setMasterVolume(value: number): void {
+      const rootGroup = getRootGroup()
+      if (rootGroup) {
+        getOrCreateGroup(rootGroup.id).audioPipeline.setVolume(value)
+      }
+    },
+
+    getMasterVolume(): number {
+      const rootGroup = getRootGroup()
+      if (rootGroup) {
+        return getOrCreateGroup(rootGroup.id).audioPipeline.getVolume()
+      }
+      return 1
+    },
+
+    setMasterPan(value: number): void {
+      const rootGroup = getRootGroup()
+      if (rootGroup) {
+        getOrCreateGroup(rootGroup.id).audioPipeline.setPan(value)
+      }
+    },
+
+    useMasterMediaStreamOutput(): void {
+      const rootGroup = getRootGroup()
+      if (rootGroup) {
+        getOrCreateGroup(rootGroup.id).audioPipeline.useMediaStreamOutput()
+      }
+    },
+
+    useMasterDirectOutput(): void {
+      const rootGroup = getRootGroup()
+      if (rootGroup) {
+        getOrCreateGroup(rootGroup.id).audioPipeline.useDirectOutput()
+      }
+    },
+
     // Utilities
     getAudioPipeline: (trackId: string) => tracks[trackId]?.audioPipeline,
+    getGroupAudioPipeline: (groupId: string) => groups[groupId]?.audioPipeline,
     logPerf: () => perf.logSummary(),
     resetPerf: () => {
       perf.reset()

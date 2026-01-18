@@ -179,14 +179,15 @@ function buildGroupMap(project: Project): Map<string, Group> {
 
 /**
  * Collect cascaded video effects for a clip.
- * Walks up the hierarchy: clip → track → group → parent groups... → master
+ * Walks up the hierarchy: clip → track → group → parent groups... → root group
+ * The root group's videoPipeline serves as the master effects.
  */
 function collectCascadedEffects(
   clip: Clip,
   track: Track,
   parentMap: Map<string, Group>,
-  groupMap: Map<string, Group>,
-  project: Project,
+  _groupMap: Map<string, Group>,
+  _project: Project,
 ): EffectRef[] {
   const refs: EffectRef[] = []
 
@@ -216,14 +217,14 @@ function collectCascadedEffects(
     }
   }
 
-  // 3. Walk up group hierarchy
+  // 3. Walk up group hierarchy (root group's videoPipeline serves as master)
   let currentId: string = track.id
   let parentGroup = parentMap.get(currentId)
 
   while (parentGroup) {
-    if (parentGroup.pipeline) {
-      for (let index = 0; index < parentGroup.pipeline.length; index++) {
-        const effect = parentGroup.pipeline[index]
+    if (parentGroup.videoPipeline) {
+      for (let index = 0; index < parentGroup.videoPipeline.length; index++) {
+        const effect = parentGroup.videoPipeline[index]
         refs.push({
           sourceType: 'group',
           sourceId: parentGroup.id,
@@ -234,19 +235,6 @@ function collectCascadedEffects(
     }
     currentId = parentGroup.id
     parentGroup = parentMap.get(currentId)
-  }
-
-  // 4. Master effects
-  if (project.masterVideoPipeline) {
-    for (let index = 0; index < project.masterVideoPipeline.length; index++) {
-      const effect = project.masterVideoPipeline[index]
-      refs.push({
-        sourceType: 'master',
-        sourceId: 'master',
-        effectIndex: index,
-        effectType: effect.type,
-      })
-    }
   }
 
   return refs
