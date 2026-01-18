@@ -1,14 +1,11 @@
 import { rpc, transfer, type RPC } from '@bigmistqke/rpc/messenger'
-import { makeAudioBus, type AudioBus, type AudioBusConfig } from '@eddy/audio'
+import { makeAudioBus, type AudioBus } from '@eddy/audio'
 import type { Group, Project } from '@eddy/lexicons'
 import { debug, getGlobalPerfMonitor, makeLoop } from '@eddy/utils'
 import { createEffect, createMemo, createSignal, on, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
-import {
-  compileLayoutTimeline,
-  injectPreviewClips,
-  type CompiledTimeline,
-} from '~/primitives/compile-layout-timeline'
+import { PREVIEW_CLIP_ID } from '~/constants'
+import { compileLayoutTimeline, type CompiledTimeline } from '~/primitives/compile-layout-timeline'
 import { makeAheadScheduler, SCHEDULE_AHEAD } from '~/primitives/make-ahead-scheduler'
 import {
   makePlayback,
@@ -26,10 +23,19 @@ import type { VideoPlaybackWorkerMethods } from '~/workers/playback.video.worker
 import VideoPlaybackWorker from '~/workers/playback.video.worker?worker'
 import { createClock, type Clock } from './create-clock'
 
-type CompositorRPC = RPC<CompositorWorkerMethods>
-
 const log = debug('make-player', false)
 const perf = getGlobalPerfMonitor()
+
+// Expose perf monitor globally for console debugging
+if (typeof window !== 'undefined') {
+  ;(window as any).eddy = { perf }
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                      Types                                     */
+/*                                                                                */
+/**********************************************************************************/
 
 export interface PlayerState {
   /** Whether currently playing */
@@ -93,7 +99,7 @@ export interface PlayerActions {
   startRenderLoop: () => void
 }
 
-export type Compositor = Omit<CompositorRPC, 'init' | 'setPreviewStream'> & {
+export type Compositor = Omit<RPC<CompositorWorkerMethods>, 'init' | 'setPreviewStream'> & {
   canvas: HTMLCanvasElement
   /** Takes MediaStream (converted to ReadableStream internally) */
   setPreviewStream(trackId: string, stream: MediaStream | null): void
@@ -129,11 +135,6 @@ export interface Player extends PlayerState, PlayerActions {
   }>
 }
 
-// Expose perf monitor globally for console debugging
-if (typeof window !== 'undefined') {
-  ;(window as any).eddy = { perf }
-}
-
 export interface CreatePlayerOptions {
   canvas: HTMLCanvasElement
   width: number
@@ -163,6 +164,54 @@ interface ClipEntry {
   duration: number
   state: 'idle' | 'loading' | 'ready' | 'playing' | 'paused'
 }
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                     Utils                                      */
+/*                                                                                */
+/**********************************************************************************/
+
+/**
+ * Inject a preview clip into a track, replacing its existing clips.
+ * Used as middleware before compilation when a track is in preview mode.
+ */
+function injectPreviewClip(project: Project, previewTrackId: string): Project {
+  return {
+    ...project,
+    tracks: project.tracks.map(track => {
+      if (track.id !== previewTrackId) return track
+      return {
+        ...track,
+        clips: [
+          {
+            id: PREVIEW_CLIP_ID,
+            offset: 0,
+            duration: Number.MAX_SAFE_INTEGER, // Effectively infinite
+          },
+        ],
+      }
+    }),
+  }
+}
+
+/**
+ * Inject preview clips for multiple tracks.
+ */
+function injectPreviewClips(project: Project, previewTrackIds: Set<string>): Project {
+  if (previewTrackIds.size === 0) return project
+
+  let result = project
+  for (const trackId of previewTrackIds) {
+    result = injectPreviewClip(result, trackId)
+  }
+  return result
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                  Make Player                                   */
+/*                                                                                */
+/**********************************************************************************/
 
 /**
  * Create a player that manages compositor, playback workers, and audio pipelines.

@@ -7,7 +7,6 @@
 
 import { assertedNotNullish, debug } from '@eddy/utils'
 import type { CompiledEffectChain } from './effect-manager'
-import type { EffectControls, EffectValue } from './effects'
 
 const log = debug('video:make-video-compositor', false)
 
@@ -25,14 +24,6 @@ export interface Viewport {
   height: number
 }
 
-/** Reference to an effect param for applying values */
-export interface EffectParamRef {
-  /** Index of the effect in the chain */
-  chainIndex: number
-  /** Parameter key (e.g., 'value', 'color', 'intensity') */
-  paramKey: string
-}
-
 /** A placement to render */
 export interface RenderPlacement {
   /** Unique ID for this placement (used for texture caching) */
@@ -43,10 +34,8 @@ export interface RenderPlacement {
   viewport: Viewport
   /** Compiled effect chain to use (undefined = use passthrough) */
   effectChain?: CompiledEffectChain
-  /** Current effect values to set before rendering (one per param) */
-  effectValues?: EffectValue[]
-  /** Param refs matching effectValues (one per value) */
-  effectParamRefs?: EffectParamRef[]
+  /** Called before rendering to set up effect uniforms */
+  onBeforeRender?: () => void
 }
 
 /** A placement to render by pre-uploaded texture ID */
@@ -57,10 +46,8 @@ export interface RenderByIdPlacement {
   viewport: Viewport
   /** Compiled effect chain to use (undefined = use passthrough) */
   effectChain?: CompiledEffectChain
-  /** Current effect values to set before rendering */
-  effectValues?: EffectValue[]
-  /** Param refs matching effectValues (one per value) */
-  effectParamRefs?: EffectParamRef[]
+  /** Called before rendering to set up effect uniforms */
+  onBeforeRender?: () => void
 }
 
 export interface VideoCompositor {
@@ -123,28 +110,6 @@ function viewportToWebGL(viewport: Viewport, canvasHeight: number): Viewport {
   }
 }
 
-/** Apply effect values to controls using param refs */
-function applyEffectValues(
-  controls: EffectControls[],
-  values: EffectValue[] | undefined,
-  paramRefs: EffectParamRef[] | undefined,
-): void {
-  if (!values || !paramRefs || controls.length === 0) return
-
-  for (let index = 0; index < values.length; index++) {
-    const value = values[index]
-    const ref = paramRefs[index]
-    if (value === undefined || !ref) continue
-
-    const control = controls[ref.chainIndex]
-    if (!control) continue
-
-    // Call the param method directly (e.g., control.value(...), control.color(...))
-    if (typeof control[ref.paramKey] === 'function') {
-      control[ref.paramKey](value)
-    }
-  }
-}
 
 /**********************************************************************************/
 /*                                                                                */
@@ -224,8 +189,8 @@ export function makeVideoCompositor(canvas: OffscreenCanvas): VideoCompositor {
     const chain = placement.effectChain ?? passthrough
     useChain(chain)
 
-    // Set effect values
-    applyEffectValues(chain.controls, placement.effectValues, placement.effectParamRefs)
+    // Let caller set up effect uniforms
+    placement.onBeforeRender?.()
 
     // Convert viewport to WebGL coordinates (y flipped)
     const vp = viewportToWebGL(placement.viewport, canvas.height)
@@ -288,8 +253,8 @@ export function makeVideoCompositor(canvas: OffscreenCanvas): VideoCompositor {
         const chain = placement.effectChain ?? passthrough
         useChain(chain)
 
-        // Set effect values
-        applyEffectValues(chain.controls, placement.effectValues, placement.effectParamRefs)
+        // Let caller set up effect uniforms
+        placement.onBeforeRender?.()
 
         const vp = viewportToWebGL(placement.viewport, canvas.height)
         gl.viewport(vp.x, vp.y, vp.width, vp.height)

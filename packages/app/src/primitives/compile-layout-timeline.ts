@@ -10,7 +10,6 @@
  * - Timeline: sorted segments for binary search by time
  */
 
-import type { EffectParamRef } from '@eddy/video'
 import type { Clip, Group, Project, Track, Value } from '@eddy/lexicons'
 
 /**********************************************************************************/
@@ -21,15 +20,17 @@ import type { Clip, Group, Project, Track, Value } from '@eddy/lexicons'
 
 /** Reference to an effect param value for runtime lookup */
 export interface EffectRef {
-  /** Where this effect lives: clip, track, group, or master */
-  sourceType: 'clip' | 'track' | 'group' | 'master'
-  /** ID of the source (clipId, trackId, groupId, or 'master') */
-  sourceId: string
-  /** Index within that source's videoPipeline array */
-  effectIndex: number
+  /** Pre-computed lookup key (avoids string concatenation in hot path) */
+  key: string
   /** Effect type for validation/debugging */
   effectType: string
-  /** Parameter key within the effect's params (e.g., 'value', 'color', 'intensity') */
+}
+
+/** Reference mapping a param to its effect chain index */
+export interface EffectParamRef {
+  /** Index of the effect in the compiled chain */
+  chainIndex: number
+  /** Parameter key (e.g., 'value', 'color', 'intensity') */
   paramKey: string
 }
 
@@ -90,9 +91,6 @@ export interface CompiledTimeline {
   /** Sorted segments (by startTime) */
   segments: LayoutSegment[]
 }
-
-/** Clip ID used for preview placements */
-export const PREVIEW_CLIP_ID = 'preview'
 
 /**
  * An active placement with computed local time.
@@ -197,12 +195,17 @@ function computeEffectParamRefs(refs: EffectRef[]): EffectParamRef[] {
   let lastEffectKey = ''
 
   for (const ref of refs) {
-    const effectKey = `${ref.sourceType}:${ref.sourceId}:${ref.effectIndex}`
+    // Key format: "sourceType:sourceId:effectIndex:paramKey"
+    // Extract effectKey (everything before last :) and paramKey (after last :)
+    const lastColon = ref.key.lastIndexOf(':')
+    const effectKey = ref.key.slice(0, lastColon)
+    const paramKey = ref.key.slice(lastColon + 1)
+
     if (effectKey !== lastEffectKey) {
       chainIndex++
       lastEffectKey = effectKey
     }
-    paramRefs.push({ chainIndex, paramKey: ref.paramKey })
+    paramRefs.push({ chainIndex, paramKey })
   }
 
   return paramRefs
@@ -229,11 +232,8 @@ function collectCascadedEffects(
       const effect = clip.videoPipeline[index]
       for (const paramKey of getEffectParamKeys(effect)) {
         refs.push({
-          sourceType: 'clip',
-          sourceId: clip.id,
-          effectIndex: index,
+          key: `clip:${clip.id}:${index}:${paramKey}`,
           effectType: effect.type,
-          paramKey,
         })
       }
     }
@@ -245,11 +245,8 @@ function collectCascadedEffects(
       const effect = track.videoPipeline[index]
       for (const paramKey of getEffectParamKeys(effect)) {
         refs.push({
-          sourceType: 'track',
-          sourceId: track.id,
-          effectIndex: index,
+          key: `track:${track.id}:${index}:${paramKey}`,
           effectType: effect.type,
-          paramKey,
         })
       }
     }
@@ -265,11 +262,8 @@ function collectCascadedEffects(
         const effect = parentGroup.videoPipeline[index]
         for (const paramKey of getEffectParamKeys(effect)) {
           refs.push({
-            sourceType: 'group',
-            sourceId: parentGroup.id,
-            effectIndex: index,
+            key: `group:${parentGroup.id}:${index}:${paramKey}`,
             effectType: effect.type,
-            paramKey,
           })
         }
       }
@@ -388,7 +382,9 @@ function collectClipInfos(project: Project, canvasSize: CanvasSize): ClipInfo[] 
       const effectKeys: string[] = []
       let lastEffectKey = ''
       for (const ref of effectRefs) {
-        const effectKey = `${ref.sourceType}:${ref.sourceId}:${ref.effectIndex}`
+        // Key format: "sourceType:sourceId:effectIndex:paramKey" - extract effect key (without paramKey)
+        const lastColon = ref.key.lastIndexOf(':')
+        const effectKey = ref.key.slice(0, lastColon)
         if (effectKey !== lastEffectKey) {
           effectKeys.push(ref.effectType)
           lastEffectKey = effectKey
@@ -483,63 +479,6 @@ function buildSegments(clipInfos: ClipInfo[]): LayoutSegment[] {
 }
 
 /**
- * Inject a preview clip into a track, replacing its existing clips.
- * Used as middleware before compilation when a track is in preview mode.
- */
-export function injectPreviewClip(project: Project, previewTrackId: string): Project {
-  return {
-    ...project,
-    tracks: project.tracks.map(track => {
-      if (track.id !== previewTrackId) return track
-      return {
-        ...track,
-        clips: [
-          {
-            id: PREVIEW_CLIP_ID,
-            offset: 0,
-            duration: Number.MAX_SAFE_INTEGER, // Effectively infinite
-          },
-        ],
-      }
-    }),
-  }
-}
-
-/**
- * Inject preview clips for multiple tracks.
- */
-export function injectPreviewClips(project: Project, previewTrackIds: Set<string>): Project {
-  if (previewTrackIds.size === 0) return project
-
-  let result = project
-  for (const trackId of previewTrackIds) {
-    result = injectPreviewClip(result, trackId)
-  }
-  return result
-}
-
-/**
- * Compile a Project into a LayoutTimeline
- */
-export function compileLayoutTimeline(project: Project, canvasSize: CanvasSize): CompiledTimeline {
-  // Collect all clip info
-  const clipInfos = collectClipInfos(project, canvasSize)
-
-  // Build segments from transitions
-  const segments = buildSegments(clipInfos)
-
-  // Calculate duration
-  let duration = 0
-  for (const clip of clipInfos) {
-    if (clip.timelineEnd > duration) {
-      duration = clip.timelineEnd
-    }
-  }
-
-  return { duration, segments }
-}
-
-/**
  * Binary search to find segment containing time.
  * Returns the segment or null if time is outside all segments.
  */
@@ -584,66 +523,22 @@ export function getActivePlacements(timeline: CompiledTimeline, time: number): A
 }
 
 /**
- * Get all placements that overlap with a time range (for pre-buffering).
+ * Compile a Project into a LayoutTimeline
  */
-export function getPlacementsInRange(
-  timeline: CompiledTimeline,
-  start: number,
-  end: number,
-): Placement[] {
-  const placements: Placement[] = []
-  const seen = new Set<string>() // Dedupe by clipId
+export function compileLayoutTimeline(project: Project, canvasSize: CanvasSize): CompiledTimeline {
+  // Collect all clip info
+  const clipInfos = collectClipInfos(project, canvasSize)
 
-  for (const segment of timeline.segments) {
-    // Check if segment overlaps with range
-    if (segment.endTime > start && segment.startTime < end) {
-      for (const placement of segment.placements) {
-        if (!seen.has(placement.clipId)) {
-          seen.add(placement.clipId)
-          placements.push(placement)
-        }
-      }
+  // Build segments from transitions
+  const segments = buildSegments(clipInfos)
+
+  // Calculate duration
+  let duration = 0
+  for (const clip of clipInfos) {
+    if (clip.timelineEnd > duration) {
+      duration = clip.timelineEnd
     }
   }
 
-  return placements
-}
-
-/**
- * Get the next transition point after a given time.
- */
-export function getNextTransition(timeline: CompiledTimeline, time: number): TransitionInfo | null {
-  const { segments } = timeline
-
-  // Find all segment boundaries after current time
-  const transitions = new Map<number, { starting: Placement[]; ending: Placement[] }>()
-
-  for (const segment of segments) {
-    // Segment starts after current time
-    if (segment.startTime > time) {
-      const t = transitions.get(segment.startTime) ?? { starting: [], ending: [] }
-      t.starting.push(...segment.placements)
-      transitions.set(segment.startTime, t)
-    }
-
-    // Segment ends after current time
-    if (segment.endTime > time) {
-      const t = transitions.get(segment.endTime) ?? { starting: [], ending: [] }
-      t.ending.push(...segment.placements)
-      transitions.set(segment.endTime, t)
-    }
-  }
-
-  if (transitions.size === 0) return null
-
-  // Find the earliest transition
-  const times = Array.from(transitions.keys()).sort((a, b) => a - b)
-  const nextTime = times[0]
-  const info = transitions.get(nextTime)!
-
-  return {
-    time: nextTime,
-    starting: info.starting,
-    ending: info.ending,
-  }
+  return { duration, segments }
 }

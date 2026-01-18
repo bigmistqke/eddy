@@ -14,10 +14,11 @@ import {
   type EffectValue,
   type VideoCompositor,
 } from '@eddy/video'
+import { PREVIEW_CLIP_ID } from '~/constants'
 import {
   getActivePlacements,
-  PREVIEW_CLIP_ID,
   type CompiledTimeline,
+  type EffectParamRef,
   type EffectRef,
   type Placement,
 } from '~/primitives/compile-layout-timeline'
@@ -139,17 +140,27 @@ const lastRenderedFrame = new Map<string, LastFrameInfo>()
 // Effect chains cached by effectSignature (hash of effect types)
 const effectChainsBySignature = new Map<string, CompiledEffectChain>()
 
-// Effect values keyed by "sourceType:sourceId:effectIndex:paramKey"
+// Effect values keyed by pre-computed key from EffectRef
 const effectValues = new Map<string, EffectValue>()
 
-/** Convert EffectRef to lookup key */
-function effectRefToKey(ref: EffectRef): string {
-  return `${ref.sourceType}:${ref.sourceId}:${ref.effectIndex}:${ref.paramKey}`
-}
+/** Create onBeforeRender callback that applies effect values to controls */
+function makeOnBeforeRender(
+  chain: CompiledEffectChain,
+  effectRefs: EffectRef[],
+  effectParamRefs: EffectParamRef[],
+): () => void {
+  return () => {
+    for (let index = 0; index < effectRefs.length; index++) {
+      const value = effectValues.get(effectRefs[index].key)
+      if (value === undefined) continue
 
-/** Resolve effect values from effectRefs */
-function resolveEffectValues(refs: EffectRef[]): EffectValue[] {
-  return refs.map(ref => assertedNotNullish(effectValues.get(effectRefToKey(ref))))
+      const paramRef = effectParamRefs[index]
+      const control = chain.controls[paramRef.chainIndex]
+      if (!control || typeof control[paramRef.paramKey] !== 'function') continue
+
+      control[paramRef.paramKey](value)
+    }
+  }
 }
 
 /**
@@ -379,16 +390,14 @@ expose<CompositorWorkerMethods>({
       // Get or compile effect chain from placement's signature
       const effectChain = getOrCompileEffectChain(mainEffectManager, placement)
 
-      // Resolve current effect values (uses pre-computed effectParamRefs from placement)
-      const resolvedEffectValues = effectChain ? resolveEffectValues(placement.effectRefs) : undefined
-
       mainCompositor.renderPlacement({
         id: textureKey,
         frame,
         viewport: placement.viewport,
         effectChain,
-        effectValues: resolvedEffectValues,
-        effectParamRefs: effectChain ? placement.effectParamRefs : undefined,
+        onBeforeRender: effectChain
+          ? makeOnBeforeRender(effectChain, placement.effectRefs, placement.effectParamRefs)
+          : undefined,
       })
     }
 
@@ -409,6 +418,9 @@ expose<CompositorWorkerMethods>({
           id: placement.clipId,
           viewport: placement.viewport,
           effectChain: effectChain ?? undefined,
+          onBeforeRender: effectChain
+            ? makeOnBeforeRender(effectChain, placement.effectRefs, placement.effectParamRefs)
+            : undefined,
         }
       }),
     )
@@ -439,16 +451,14 @@ expose<CompositorWorkerMethods>({
       // Get or compile effect chain from placement's signature
       const effectChain = getOrCompileEffectChain(mainEffectManager, placement)
 
-      // Resolve current effect values (uses pre-computed effectParamRefs from placement)
-      const values = effectChain ? resolveEffectValues(placement.effectRefs) : undefined
-
       mainCompositor.renderPlacement({
         id: textureKey,
         frame,
         viewport: placement.viewport,
         effectChain: effectChain ?? undefined,
-        effectValues: values,
-        effectParamRefs: effectChain ? placement.effectParamRefs : undefined,
+        onBeforeRender: effectChain
+          ? makeOnBeforeRender(effectChain, placement.effectRefs, placement.effectParamRefs)
+          : undefined,
       })
     }
 
@@ -479,16 +489,14 @@ expose<CompositorWorkerMethods>({
       // Get or compile effect chain from placement's signature
       const effectChain = getOrCompileEffectChain(mainEffectManager, placement)
 
-      // Resolve current effect values (uses pre-computed effectParamRefs from placement)
-      const values = effectChain ? resolveEffectValues(placement.effectRefs) : undefined
-
       mainCompositor.renderPlacement({
         id: placement.clipId,
         frame,
         viewport: placement.viewport,
         effectChain: effectChain ?? undefined,
-        effectValues: values,
-        effectParamRefs: effectChain ? placement.effectParamRefs : undefined,
+        onBeforeRender: effectChain
+          ? makeOnBeforeRender(effectChain, placement.effectRefs, placement.effectParamRefs)
+          : undefined,
       })
     }
 

@@ -1,11 +1,9 @@
-import { describe, expect, it } from 'vitest'
 import type { Project } from '@eddy/lexicons'
+import { describe, expect, it } from 'vitest'
 import {
   compileLayoutTimeline,
-  getActivePlacements,
-  getNextTransition,
-  getPlacementsInRange,
   findSegmentAtTime,
+  getActivePlacements,
 } from '../compile-layout-timeline'
 
 /** Create a minimal valid project for testing */
@@ -282,68 +280,6 @@ describe('getActivePlacements', () => {
     const active = getActivePlacements(timeline, 20)
 
     expect(active).toHaveLength(0)
-  })
-})
-
-describe('getPlacementsInRange', () => {
-  it('returns placements overlapping with range', () => {
-    const project = createTestProject()
-    const timeline = compileLayoutTimeline(project, { width: 640, height: 360 })
-
-    const placements = getPlacementsInRange(timeline, 0, 3)
-
-    // clip-0 and clip-1 overlap with 0-3
-    expect(placements).toHaveLength(2)
-  })
-
-  it('includes placements that start in range', () => {
-    const project = createTestProject()
-    const timeline = compileLayoutTimeline(project, { width: 640, height: 360 })
-
-    const placements = getPlacementsInRange(timeline, 4, 6)
-
-    // clip-2 starts at 5, should be included
-    expect(placements.some(p => p.clipId === 'clip-2')).toBe(true)
-  })
-
-  it('includes all placements for full duration', () => {
-    const project = createTestProject()
-    const timeline = compileLayoutTimeline(project, { width: 640, height: 360 })
-
-    const placements = getPlacementsInRange(timeline, 0, 20)
-
-    expect(placements).toHaveLength(3)
-  })
-
-  it('deduplicates placements across segments', () => {
-    const project = createTestProject()
-    const timeline = compileLayoutTimeline(project, { width: 640, height: 360 })
-
-    // clip-1 appears in all 3 segments, should only appear once
-    const placements = getPlacementsInRange(timeline, 0, 15)
-    const clip1Count = placements.filter(p => p.clipId === 'clip-1').length
-    expect(clip1Count).toBe(1)
-  })
-})
-
-describe('getNextTransition', () => {
-  it('returns next segment boundary', () => {
-    const project = createTestProject()
-    const timeline = compileLayoutTimeline(project, { width: 640, height: 360 })
-
-    const transition = getNextTransition(timeline, 0)
-
-    // Next boundary after 0 is at 5 (when clip-2 starts)
-    expect(transition?.time).toBe(5)
-  })
-
-  it('returns null when no more transitions', () => {
-    const project = createTestProject()
-    const timeline = compileLayoutTimeline(project, { width: 640, height: 360 })
-
-    const transition = getNextTransition(timeline, 20)
-
-    expect(transition).toBeNull()
   })
 })
 
