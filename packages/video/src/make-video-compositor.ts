@@ -1,9 +1,20 @@
-import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
+/**
+ * Make Video Compositor
+ *
+ * WebGL-based video frame compositing. Renders VideoFrames to an OffscreenCanvas
+ * with viewport positioning. Effect chains are managed externally via EffectManager.
+ */
+
 import { assertedNotNullish, debug } from '@eddy/utils'
-import type { EffectControls, EffectInstance } from './effects'
-import { composeEffectTypes } from './effects/compose-effects'
+import type { CompiledEffectChain, EffectControls } from './effects'
 
 const log = debug('video:make-video-compositor', false)
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                     Types                                      */
+/*                                                                                */
+/**********************************************************************************/
 
 /** Viewport in canvas coordinates */
 export interface Viewport {
@@ -21,63 +32,33 @@ export interface RenderPlacement {
   frame: VideoFrame
   /** Where to render on canvas */
   viewport: Viewport
-  /** Effect chain to apply (undefined = passthrough, no effects) */
-  effectChainId?: string
+  /** Compiled effect chain to use (undefined = use passthrough) */
+  effectChain?: CompiledEffectChain
   /** Current effect values to set before rendering (one per effect in chain) */
   effectValues?: number[]
 }
 
-// View type with our specific uniforms
-interface CompositorView {
-  uniforms: {
-    u_video: { set(value: number): void }
-  }
-  attributes: {
-    a_quad: { bind(): void }
-  }
-}
-
-/**
- * A named effect chain - a sequence of effect instances that compiles to one shader.
- * Multiple clips can reference the same chain by id.
- */
-export interface VideoEffectChain {
-  /** Unique identifier for this chain */
+/** A placement to render by pre-uploaded texture ID */
+export interface RenderByIdPlacement {
+  /** Texture ID (must have been uploaded via uploadFrame) */
   id: string
-  /** Effect instances to apply in sequence */
-  effects: EffectInstance[]
+  /** Where to render on canvas */
+  viewport: Viewport
+  /** Compiled effect chain to use (undefined = use passthrough) */
+  effectChain?: CompiledEffectChain
+  /** Current effect values to set before rendering */
+  effectValues?: number[]
 }
-
-/**
- * A compiled effect chain ready for rendering.
- * Created by composeEffectTypes() and cached by the compositor.
- */
-export interface CompiledEffectChain {
-  /** The compiled WebGL program */
-  program: WebGLProgram
-  /** View for base uniforms (u_video texture) */
-  view: {
-    uniforms: {
-      u_video: { set(value: number): void }
-    }
-    attributes: {
-      a_quad: { bind(): void }
-    }
-  }
-  /** Controls for each effect instance in the chain, in order */
-  controls: EffectControls[]
-}
-
-/**
- * CompositorEngine handles WebGL-based video frame compositing.
- * Renders VideoFrames to an OffscreenCanvas with viewport positioning.
- */
 
 export interface VideoCompositor {
   /** Canvas width */
   readonly width: number
   /** Canvas height */
   readonly height: number
+  /** The WebGL context */
+  readonly gl: WebGL2RenderingContext | WebGLRenderingContext
+  /** The passthrough chain (no effects) - for rendering without effects */
+  readonly passthrough: CompiledEffectChain
   /** Capture the current canvas as a VideoFrame */
   captureFrame(timestamp: number): VideoFrame
   /** Clear the canvas with a background color */
@@ -91,71 +72,30 @@ export interface VideoCompositor {
    * (useful for capture canvas pre-staging)
    */
   uploadFrame(id: string, frame: VideoFrame): void
-  /** Render multiple placements (clears first)*/
+  /** Render multiple placements (clears first) */
   render(placements: RenderPlacement[]): void
-  /**
-   * Render pre-uploaded textures by ID
-   */
-  renderById(
-    placements: Array<{
-      id: string
-      viewport: Viewport
-      effectChainId?: string
-    }>,
-  ): void
+  /** Render pre-uploaded textures by ID */
+  renderById(placements: RenderByIdPlacement[]): void
   /** Render a single placement */
   renderPlacement(placement: RenderPlacement): void
-
-  /**********************************************************************************/
-  /*                                 Effect Chains                                  */
-  /**********************************************************************************/
-
-  /**
-   * Register an effect chain. Compiles the shader and caches it.
-   * @returns Controls for the effects in the chain
-   */
-  registerEffectChain(chain: VideoEffectChain): CompiledEffectChain
-  /** Check if an effect chain is registered */
-  hasEffectChain(id: string): boolean
-  /** Get a registered effect chain (for updating controls) */
-  getEffectChain(id: string): CompiledEffectChain | undefined
-  /** Remove an effect chain */
-  deleteEffectChain(id: string): void
-  /** Activate an effect chain (bind its program) - must be called before updating controls */
-  activateEffectChain(id: string): void
 }
 
 /**********************************************************************************/
 /*                                                                                */
-/*                                      Utils                                     */
+/*                                     Utils                                      */
 /*                                                                                */
 /**********************************************************************************/
 
-// Simple shader - samples a single texture per quad
-const fragmentShader = glsl`
-  precision mediump float;
-
-  ${uniform.sampler2D('u_video')}
-
-  varying vec2 v_uv;
-
-  void main() {
-    vec2 uv = v_uv * 0.5 + 0.5;
-    uv.y = 1.0 - uv.y; // Flip Y for video
-    gl_FragColor = texture2D(u_video, uv);
-  }
-`
-
 /** Create a video texture with standard settings */
-function makeVideoTexture(glCtx: WebGL2RenderingContext | WebGLRenderingContext): WebGLTexture {
-  const texture = glCtx.createTexture()
+function makeVideoTexture(gl: WebGL2RenderingContext | WebGLRenderingContext): WebGLTexture {
+  const texture = gl.createTexture()
   if (!texture) throw new Error('Failed to create texture')
 
-  glCtx.bindTexture(glCtx.TEXTURE_2D, texture)
-  glCtx.texParameteri(glCtx.TEXTURE_2D, glCtx.TEXTURE_WRAP_S, glCtx.CLAMP_TO_EDGE)
-  glCtx.texParameteri(glCtx.TEXTURE_2D, glCtx.TEXTURE_WRAP_T, glCtx.CLAMP_TO_EDGE)
-  glCtx.texParameteri(glCtx.TEXTURE_2D, glCtx.TEXTURE_MIN_FILTER, glCtx.LINEAR)
-  glCtx.texParameteri(glCtx.TEXTURE_2D, glCtx.TEXTURE_MAG_FILTER, glCtx.LINEAR)
+  gl.bindTexture(gl.TEXTURE_2D, texture)
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
 
   return texture
 }
@@ -170,11 +110,49 @@ function viewportToWebGL(viewport: Viewport, canvasHeight: number): Viewport {
   }
 }
 
-/** Reserved ID for the passthrough (no effects) chain */
-const PASSTHROUGH_CHAIN_ID = '__passthrough__'
+/** Apply effect values to controls */
+function applyEffectValues(controls: EffectControls[], values: number[] | undefined): void {
+  if (!values || controls.length === 0) return
+
+  for (let index = 0; index < controls.length; index++) {
+    const control = controls[index]
+    const value = values[index]
+
+    if (control && value !== undefined) {
+      const setterKey = Object.keys(control).find(key => key.startsWith('set'))
+      if (setterKey && typeof control[setterKey] === 'function') {
+        control[setterKey](value)
+      }
+    }
+  }
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                              Make Video Compositor                             */
+/*                                                                                */
+/**********************************************************************************/
+
+// Inline passthrough shader compilation using view.gl
+import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
+
+const passthroughFragment = glsl`
+  precision mediump float;
+
+  ${uniform.sampler2D('u_video')}
+
+  varying vec2 v_uv;
+
+  void main() {
+    vec2 uv = v_uv * 0.5 + 0.5;
+    uv.y = 1.0 - uv.y;
+    gl_FragColor = texture2D(u_video, uv);
+  }
+`
 
 /**
- * Create a compositor engine for an OffscreenCanvas
+ * Create a compositor for an OffscreenCanvas.
+ * Handles texture management and rendering. Effect compilation is external.
  */
 export function makeVideoCompositor(canvas: OffscreenCanvas): VideoCompositor {
   const gl = assertedNotNullish(
@@ -183,34 +161,25 @@ export function makeVideoCompositor(canvas: OffscreenCanvas): VideoCompositor {
   )
 
   const textures = new Map<string, WebGLTexture>()
-  const effectChains = new Map<string, CompiledEffectChain>()
 
-  // Compile passthrough shader (no effects)
-  const passthroughCompiled = compile.toQuad(gl, fragmentShader)
-  const passthroughChain: CompiledEffectChain = {
+  // Compile passthrough shader
+  const passthroughCompiled = compile.toQuad(gl, passthroughFragment)
+  const passthrough: CompiledEffectChain = {
     program: passthroughCompiled.program,
     view: passthroughCompiled.view as CompiledEffectChain['view'],
     controls: [],
   }
-  effectChains.set(PASSTHROUGH_CHAIN_ID, passthroughChain)
 
-  // Default to passthrough
-  let currentProgram = passthroughChain.program
-  gl.useProgram(currentProgram)
+  let currentProgram: WebGLProgram | null = null
 
-  log('CompositorEngine initialized', { width: canvas.width, height: canvas.height })
-
-  /** Get chain by id, falling back to passthrough */
-  function getChain(effectChainId?: string): CompiledEffectChain {
-    if (!effectChainId) return passthroughChain
-    return effectChains.get(effectChainId) ?? passthroughChain
-  }
+  log('VideoCompositor initialized', { width: canvas.width, height: canvas.height })
 
   /** Switch to a different shader program if needed */
   function useChain(chain: CompiledEffectChain): void {
-    // Always bind program - composeEffects may have called gl.useProgram during chain registration
-    currentProgram = chain.program
-    gl.useProgram(currentProgram)
+    if (currentProgram !== chain.program) {
+      currentProgram = chain.program
+      gl.useProgram(currentProgram)
+    }
   }
 
   function clear(r = 0.1, g = 0.1, b = 0.1, a = 1.0): void {
@@ -232,24 +201,12 @@ export function makeVideoCompositor(canvas: OffscreenCanvas): VideoCompositor {
     gl.bindTexture(gl.TEXTURE_2D, texture)
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, placement.frame)
 
-    // Get and use the effect chain
-    const chain = getChain(placement.effectChainId)
+    // Use the effect chain (or passthrough)
+    const chain = placement.effectChain ?? passthrough
     useChain(chain)
 
-    // Set effect values if provided (must happen after useChain binds the program)
-    if (placement.effectValues && chain.controls.length > 0) {
-      for (let i = 0; i < chain.controls.length; i++) {
-        const controls = chain.controls[i]
-        const value = placement.effectValues[i]
-
-        if (controls && value !== undefined) {
-          const setterKey = Object.keys(controls).find(key => key.startsWith('set'))
-          if (setterKey && typeof controls[setterKey] === 'function') {
-            controls[setterKey](value)
-          }
-        }
-      }
-    }
+    // Set effect values
+    applyEffectValues(chain.controls, placement.effectValues)
 
     // Convert viewport to WebGL coordinates (y flipped)
     const vp = viewportToWebGL(placement.viewport, canvas.height)
@@ -262,9 +219,6 @@ export function makeVideoCompositor(canvas: OffscreenCanvas): VideoCompositor {
   }
 
   return {
-    clear,
-    renderPlacement,
-
     get width(): number {
       return canvas.width
     },
@@ -272,6 +226,15 @@ export function makeVideoCompositor(canvas: OffscreenCanvas): VideoCompositor {
     get height(): number {
       return canvas.height
     },
+
+    get gl() {
+      return gl
+    },
+
+    passthrough,
+
+    clear,
+    renderPlacement,
 
     render(placements: RenderPlacement[]): void {
       clear()
@@ -292,9 +255,7 @@ export function makeVideoCompositor(canvas: OffscreenCanvas): VideoCompositor {
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, frame)
     },
 
-    renderById(
-      placements: Array<{ id: string; viewport: Viewport; effectChainId?: string }>,
-    ): void {
+    renderById(placements: RenderByIdPlacement[]): void {
       clear()
 
       for (const placement of placements) {
@@ -304,9 +265,12 @@ export function makeVideoCompositor(canvas: OffscreenCanvas): VideoCompositor {
         gl.activeTexture(gl.TEXTURE0)
         gl.bindTexture(gl.TEXTURE_2D, texture)
 
-        // Get and use the effect chain
-        const chain = getChain(placement.effectChainId)
+        // Use the effect chain (or passthrough)
+        const chain = placement.effectChain ?? passthrough
         useChain(chain)
+
+        // Set effect values
+        applyEffectValues(chain.controls, placement.effectValues)
 
         const vp = viewportToWebGL(placement.viewport, canvas.height)
         gl.viewport(vp.x, vp.y, vp.width, vp.height)
@@ -332,63 +296,6 @@ export function makeVideoCompositor(canvas: OffscreenCanvas): VideoCompositor {
       }
     },
 
-    /**********************************************************************************/
-    /*                                 Effect Chains                                  */
-    /**********************************************************************************/
-
-    registerEffectChain(chain: VideoEffectChain): CompiledEffectChain {
-      // Check if already registered
-      const existing = effectChains.get(chain.id)
-      if (existing) return existing
-
-      // Compile the effect chain
-      const result = composeEffectTypes(gl, chain.effects)
-      const compiled: CompiledEffectChain = {
-        program: result.program,
-        view: result.view,
-        controls: result.controls,
-      }
-      effectChains.set(chain.id, compiled)
-
-      // Debug: Check if programs are shared across chains
-      const allPrograms = [...effectChains.values()].map(c => c.program)
-      const uniquePrograms = new Set(allPrograms).size
-      log('Registered effect chain', {
-        chainId: chain.id,
-        effectCount: chain.effects.length,
-        totalChains: effectChains.size,
-        uniquePrograms,
-        programsShared: uniquePrograms < effectChains.size,
-        compiled,
-      })
-
-      return compiled
-    },
-
-    hasEffectChain(id: string): boolean {
-      return effectChains.has(id)
-    },
-
-    getEffectChain(id: string): CompiledEffectChain | undefined {
-      return effectChains.get(id)
-    },
-
-    deleteEffectChain(id: string): void {
-      if (id === PASSTHROUGH_CHAIN_ID) return // Don't delete passthrough
-      const chain = effectChains.get(id)
-      if (chain) {
-        gl.deleteProgram(chain.program)
-        effectChains.delete(id)
-      }
-    },
-
-    activateEffectChain(id: string): void {
-      const chain = effectChains.get(id)
-      if (chain) {
-        useChain(chain)
-      }
-    },
-
     destroy(): void {
       log('destroy')
       // Clean up textures
@@ -396,13 +303,6 @@ export function makeVideoCompositor(canvas: OffscreenCanvas): VideoCompositor {
         gl.deleteTexture(texture)
       }
       textures.clear()
-      // Clean up effect chain programs
-      for (const [id, chain] of effectChains) {
-        if (id !== PASSTHROUGH_CHAIN_ID) {
-          gl.deleteProgram(chain.program)
-        }
-      }
-      effectChains.clear()
     },
   }
 }

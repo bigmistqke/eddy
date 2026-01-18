@@ -1,10 +1,12 @@
 import { expose, type Transferred } from '@bigmistqke/rpc/messenger'
 import { debug } from '@eddy/utils'
 import {
+  makeEffectManager,
   makeVideoCompositor,
   registerBuiltInVideoEffects,
   type CompiledEffectChain,
   type EffectInstance,
+  type EffectManager,
   type VideoCompositor,
 } from '@eddy/video'
 import {
@@ -94,6 +96,10 @@ export interface CompositorWorkerMethods {
 let mainEngine: VideoCompositor | null = null
 let captureEngine: VideoCompositor | null = null
 
+// Effect managers (one per engine, sharing GL context)
+let mainEffects: EffectManager | null = null
+let captureEffects: EffectManager | null = null
+
 // Current compiled timeline
 let compiledTimeline: CompiledTimeline | null = null
 
@@ -136,7 +142,7 @@ function resolveEffectValues(refs: EffectRef[]): number[] {
  * Compiles lazily on first encounter.
  */
 function getOrCompileEffectChain(
-  engine: VideoCompositor,
+  effects: EffectManager,
   signature: string,
   refs: EffectRef[],
 ): CompiledEffectChain | null {
@@ -147,17 +153,17 @@ function getOrCompileEffectChain(
   if (cached) return cached
 
   // Build effect instances from refs
-  const effects: EffectInstance[] = refs.map(ref => ({
+  const instances: EffectInstance[] = refs.map(ref => ({
     type: ref.effectType,
   }))
 
-  if (effects.length === 0) return null
+  if (instances.length === 0) return null
 
-  // Register with compositor (uses signature as ID for caching)
-  const compiled = engine.registerEffectChain({ id: signature, effects })
+  // Register with effect manager (uses signature as ID for caching)
+  const compiled = effects.register({ id: signature, effects: instances })
   effectChainsBySignature.set(signature, compiled)
 
-  log('Compiled effect chain', { signature, effectCount: effects.length })
+  log('Compiled effect chain', { signature, effectCount: instances.length })
 
   return compiled
 }
@@ -256,10 +262,12 @@ expose<CompositorWorkerMethods>({
 
     // Main canvas (visible)
     mainEngine = makeVideoCompositor(offscreenCanvas)
+    mainEffects = makeEffectManager(mainEngine.gl)
 
     // Capture canvas (for pre-rendering, same size)
     const captureCanvas = new OffscreenCanvas(width, height)
     captureEngine = makeVideoCompositor(captureCanvas)
+    captureEffects = makeEffectManager(captureEngine.gl)
   },
 
   setTimeline(newTimeline) {
@@ -337,7 +345,7 @@ expose<CompositorWorkerMethods>({
   },
 
   render(time): RenderStats {
-    if (!mainEngine || !compiledTimeline) return renderStats
+    if (!mainEngine || !mainEffects || !compiledTimeline) return renderStats
 
     // Clear canvas
     mainEngine.clear()
@@ -363,7 +371,7 @@ expose<CompositorWorkerMethods>({
 
       // Get or compile effect chain from placement's signature
       const effectChain = getOrCompileEffectChain(
-        mainEngine,
+        mainEffects,
         placement.effectSignature,
         placement.effectRefs,
       )
@@ -375,7 +383,7 @@ expose<CompositorWorkerMethods>({
         id: textureKey,
         frame,
         viewport: placement.viewport,
-        effectChainId: effectChain ? placement.effectSignature : undefined,
+        effectChain: effectChain ?? undefined,
         effectValues: values,
       })
     }
@@ -384,23 +392,30 @@ expose<CompositorWorkerMethods>({
   },
 
   renderToCaptureCanvas(time) {
-    if (!captureEngine || !compiledTimeline) return
+    if (!captureEngine || !captureEffects || !compiledTimeline) return
 
     // Query timeline for active placements
     const activePlacements = getActivePlacements(compiledTimeline, time)
 
     // Render using pre-uploaded textures
     captureEngine.renderById(
-      activePlacements.map(({ placement }) => ({
-        id: placement.clipId,
-        viewport: placement.viewport,
-        effectChainId: placement.effectSignature || undefined,
-      })),
+      activePlacements.map(({ placement }) => {
+        const effectChain = getOrCompileEffectChain(
+          captureEffects!,
+          placement.effectSignature,
+          placement.effectRefs,
+        )
+        return {
+          id: placement.clipId,
+          viewport: placement.viewport,
+          effectChain: effectChain ?? undefined,
+        }
+      }),
     )
   },
 
   renderAndCapture(time) {
-    if (!mainEngine || !compiledTimeline) return null
+    if (!mainEngine || !mainEffects || !compiledTimeline) return null
 
     // Clear canvas
     mainEngine.clear()
@@ -423,7 +438,7 @@ expose<CompositorWorkerMethods>({
 
       // Get or compile effect chain from placement's signature
       const effectChain = getOrCompileEffectChain(
-        mainEngine,
+        mainEffects,
         placement.effectSignature,
         placement.effectRefs,
       )
@@ -435,7 +450,7 @@ expose<CompositorWorkerMethods>({
         id: textureKey,
         frame,
         viewport: placement.viewport,
-        effectChainId: effectChain ? placement.effectSignature : undefined,
+        effectChain: effectChain ?? undefined,
         effectValues: values,
       })
     }
@@ -445,7 +460,7 @@ expose<CompositorWorkerMethods>({
   },
 
   renderFramesAndCapture(time, frameEntries) {
-    if (!mainEngine || !compiledTimeline) return null
+    if (!mainEngine || !mainEffects || !compiledTimeline) return null
 
     // Build a temporary frame map from the provided frames
     const exportFrames = new Map<string, VideoFrame>()
@@ -466,7 +481,7 @@ expose<CompositorWorkerMethods>({
 
       // Get or compile effect chain from placement's signature
       const effectChain = getOrCompileEffectChain(
-        mainEngine,
+        mainEffects,
         placement.effectSignature,
         placement.effectRefs,
       )
@@ -478,7 +493,7 @@ expose<CompositorWorkerMethods>({
         id: placement.clipId,
         frame,
         viewport: placement.viewport,
-        effectChainId: effectChain ? placement.effectSignature : undefined,
+        effectChain: effectChain ?? undefined,
         effectValues: values,
       })
     }
@@ -517,6 +532,17 @@ expose<CompositorWorkerMethods>({
       port.close()
     }
     playbackWorkerPorts.clear()
+
+    // Destroy effect managers
+    if (mainEffects) {
+      mainEffects.destroy()
+      mainEffects = null
+    }
+
+    if (captureEffects) {
+      captureEffects.destroy()
+      captureEffects = null
+    }
 
     // Destroy engines
     if (mainEngine) {

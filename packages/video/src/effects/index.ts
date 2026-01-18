@@ -2,6 +2,7 @@ export * from './catalog/brightness'
 export * from './catalog/contrast'
 export * from './catalog/saturation'
 export * from './compose-effects'
+export * from './make-effect-manager'
 export * from './types'
 export * from './video-effect-registry'
 
