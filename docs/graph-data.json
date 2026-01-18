@@ -2507,6 +2507,17 @@
       "created_at": "2026-01-18T17:10:04.936980+01:00",
       "updated_at": "2026-01-18T17:10:04.936980+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"2474e6c\",\"confidence\":95}"
+    },
+    {
+      "id": 229,
+      "change_id": "b2af6be5-f2a3-4fe1-85e2-99b683e1b0e4",
+      "node_type": "outcome",
+      "title": "Committed: pre-compute effectKeys in timeline compiler",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T17:23:36.655360+01:00",
+      "updated_at": "2026-01-18T17:23:36.655360+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"a8055cd\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -4599,6 +4610,17 @@
       "weight": 1.0,
       "rationale": "Committed",
       "created_at": "2026-01-18T17:10:04.948174+01:00"
+    },
+    {
+      "id": 191,
+      "from_node_id": 226,
+      "to_node_id": 229,
+      "from_change_id": "5180ff85-c3cf-4094-9c7b-319cd3369716",
+      "to_change_id": "b2af6be5-f2a3-4fe1-85e2-99b683e1b0e4",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-18T17:23:36.666644+01:00"
     }
   ]
 }
