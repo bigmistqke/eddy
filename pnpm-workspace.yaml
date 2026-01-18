@@ -2,4 +2,3 @@ packages:
   - packages/*
 overrides:
   '@bigmistqke/rpc': link:../rpc/packages/rpc
-  '@bigmistqke/view.gl': link:../view.gl
