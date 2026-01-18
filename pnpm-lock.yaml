@@ -7,10 +7,16 @@ settings:
 overrides:
   '@bigmistqke/rpc': link:../rpc/packages/rpc
   '@bigmistqke/view.gl': link:../view.gl
+  '@bigmistqke/lexicon-to-valibot': link:../lexicon-to-valibot
+  '@bigmistqke/typed-lexicons': link:../typed-lexicons
 
 importers:
 
   .:
+    dependencies:
+      '@atproto/api':
+        specifier: ^0.13.35
+        version: 0.13.35
     devDependencies:
       diagonjs:
         specifier: ^1.6.1
@@ -145,8 +151,11 @@ importers:
         specifier: ^0.6.0
         version: 0.6.0
       '@bigmistqke/lexicon-to-valibot':
-        specifier: ^0.1.7
-        version: 0.1.7(valibot@1.2.0(typescript@5.9.3))
+        specifier: link:../../../lexicon-to-valibot
+        version: link:../../../lexicon-to-valibot
+      '@bigmistqke/typed-lexicons':
+        specifier: link:../../../typed-lexicons
+        version: link:../../../typed-lexicons
       valibot:
         specifier: ^1.2.0
         version: 1.2.0(typescript@5.9.3)
@@ -347,11 +356,6 @@ packages:
   '@babel/types@7.28.5':
     resolution: {integrity: sha512-qQ5m48eI/MFLQ5PxQj4PFaprjyCTLI37ElWMmNs0K8Lk3dVeOdNpB3ks8jc7yM5CDmVC73eMVk/trk3fgmrUpA==}
     engines: {node: '>=6.9.0'}
-
-  '@bigmistqke/lexicon-to-valibot@0.1.7':
-    resolution: {integrity: sha512-iuwDL1xZf4bMuWEe9ysx9DXXFN1y3eJCGw7e8HdsV165Tiw2PJsEQYCvWf5Dt+MpS5focBugV+5VVspL9jUdsw==}
-    peerDependencies:
-      valibot: '>=1.0.0'
 
   '@bigmistqke/solid-whenever@0.1.1':
     resolution: {integrity: sha512-BhAtrauFOsYsNVhoNV93CPNIcj++R3tPzCok4eWB6BVCYVPedHGDtvqlUcAvftt67bOq9yAkF8DSJMjx3zfYeQ==}
@@ -1915,10 +1919,6 @@ snapshots:
     dependencies:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
-
-  '@bigmistqke/lexicon-to-valibot@0.1.7(valibot@1.2.0(typescript@5.9.3))':
-    dependencies:
-      valibot: 1.2.0(typescript@5.9.3)
 
   '@bigmistqke/solid-whenever@0.1.1(solid-js@1.9.10)':
     dependencies:

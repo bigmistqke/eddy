@@ -22,5 +22,8 @@
     "diagonjs": "^1.6.1",
     "puppeteer": "^24.34.0",
     "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "@atproto/api": "^0.13.35"
   }
 }
