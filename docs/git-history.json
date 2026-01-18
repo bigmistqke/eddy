@@ -1,5 +1,29 @@
 [
   {
+    "hash": "6aaaef199e611ea6fdf1de4d6e76548ca6682c70",
+    "short_hash": "6aaaef1",
+    "author": "bigmistqke",
+    "date": "2026-01-18T03:37:59+01:00",
+    "message": "chore: link view.gl to local package for development",
+    "files_changed": 2
+  },
+  {
+    "hash": "6aaaef199e611ea6fdf1de4d6e76548ca6682c70",
+    "short_hash": "6aaaef1",
+    "author": "bigmistqke",
+    "date": "2026-01-18T03:37:59+01:00",
+    "message": "chore: link view.gl to local package for development",
+    "files_changed": 2
+  },
+  {
+    "hash": "aced95b5a50afdd653a20be1b77da573463ec1a7",
+    "short_hash": "aced95b",
+    "author": "bigmistqke",
+    "date": "2026-01-18T03:37:27+01:00",
+    "message": "chore: disable debugs",
+    "files_changed": 3
+  },
+  {
     "hash": "17123f3d87f5fe16ed5e7bdc6e65f8b0e26aca36",
     "short_hash": "17123f3",
     "author": "bigmistqke",
@@ -14,22 +38,6 @@
     "date": "2026-01-18T02:53:02+01:00",
     "message": "feat: implement video effect deduplication with array uniforms\n\nEnables same effect type used multiple times in a chain to share\na single GLSL function with indexed array access (WebGL2).",
     "files_changed": 9
-  },
-  {
-    "hash": "353b032daed0f8de32b2825c46e0b62582a383f7",
-    "short_hash": "353b032",
-    "author": "bigmistqke",
-    "date": "2026-01-18T02:53:02+01:00",
-    "message": "feat: implement video effect deduplication with array uniforms\n\nEnables same effect type used multiple times in a chain to share\na single GLSL function with indexed array access (WebGL2).",
-    "files_changed": 9
-  },
-  {
-    "hash": "582d93dafbc7507b782d85ba8380134957e3edd9",
-    "short_hash": "582d93d",
-    "author": "bigmistqke",
-    "date": "2026-01-18T01:59:16+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 4
   },
   {
     "hash": "d9c7f58f5d30d8c493565fbd611b64288b8fce6b",
