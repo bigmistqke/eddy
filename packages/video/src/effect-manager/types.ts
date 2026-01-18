@@ -2,13 +2,10 @@
  * Effect Manager Types
  */
 
-import type { EffectControls } from '../effects'
+import type { EffectControls, VideoEffectType } from '../effects'
 
-/** An effect instance in a chain */
-export interface EffectInstance {
-  /** Effect type name (e.g., 'visual.brightness') */
-  type: string
-}
+/** An effect instance - just the effect type name (e.g., 'visual.brightness') */
+export type EffectInstance = string
 
 /**
  * A named effect chain - a sequence of effect instances that compiles to one shader.
@@ -17,13 +14,12 @@ export interface EffectInstance {
 export interface VideoEffectChain {
   /** Unique identifier for this chain */
   id: string
-  /** Effect instances to apply in sequence */
+  /** Effect type names to apply in sequence */
   effects: EffectInstance[]
 }
 
 /**
  * A compiled effect chain ready for rendering.
- * Created by composeEffectTypes() and cached by the manager.
  */
 export interface CompiledEffectChain {
   /** The compiled WebGL program */
@@ -76,4 +72,26 @@ export interface EffectProgram<T extends EffectControls = EffectControls> {
       a_quad: { bind(): void }
     }
   }
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                              Effect Registry Types                             */
+/*                                                                                */
+/**********************************************************************************/
+
+/** A factory function that creates an effect type with a given instance count */
+export type EffectFactory<T = any> = (size: number) => VideoEffectType<T>
+
+/** A catalog mapping effect type names to their factory functions */
+export type EffectCatalog = Record<string, EffectFactory>
+
+/** An effect registry instance */
+export interface EffectRegistry {
+  /** Get an effect type by name, creating it with the given size */
+  get(type: string, size: number): VideoEffectType | undefined
+  /** Check if an effect type is registered */
+  has(type: string): boolean
+  /** Get all registered effect type names */
+  types(): string[]
 }

@@ -7,9 +7,8 @@
  */
 
 import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
-import type { EffectRegistry } from '../effect-registry'
 import type { VideoEffectType } from '../effects/types'
-import type { EffectInstance, EffectProgram } from './types'
+import type { EffectInstance, EffectProgram, EffectRegistry } from './types'
 
 /**
  * Compose effect instances into a single shader program.
@@ -24,23 +23,23 @@ import type { EffectInstance, EffectProgram } from './types'
  * ```ts
  * const registry = makeEffectRegistry(effectCatalog)
  * const composed = compileEffectProgram(gl, registry, [
- *   { type: 'visual.brightness' },
- *   { type: 'visual.contrast' },
- *   { type: 'visual.brightness' },
+ *   'visual.brightness',
+ *   'visual.contrast',
+ *   'visual.brightness',
  * ])
  * // Shader has: applyBrightness once (size=2), applyContrast once (size=1)
  * // Calls: applyBrightness(color, 0), applyContrast(color, 0), applyBrightness(color, 1)
  * ```
  */
-export function compileEffectProgram<T extends EffectInstance>(
+export function compileEffectProgram(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   registry: EffectRegistry,
-  instances: T[],
+  instances: EffectInstance[],
 ): EffectProgram {
   // Step 1: Count instances per effect type
   const typeCounts = new Map<string, number>()
-  for (const instance of instances) {
-    typeCounts.set(instance.type, (typeCounts.get(instance.type) ?? 0) + 1)
+  for (const effectType of instances) {
+    typeCounts.set(effectType, (typeCounts.get(effectType) ?? 0) + 1)
   }
 
   // Step 2: Create each effect type once with the correct size
@@ -61,14 +60,14 @@ export function compileEffectProgram<T extends EffectInstance>(
   // Step 4: Build effect chain with indexed calls
   const effectChain =
     instances.length > 0
-      ? instances.map(instance => {
-          const effectType = effectTypes.get(instance.type)
-          if (!effectType) return glsl`/* unknown effect: ${instance.type} */`
+      ? instances.map(effectTypeName => {
+          const effect = effectTypes.get(effectTypeName)
+          if (!effect) return glsl`/* unknown effect: ${effectTypeName} */`
 
-          const index = typeInstanceIndex.get(instance.type)!
-          typeInstanceIndex.set(instance.type, index + 1)
+          const index = typeInstanceIndex.get(effectTypeName)!
+          typeInstanceIndex.set(effectTypeName, index + 1)
 
-          return glsl`color = ${effectType.apply}(color, ${index});`
+          return glsl`color = ${effect.apply}(color, ${index});`
         })
       : ['/* no effects */']
 
@@ -104,14 +103,14 @@ export function compileEffectProgram<T extends EffectInstance>(
     typeInstanceIndex.set(type, 0)
   }
 
-  const controls = instances.map(instance => {
-    const effectType = effectTypes.get(instance.type)
-    if (!effectType) return {}
+  const controls = instances.map(effectTypeName => {
+    const effect = effectTypes.get(effectTypeName)
+    if (!effect) return {}
 
-    const index = typeInstanceIndex.get(instance.type)!
-    typeInstanceIndex.set(instance.type, index + 1)
+    const index = typeInstanceIndex.get(effectTypeName)!
+    typeInstanceIndex.set(effectTypeName, index + 1)
 
-    return effectType.connect(gl, program, index)
+    return effect.connect(gl, program, index)
   })
 
   return {

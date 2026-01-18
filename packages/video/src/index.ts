@@ -1,5 +1,4 @@
 export * from './effect-manager'
-export * from './effect-registry'
 export * from './effects'
 export * from './frame-utils'
 export * from './make-video-compositor'

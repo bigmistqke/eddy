@@ -155,19 +155,17 @@ function getOrCompileEffectChain(
   effects: EffectManager,
   signature: string,
   refs: EffectRef[],
-): CompiledEffectChain | null {
-  if (!signature || refs.length === 0) return null
+): CompiledEffectChain | undefined {
+  if (!signature || refs.length === 0) return undefined
 
   // Check cache
   const cached = effectChainsBySignature.get(signature)
   if (cached) return cached
 
-  // Build effect instances from refs
-  const instances: EffectInstance[] = refs.map(ref => ({
-    type: ref.effectType,
-  }))
+  // Build effect instances from refs (just the effect type names)
+  const instances: EffectInstance[] = refs.map(ref => ref.effectType)
 
-  if (instances.length === 0) return null
+  if (instances.length === 0) return undefined
 
   // Register with effect manager (uses signature as ID for caching)
   const compiled = effects.register({ id: signature, effects: instances })
@@ -387,14 +385,14 @@ expose<CompositorWorkerMethods>({
       )
 
       // Resolve current effect values from refs
-      const values = effectChain ? resolveEffectValues(placement.effectRefs) : undefined
+      const effectValues = effectChain ? resolveEffectValues(placement.effectRefs) : undefined
 
       mainEngine.renderPlacement({
         id: textureKey,
         frame,
         viewport: placement.viewport,
-        effectChain: effectChain ?? undefined,
-        effectValues: values,
+        effectChain,
+        effectValues,
       })
     }
 

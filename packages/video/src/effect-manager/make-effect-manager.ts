@@ -6,9 +6,8 @@
  */
 
 import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
-import type { EffectRegistry } from '../effect-registry'
 import { compileEffectProgram } from './compile-effect-program'
-import type { CompiledEffectChain, EffectManager, VideoEffectChain } from './types'
+import type { CompiledEffectChain, EffectManager, EffectRegistry, VideoEffectChain } from './types'
 
 // Passthrough shader - samples a single texture per quad (no effects)
 const passthroughFragment = glsl`
