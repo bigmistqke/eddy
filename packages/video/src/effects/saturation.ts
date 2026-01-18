@@ -8,8 +8,7 @@
 
 import { view } from '@bigmistqke/view.gl'
 import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
-import type { VideoEffectType } from '../types'
-import { registerVideoEffect } from '../video-effect-registry'
+import type { VideoEffectType } from './types'
 
 export interface SaturationControls {
   setSaturation: (value: number) => void
@@ -49,6 +48,3 @@ export function makeSaturationEffect(size: number): VideoEffectType<SaturationCo
     },
   }
 }
-
-export const registerSaturationEffect = () =>
-  registerVideoEffect('visual.saturation', makeSaturationEffect)

@@ -6,7 +6,8 @@
  */
 
 import { assertedNotNullish, debug } from '@eddy/utils'
-import type { CompiledEffectChain, EffectControls } from './effects'
+import type { CompiledEffectChain } from './effect-manager'
+import type { EffectControls } from './effects'
 
 const log = debug('video:make-video-compositor', false)
 

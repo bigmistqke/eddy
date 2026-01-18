@@ -1,9 +1,12 @@
 import { expose, type Transferred } from '@bigmistqke/rpc/messenger'
-import { debug } from '@eddy/utils'
+import { assertedNotNullish, debug } from '@eddy/utils'
 import {
+  makeBrightnessEffect,
+  makeContrastEffect,
   makeEffectManager,
+  makeEffectRegistry,
+  makeSaturationEffect,
   makeVideoCompositor,
-  registerBuiltInVideoEffects,
   type CompiledEffectChain,
   type EffectInstance,
   type EffectManager,
@@ -17,8 +20,15 @@ import {
   type Placement,
 } from '~/primitives/compile-layout-timeline'
 
-// Register built-in video effects
-registerBuiltInVideoEffects()
+/** Map of effect type names to factory functions */
+export const effectCatalog = {
+  'visual.brightness': makeBrightnessEffect,
+  'visual.contrast': makeContrastEffect,
+  'visual.saturation': makeSaturationEffect,
+} as const
+
+// Create effect registry from catalog
+const effectRegistry = makeEffectRegistry(effectCatalog)
 
 const log = debug('compositor.worker', false)
 
@@ -134,7 +144,7 @@ function effectRefToKey(ref: EffectRef): string {
 
 /** Resolve effect values from effectRefs */
 function resolveEffectValues(refs: EffectRef[]): number[] {
-  return refs.map(ref => effectValues.get(effectRefToKey(ref)) ?? 0)
+  return refs.map(ref => assertedNotNullish(effectValues.get(effectRefToKey(ref))))
 }
 
 /**
@@ -262,12 +272,12 @@ expose<CompositorWorkerMethods>({
 
     // Main canvas (visible)
     mainEngine = makeVideoCompositor(offscreenCanvas)
-    mainEffects = makeEffectManager(mainEngine.gl)
+    mainEffects = makeEffectManager(mainEngine.gl, effectRegistry)
 
     // Capture canvas (for pre-rendering, same size)
     const captureCanvas = new OffscreenCanvas(width, height)
     captureEngine = makeVideoCompositor(captureCanvas)
-    captureEffects = makeEffectManager(captureEngine.gl)
+    captureEffects = makeEffectManager(captureEngine.gl, effectRegistry)
   },
 
   setTimeline(newTimeline) {

@@ -274,7 +274,7 @@ export function createEditor(options: CreateEditorOptions) {
       effectIndex,
       effect => {
         if (effect && 'value' in effect && effect.value && 'value' in effect.value) {
-          return { ...effect, value: { ...effect.value, value: Math.round(value) } }
+          return { ...effect, value: { ...effect.value, value } }
         }
         return effect
       },

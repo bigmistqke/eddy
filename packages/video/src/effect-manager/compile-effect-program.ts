@@ -1,5 +1,5 @@
 /**
- * Compose Effects
+ * Compile Effect Program
  *
  * Composes multiple video effects into a single fragment shader.
  * Supports deduplication: same effect type used multiple times
@@ -7,37 +7,23 @@
  */
 
 import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
-import type { EffectControls, EffectInstance, VideoEffectType } from './types'
-import { createVideoEffectFromRegistry } from './video-effect-registry'
-
-/** Result of composing effect types */
-export interface EffectProgram<T extends EffectControls = EffectControls> {
-  /** The compiled WebGL program */
-  program: WebGLProgram
-  /** Controls for each effect instance, in order */
-  controls: T[]
-  /** View for the base uniforms (u_video) */
-  view: {
-    uniforms: {
-      u_video: { set(value: number): void }
-    }
-    attributes: {
-      a_quad: { bind(): void }
-    }
-  }
-}
+import type { EffectRegistry } from '../effect-registry'
+import type { VideoEffectType } from '../effects/types'
+import type { EffectInstance, EffectProgram } from './types'
 
 /**
  * Compose effect instances into a single shader program.
  * Deduplicates: same effect type appears once in shader with array uniforms.
  *
  * @param gl - WebGL context
+ * @param registry - Effect registry to look up effect types
  * @param instances - Array of effect instances to compose (in order)
  * @returns Compiled program and controls for each instance
  *
  * @example
  * ```ts
- * const composed = compileEffectProgram(gl, [
+ * const registry = makeEffectRegistry(effectCatalog)
+ * const composed = compileEffectProgram(gl, registry, [
  *   { type: 'visual.brightness' },
  *   { type: 'visual.contrast' },
  *   { type: 'visual.brightness' },
@@ -48,6 +34,7 @@ export interface EffectProgram<T extends EffectControls = EffectControls> {
  */
 export function compileEffectProgram<T extends EffectInstance>(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
+  registry: EffectRegistry,
   instances: T[],
 ): EffectProgram {
   // Step 1: Count instances per effect type
@@ -59,7 +46,7 @@ export function compileEffectProgram<T extends EffectInstance>(
   // Step 2: Create each effect type once with the correct size
   const effectTypes = new Map<string, VideoEffectType>()
   for (const [type, count] of typeCounts) {
-    const effectType = createVideoEffectFromRegistry(type, count)
+    const effectType = registry.get(type, count)
     if (effectType) {
       effectTypes.set(type, effectType)
     }

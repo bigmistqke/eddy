@@ -8,17 +8,6 @@
 
 import type { GLSL } from '@bigmistqke/view.gl'
 
-/** Uniform value types supported by effects */
-export type UniformValue =
-  | number // float, int
-  | [number, number] // vec2
-  | [number, number, number] // vec3
-  | [number, number, number, number] // vec4
-  | boolean // bool
-
-/** Controls returned by an effect after binding to a compiled program */
-export type EffectControls = Record<string, (value: UniformValue) => void>
-
 /**
  * A video effect type with deduplication support.
  *
@@ -43,8 +32,5 @@ export interface VideoEffectType<TControls = EffectControls> {
   ): TControls
 }
 
-/** An effect instance in a chain */
-export interface EffectInstance {
-  /** Effect type name (e.g., 'visual.brightness') */
-  type: string
-}
+/** Controls returned by an effect after binding to a compiled program */
+export type EffectControls = Record<string, (value: number) => void>

@@ -13,6 +13,7 @@
   "dependencies": {
     "@bigmistqke/rpc": "^0.1.3",
     "@bigmistqke/solid-whenever": "^0.1.1",
+    "@bigmistqke/view.gl": "^0.1.12",
     "@eddy/atproto": "workspace:*",
     "@eddy/audio": "workspace:*",
     "@eddy/lexicons": "workspace:*",

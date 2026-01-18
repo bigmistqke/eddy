@@ -6,6 +6,7 @@ settings:
 
 overrides:
   '@bigmistqke/rpc': link:../rpc/packages/rpc
+  '@bigmistqke/view.gl': link:../view.gl
 
 importers:
 
@@ -29,6 +30,9 @@ importers:
       '@bigmistqke/solid-whenever':
         specifier: ^0.1.1
         version: 0.1.1(solid-js@1.9.10)
+      '@bigmistqke/view.gl':
+        specifier: link:../../../view.gl
+        version: link:../../../view.gl
       '@eddy/atproto':
         specifier: workspace:*
         version: link:../atproto
@@ -173,8 +177,8 @@ importers:
   packages/video:
     dependencies:
       '@bigmistqke/view.gl':
-        specifier: ^0.1.9
-        version: 0.1.12
+        specifier: link:../../../view.gl
+        version: link:../../../view.gl
       '@eddy/media':
         specifier: workspace:*
         version: link:../media
@@ -354,9 +358,6 @@ packages:
     engines: {node: '>=18', pnpm: '>=9.0.0'}
     peerDependencies:
       solid-js: ^1.6.0
-
-  '@bigmistqke/view.gl@0.1.12':
-    resolution: {integrity: sha512-Fs7c3samdrVicTtlUJQTZ3ij3QeUN2qTccZBbETBOHekLADy8xQonPT7RtyZGy0AetGCAoObtWZ7Kfkoq3jAqA==}
 
   '@esbuild/aix-ppc64@0.25.12':
     resolution: {integrity: sha512-Hhmwd6CInZ3dwpuGTF8fJG6yoWmsToE+vYgD4nytZVxcu1ulHpUQRAB1UJ8+N1Am3Mz4+xOByoQoSZf4D+CpkA==}
@@ -1922,8 +1923,6 @@ snapshots:
   '@bigmistqke/solid-whenever@0.1.1(solid-js@1.9.10)':
     dependencies:
       solid-js: 1.9.10
-
-  '@bigmistqke/view.gl@0.1.12': {}
 
   '@esbuild/aix-ppc64@0.25.12':
     optional: true
