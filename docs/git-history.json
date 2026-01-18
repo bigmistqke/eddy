@@ -1,5 +1,21 @@
 [
   {
+    "hash": "8b42b6b1a645c8dc01182beb644d24404421e7d4",
+    "short_hash": "8b42b6b",
+    "author": "bigmistqke",
+    "date": "2026-01-18T19:17:01+01:00",
+    "message": "feat: add staticBlendMode and customParams types for consistent effect params\n\n- Add staticBlendMode type with { value: 'normal' | ... } pattern\n- Add customParams as empty object for extensible custom effects\n- Update blendMode in visualEffect.opacity to use staticBlendMode ref\n- Update visualEffect.custom.params to use customParams ref\n- Update Track.tsx to use VisualEffect from lexicons",
+    "files_changed": 3
+  },
+  {
+    "hash": "2bae83a516adb7a39e558446a118f77f6c657c81",
+    "short_hash": "2bae83a",
+    "author": "bigmistqke",
+    "date": "2026-01-18T19:06:31+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
     "hash": "138e97de4910237bb298466e269cb74c8a281a01",
     "short_hash": "138e97d",
     "author": "bigmistqke",
@@ -8,20 +24,12 @@
     "files_changed": 6
   },
   {
-    "hash": "362da737d42e553df22c620924768209b703d225",
-    "short_hash": "362da73",
+    "hash": "138e97de4910237bb298466e269cb74c8a281a01",
+    "short_hash": "138e97d",
     "author": "bigmistqke",
-    "date": "2026-01-18T18:42:16+01:00",
-    "message": "chore: mark goals 201 and 242 as completed",
-    "files_changed": 1
-  },
-  {
-    "hash": "9f013cad9e73650538f70c41261bf35403a6afc4",
-    "short_hash": "9f013ca",
-    "author": "bigmistqke",
-    "date": "2026-01-18T18:41:04+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
+    "date": "2026-01-18T19:06:00+01:00",
+    "message": "refactor: simplify effect rendering with onBeforeRender callback\n\n- Replace effectValues/effectParamRefs arrays with onBeforeRender callback\n- Pre-compute effect keys in EffectRef to avoid hot-path string concatenation\n- Move EffectParamRef type from @eddy/video to compile-layout-timeline\n- Move injectPreviewClip utilities to make-player.ts where used\n- Extract PREVIEW_CLIP_ID to constants.ts\n- Remove unused timeline query functions (getPlacementsInRange, getNextTransition)",
+    "files_changed": 6
   },
   {
     "hash": "879fa0d7f1c294d976bcf4708201b2f80e846459",

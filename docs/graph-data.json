@@ -2716,6 +2716,17 @@
       "created_at": "2026-01-18T19:06:15.135623+01:00",
       "updated_at": "2026-01-18T19:06:15.135623+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"138e97d\",\"confidence\":95}"
+    },
+    {
+      "id": 248,
+      "change_id": "9830ee10-48c5-4329-8fd3-30c2aceccd8e",
+      "node_type": "outcome",
+      "title": "Committed: add staticBlendMode and customParams types",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T19:17:07.158881+01:00",
+      "updated_at": "2026-01-18T19:17:07.158881+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"8b42b6b\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -5006,6 +5017,17 @@
       "weight": 1.0,
       "rationale": "Cleanup after multi-param implementation",
       "created_at": "2026-01-18T19:06:20.150844+01:00"
+    },
+    {
+      "id": 209,
+      "from_node_id": 242,
+      "to_node_id": 248,
+      "from_change_id": "972a47d6-a3ac-4e73-90b7-75574cd503fc",
+      "to_change_id": "9830ee10-48c5-4329-8fd3-30c2aceccd8e",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Type system extension",
+      "created_at": "2026-01-18T19:17:13.285469+01:00"
     }
   ]
 }
