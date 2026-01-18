@@ -1,27 +1,43 @@
 [
   {
+    "hash": "17123f3d87f5fe16ed5e7bdc6e65f8b0e26aca36",
+    "short_hash": "17123f3",
+    "author": "bigmistqke",
+    "date": "2026-01-18T03:21:54+01:00",
+    "message": "fix: register video effects only in compositor worker\n\nRemoves video effect registration from main thread to prevent\ndual view.gl instances causing symbol alias mismatches.",
+    "files_changed": 2
+  },
+  {
+    "hash": "353b032daed0f8de32b2825c46e0b62582a383f7",
+    "short_hash": "353b032",
+    "author": "bigmistqke",
+    "date": "2026-01-18T02:53:02+01:00",
+    "message": "feat: implement video effect deduplication with array uniforms\n\nEnables same effect type used multiple times in a chain to share\na single GLSL function with indexed array access (WebGL2).",
+    "files_changed": 9
+  },
+  {
+    "hash": "353b032daed0f8de32b2825c46e0b62582a383f7",
+    "short_hash": "353b032",
+    "author": "bigmistqke",
+    "date": "2026-01-18T02:53:02+01:00",
+    "message": "feat: implement video effect deduplication with array uniforms\n\nEnables same effect type used multiple times in a chain to share\na single GLSL function with indexed array access (WebGL2).",
+    "files_changed": 9
+  },
+  {
+    "hash": "582d93dafbc7507b782d85ba8380134957e3edd9",
+    "short_hash": "582d93d",
+    "author": "bigmistqke",
+    "date": "2026-01-18T01:59:16+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 4
+  },
+  {
     "hash": "d9c7f58f5d30d8c493565fbd611b64288b8fce6b",
     "short_hash": "d9c7f58",
     "author": "bigmistqke",
     "date": "2026-01-18T01:57:34+01:00",
     "message": "feat: integrate cascading video effects into compiled timeline\n\n- Add EffectRef type for referencing effect values by source coordinates\n- Extend Placement with effectSignature (for shader caching) and effectRefs\n- Collect cascaded effects during timeline compilation (clip → track → group... → master)\n- Replace track-based effect API with setEffectValue(sourceType, sourceId, effectIndex, value)\n- Cache shader programs by effectSignature, compile lazily on first use\n- Resolve effect values from refs at render time",
     "files_changed": 4
-  },
-  {
-    "hash": "0565144101f1ea0b934af8de5e53ffb1217af7f2",
-    "short_hash": "0565144",
-    "author": "bigmistqke",
-    "date": "2026-01-18T01:29:39+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "35229ef411b60b6816c4f75ba9b30edad5570594",
-    "short_hash": "35229ef",
-    "author": "bigmistqke",
-    "date": "2026-01-18T01:29:01+01:00",
-    "message": "fix: move effect symbols to module scope for stable shader identities\n\n- Move Symbol declarations outside factory functions so all effect\n  instances share the same Symbol (fixes multi-track effect bug)\n- Store effect values in array, set uniforms at render time\n- Remove unused make-effect-chain-cache.ts\n- Add activateEffectChain method to compositor\n- Enhanced debug logging",
-    "files_changed": 8
   },
   {
     "hash": "35229ef411b60b6816c4f75ba9b30edad5570594",
