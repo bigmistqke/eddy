@@ -2694,6 +2694,17 @@
       "created_at": "2026-01-18T18:34:08.826435+01:00",
       "updated_at": "2026-01-18T18:34:08.826435+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"571ef27\",\"confidence\":95}"
+    },
+    {
+      "id": 246,
+      "change_id": "21fc5bb7-f41d-4b9b-8cb3-0e942cf0af61",
+      "node_type": "outcome",
+      "title": "Committed: feat: add UI for colorize effect with vector param support",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T18:40:52.492080+01:00",
+      "updated_at": "2026-01-18T18:40:52.492080+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"879fa0d\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -4962,6 +4973,17 @@
       "weight": 1.0,
       "rationale": "Committed",
       "created_at": "2026-01-18T18:34:12.605172+01:00"
+    },
+    {
+      "id": 207,
+      "from_node_id": 243,
+      "to_node_id": 246,
+      "from_change_id": "9fe038b3-efba-41ca-8b4c-8eefffecd10c",
+      "to_change_id": "21fc5bb7-f41d-4b9b-8cb3-0e942cf0af61",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-18T18:40:56.538692+01:00"
     }
   ]
 }

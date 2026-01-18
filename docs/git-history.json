@@ -1,5 +1,21 @@
 [
   {
+    "hash": "879fa0d7f1c294d976bcf4708201b2f80e846459",
+    "short_hash": "879fa0d",
+    "author": "bigmistqke",
+    "date": "2026-01-18T18:40:44+01:00",
+    "message": "feat: add UI for colorize effect with vector param support",
+    "files_changed": 4
+  },
+  {
+    "hash": "f7bdc20c6e10ab1770c93028398e6c87f7b93152",
+    "short_hash": "f7bdc20",
+    "author": "bigmistqke",
+    "date": "2026-01-18T18:34:27+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
     "hash": "571ef278897f527f53340371be7a626dd681fb64",
     "short_hash": "571ef27",
     "author": "bigmistqke",
@@ -8,20 +24,12 @@
     "files_changed": 14
   },
   {
-    "hash": "a9a0962b1f7aa88190cee3c560b29da43d8eda3f",
-    "short_hash": "a9a0962",
+    "hash": "571ef278897f527f53340371be7a626dd681fb64",
+    "short_hash": "571ef27",
     "author": "bigmistqke",
-    "date": "2026-01-18T17:53:23+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 3
-  },
-  {
-    "hash": "6fab7aa8318198d0e17de1e9f8f989ed6d6c1a41",
-    "short_hash": "6fab7aa",
-    "author": "bigmistqke",
-    "date": "2026-01-18T17:52:49+01:00",
-    "message": "feat: implement audio cascade with root group as master\n\n- Add audioPipeline to Group schema, rename pipeline → videoPipeline\n- Remove masterAudioPipeline/masterVideoPipeline from project (root group serves as master)\n- Modify makeAudioBus to accept optional destination for hierarchy chaining\n- Add group audio buses in player with track → group → parent group routing\n- Add setMasterVolume/getMasterVolume/setMasterPan via root group's audio bus\n- Add useMediaStreamOutput/useDirectOutput to AudioBus for recording\n- Delete getMasterMixer singleton - functionality moved to root group\n- Update default project with gain effect on root group",
-    "files_changed": 7
+    "date": "2026-01-18T18:34:01+01:00",
+    "message": "feat: implement multi-param effects with pre-computed paramRefs\n\n- Add params Record pattern to lexicons with separate defs per effect\n- Add vec3/vec4 types for vector effect params (colorize)\n- Change effect controls to use paramKey directly (value(), color(), intensity())\n- Add colorize effect with color (vec3) and intensity (scalar) params\n- Pre-compute effectParamRefs at timeline compile time (perf optimization)\n- Update compositor to use pre-computed refs instead of per-frame allocation",
+    "files_changed": 14
   },
   {
     "hash": "6fab7aa8318198d0e17de1e9f8f989ed6d6c1a41",
