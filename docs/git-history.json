@@ -8,20 +8,20 @@
     "files_changed": 2
   },
   {
+    "hash": "cffb0d11b4171a075adc856f11e42aa1f1a49a9a",
+    "short_hash": "cffb0d1",
+    "author": "bigmistqke",
+    "date": "2026-01-18T16:14:18+01:00",
+    "message": "chore: use published view.gl package\n\nSwitch from local link to npm @bigmistqke/view.gl@0.1.12.",
+    "files_changed": 2
+  },
+  {
     "hash": "4755b1310ac93b2008c180ef1d4e8fb9714aa3c9",
     "short_hash": "4755b13",
     "author": "bigmistqke",
     "date": "2026-01-18T16:14:11+01:00",
     "message": "refactor: clean up effect catalog code style\n\nUse semantic variable names and inline method definitions for clarity.",
     "files_changed": 3
-  },
-  {
-    "hash": "c78b00d4db747857b152e899b2d93e7baf0c7de4",
-    "short_hash": "c78b00d",
-    "author": "bigmistqke",
-    "date": "2026-01-18T14:13:52+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
   },
   {
     "hash": "ad181304836e9e60c4e76c4c4c8a34aaa265a3bf",

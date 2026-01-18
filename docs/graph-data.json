@@ -2437,9 +2437,9 @@
       "node_type": "action",
       "title": "Remove initialValues from effect types",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T14:13:45.878199+01:00",
-      "updated_at": "2026-01-18T14:13:45.878199+01:00",
+      "updated_at": "2026-01-18T16:15:44.597336+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"ad18130\",\"confidence\":90}"
     },
     {
