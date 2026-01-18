@@ -2206,9 +2206,9 @@
       "node_type": "goal",
       "title": "Add UI to control video effects",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T20:03:02.981810+01:00",
-      "updated_at": "2026-01-17T20:03:02.981810+01:00",
+      "updated_at": "2026-01-18T18:42:03.497959+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"now add ui to add/drive these effects\"}"
     },
     {
@@ -2657,9 +2657,9 @@
       "node_type": "goal",
       "title": "Support any UniformValue type in effect schema (vec2, vec3, vec4, mat4, etc.)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T18:00:24.247384+01:00",
-      "updated_at": "2026-01-18T18:00:24.247384+01:00",
+      "updated_at": "2026-01-18T18:42:03.488936+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Explore extending staticValue to support any UniformValue - use vec3 hue shift effect as example\"}"
     },
     {
