@@ -8,7 +8,7 @@
 
 import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
 import type { VideoEffectType } from '../effects/types'
-import type { EffectInstance, EffectProgram, EffectRegistry } from './types'
+import type { EffectKey, EffectProgram, EffectRegistry } from './types'
 
 /**
  * Compose effect instances into a single shader program.
@@ -16,7 +16,7 @@ import type { EffectInstance, EffectProgram, EffectRegistry } from './types'
  *
  * @param gl - WebGL context
  * @param registry - Effect registry to look up effect types
- * @param instances - Array of effect instances to compose (in order)
+ * @param effectKeys - Array of effect instances to compose (in order)
  * @returns Compiled program and controls for each instance
  *
  * @example
@@ -34,12 +34,12 @@ import type { EffectInstance, EffectProgram, EffectRegistry } from './types'
 export function compileEffectProgram(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
   registry: EffectRegistry,
-  instances: EffectInstance[],
+  effectKeys: EffectKey[],
 ): EffectProgram {
   // Step 1: Count instances per effect type
   const typeCounts = new Map<string, number>()
-  for (const effectType of instances) {
-    typeCounts.set(effectType, (typeCounts.get(effectType) ?? 0) + 1)
+  for (const effectKey of effectKeys) {
+    typeCounts.set(effectKey, (typeCounts.get(effectKey) ?? 0) + 1)
   }
 
   // Step 2: Create each effect type once with the correct size
@@ -59,8 +59,8 @@ export function compileEffectProgram(
 
   // Step 4: Build effect chain with indexed calls
   const effectChain =
-    instances.length > 0
-      ? instances.map(effectTypeName => {
+    effectKeys.length > 0
+      ? effectKeys.map(effectTypeName => {
           const effect = effectTypes.get(effectTypeName)
           if (!effect) return glsl`/* unknown effect: ${effectTypeName} */`
 
@@ -103,7 +103,7 @@ export function compileEffectProgram(
     typeInstanceIndex.set(type, 0)
   }
 
-  const controls = instances.map(effectTypeName => {
+  const controls = effectKeys.map(effectTypeName => {
     const effect = effectTypes.get(effectTypeName)
     if (!effect) return {}
 

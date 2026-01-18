@@ -55,7 +55,9 @@ export interface Placement {
   speed: number // Playback rate (1 = normal)
 
   /** Video effect signature - hash of effect types for shader caching */
-  effectSignature: string
+  effectId: string
+  /** Effect type keys in cascade order (pre-computed for compositor) */
+  effectKeys: string[]
   /** References to effect values for runtime lookup (cascade order: clip → track → group... → master) */
   effectRefs: EffectRef[]
 }
@@ -125,6 +127,8 @@ interface ClipInfo {
   speed: number
   /** Video effect signature for shader caching */
   effectSignature: string
+  /** Effect type keys in cascade order */
+  effectKeys: string[]
   /** Effect references for value lookup (cascade order: clip → track → group... → master) */
   effectRefs: EffectRef[]
 }
@@ -248,12 +252,6 @@ function collectCascadedEffects(
   return refs
 }
 
-/** Generate effect signature from effect refs (for shader caching) */
-function generateEffectSignature(effectRefs: EffectRef[]): string {
-  if (effectRefs.length === 0) return ''
-  return effectRefs.map(ref => ref.effectType).join('|')
-}
-
 /** Calculate viewport for a grid cell */
 function calculateGridViewport(
   cellIndex: number,
@@ -355,7 +353,8 @@ function collectClipInfos(project: Project, canvasSize: CanvasSize): ClipInfo[] 
 
       // Collect cascaded video effects
       const effectRefs = collectCascadedEffects(clip, track, parentMap, groupMap, project)
-      const effectSignature = generateEffectSignature(effectRefs)
+      const effectKeys = effectRefs.map(ref => ref.effectType)
+      const effectSignature = effectKeys.join('|')
 
       clipInfos.push({
         clipId: clip.id,
@@ -367,6 +366,7 @@ function collectClipInfos(project: Project, canvasSize: CanvasSize): ClipInfo[] 
         sourceOut,
         speed,
         effectSignature,
+        effectKeys,
         effectRefs,
       })
     }
@@ -425,7 +425,8 @@ function buildSegments(clipInfos: ClipInfo[]): LayoutSegment[] {
         in: clip.sourceIn + segmentOffsetInClip,
         out: clip.sourceOut,
         speed: clip.speed,
-        effectSignature: clip.effectSignature,
+        effectId: clip.effectSignature,
+        effectKeys: clip.effectKeys,
         effectRefs: clip.effectRefs,
       })
     }

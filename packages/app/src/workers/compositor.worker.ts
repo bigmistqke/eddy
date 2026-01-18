@@ -8,7 +8,7 @@ import {
   makeSaturationEffect,
   makeVideoCompositor,
   type CompiledEffectChain,
-  type EffectInstance,
+  type EffectKey,
   type EffectManager,
   type VideoCompositor,
 } from '@eddy/video'
@@ -152,26 +152,20 @@ function resolveEffectValues(refs: EffectRef[]): number[] {
  * Compiles lazily on first encounter.
  */
 function getOrCompileEffectChain(
-  effects: EffectManager,
-  signature: string,
-  refs: EffectRef[],
+  effectManager: EffectManager,
+  { effectId, effectKeys }: { effectId: string; effectKeys: EffectKey[] },
 ): CompiledEffectChain | undefined {
-  if (!signature || refs.length === 0) return undefined
+  if (!effectId || effectKeys.length === 0) return undefined
 
-  // Check cache
-  const cached = effectChainsBySignature.get(signature)
+  // Check cache (skip registerEffectChain call if we already have it)
+  const cached = effectChainsBySignature.get(effectId)
   if (cached) return cached
 
-  // Build effect instances from refs (just the effect type names)
-  const instances: EffectInstance[] = refs.map(ref => ref.effectType)
-
-  if (instances.length === 0) return undefined
-
   // Register with effect manager (uses signature as ID for caching)
-  const compiled = effects.register({ id: signature, effects: instances })
-  effectChainsBySignature.set(signature, compiled)
+  const compiled = effectManager.registerEffectChain({ effectId, effectKeys })
+  effectChainsBySignature.set(effectId, compiled)
 
-  log('Compiled effect chain', { signature, effectCount: instances.length })
+  log('Compiled effect chain', { id: effectId, effectCount: effectKeys.length })
 
   return compiled
 }
@@ -378,11 +372,7 @@ expose<CompositorWorkerMethods>({
       const textureKey = isPreview ? `preview-${placement.trackId}` : placement.clipId
 
       // Get or compile effect chain from placement's signature
-      const effectChain = getOrCompileEffectChain(
-        mainEffects,
-        placement.effectSignature,
-        placement.effectRefs,
-      )
+      const effectChain = getOrCompileEffectChain(mainEffects, placement)
 
       // Resolve current effect values from refs
       const effectValues = effectChain ? resolveEffectValues(placement.effectRefs) : undefined
@@ -408,11 +398,7 @@ expose<CompositorWorkerMethods>({
     // Render using pre-uploaded textures
     captureEngine.renderById(
       activePlacements.map(({ placement }) => {
-        const effectChain = getOrCompileEffectChain(
-          captureEffects!,
-          placement.effectSignature,
-          placement.effectRefs,
-        )
+        const effectChain = getOrCompileEffectChain(captureEffects!, placement)
         return {
           id: placement.clipId,
           viewport: placement.viewport,
@@ -445,11 +431,7 @@ expose<CompositorWorkerMethods>({
       const textureKey = isPreview ? `preview-${placement.trackId}` : placement.clipId
 
       // Get or compile effect chain from placement's signature
-      const effectChain = getOrCompileEffectChain(
-        mainEffects,
-        placement.effectSignature,
-        placement.effectRefs,
-      )
+      const effectChain = getOrCompileEffectChain(mainEffects, placement)
 
       // Resolve current effect values from refs
       const values = effectChain ? resolveEffectValues(placement.effectRefs) : undefined
@@ -488,11 +470,7 @@ expose<CompositorWorkerMethods>({
       if (!frame) continue
 
       // Get or compile effect chain from placement's signature
-      const effectChain = getOrCompileEffectChain(
-        mainEffects,
-        placement.effectSignature,
-        placement.effectRefs,
-      )
+      const effectChain = getOrCompileEffectChain(mainEffects, placement)
 
       // Resolve current effect values from refs
       const values = effectChain ? resolveEffectValues(placement.effectRefs) : undefined

@@ -48,21 +48,16 @@ export function makeEffectManager(
   return {
     passthrough,
 
-    register(chain: VideoEffectChain): CompiledEffectChain {
+    registerEffectChain(chain: VideoEffectChain): CompiledEffectChain {
       // Check if already registered
-      const existing = chains.get(chain.id)
+      const existing = chains.get(chain.effectId)
       if (existing) return existing
 
       // Compile the effect chain
-      const result = compileEffectProgram(gl, registry, chain.effects)
-      const compiled: CompiledEffectChain = {
-        program: result.program,
-        view: result.view,
-        controls: result.controls,
-      }
-      chains.set(chain.id, compiled)
+      const result = compileEffectProgram(gl, registry, chain.effectKeys)
+      chains.set(chain.effectId, result)
 
-      return compiled
+      return result
     },
 
     has(id: string): boolean {

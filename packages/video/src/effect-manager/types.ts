@@ -5,7 +5,7 @@
 import type { EffectControls, VideoEffectType } from '../effects'
 
 /** An effect instance - just the effect type name (e.g., 'visual.brightness') */
-export type EffectInstance = string
+export type EffectKey = string
 
 /**
  * A named effect chain - a sequence of effect instances that compiles to one shader.
@@ -13,9 +13,9 @@ export type EffectInstance = string
  */
 export interface VideoEffectChain {
   /** Unique identifier for this chain */
-  id: string
+  effectId: string
   /** Effect type names to apply in sequence */
-  effects: EffectInstance[]
+  effectKeys: EffectKey[]
 }
 
 /**
@@ -44,7 +44,7 @@ export interface EffectManager {
    * Register an effect chain. Compiles the shader and caches it.
    * @returns The compiled effect chain
    */
-  register(chain: VideoEffectChain): CompiledEffectChain
+  registerEffectChain(chain: VideoEffectChain): CompiledEffectChain
   /** Check if an effect chain is registered */
   has(id: string): boolean
   /** Get a registered effect chain */
