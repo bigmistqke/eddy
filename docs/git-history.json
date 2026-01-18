@@ -1,5 +1,21 @@
 [
   {
+    "hash": "571ef278897f527f53340371be7a626dd681fb64",
+    "short_hash": "571ef27",
+    "author": "bigmistqke",
+    "date": "2026-01-18T18:34:01+01:00",
+    "message": "feat: implement multi-param effects with pre-computed paramRefs\n\n- Add params Record pattern to lexicons with separate defs per effect\n- Add vec3/vec4 types for vector effect params (colorize)\n- Change effect controls to use paramKey directly (value(), color(), intensity())\n- Add colorize effect with color (vec3) and intensity (scalar) params\n- Pre-compute effectParamRefs at timeline compile time (perf optimization)\n- Update compositor to use pre-computed refs instead of per-frame allocation",
+    "files_changed": 14
+  },
+  {
+    "hash": "a9a0962b1f7aa88190cee3c560b29da43d8eda3f",
+    "short_hash": "a9a0962",
+    "author": "bigmistqke",
+    "date": "2026-01-18T17:53:23+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 3
+  },
+  {
     "hash": "6fab7aa8318198d0e17de1e9f8f989ed6d6c1a41",
     "short_hash": "6fab7aa",
     "author": "bigmistqke",
@@ -8,20 +24,12 @@
     "files_changed": 7
   },
   {
-    "hash": "2ed844fcf5a8ff5ac66bce99f2efbe09a304bd8c",
-    "short_hash": "2ed844f",
+    "hash": "6fab7aa8318198d0e17de1e9f8f989ed6d6c1a41",
+    "short_hash": "6fab7aa",
     "author": "bigmistqke",
-    "date": "2026-01-18T17:23:44+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "a8055cda1902ce8c54135fa881465d6adba7437f",
-    "short_hash": "a8055cd",
-    "author": "bigmistqke",
-    "date": "2026-01-18T17:23:31+01:00",
-    "message": "refactor: pre-compute effectKeys in timeline compiler\n\nAvoids redundant mapping on hot render path. Placement now includes\neffectKeys array and effectId (renamed from effectSignature).",
-    "files_changed": 5
+    "date": "2026-01-18T17:52:49+01:00",
+    "message": "feat: implement audio cascade with root group as master\n\n- Add audioPipeline to Group schema, rename pipeline → videoPipeline\n- Remove masterAudioPipeline/masterVideoPipeline from project (root group serves as master)\n- Modify makeAudioBus to accept optional destination for hierarchy chaining\n- Add group audio buses in player with track → group → parent group routing\n- Add setMasterVolume/getMasterVolume/setMasterPan via root group's audio bus\n- Add useMediaStreamOutput/useDirectOutput to AudioBus for recording\n- Delete getMasterMixer singleton - functionality moved to root group\n- Update default project with gain effect on root group",
+    "files_changed": 7
   },
   {
     "hash": "a8055cda1902ce8c54135fa881465d6adba7437f",

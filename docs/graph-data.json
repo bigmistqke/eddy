@@ -2470,9 +2470,9 @@
       "node_type": "goal",
       "title": "Refactor video effects to use explicit registry injection",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T16:22:24.330287+01:00",
-      "updated_at": "2026-01-18T16:22:24.330287+01:00",
+      "updated_at": "2026-01-18T17:56:59.579053+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"i would like to separate concerns in the visual effects -> there is 1. a mapping of keys to effects via a registration-pattern 2. the actual compilation and effect code 3. a global registry -> i want to 1. separate these concerns /effects -> only effect code /effect-registry -> registry code -> compileEffectCode needs middleware in between -> this middleware takes a registry and maps the tokens it gets from the timeline-compiler and turns it into webgl programs, based on the registry\"}"
     },
     {
@@ -2547,9 +2547,9 @@
       "node_type": "goal",
       "title": "Implement full audio cascade: clip → track → group → master effects",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T17:31:30.248154+01:00",
-      "updated_at": "2026-01-18T17:31:30.248154+01:00",
+      "updated_at": "2026-01-18T17:56:59.570064+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"add goal to improve the audio pipeline (including group effects and the like)\\n\\nContext from exploration:\\n- Video has full cascade: clip → track → group (nested) → master\\n- Audio currently only: clip → track → master (no group, master unused)\\n- Web Audio API naturally supports graph routing with automatic summing\\n- Need: clip effects, group audio buses, nested group hierarchy, master effects\"}"
     },
     {
@@ -2650,6 +2650,50 @@
       "created_at": "2026-01-18T17:52:58.352299+01:00",
       "updated_at": "2026-01-18T17:52:58.352299+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"6fab7aa\",\"confidence\":95}"
+    },
+    {
+      "id": 242,
+      "change_id": "972a47d6-a3ac-4e73-90b7-75574cd503fc",
+      "node_type": "goal",
+      "title": "Support any UniformValue type in effect schema (vec2, vec3, vec4, mat4, etc.)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T18:00:24.247384+01:00",
+      "updated_at": "2026-01-18T18:00:24.247384+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Explore extending staticValue to support any UniformValue - use vec3 hue shift effect as example\"}"
+    },
+    {
+      "id": 243,
+      "change_id": "9fe038b3-efba-41ca-8b4c-8eefffecd10c",
+      "node_type": "action",
+      "title": "Design staticVec2/staticVec3/staticVec4 schema types",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T18:01:19.533355+01:00",
+      "updated_at": "2026-01-18T18:01:19.533355+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 244,
+      "change_id": "a19dbbac-d2e2-4988-abaf-c973f5ec920c",
+      "node_type": "observation",
+      "title": "Added staticVec2/staticVec3/staticVec4 types and visualEffect.colorize as example of vec3 usage",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T18:04:26.727335+01:00",
+      "updated_at": "2026-01-18T18:04:26.727335+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 245,
+      "change_id": "617340d9-954e-4880-a3dc-b426697ca801",
+      "node_type": "outcome",
+      "title": "Committed: feat: implement multi-param effects with pre-computed paramRefs",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T18:34:08.826435+01:00",
+      "updated_at": "2026-01-18T18:34:08.826435+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"571ef27\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -4885,6 +4929,39 @@
       "weight": 1.0,
       "rationale": "Goal completed",
       "created_at": "2026-01-18T17:53:03.364160+01:00"
+    },
+    {
+      "id": 204,
+      "from_node_id": 242,
+      "to_node_id": 243,
+      "from_change_id": "972a47d6-a3ac-4e73-90b7-75574cd503fc",
+      "to_change_id": "9fe038b3-efba-41ca-8b4c-8eefffecd10c",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation step",
+      "created_at": "2026-01-18T18:01:25.551845+01:00"
+    },
+    {
+      "id": 205,
+      "from_node_id": 243,
+      "to_node_id": 244,
+      "from_change_id": "9fe038b3-efba-41ca-8b4c-8eefffecd10c",
+      "to_change_id": "a19dbbac-d2e2-4988-abaf-c973f5ec920c",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-01-18T18:04:30.886307+01:00"
+    },
+    {
+      "id": 206,
+      "from_node_id": 243,
+      "to_node_id": 245,
+      "from_change_id": "9fe038b3-efba-41ca-8b4c-8eefffecd10c",
+      "to_change_id": "617340d9-954e-4880-a3dc-b426697ca801",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-18T18:34:12.605172+01:00"
     }
   ]
 }
