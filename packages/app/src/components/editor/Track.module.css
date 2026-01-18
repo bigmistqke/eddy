@@ -131,3 +131,53 @@
   font-size: 12px;
   text-align: center;
 }
+
+/* Vector param controls (e.g., RGB color) */
+.vectorParam {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.vectorLabel {
+  color: #888;
+  font-size: 11px;
+}
+
+.vectorInputs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.vectorInput {
+  display: grid;
+  grid-template-columns: 12px 1fr;
+  align-items: center;
+  gap: 2px;
+  font-size: 10px;
+  color: #666;
+}
+
+.vectorInput input {
+  width: 100%;
+  padding: 2px 4px;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 3px;
+  color: #fff;
+  font-size: 11px;
+  text-align: center;
+}
+
+.vectorInput input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.vectorInput input::-webkit-inner-spin-button,
+.vectorInput input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}

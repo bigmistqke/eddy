@@ -9,6 +9,7 @@ import {
   resumeAudioContext,
 } from '@eddy/audio'
 import type { AudioEffect, Clip, ClipSource, ClipSourceStem, Project, Track } from '@eddy/lexicons'
+import type { EffectValue } from '@eddy/video'
 import { makeMuxer } from '@eddy/media'
 import { assertedNotNullish, debug } from '@eddy/utils'
 import { createEffect, createSelector, createSignal, mapArray, type Accessor } from 'solid-js'
@@ -335,6 +336,34 @@ export function createEditor(options: CreateEditorOptions) {
       return effect.params.value.value
     }
     return 0
+  }
+
+  /** Set a specific param value for a video effect (supports scalar and vector values) */
+  function setVideoEffectParam(
+    trackId: string,
+    effectIndex: number,
+    paramKey: string,
+    value: EffectValue,
+  ) {
+    // Update store
+    setProject(
+      'tracks',
+      t => t.id === trackId,
+      'videoPipeline',
+      effectIndex,
+      effect => {
+        if (!effect || !('params' in effect) || !effect.params) return effect
+        const params = effect.params as Record<string, { value: number | number[] }>
+        if (!(paramKey in params)) return effect
+        return {
+          ...effect,
+          params: { ...params, [paramKey]: { ...params[paramKey], value } },
+        }
+      },
+    )
+
+    // Update compositor directly for immediate feedback
+    player()?.compositor.setEffectValue('track', trackId, effectIndex, paramKey, value)
   }
 
   function getVideoPipeline(trackId: string) {
@@ -974,6 +1003,7 @@ export function createEditor(options: CreateEditorOptions) {
     },
 
     setVideoEffectValue,
+    setVideoEffectParam,
 
     toggleLoop() {
       const _player = player()
