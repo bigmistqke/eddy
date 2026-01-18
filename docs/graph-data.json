@@ -2463,6 +2463,39 @@
       "created_at": "2026-01-18T16:14:25.032446+01:00",
       "updated_at": "2026-01-18T16:14:25.032446+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"cffb0d1\",\"confidence\":95}"
+    },
+    {
+      "id": 225,
+      "change_id": "dd21c8f8-941a-47f8-9c2a-31ea22cab47a",
+      "node_type": "goal",
+      "title": "Refactor video effects to use explicit registry injection",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T16:22:24.330287+01:00",
+      "updated_at": "2026-01-18T16:22:24.330287+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"i would like to separate concerns in the visual effects -> there is 1. a mapping of keys to effects via a registration-pattern 2. the actual compilation and effect code 3. a global registry -> i want to 1. separate these concerns /effects -> only effect code /effect-registry -> registry code -> compileEffectCode needs middleware in between -> this middleware takes a registry and maps the tokens it gets from the timeline-compiler and turns it into webgl programs, based on the registry\"}"
+    },
+    {
+      "id": 226,
+      "change_id": "5180ff85-c3cf-4094-9c7b-319cd3369716",
+      "node_type": "action",
+      "title": "Refactored video effects to use explicit registry injection",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T16:26:05.967515+01:00",
+      "updated_at": "2026-01-18T16:26:05.967515+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 227,
+      "change_id": "d759c895-4049-4705-9a72-20bcf5e63997",
+      "node_type": "outcome",
+      "title": "Committed: refactor separate video effects into effects, effect-registry, and effect-manager directories",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T16:56:21.618308+01:00",
+      "updated_at": "2026-01-18T16:56:21.618308+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"4a7223f\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -4522,6 +4555,28 @@
       "weight": 1.0,
       "rationale": "Dependency cleanup",
       "created_at": "2026-01-18T16:14:32.739917+01:00"
+    },
+    {
+      "id": 188,
+      "from_node_id": 225,
+      "to_node_id": 226,
+      "from_change_id": "dd21c8f8-941a-47f8-9c2a-31ea22cab47a",
+      "to_change_id": "5180ff85-c3cf-4094-9c7b-319cd3369716",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-01-18T16:26:10.424811+01:00"
+    },
+    {
+      "id": 189,
+      "from_node_id": 226,
+      "to_node_id": 227,
+      "from_change_id": "5180ff85-c3cf-4094-9c7b-319cd3369716",
+      "to_change_id": "d759c895-4049-4705-9a72-20bcf5e63997",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-18T16:56:26.475106+01:00"
     }
   ]
 }

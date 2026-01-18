@@ -1,10 +1,26 @@
 [
   {
-    "hash": "cffb0d11b4171a075adc856f11e42aa1f1a49a9a",
-    "short_hash": "cffb0d1",
+    "hash": "4a7223f22cbd2e250379405e1cd4f6122eecadd4",
+    "short_hash": "4a7223f",
     "author": "bigmistqke",
-    "date": "2026-01-18T16:14:18+01:00",
-    "message": "chore: use published view.gl package\n\nSwitch from local link to npm @bigmistqke/view.gl@0.1.12.",
+    "date": "2026-01-18T16:56:16+01:00",
+    "message": "refactor: separate video effects into effects, effect-registry, and effect-manager directories\n\nExplicit registry injection replaces global registry. Effects are pure factories,\nregistry and manager take registry as parameter.",
+    "files_changed": 25
+  },
+  {
+    "hash": "131dc0507163d766887fadfb065800f549ddecfa",
+    "short_hash": "131dc05",
+    "author": "bigmistqke",
+    "date": "2026-01-18T16:15:51+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
+    "hash": "86559ea9f809f4949c315faa38d1d94956cf60bc",
+    "short_hash": "86559ea",
+    "author": "bigmistqke",
+    "date": "2026-01-18T16:14:56+01:00",
+    "message": "chore: sync deciduous graph",
     "files_changed": 2
   },
   {
@@ -14,14 +30,6 @@
     "date": "2026-01-18T16:14:18+01:00",
     "message": "chore: use published view.gl package\n\nSwitch from local link to npm @bigmistqke/view.gl@0.1.12.",
     "files_changed": 2
-  },
-  {
-    "hash": "4755b1310ac93b2008c180ef1d4e8fb9714aa3c9",
-    "short_hash": "4755b13",
-    "author": "bigmistqke",
-    "date": "2026-01-18T16:14:11+01:00",
-    "message": "refactor: clean up effect catalog code style\n\nUse semantic variable names and inline method definitions for clarity.",
-    "files_changed": 3
   },
   {
     "hash": "ad181304836e9e60c4e76c4c4c8a34aaa265a3bf",
