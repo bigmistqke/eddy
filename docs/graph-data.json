@@ -2331,6 +2331,28 @@
       "created_at": "2026-01-18T01:29:10.632273+01:00",
       "updated_at": "2026-01-18T01:29:10.632273+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"35229ef\",\"confidence\":95}"
+    },
+    {
+      "id": 213,
+      "change_id": "0bbf1334-b2ad-42c6-8592-5a7aafecd5d0",
+      "node_type": "observation",
+      "title": "Duplicate effect types should inline function once, use array uniforms for multiple instances",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T01:41:23.033987+01:00",
+      "updated_at": "2026-01-18T01:41:23.033987+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 214,
+      "change_id": "56e1b410-edcb-4a9b-aeeb-effb7e63b7c6",
+      "node_type": "action",
+      "title": "Integrated cascading video effects into compiled timeline",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T01:57:40.257142+01:00",
+      "updated_at": "2026-01-18T01:57:40.257142+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"d9c7f58\",\"confidence\":90}"
     }
   ],
   "edges": [
@@ -4280,6 +4302,28 @@
       "weight": 1.0,
       "rationale": "Committed fix",
       "created_at": "2026-01-18T01:29:16.571021+01:00"
+    },
+    {
+      "id": 178,
+      "from_node_id": 203,
+      "to_node_id": 213,
+      "from_change_id": "86fa29f4-725b-4dff-981a-0641bd5ab1d7",
+      "to_change_id": "0bbf1334-b2ad-42c6-8592-5a7aafecd5d0",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Optimization insight for cascading effects",
+      "created_at": "2026-01-18T01:41:27.404758+01:00"
+    },
+    {
+      "id": 179,
+      "from_node_id": 203,
+      "to_node_id": 214,
+      "from_change_id": "86fa29f4-725b-4dff-981a-0641bd5ab1d7",
+      "to_change_id": "56e1b410-edcb-4a9b-aeeb-effb7e63b7c6",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-01-18T01:57:44.782803+01:00"
     }
   ]
 }
