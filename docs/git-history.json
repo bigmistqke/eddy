@@ -1,11 +1,19 @@
 [
   {
-    "hash": "6aaaef199e611ea6fdf1de4d6e76548ca6682c70",
-    "short_hash": "6aaaef1",
+    "hash": "fd3cfdd5797d3b0db175c97a4114540ee7cb7ab9",
+    "short_hash": "fd3cfdd",
     "author": "bigmistqke",
-    "date": "2026-01-18T03:37:59+01:00",
-    "message": "chore: link view.gl to local package for development",
+    "date": "2026-01-18T04:15:21+01:00",
+    "message": "chore: sync deciduous graph",
     "files_changed": 2
+  },
+  {
+    "hash": "3e91906fb8d578ab50ca1a80e85586f37295e5ce",
+    "short_hash": "3e91906",
+    "author": "bigmistqke",
+    "date": "2026-01-18T04:15:09+01:00",
+    "message": "refactor: support multi-parameter video effects with initialValues record",
+    "files_changed": 7
   },
   {
     "hash": "6aaaef199e611ea6fdf1de4d6e76548ca6682c70",
@@ -14,14 +22,6 @@
     "date": "2026-01-18T03:37:59+01:00",
     "message": "chore: link view.gl to local package for development",
     "files_changed": 2
-  },
-  {
-    "hash": "aced95b5a50afdd653a20be1b77da573463ec1a7",
-    "short_hash": "aced95b",
-    "author": "bigmistqke",
-    "date": "2026-01-18T03:37:27+01:00",
-    "message": "chore: disable debugs",
-    "files_changed": 3
   },
   {
     "hash": "17123f3d87f5fe16ed5e7bdc6e65f8b0e26aca36",
