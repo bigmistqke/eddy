@@ -2496,6 +2496,17 @@
       "created_at": "2026-01-18T16:56:21.618308+01:00",
       "updated_at": "2026-01-18T16:56:21.618308+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"4a7223f\",\"confidence\":95}"
+    },
+    {
+      "id": 228,
+      "change_id": "b173c3e2-14bf-437f-8b0c-54c139f503cf",
+      "node_type": "outcome",
+      "title": "Committed: consolidate effect-registry into effect-manager and simplify EffectInstance",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T17:10:04.936980+01:00",
+      "updated_at": "2026-01-18T17:10:04.936980+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"2474e6c\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -4577,6 +4588,17 @@
       "weight": 1.0,
       "rationale": "Committed",
       "created_at": "2026-01-18T16:56:26.475106+01:00"
+    },
+    {
+      "id": 190,
+      "from_node_id": 226,
+      "to_node_id": 228,
+      "from_change_id": "5180ff85-c3cf-4094-9c7b-319cd3369716",
+      "to_change_id": "b173c3e2-14bf-437f-8b0c-54c139f503cf",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-18T17:10:04.948174+01:00"
     }
   ]
 }

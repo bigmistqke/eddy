@@ -1,5 +1,21 @@
 [
   {
+    "hash": "2474e6cfb738b9def59dd844fbc9c8fc7e29ec5c",
+    "short_hash": "2474e6c",
+    "author": "bigmistqke",
+    "date": "2026-01-18T17:09:59+01:00",
+    "message": "refactor: consolidate effect-registry into effect-manager and simplify EffectInstance to string",
+    "files_changed": 11
+  },
+  {
+    "hash": "97511612d943c9ac034f6512834996ceb5ee0a40",
+    "short_hash": "9751161",
+    "author": "bigmistqke",
+    "date": "2026-01-18T16:56:38+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
     "hash": "4a7223f22cbd2e250379405e1cd4f6122eecadd4",
     "short_hash": "4a7223f",
     "author": "bigmistqke",
@@ -8,20 +24,12 @@
     "files_changed": 25
   },
   {
-    "hash": "131dc0507163d766887fadfb065800f549ddecfa",
-    "short_hash": "131dc05",
+    "hash": "4a7223f22cbd2e250379405e1cd4f6122eecadd4",
+    "short_hash": "4a7223f",
     "author": "bigmistqke",
-    "date": "2026-01-18T16:15:51+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "86559ea9f809f4949c315faa38d1d94956cf60bc",
-    "short_hash": "86559ea",
-    "author": "bigmistqke",
-    "date": "2026-01-18T16:14:56+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
+    "date": "2026-01-18T16:56:16+01:00",
+    "message": "refactor: separate video effects into effects, effect-registry, and effect-manager directories\n\nExplicit registry injection replaces global registry. Effects are pure factories,\nregistry and manager take registry as parameter.",
+    "files_changed": 25
   },
   {
     "hash": "cffb0d11b4171a075adc856f11e42aa1f1a49a9a",
