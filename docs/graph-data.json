@@ -2430,6 +2430,17 @@
       "created_at": "2026-01-18T13:57:52.417773+01:00",
       "updated_at": "2026-01-18T13:57:52.417773+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"49b795b\",\"confidence\":95}"
+    },
+    {
+      "id": 222,
+      "change_id": "f8068848-0cd2-4dde-8ad1-da10155eb7aa",
+      "node_type": "action",
+      "title": "Remove initialValues from effect types",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T14:13:45.878199+01:00",
+      "updated_at": "2026-01-18T14:13:45.878199+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"ad18130\",\"confidence\":90}"
     }
   ],
   "edges": [

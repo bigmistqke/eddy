@@ -1,5 +1,21 @@
 [
   {
+    "hash": "ad181304836e9e60c4e76c4c4c8a34aaa265a3bf",
+    "short_hash": "ad18130",
+    "author": "bigmistqke",
+    "date": "2026-01-18T14:13:41+01:00",
+    "message": "refactor: remove initialValues from effect types\n\nValues are set via setEffectValue() before each render, making\ninitialValues redundant. Also renamed compose-effects to compile-effect-program.",
+    "files_changed": 8
+  },
+  {
+    "hash": "b08c10cca78c0f16f20cf13ad2783e5ae25d4c4b",
+    "short_hash": "b08c10c",
+    "author": "bigmistqke",
+    "date": "2026-01-18T13:58:00+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
     "hash": "49b795b7307d3fff92d1196497981dc8134013a5",
     "short_hash": "49b795b",
     "author": "bigmistqke",
@@ -8,20 +24,12 @@
     "files_changed": 4
   },
   {
-    "hash": "cb878929861e4d3fb7bc50ef2deca347371679b0",
-    "short_hash": "cb87892",
+    "hash": "49b795b7307d3fff92d1196497981dc8134013a5",
+    "short_hash": "49b795b",
     "author": "bigmistqke",
-    "date": "2026-01-18T13:49:50+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "29f6cc22ef23220bcbd66c3ebc89f941f0ac5e8e",
-    "short_hash": "29f6cc2",
-    "author": "bigmistqke",
-    "date": "2026-01-18T13:49:12+01:00",
-    "message": "chore: minor cleanups in video effects code\n\n- Remove glsl tag from no-effects comment string\n- Remove redundant section header comment\n- Simplify code comment",
-    "files_changed": 3
+    "date": "2026-01-18T13:57:40+01:00",
+    "message": "refactor: separate effect manager from compositor\n\nEffect chain compilation now handled by makeEffectManager(gl), keeping\nmakeVideoCompositor focused on texture rendering. Worker wires them together.",
+    "files_changed": 4
   },
   {
     "hash": "29f6cc22ef23220bcbd66c3ebc89f941f0ac5e8e",
