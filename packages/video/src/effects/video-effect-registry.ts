@@ -1,38 +1,32 @@
 /**
  * Video Effect Registry
  *
- * Registry of video effect factories by type.
- * Similar to AudioElementRegistry but for shader-based video effects.
+ * Registry of video effect type factories.
+ * Factories take a size parameter (instance count) and return a VideoEffectType.
  */
 
-import type { VideoEffectFactory, VideoEffectToken } from './types'
+import type { VideoEffectType } from './types'
 
-/** Parameters passed to video effect factory - all values are 0-100 scaled */
-export type VideoEffectParams = Record<string, number>
-
-/** Factory that creates a VideoEffectToken with initial params */
-export type VideoEffectRegistryFactory = (params: VideoEffectParams) => VideoEffectToken<any>
-
-/** Registry of video effect factories by effect type */
-export const VideoEffectRegistry: Record<string, VideoEffectRegistryFactory> = {}
+/** Registry of video effect type factories by effect type name */
+export const VideoEffectTypeRegistry: Record<string, (size: number) => VideoEffectType<any>> = {}
 
 /**
- * Register a video effect factory.
- * The factory receives initial params (0-100 scaled) and returns a VideoEffectToken.
+ * Register a video effect type factory.
+ * The factory receives size (instance count) and returns a VideoEffectType.
  */
-export function registerVideoEffect(type: string, factory: VideoEffectRegistryFactory): void {
-  VideoEffectRegistry[type] = factory
+export function registerVideoEffectType<T>(type: string, factory: (size: number) => VideoEffectType<T>): void {
+  VideoEffectTypeRegistry[type] = factory
 }
 
 /**
- * Create a video effect token from a type and params.
+ * Create a video effect type from a type name and size.
  * Returns undefined if the effect type is not registered.
  */
-export function createVideoEffect(type: string, params: VideoEffectParams): VideoEffectToken | undefined {
-  const factory = VideoEffectRegistry[type]
+export function createVideoEffectType(type: string, size: number): VideoEffectType | undefined {
+  const factory = VideoEffectTypeRegistry[type]
   if (!factory) {
     console.warn(`Unknown video effect type: ${type}`)
     return undefined
   }
-  return factory(params)
+  return factory(size)
 }

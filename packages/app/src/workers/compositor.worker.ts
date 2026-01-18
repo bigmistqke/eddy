@@ -1,12 +1,11 @@
 import { expose, type Transferred } from '@bigmistqke/rpc/messenger'
 import { debug } from '@eddy/utils'
 import {
-  createVideoEffect,
   makeVideoCompositor,
   registerBuiltInVideoEffects,
   type CompiledEffectChain,
+  type EffectInstance,
   type VideoCompositor,
-  type VideoEffectToken,
 } from '@eddy/video'
 import {
   getActivePlacements,
@@ -147,14 +146,11 @@ function getOrCompileEffectChain(
   const cached = effectChainsBySignature.get(signature)
   if (cached) return cached
 
-  // Compile from effect types in refs
-  const effects: VideoEffectToken[] = []
-  for (const ref of refs) {
-    const token = createVideoEffect(ref.effectType, { value: 0 })
-    if (token) {
-      effects.push(token)
-    }
-  }
+  // Build effect instances from refs
+  const effects: EffectInstance[] = refs.map(ref => ({
+    type: ref.effectType,
+    initialValue: 0,
+  }))
 
   if (effects.length === 0) return null
 

@@ -1,6 +1,6 @@
 import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
 import { assertedNotNullish, debug } from '@eddy/utils'
-import { composeEffects } from './effects/compose-effects'
+import { composeEffectTypes } from './effects/compose-effects'
 import type { CompiledEffectChain, VideoEffectChain } from './effects/types'
 
 const log = debug('video:make-video-compositor', false)
@@ -320,12 +320,12 @@ export function makeVideoCompositor(canvas: OffscreenCanvas): VideoCompositor {
       const existing = effectChains.get(chain.id)
       if (existing) return existing
 
-      // Compile the effect chain
-      const result = composeEffects(gl, chain.effects)
+      // Compile the effect chain using new deduplication-aware composer
+      const result = composeEffectTypes(gl, chain.effects)
       const compiled: CompiledEffectChain = {
         program: result.program,
         view: result.view,
-        controls: result.controls as CompiledEffectChain['controls'],
+        controls: result.controls,
       }
       effectChains.set(chain.id, compiled)
 

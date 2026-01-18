@@ -2,22 +2,20 @@
  * Compose Effects
  *
  * Composes multiple video effects into a single fragment shader.
- * Handles the "snake eating its tail" pattern:
- * 1. Collect all effect GLSL fragments
- * 2. Build main() that chains apply() calls
- * 3. Compile to program
- * 4. Pass program back to each effect's connect()
+ * Supports deduplication: same effect type used multiple times
+ * inlines the function once with array uniforms.
  */
 
 import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
-import type { VideoEffectToken } from './types'
+import type { EffectControls, EffectInstance, VideoEffectType } from './types'
+import { createVideoEffectType } from './video-effect-registry'
 
-/** Result of composing effects */
-export interface ComposedEffects<TEffects extends VideoEffectToken[]> {
+/** Result of composing effect types */
+export interface ComposedEffectTypes {
   /** The compiled WebGL program */
   program: WebGLProgram
-  /** Controls for each effect, keyed by index */
-  controls: { [K in keyof TEffects]: TEffects[K] extends VideoEffectToken<infer C> ? C : never }
+  /** Controls for each effect instance, in order */
+  controls: EffectControls[]
   /** View for the base uniforms (u_video) */
   view: {
     uniforms: {
@@ -30,40 +28,81 @@ export interface ComposedEffects<TEffects extends VideoEffectToken[]> {
 }
 
 /**
- * Compose multiple video effects into a single shader program.
+ * Compose effect instances into a single shader program.
+ * Deduplicates: same effect type appears once in shader with array uniforms.
  *
  * @param gl - WebGL context
- * @param effects - Array of effect tokens to compose
- * @returns Compiled program and controls for each effect
+ * @param instances - Array of effect instances to compose (in order)
+ * @returns Compiled program and controls for each instance
+ *
+ * @example
+ * ```ts
+ * const composed = composeEffectTypes(gl, [
+ *   { type: 'visual.brightness', initialValue: 10 },
+ *   { type: 'visual.contrast', initialValue: 120 },
+ *   { type: 'visual.brightness', initialValue: -5 },
+ * ])
+ * // Shader has: applyBrightness once (size=2), applyContrast once (size=1)
+ * // Calls: applyBrightness(color, 0), applyContrast(color, 0), applyBrightness(color, 1)
+ * ```
  */
-export function composeEffects<TEffects extends VideoEffectToken[]>(
+export function composeEffectTypes(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
-  effects: TEffects,
-): ComposedEffects<TEffects> {
-  // Build the effect chain in main()
-  // Start: color = texture2D(u_video, uv)
-  // Each effect: color = ${effect.apply}(color)
-  // End: gl_FragColor = color
+  instances: EffectInstance[],
+): ComposedEffectTypes {
+  // Step 1: Count instances per effect type
+  const typeCounts = new Map<string, number>()
+  for (const instance of instances) {
+    typeCounts.set(instance.type, (typeCounts.get(instance.type) ?? 0) + 1)
+  }
 
+  // Step 2: Create each effect type once with the correct size
+  const effectTypes = new Map<string, VideoEffectType>()
+  for (const [type, count] of typeCounts) {
+    const effectType = createVideoEffectType(type, count)
+    if (effectType) {
+      effectTypes.set(type, effectType)
+    }
+  }
+
+  // Step 3: Track instance index per type for generating calls
+  const typeInstanceIndex = new Map<string, number>()
+  for (const type of typeCounts.keys()) {
+    typeInstanceIndex.set(type, 0)
+  }
+
+  // Step 4: Build effect chain with indexed calls
   const effectChain =
-    effects.length > 0
-      ? effects.map(effect => glsl`color = ${effect.apply}(color);`)
+    instances.length > 0
+      ? instances.map(instance => {
+          const effectType = effectTypes.get(instance.type)
+          if (!effectType) return glsl`/* unknown effect: ${instance.type} */`
+
+          const index = typeInstanceIndex.get(instance.type)!
+          typeInstanceIndex.set(instance.type, index + 1)
+
+          return glsl`color = ${effectType.apply}(color, ${index});`
+        })
       : [glsl`/* no effects */`]
 
-  const fragmentShader = glsl`
+  // Step 5: Build fragment shader (each type's fragment included once)
+  const uniqueFragments = Array.from(effectTypes.values()).map(et => et.fragment)
+
+  const fragmentShader = glsl`#version 300 es
     precision mediump float;
 
     ${uniform.sampler2D('u_video')}
-    ${effects.map(effect => effect.fragment)}
+    ${uniqueFragments}
 
-    varying vec2 v_uv;
+    in vec2 v_uv;
+    out vec4 fragColor;
 
     void main() {
       vec2 uv = v_uv * 0.5 + 0.5;
       uv.y = 1.0 - uv.y;
-      vec4 color = texture2D(u_video, uv);
+      vec4 color = texture(u_video, uv);
       ${effectChain}
-      gl_FragColor = color;
+      fragColor = color;
     }
   `
 
@@ -73,14 +112,24 @@ export function composeEffects<TEffects extends VideoEffectToken[]>(
   // Activate program before setting initial uniform values
   gl.useProgram(program)
 
-  // Connect each effect to get its controls
-  const controls = effects.map(effect =>
-    effect.connect(gl, program),
-  ) as ComposedEffects<TEffects>['controls']
+  // Step 6: Reset instance indices and connect each instance
+  for (const type of typeCounts.keys()) {
+    typeInstanceIndex.set(type, 0)
+  }
+
+  const controls = instances.map(instance => {
+    const effectType = effectTypes.get(instance.type)
+    if (!effectType) return {}
+
+    const index = typeInstanceIndex.get(instance.type)!
+    typeInstanceIndex.set(instance.type, index + 1)
+
+    return effectType.connectInstance(gl, program, index, instance.initialValue)
+  })
 
   return {
     program,
     controls,
-    view: compiled.view as ComposedEffects<TEffects>['view'],
+    view: compiled.view as ComposedEffectTypes['view'],
   }
 }

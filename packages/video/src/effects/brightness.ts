@@ -8,8 +8,8 @@
 
 import { view } from '@bigmistqke/view.gl'
 import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
-import type { VideoEffectToken } from './types'
-import { registerVideoEffect, type VideoEffectParams } from './video-effect-registry'
+import type { VideoEffectType } from './types'
+import { registerVideoEffectType } from './video-effect-registry'
 
 export interface BrightnessControls {
   setBrightness: (value: number) => void
@@ -19,25 +19,31 @@ const brightness = Symbol('brightness')
 const apply = Symbol('applyBrightness')
 
 /**
- * Create a brightness effect.
- * @param initialValue - Initial brightness (-100 to 100, default 0)
+ * Create a brightness effect type.
+ * Called once per effect type with the total instance count.
+ * @param size - Number of instances of this effect in the chain
  */
-export function makeBrightnessEffect(initialValue = 0): VideoEffectToken<BrightnessControls> {
+export function makeBrightnessEffect(size: number): VideoEffectType<BrightnessControls> {
   const fragment = glsl`
-    ${uniform.float(brightness)}
+    ${uniform.float(brightness, { size })}
 
-    vec4 ${apply}(vec4 color) {
-      return vec4(color.rgb + ${brightness}, color.a);
+    vec4 ${apply}(vec4 color, int index) {
+      return vec4(color.rgb + ${brightness}[index], color.a);
     }
   `
 
   return {
     fragment,
     apply,
-    connect(gl, program) {
-      const v = view(gl, program, compile.toSchema(fragment))
+    connectInstance(gl, program, instanceIndex, initialValue = 0) {
+      const schema = compile.toSchema(fragment)
+      console.log('brightness schema:', schema)
+      console.log('brightness uniform def:', schema.uniforms[brightness])
+      const v = view(gl, program, schema)
+      console.log('brightness view.uniforms:', v.uniforms)
+      console.log('brightness view.uniforms[brightness]:', v.uniforms[brightness])
       // Convert from lexicon scale (-100 to 100) to shader scale (-1 to 1)
-      const setBrightness = (value: number) => v.uniforms[brightness].set(value / 100)
+      const setBrightness = (value: number) => v.uniforms[brightness][instanceIndex].set(value / 100)
       // Apply initial value
       setBrightness(initialValue)
       return { setBrightness }
@@ -45,9 +51,7 @@ export function makeBrightnessEffect(initialValue = 0): VideoEffectToken<Brightn
   }
 }
 
-/** Register brightness effect with the video effect registry */
+/** Register brightness effect type with the registry */
 export function registerBrightnessEffect(): void {
-  registerVideoEffect('visual.brightness', (params: VideoEffectParams) => {
-    return makeBrightnessEffect(params.value ?? 0)
-  })
+  registerVideoEffectType('visual.brightness', makeBrightnessEffect)
 }

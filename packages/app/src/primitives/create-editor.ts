@@ -72,7 +72,11 @@ function createDefaultProject(): Project {
           { type: 'audio.gain', value: { value: 100 } },
           { type: 'audio.pan', value: { value: 50 } },
         ],
-        videoPipeline: [{ type: 'visual.brightness', value: { value: 50 } }],
+        videoPipeline: [
+          { type: 'visual.brightness', value: { value: 50 } },
+          { type: 'visual.saturation', value: { value: 120 } },
+          { type: 'visual.brightness', value: { value: 20 } },
+        ],
       },
       {
         id: 'track-1',
