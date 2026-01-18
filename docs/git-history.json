@@ -1,27 +1,35 @@
 [
   {
+    "hash": "138e97de4910237bb298466e269cb74c8a281a01",
+    "short_hash": "138e97d",
+    "author": "bigmistqke",
+    "date": "2026-01-18T19:06:00+01:00",
+    "message": "refactor: simplify effect rendering with onBeforeRender callback\n\n- Replace effectValues/effectParamRefs arrays with onBeforeRender callback\n- Pre-compute effect keys in EffectRef to avoid hot-path string concatenation\n- Move EffectParamRef type from @eddy/video to compile-layout-timeline\n- Move injectPreviewClip utilities to make-player.ts where used\n- Extract PREVIEW_CLIP_ID to constants.ts\n- Remove unused timeline query functions (getPlacementsInRange, getNextTransition)",
+    "files_changed": 6
+  },
+  {
+    "hash": "362da737d42e553df22c620924768209b703d225",
+    "short_hash": "362da73",
+    "author": "bigmistqke",
+    "date": "2026-01-18T18:42:16+01:00",
+    "message": "chore: mark goals 201 and 242 as completed",
+    "files_changed": 1
+  },
+  {
+    "hash": "9f013cad9e73650538f70c41261bf35403a6afc4",
+    "short_hash": "9f013ca",
+    "author": "bigmistqke",
+    "date": "2026-01-18T18:41:04+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
     "hash": "879fa0d7f1c294d976bcf4708201b2f80e846459",
     "short_hash": "879fa0d",
     "author": "bigmistqke",
     "date": "2026-01-18T18:40:44+01:00",
     "message": "feat: add UI for colorize effect with vector param support",
     "files_changed": 4
-  },
-  {
-    "hash": "f7bdc20c6e10ab1770c93028398e6c87f7b93152",
-    "short_hash": "f7bdc20",
-    "author": "bigmistqke",
-    "date": "2026-01-18T18:34:27+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "571ef278897f527f53340371be7a626dd681fb64",
-    "short_hash": "571ef27",
-    "author": "bigmistqke",
-    "date": "2026-01-18T18:34:01+01:00",
-    "message": "feat: implement multi-param effects with pre-computed paramRefs\n\n- Add params Record pattern to lexicons with separate defs per effect\n- Add vec3/vec4 types for vector effect params (colorize)\n- Change effect controls to use paramKey directly (value(), color(), intensity())\n- Add colorize effect with color (vec3) and intensity (scalar) params\n- Pre-compute effectParamRefs at timeline compile time (perf optimization)\n- Update compositor to use pre-computed refs instead of per-frame allocation",
-    "files_changed": 14
   },
   {
     "hash": "571ef278897f527f53340371be7a626dd681fb64",
