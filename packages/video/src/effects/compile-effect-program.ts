@@ -11,11 +11,11 @@ import type { EffectControls, EffectInstance, VideoEffectType } from './types'
 import { createVideoEffectFromRegistry } from './video-effect-registry'
 
 /** Result of composing effect types */
-export interface ComposedEffectTypes {
+export interface EffectProgram<T extends EffectControls = EffectControls> {
   /** The compiled WebGL program */
   program: WebGLProgram
   /** Controls for each effect instance, in order */
-  controls: EffectControls[]
+  controls: T[]
   /** View for the base uniforms (u_video) */
   view: {
     uniforms: {
@@ -37,19 +37,19 @@ export interface ComposedEffectTypes {
  *
  * @example
  * ```ts
- * const composed = composeEffectTypes(gl, [
- *   { type: 'visual.brightness', initialValues: { brightness: 10 } },
- *   { type: 'visual.contrast', initialValues: { contrast: 120 } },
- *   { type: 'visual.brightness', initialValues: { brightness: -5 } },
+ * const composed = compileEffectProgram(gl, [
+ *   { type: 'visual.brightness' },
+ *   { type: 'visual.contrast' },
+ *   { type: 'visual.brightness' },
  * ])
  * // Shader has: applyBrightness once (size=2), applyContrast once (size=1)
  * // Calls: applyBrightness(color, 0), applyContrast(color, 0), applyBrightness(color, 1)
  * ```
  */
-export function composeEffectTypes(
+export function compileEffectProgram<T extends EffectInstance>(
   gl: WebGL2RenderingContext | WebGLRenderingContext,
-  instances: EffectInstance[],
-): ComposedEffectTypes {
+  instances: T[],
+): EffectProgram {
   // Step 1: Count instances per effect type
   const typeCounts = new Map<string, number>()
   for (const instance of instances) {
@@ -124,12 +124,12 @@ export function composeEffectTypes(
     const index = typeInstanceIndex.get(instance.type)!
     typeInstanceIndex.set(instance.type, index + 1)
 
-    return effectType.connect(gl, program, index, instance.initialValues)
+    return effectType.connect(gl, program, index)
   })
 
   return {
     program,
     controls,
-    view: compiled.view as ComposedEffectTypes['view'],
+    view: compiled.view as EffectProgram['view'],
   }
 }

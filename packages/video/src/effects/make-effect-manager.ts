@@ -6,8 +6,8 @@
  */
 
 import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
+import { compileEffectProgram } from './compile-effect-program'
 import type { EffectControls, EffectInstance } from './types'
-import { composeEffectTypes } from './compose-effects'
 
 /**********************************************************************************/
 /*                                                                                */
@@ -113,7 +113,7 @@ export function makeEffectManager(
       if (existing) return existing
 
       // Compile the effect chain
-      const result = composeEffectTypes(gl, chain.effects)
+      const result = compileEffectProgram(gl, chain.effects)
       const compiled: CompiledEffectChain = {
         program: result.program,
         view: result.view,

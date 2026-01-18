@@ -36,14 +36,13 @@ export function makeBrightnessEffect(size: number): VideoEffectType<BrightnessCo
   return {
     fragment,
     apply,
-    connect(gl, program, index, initialValues) {
+    connect(gl, program, index) {
       const {
         uniforms: { [brightness]: set },
       } = view(gl, program, schema)
 
       // Convert from lexicon scale (-100 to 100) to shader scale (-1 to 1)
       const setBrightness = (value: number) => set[index].set(value / 100)
-      setBrightness(initialValues?.brightness ?? 0)
 
       return { setBrightness }
     },

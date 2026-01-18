@@ -8,8 +8,16 @@
 
 import type { GLSL } from '@bigmistqke/view.gl'
 
+/** Uniform value types supported by effects */
+export type UniformValue =
+  | number // float, int
+  | [number, number] // vec2
+  | [number, number, number] // vec3
+  | [number, number, number, number] // vec4
+  | boolean // bool
+
 /** Controls returned by an effect after binding to a compiled program */
-export type EffectControls = Record<string, (value: number) => void>
+export type EffectControls = Record<string, (value: UniformValue) => void>
 
 /**
  * A video effect type with deduplication support.
@@ -19,6 +27,8 @@ export type EffectControls = Record<string, (value: number) => void>
  * 2. Function takes int index parameter for array access (WebGL2 only)
  * 3. Each instance calls the function with its index
  * 4. connectInstance creates controls for a specific instance
+ *
+ * @template TControls - The controls returned by connect()
  */
 export interface VideoEffectType<TControls = EffectControls> {
   /** GLSL fragment containing array uniform and apply function */
@@ -30,7 +40,6 @@ export interface VideoEffectType<TControls = EffectControls> {
     gl: WebGL2RenderingContext | WebGLRenderingContext,
     program: WebGLProgram,
     instanceIndex: number,
-    initialValues?: Record<string, number>,
   ): TControls
 }
 
@@ -38,6 +47,4 @@ export interface VideoEffectType<TControls = EffectControls> {
 export interface EffectInstance {
   /** Effect type name (e.g., 'visual.brightness') */
   type: string
-  /** Initial values for this instance's uniforms */
-  initialValues?: Record<string, number>
 }
