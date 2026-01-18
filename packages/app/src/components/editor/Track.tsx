@@ -1,3 +1,4 @@
+import type { VisualEffect } from '@eddy/lexicons'
 import type { EffectValue } from '@eddy/video'
 import clsx from 'clsx'
 import { FiDownload, FiTrash2 } from 'solid-icons/fi'
@@ -25,6 +26,9 @@ interface VectorParamMeta {
 }
 
 type ParamMeta = ScalarParamMeta | VectorParamMeta
+
+/** Loose type for accessing effect param values by key */
+type EffectParams = Record<string, { value?: number | number[] | string } | undefined>
 
 /** Effect metadata with params */
 interface EffectMeta {
@@ -64,12 +68,6 @@ const VIDEO_EFFECT_META: Record<string, EffectMeta> = {
   },
 }
 
-/** Video effect from pipeline */
-interface VideoEffect {
-  type: string
-  params?: Record<string, { value: number | number[] }>
-}
-
 interface TrackProps {
   trackId: string
   displayIndex: number
@@ -84,7 +82,7 @@ interface TrackProps {
   onVolumeChange: (value: number) => void
   onPanChange: (value: number) => void
   // Video pipeline
-  videoPipeline: VideoEffect[]
+  videoPipeline: VisualEffect[]
   onVideoEffectParamChange: (effectIndex: number, paramKey: string, value: EffectValue) => void
   // Actions
   onSelect: () => void
@@ -156,9 +154,11 @@ export const Track: Component<TrackProps> = props => {
               return (
                 <For each={Object.entries(effectMeta.params)}>
                   {([paramKey, paramMeta]) => {
+                    const params = effect.params as EffectParams | undefined
+
                     if (paramMeta.type === 'scalar') {
                       const value = () =>
-                        (effect.params?.[paramKey]?.value as number) ?? paramMeta.defaultValue
+                        (params?.[paramKey]?.value as number) ?? paramMeta.defaultValue
 
                       return (
                         <label class={styles.slider}>
@@ -184,7 +184,7 @@ export const Track: Component<TrackProps> = props => {
 
                     // Vector param - row of number inputs
                     const values = () =>
-                      (effect.params?.[paramKey]?.value as number[]) ?? paramMeta.defaultValue
+                      (params?.[paramKey]?.value as number[]) ?? paramMeta.defaultValue
 
                     return (
                       <div class={styles.vectorParam}>

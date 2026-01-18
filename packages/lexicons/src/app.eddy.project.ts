@@ -342,6 +342,26 @@ export default {
       },
     },
 
+    staticBlendMode: {
+      type: 'object',
+      description: 'A static blend mode value.',
+      required: ['value'],
+      properties: {
+        value: {
+          type: 'string',
+          enum: ['normal', 'multiply', 'screen', 'overlay', 'add'],
+          default: 'normal',
+          description: 'Blend mode for compositing',
+        },
+      },
+    },
+
+    customParams: {
+      type: 'object',
+      description: 'Extensible parameters for custom effects.',
+      properties: {},
+    },
+
     /* TODO: Add matrix types when needed (staticMat2, staticMat3, staticMat4) */
 
     /* TODO: Re-enable when curve system is implemented
@@ -768,9 +788,8 @@ export default {
           description: 'Opacity (0-100)',
         },
         blendMode: {
-          type: 'string',
-          enum: ['normal', 'multiply', 'screen', 'overlay', 'add'],
-          default: 'normal',
+          type: 'ref',
+          ref: '#staticBlendMode',
         },
       },
     },
@@ -893,8 +912,8 @@ export default {
         },
         enabled: { type: 'union', refs: ['#staticValue'] /* TODO: add '#curveRef' back when curve system is implemented */ },
         params: {
-          type: 'unknown',
-          description: 'Effect-specific parameters',
+          type: 'ref',
+          ref: '#customParams',
         },
       },
     },

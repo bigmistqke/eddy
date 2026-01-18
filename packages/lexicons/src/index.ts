@@ -25,6 +25,8 @@ export type StaticValue = v.InferOutput<typeof projectValidators.staticValue>
 export type StaticVec2 = v.InferOutput<typeof projectValidators.staticVec2>
 export type StaticVec3 = v.InferOutput<typeof projectValidators.staticVec3>
 export type StaticVec4 = v.InferOutput<typeof projectValidators.staticVec4>
+export type StaticBlendMode = v.InferOutput<typeof projectValidators.staticBlendMode>
+export type CustomParams = v.InferOutput<typeof projectValidators.customParams>
 // TODO: Re-enable when curve system is implemented
 // export type CurveRef = v.InferOutput<typeof projectValidators.curveRef>
 export type StemRef = v.InferOutput<AtprotoRefs['com.atproto.repo.strongRef']>
