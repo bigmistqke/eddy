@@ -1,5 +1,4 @@
 import { registerBuiltInAudioEffects } from '@eddy/audio'
-import { registerBuiltInVideoEffects } from '@eddy/video'
 import { Route, Router } from '@solidjs/router'
 import { lazy, type ParentProps, Suspense } from 'solid-js'
 import { AuthProvider } from '~/components/auth/AuthProvider'
@@ -7,9 +6,8 @@ import { Header } from '~/components/layout/Header'
 import styles from './App.module.css'
 import './index.css'
 
-// Register built-in effects
+// Register built-in audio effects (video effects registered in compositor worker)
 registerBuiltInAudioEffects()
-registerBuiltInVideoEffects()
 
 const Home = lazy(() => import('~/routes/home'))
 const Editor = lazy(() => import('~/routes/editor'))

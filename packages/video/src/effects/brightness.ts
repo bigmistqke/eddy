@@ -36,15 +36,9 @@ export function makeBrightnessEffect(size: number): VideoEffectType<BrightnessCo
     fragment,
     apply,
     connectInstance(gl, program, instanceIndex, initialValue = 0) {
-      const schema = compile.toSchema(fragment)
-      console.log('brightness schema:', schema)
-      console.log('brightness uniform def:', schema.uniforms[brightness])
-      const v = view(gl, program, schema)
-      console.log('brightness view.uniforms:', v.uniforms)
-      console.log('brightness view.uniforms[brightness]:', v.uniforms[brightness])
+      const v = view(gl, program, compile.toSchema(fragment))
       // Convert from lexicon scale (-100 to 100) to shader scale (-1 to 1)
       const setBrightness = (value: number) => v.uniforms[brightness][instanceIndex].set(value / 100)
-      // Apply initial value
       setBrightness(initialValue)
       return { setBrightness }
     },
