@@ -32,5 +32,8 @@ export interface VideoEffectType<TControls = EffectControls> {
   ): TControls
 }
 
-/** Controls returned by an effect after binding to a compiled program */
-export type EffectControls = Record<string, (value: number) => void>
+/** Supported effect value types (scalar and vector) */
+export type EffectValue = number | [number, number] | [number, number, number] | [number, number, number, number]
+
+/** Controls returned by an effect after binding to a compiled program. Keys are param names (e.g., 'value', 'color', 'intensity') */
+export type EffectControls = Record<string, (value: EffectValue) => void>

@@ -11,7 +11,7 @@ import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
 import type { VideoEffectType } from './types'
 
 export interface BrightnessControls {
-  setBrightness(value: number): void
+  value(v: number): void
 }
 
 const brightness = Symbol('brightness')
@@ -37,12 +37,12 @@ export function makeBrightnessEffect(size: number): VideoEffectType<BrightnessCo
     apply,
     connect(gl, program, index) {
       const {
-        uniforms: { [brightness]: setBrightness },
+        uniforms: { [brightness]: brightnessUniform },
       } = view(gl, program, schema)
       return {
         /** Convert from lexicon scale (-100 to 100) to shader scale (-1 to 1) */
-        setBrightness(value: number) {
-          setBrightness[index].set(value / 100)
+        value(v: number) {
+          brightnessUniform[index].set(v / 100)
         },
       }
     },

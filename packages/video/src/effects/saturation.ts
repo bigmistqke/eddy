@@ -11,7 +11,7 @@ import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
 import type { VideoEffectType } from './types'
 
 export interface SaturationControls {
-  setSaturation: (value: number) => void
+  value: (v: number) => void
 }
 
 const saturation = Symbol('saturation')
@@ -38,11 +38,11 @@ export function makeSaturationEffect(size: number): VideoEffectType<SaturationCo
     apply,
     connect(gl, program, index) {
       const {
-        uniforms: { [saturation]: setSaturation },
+        uniforms: { [saturation]: saturationUniform },
       } = view(gl, program, schema)
       return {
-        setSaturation(value: number) {
-          setSaturation[index].set(value / 100)
+        value(v: number) {
+          saturationUniform[index].set(v / 100)
         },
       }
     },

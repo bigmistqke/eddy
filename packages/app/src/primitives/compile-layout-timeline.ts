@@ -10,6 +10,7 @@
  * - Timeline: sorted segments for binary search by time
  */
 
+import type { EffectParamRef } from '@eddy/video'
 import type { Clip, Group, Project, Track, Value } from '@eddy/lexicons'
 
 /**********************************************************************************/
@@ -18,7 +19,7 @@ import type { Clip, Group, Project, Track, Value } from '@eddy/lexicons'
 /*                                                                                */
 /**********************************************************************************/
 
-/** Reference to an effect value for runtime lookup */
+/** Reference to an effect param value for runtime lookup */
 export interface EffectRef {
   /** Where this effect lives: clip, track, group, or master */
   sourceType: 'clip' | 'track' | 'group' | 'master'
@@ -28,6 +29,8 @@ export interface EffectRef {
   effectIndex: number
   /** Effect type for validation/debugging */
   effectType: string
+  /** Parameter key within the effect's params (e.g., 'value', 'color', 'intensity') */
+  paramKey: string
 }
 
 /** Viewport defines where to render on the canvas */
@@ -60,6 +63,8 @@ export interface Placement {
   effectKeys: string[]
   /** References to effect values for runtime lookup (cascade order: clip → track → group... → master) */
   effectRefs: EffectRef[]
+  /** Pre-computed param refs mapping each effectRef to its chain index (avoids per-frame allocation) */
+  effectParamRefs: EffectParamRef[]
 }
 
 /**
@@ -131,6 +136,8 @@ interface ClipInfo {
   effectKeys: string[]
   /** Effect references for value lookup (cascade order: clip → track → group... → master) */
   effectRefs: EffectRef[]
+  /** Pre-computed param refs mapping each effectRef to its chain index */
+  effectParamRefs: EffectParamRef[]
 }
 
 /** Resolve a Value to a number at a given time */
@@ -177,10 +184,35 @@ function buildGroupMap(project: Project): Map<string, Group> {
   return groupMap
 }
 
+/** Get param keys from an effect's params object */
+function getEffectParamKeys(effect: { type: string; params?: unknown }): string[] {
+  if (!effect.params || typeof effect.params !== 'object') return []
+  return Object.keys(effect.params as object)
+}
+
+/** Compute effectParamRefs from effectRefs (maps each ref to its chain index) */
+function computeEffectParamRefs(refs: EffectRef[]): EffectParamRef[] {
+  const paramRefs: EffectParamRef[] = []
+  let chainIndex = -1
+  let lastEffectKey = ''
+
+  for (const ref of refs) {
+    const effectKey = `${ref.sourceType}:${ref.sourceId}:${ref.effectIndex}`
+    if (effectKey !== lastEffectKey) {
+      chainIndex++
+      lastEffectKey = effectKey
+    }
+    paramRefs.push({ chainIndex, paramKey: ref.paramKey })
+  }
+
+  return paramRefs
+}
+
 /**
  * Collect cascaded video effects for a clip.
  * Walks up the hierarchy: clip → track → group → parent groups... → root group
  * The root group's videoPipeline serves as the master effects.
+ * Creates one EffectRef per param (not per effect).
  */
 function collectCascadedEffects(
   clip: Clip,
@@ -195,12 +227,15 @@ function collectCascadedEffects(
   if (clip.videoPipeline) {
     for (let index = 0; index < clip.videoPipeline.length; index++) {
       const effect = clip.videoPipeline[index]
-      refs.push({
-        sourceType: 'clip',
-        sourceId: clip.id,
-        effectIndex: index,
-        effectType: effect.type,
-      })
+      for (const paramKey of getEffectParamKeys(effect)) {
+        refs.push({
+          sourceType: 'clip',
+          sourceId: clip.id,
+          effectIndex: index,
+          effectType: effect.type,
+          paramKey,
+        })
+      }
     }
   }
 
@@ -208,12 +243,15 @@ function collectCascadedEffects(
   if (track.videoPipeline) {
     for (let index = 0; index < track.videoPipeline.length; index++) {
       const effect = track.videoPipeline[index]
-      refs.push({
-        sourceType: 'track',
-        sourceId: track.id,
-        effectIndex: index,
-        effectType: effect.type,
-      })
+      for (const paramKey of getEffectParamKeys(effect)) {
+        refs.push({
+          sourceType: 'track',
+          sourceId: track.id,
+          effectIndex: index,
+          effectType: effect.type,
+          paramKey,
+        })
+      }
     }
   }
 
@@ -225,12 +263,15 @@ function collectCascadedEffects(
     if (parentGroup.videoPipeline) {
       for (let index = 0; index < parentGroup.videoPipeline.length; index++) {
         const effect = parentGroup.videoPipeline[index]
-        refs.push({
-          sourceType: 'group',
-          sourceId: parentGroup.id,
-          effectIndex: index,
-          effectType: effect.type,
-        })
+        for (const paramKey of getEffectParamKeys(effect)) {
+          refs.push({
+            sourceType: 'group',
+            sourceId: parentGroup.id,
+            effectIndex: index,
+            effectType: effect.type,
+            paramKey,
+          })
+        }
       }
     }
     currentId = parentGroup.id
@@ -339,9 +380,20 @@ function collectClipInfos(project: Project, canvasSize: CanvasSize): ClipInfo[] 
       const sourceIn = (clip.sourceOffset ?? 0) / 1000
       const sourceOut = sourceIn + clip.duration / 1000
 
-      // Collect cascaded video effects
+      // Collect cascaded video effects (one ref per param)
       const effectRefs = collectCascadedEffects(clip, track, parentMap, groupMap, project)
-      const effectKeys = effectRefs.map(ref => ref.effectType)
+      // Pre-compute param refs (maps each ref to its chain index) - avoids per-frame allocation
+      const effectParamRefs = computeEffectParamRefs(effectRefs)
+      // Build effectKeys (one per effect instance, not per param) - preserves order and duplicates
+      const effectKeys: string[] = []
+      let lastEffectKey = ''
+      for (const ref of effectRefs) {
+        const effectKey = `${ref.sourceType}:${ref.sourceId}:${ref.effectIndex}`
+        if (effectKey !== lastEffectKey) {
+          effectKeys.push(ref.effectType)
+          lastEffectKey = effectKey
+        }
+      }
       const effectSignature = effectKeys.join('|')
 
       clipInfos.push({
@@ -356,6 +408,7 @@ function collectClipInfos(project: Project, canvasSize: CanvasSize): ClipInfo[] 
         effectSignature,
         effectKeys,
         effectRefs,
+        effectParamRefs,
       })
     }
 
@@ -416,6 +469,7 @@ function buildSegments(clipInfos: ClipInfo[]): LayoutSegment[] {
         effectId: clip.effectSignature,
         effectKeys: clip.effectKeys,
         effectRefs: clip.effectRefs,
+        effectParamRefs: clip.effectParamRefs,
       })
     }
 

@@ -22,6 +22,9 @@ export type ClipSourceStem = v.InferOutput<(typeof projectValidators)['clipSourc
 export type ClipSourceGroup = v.InferOutput<(typeof projectValidators)['clipSource.group']>
 export type ClipSource = ClipSourceStem | ClipSourceGroup
 export type StaticValue = v.InferOutput<typeof projectValidators.staticValue>
+export type StaticVec2 = v.InferOutput<typeof projectValidators.staticVec2>
+export type StaticVec3 = v.InferOutput<typeof projectValidators.staticVec3>
+export type StaticVec4 = v.InferOutput<typeof projectValidators.staticVec4>
 // TODO: Re-enable when curve system is implemented
 // export type CurveRef = v.InferOutput<typeof projectValidators.curveRef>
 export type StemRef = v.InferOutput<AtprotoRefs['com.atproto.repo.strongRef']>
@@ -42,8 +45,23 @@ export type VisualEffectTransform = v.InferOutput<
   (typeof projectValidators)['visualEffect.transform']
 >
 export type VisualEffectOpacity = v.InferOutput<(typeof projectValidators)['visualEffect.opacity']>
+export type VisualEffectBrightness = v.InferOutput<
+  (typeof projectValidators)['visualEffect.brightness']
+>
+export type VisualEffectContrast = v.InferOutput<(typeof projectValidators)['visualEffect.contrast']>
+export type VisualEffectSaturation = v.InferOutput<
+  (typeof projectValidators)['visualEffect.saturation']
+>
+export type VisualEffectColorize = v.InferOutput<(typeof projectValidators)['visualEffect.colorize']>
 export type VisualEffectCustom = v.InferOutput<(typeof projectValidators)['visualEffect.custom']>
-export type VisualEffect = VisualEffectTransform | VisualEffectOpacity | VisualEffectCustom
+export type VisualEffect =
+  | VisualEffectTransform
+  | VisualEffectOpacity
+  | VisualEffectBrightness
+  | VisualEffectContrast
+  | VisualEffectSaturation
+  | VisualEffectColorize
+  | VisualEffectCustom
 
 export type CurveKeyframe = v.InferOutput<(typeof projectValidators)['curve.keyframe']>
 export type CurveEnvelope = v.InferOutput<(typeof projectValidators)['curve.envelope']>

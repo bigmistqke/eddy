@@ -2,6 +2,7 @@ import { expose, type Transferred } from '@bigmistqke/rpc/messenger'
 import { assertedNotNullish, debug } from '@eddy/utils'
 import {
   makeBrightnessEffect,
+  makeColorizeEffect,
   makeContrastEffect,
   makeEffectManager,
   makeEffectRegistry,
@@ -10,6 +11,7 @@ import {
   type CompiledEffectChain,
   type EffectKey,
   type EffectManager,
+  type EffectValue,
   type VideoCompositor,
 } from '@eddy/video'
 import {
@@ -23,6 +25,7 @@ import {
 /** Map of effect type names to factory functions */
 export const effectCatalog = {
   'visual.brightness': makeBrightnessEffect,
+  'visual.colorize': makeColorizeEffect,
   'visual.contrast': makeContrastEffect,
   'visual.saturation': makeSaturationEffect,
 } as const
@@ -52,17 +55,19 @@ export interface CompositorWorkerMethods {
   setTimeline(timeline: CompiledTimeline): void
 
   /**
-   * Set an effect value by source coordinates.
+   * Set an effect param value by source coordinates.
    * @param sourceType - 'clip' | 'track' | 'group' | 'master'
    * @param sourceId - ID of the source (clipId, trackId, groupId, or 'master')
    * @param effectIndex - Index within that source's effect pipeline
-   * @param value - The effect value (already scaled appropriately)
+   * @param paramKey - Parameter key within the effect (e.g., 'value', 'color', 'intensity')
+   * @param value - The effect value (scalar or vector, already scaled appropriately)
    */
   setEffectValue(
     sourceType: 'clip' | 'track' | 'group' | 'master',
     sourceId: string,
     effectIndex: number,
-    value: number,
+    paramKey: string,
+    value: EffectValue,
   ): void
 
   /** Set a preview stream for a track (continuously reads latest frame) */
@@ -134,16 +139,16 @@ const lastRenderedFrame = new Map<string, LastFrameInfo>()
 // Effect chains cached by effectSignature (hash of effect types)
 const effectChainsBySignature = new Map<string, CompiledEffectChain>()
 
-// Effect values keyed by "sourceType:sourceId:effectIndex"
-const effectValues = new Map<string, number>()
+// Effect values keyed by "sourceType:sourceId:effectIndex:paramKey"
+const effectValues = new Map<string, EffectValue>()
 
 /** Convert EffectRef to lookup key */
 function effectRefToKey(ref: EffectRef): string {
-  return `${ref.sourceType}:${ref.sourceId}:${ref.effectIndex}`
+  return `${ref.sourceType}:${ref.sourceId}:${ref.effectIndex}:${ref.paramKey}`
 }
 
 /** Resolve effect values from effectRefs */
-function resolveEffectValues(refs: EffectRef[]): number[] {
+function resolveEffectValues(refs: EffectRef[]): EffectValue[] {
   return refs.map(ref => assertedNotNullish(effectValues.get(effectRefToKey(ref))))
 }
 
@@ -280,8 +285,8 @@ expose<CompositorWorkerMethods>({
     })
   },
 
-  setEffectValue(sourceType, sourceId, effectIndex, value) {
-    const key = `${sourceType}:${sourceId}:${effectIndex}`
+  setEffectValue(sourceType, sourceId, effectIndex, paramKey, value) {
+    const key = `${sourceType}:${sourceId}:${effectIndex}:${paramKey}`
     effectValues.set(key, value)
     log('setEffectValue', { key, value })
   },
@@ -374,15 +379,16 @@ expose<CompositorWorkerMethods>({
       // Get or compile effect chain from placement's signature
       const effectChain = getOrCompileEffectChain(mainEffectManager, placement)
 
-      // Resolve current effect values from refs
-      const effectValues = effectChain ? resolveEffectValues(placement.effectRefs) : undefined
+      // Resolve current effect values (uses pre-computed effectParamRefs from placement)
+      const resolvedEffectValues = effectChain ? resolveEffectValues(placement.effectRefs) : undefined
 
       mainCompositor.renderPlacement({
         id: textureKey,
         frame,
         viewport: placement.viewport,
         effectChain,
-        effectValues,
+        effectValues: resolvedEffectValues,
+        effectParamRefs: effectChain ? placement.effectParamRefs : undefined,
       })
     }
 
@@ -433,7 +439,7 @@ expose<CompositorWorkerMethods>({
       // Get or compile effect chain from placement's signature
       const effectChain = getOrCompileEffectChain(mainEffectManager, placement)
 
-      // Resolve current effect values from refs
+      // Resolve current effect values (uses pre-computed effectParamRefs from placement)
       const values = effectChain ? resolveEffectValues(placement.effectRefs) : undefined
 
       mainCompositor.renderPlacement({
@@ -442,6 +448,7 @@ expose<CompositorWorkerMethods>({
         viewport: placement.viewport,
         effectChain: effectChain ?? undefined,
         effectValues: values,
+        effectParamRefs: effectChain ? placement.effectParamRefs : undefined,
       })
     }
 
@@ -472,7 +479,7 @@ expose<CompositorWorkerMethods>({
       // Get or compile effect chain from placement's signature
       const effectChain = getOrCompileEffectChain(mainEffectManager, placement)
 
-      // Resolve current effect values from refs
+      // Resolve current effect values (uses pre-computed effectParamRefs from placement)
       const values = effectChain ? resolveEffectValues(placement.effectRefs) : undefined
 
       mainCompositor.renderPlacement({
@@ -481,6 +488,7 @@ expose<CompositorWorkerMethods>({
         viewport: placement.viewport,
         effectChain: effectChain ?? undefined,
         effectValues: values,
+        effectParamRefs: effectChain ? placement.effectParamRefs : undefined,
       })
     }
 

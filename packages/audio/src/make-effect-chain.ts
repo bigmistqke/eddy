@@ -44,23 +44,10 @@ function extractValue(value: unknown, defaultValue: number): number {
 function extractParams(effect: AudioEffect): AudioElementParams {
   const params: AudioElementParams = {}
 
-  // Handle built-in effects with 'value' property
-  if ('value' in effect) {
-    params.value = extractValue(effect.value, 100)
-  }
-
-  // Handle custom effects with 'params' object
+  // Extract values from params object (all effects now use params pattern)
   if ('params' in effect && typeof effect.params === 'object' && effect.params !== null) {
     for (const [key, value] of Object.entries(effect.params)) {
       params[key] = extractValue(value, 0)
-    }
-  }
-
-  // Handle effects with named params (like reverb with mix, decay, etc.)
-  for (const [key, value] of Object.entries(effect)) {
-    if (key === 'type' || key === 'enabled' || key === 'params' || key === 'value') continue
-    if (isStaticValue(value)) {
-      params[key] = value.value
     }
   }
 

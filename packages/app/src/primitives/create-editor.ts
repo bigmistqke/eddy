@@ -43,7 +43,7 @@ interface LocalClipState {
   duration?: number
 }
 
-function createDefaultProject(): Project {
+function makeDefaultProject(): Project {
   return {
     schemaVersion: 1,
     title: 'Untitled Project',
@@ -60,7 +60,7 @@ function createDefaultProject(): Project {
           columns: 2,
           rows: 2,
         },
-        audioPipeline: [{ type: 'audio.gain', value: { value: 100 } }],
+        audioPipeline: [{ type: 'audio.gain', params: { value: { value: 100 } } }],
       },
     ],
     tracks: [
@@ -69,13 +69,15 @@ function createDefaultProject(): Project {
         name: 'Track 1',
         clips: [],
         audioPipeline: [
-          { type: 'audio.gain', value: { value: 100 } },
-          { type: 'audio.pan', value: { value: 50 } },
+          { type: 'audio.gain', params: { value: { value: 100 } } },
+          { type: 'audio.pan', params: { value: { value: 50 } } },
         ],
         videoPipeline: [
-          { type: 'visual.brightness', value: { value: 50 } },
-          { type: 'visual.saturation', value: { value: 120 } },
-          { type: 'visual.brightness', value: { value: 20 } },
+          { type: 'visual.brightness', params: { value: { value: 50 } } },
+          {
+            type: 'visual.colorize',
+            params: { color: { value: [100, 80, 60] }, intensity: { value: 50 } },
+          },
         ],
       },
       {
@@ -83,30 +85,36 @@ function createDefaultProject(): Project {
         name: 'Track 2',
         clips: [],
         audioPipeline: [
-          { type: 'audio.gain', value: { value: 100 } },
-          { type: 'audio.pan', value: { value: 50 } },
+          { type: 'audio.gain', params: { value: { value: 100 } } },
+          { type: 'audio.pan', params: { value: { value: 50 } } },
         ],
-        videoPipeline: [{ type: 'visual.brightness', value: { value: 0 } }],
+        videoPipeline: [
+          { type: 'visual.brightness', params: { value: { value: 0 } } },
+          {
+            type: 'visual.colorize',
+            params: { color: { value: [100, 80, 60] }, intensity: { value: 50 } },
+          },
+        ],
       },
       {
         id: 'track-2',
         name: 'Track 3',
         clips: [],
         audioPipeline: [
-          { type: 'audio.gain', value: { value: 100 } },
-          { type: 'audio.pan', value: { value: 50 } },
+          { type: 'audio.gain', params: { value: { value: 100 } } },
+          { type: 'audio.pan', params: { value: { value: 50 } } },
         ],
-        videoPipeline: [{ type: 'visual.brightness', value: { value: 0 } }],
+        videoPipeline: [{ type: 'visual.brightness', params: { value: { value: 0 } } }],
       },
       {
         id: 'track-3',
         name: 'Track 4',
         clips: [],
         audioPipeline: [
-          { type: 'audio.gain', value: { value: 100 } },
-          { type: 'audio.pan', value: { value: 50 } },
+          { type: 'audio.gain', params: { value: { value: 100 } } },
+          { type: 'audio.pan', params: { value: { value: 50 } } },
         ],
-        videoPipeline: [{ type: 'visual.brightness', value: { value: 0 } }],
+        videoPipeline: [{ type: 'visual.brightness', params: { value: { value: 0 } } }],
       },
     ],
     createdAt: new Date().toISOString(),
@@ -130,7 +138,7 @@ export function createEditor(options: CreateEditorOptions) {
     ([agent, rkey]) =>
       getProjectByRkey(agent, rkey, options.handle).then(projectRecord => projectRecord.value),
     {
-      initialValue: createDefaultProject(),
+      initialValue: makeDefaultProject(),
     },
   )
 
@@ -242,8 +250,20 @@ export function createEditor(options: CreateEditorOptions) {
       'audioPipeline',
       effectIndex,
       effect => {
-        if ('value' in effect && effect.value && 'value' in effect.value) {
-          return { ...effect, value: { ...effect.value, value: Math.round(value * 100) } }
+        if (
+          'params' in effect &&
+          effect.params &&
+          'value' in effect.params &&
+          effect.params.value &&
+          'value' in effect.params.value
+        ) {
+          return {
+            ...effect,
+            params: {
+              ...effect.params,
+              value: { ...effect.params.value, value: Math.round(value * 100) },
+            },
+          }
         }
         return effect
       },
@@ -253,8 +273,15 @@ export function createEditor(options: CreateEditorOptions) {
   function getEffectValue(trackId: string, effectIndex: number): number {
     const track = project().tracks.find(t => t.id === trackId)
     const effect = track?.audioPipeline?.[effectIndex]
-    if (effect && 'value' in effect && effect.value && 'value' in effect.value) {
-      return effect.value.value / 100
+    if (
+      effect &&
+      'params' in effect &&
+      effect.params &&
+      'value' in effect.params &&
+      effect.params.value &&
+      'value' in effect.params.value
+    ) {
+      return effect.params.value.value / 100
     }
     return 1
   }
@@ -273,22 +300,39 @@ export function createEditor(options: CreateEditorOptions) {
       'videoPipeline',
       effectIndex,
       effect => {
-        if (effect && 'value' in effect && effect.value && 'value' in effect.value) {
-          return { ...effect, value: { ...effect.value, value } }
+        if (
+          effect &&
+          'params' in effect &&
+          effect.params &&
+          'value' in effect.params &&
+          effect.params.value &&
+          'value' in effect.params.value
+        ) {
+          return {
+            ...effect,
+            params: { ...effect.params, value: { ...effect.params.value, value } },
+          }
         }
         return effect
       },
     )
 
-    // Update compositor directly for immediate feedback
-    player()?.compositor.setEffectValue('track', trackId, effectIndex, value)
+    // Update compositor directly for immediate feedback (single-value effects use 'value' paramKey)
+    player()?.compositor.setEffectValue('track', trackId, effectIndex, 'value', value)
   }
 
   function getVideoEffectValue(trackId: string, effectIndex: number): number {
     const track = project().tracks.find(t => t.id === trackId)
     const effect = track?.videoPipeline?.[effectIndex]
-    if (effect && 'value' in effect && effect.value && 'value' in effect.value) {
-      return effect.value.value
+    if (
+      effect &&
+      'params' in effect &&
+      effect.params &&
+      'value' in effect.params &&
+      effect.params.value &&
+      'value' in effect.params.value
+    ) {
+      return effect.params.value.value
     }
     return 0
   }
@@ -611,11 +655,22 @@ export function createEditor(options: CreateEditorOptions) {
           createEffect(() => {
             const pipeline = getVideoPipeline(trackId)
 
-            // Send each effect's value to compositor
+            // Send each effect param's value to compositor
             for (let effectIndex = 0; effectIndex < pipeline.length; effectIndex++) {
               const effect = pipeline[effectIndex]
-              if ('value' in effect && effect.value && 'value' in effect.value) {
-                _player.compositor.setEffectValue('track', trackId, effectIndex, effect.value.value)
+              if (!('params' in effect) || !effect.params) continue
+
+              // Iterate over all params in the effect
+              for (const [paramKey, paramValue] of Object.entries(effect.params)) {
+                if (paramValue && typeof paramValue === 'object' && 'value' in paramValue) {
+                  _player.compositor.setEffectValue(
+                    'track',
+                    trackId,
+                    effectIndex,
+                    paramKey,
+                    paramValue.value,
+                  )
+                }
               }
             }
           })

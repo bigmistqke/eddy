@@ -1,4 +1,5 @@
 export * from './brightness'
+export * from './colorize'
 export * from './contrast'
 export * from './saturation'
 export * from './types'

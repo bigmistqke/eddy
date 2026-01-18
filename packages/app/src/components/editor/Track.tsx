@@ -108,7 +108,7 @@ export const Track: Component<TrackProps> = props => {
               const meta = VIDEO_EFFECT_META[effect.type]
               if (!meta) return null
 
-              const value = () => effect.value?.value ?? meta.defaultValue
+              const value = () => effect.params?.value?.value ?? meta.defaultValue
 
               return (
                 <label class={styles.slider}>

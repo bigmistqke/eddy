@@ -11,7 +11,7 @@ import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
 import type { VideoEffectType } from './types'
 
 export interface ContrastControls {
-  setContrast: (value: number) => void
+  value: (v: number) => void
 }
 
 const contrast = Symbol('contrast')
@@ -37,12 +37,12 @@ export function makeContrastEffect(size: number): VideoEffectType<ContrastContro
     apply,
     connect(gl, program, index) {
       const {
-        uniforms: { [contrast]: setContrast },
+        uniforms: { [contrast]: contrastUniform },
       } = view(gl, program, schema)
       return {
         // Convert from lexicon scale (0-200) to shader scale (0-2)
-        setContrast(value: number) {
-          setContrast[index].set(value / 100)
+        value(v: number) {
+          contrastUniform[index].set(v / 100)
         },
       }
     },
