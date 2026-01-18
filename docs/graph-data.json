@@ -1458,9 +1458,9 @@
       "node_type": "goal",
       "title": "Record from offset with clip layering (later clips on top)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-14T16:09:08.115682+01:00",
-      "updated_at": "2026-01-14T16:09:08.115682+01:00",
+      "updated_at": "2026-01-18T16:14:44.773110+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Start recording in a track from an offset position, allowing recording over existing clips. Need to explore:\\n1. How clips layer within a track (last/later clip should be \\\"on top\\\")\\n2. Should clips have z-index for explicit ordering?\\n3. How does playback resolve overlapping clips?\\n4. UI for visualizing overlapping regions\"}"
     },
     {
@@ -1700,9 +1700,9 @@
       "node_type": "goal",
       "title": "Implement OPFS storage for clips to eliminate memory overhead",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T00:49:01.598189+01:00",
-      "updated_at": "2026-01-17T00:49:01.598189+01:00",
+      "updated_at": "2026-01-18T16:14:44.763859+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"User asked about memory usage - discovered we were serializing blobs twice when passing to workers. User wanted to explore OPFS to avoid keeping blobs in memory. Recording should write directly to OPFS, playback workers should read from OPFS.\"}"
     },
     {
@@ -2441,6 +2441,28 @@
       "created_at": "2026-01-18T14:13:45.878199+01:00",
       "updated_at": "2026-01-18T14:13:45.878199+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"ad18130\",\"confidence\":90}"
+    },
+    {
+      "id": 223,
+      "change_id": "22e0c58b-0599-4422-b323-54b6c7212c5c",
+      "node_type": "outcome",
+      "title": "Committed: refactor effect catalog code style",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T16:14:24.890512+01:00",
+      "updated_at": "2026-01-18T16:14:24.890512+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"HEAD~1\",\"confidence\":95}"
+    },
+    {
+      "id": 224,
+      "change_id": "3a643728-eb37-455c-97dc-292ad9e6b3a8",
+      "node_type": "outcome",
+      "title": "Committed: use published view.gl package",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-18T16:14:25.032446+01:00",
+      "updated_at": "2026-01-18T16:14:25.032446+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"cffb0d1\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -4478,6 +4500,28 @@
       "weight": 1.0,
       "rationale": "Committed",
       "created_at": "2026-01-18T13:57:52.439611+01:00"
+    },
+    {
+      "id": 186,
+      "from_node_id": 222,
+      "to_node_id": 223,
+      "from_change_id": "f8068848-0cd2-4dde-8ad1-da10155eb7aa",
+      "to_change_id": "22e0c58b-0599-4422-b323-54b6c7212c5c",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Code style cleanup during initialValues removal",
+      "created_at": "2026-01-18T16:14:32.645908+01:00"
+    },
+    {
+      "id": 187,
+      "from_node_id": 203,
+      "to_node_id": 224,
+      "from_change_id": "86fa29f4-725b-4dff-981a-0641bd5ab1d7",
+      "to_change_id": "3a643728-eb37-455c-97dc-292ad9e6b3a8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Dependency cleanup",
+      "created_at": "2026-01-18T16:14:32.739917+01:00"
     }
   ]
 }
