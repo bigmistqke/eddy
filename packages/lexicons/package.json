@@ -11,8 +11,8 @@
     }
   },
   "scripts": {
-    "build": "vite build",
-    "dev": "vite build --watch",
+    "build": "tsup",
+    "dev": "tsup --watch",
     "types": "tsc --noEmit"
   },
   "dependencies": {
@@ -22,9 +22,7 @@
     "valibot": "^1.2.0"
   },
   "devDependencies": {
-    "typescript": "^5.7.0",
-    "vite": "^6.4.1",
-    "vite-plugin-dts": "^4.0.0"
+    "typescript": "^5.7.0"
   },
   "peerDependencies": {
     "@bigmistqke/typed-lexicons": "^0.1.2"
