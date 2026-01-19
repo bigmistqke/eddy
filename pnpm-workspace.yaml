@@ -1,7 +1,2 @@
 packages:
   - packages/*
-overrides:
-  '@bigmistqke/rpc': link:../rpc/packages/rpc
-  '@bigmistqke/view.gl': link:../view.gl
-  '@bigmistqke/lexicon-to-valibot': link:../lexicon-to-valibot
-  '@bigmistqke/typed-lexicons': link:../typed-lexicons
