@@ -8,18 +8,18 @@
     "files_changed": 21
   },
   {
+    "hash": "80bd3a50091235e621e4a3417ff1e663019abfaa",
+    "short_hash": "80bd3a5",
+    "author": "bigmistqke",
+    "date": "2026-01-19T18:14:59+01:00",
+    "message": "refactor: convert library packages from vite to tsup\n\nFaster builds with esbuild. Audio worklet uses noExternal to bundle deps.",
+    "files_changed": 21
+  },
+  {
     "hash": "ac5d69ece5609dc78980a7918752140c40569194",
     "short_hash": "ac5d69e",
     "author": "bigmistqke",
     "date": "2026-01-19T18:05:08+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "e6d6f6e1c339cd00c6d5717f7b395c15de22316f",
-    "short_hash": "e6d6f6e",
-    "author": "bigmistqke",
-    "date": "2026-01-19T18:03:03+01:00",
     "message": "chore: sync deciduous graph",
     "files_changed": 2
   },

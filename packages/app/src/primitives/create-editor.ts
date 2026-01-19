@@ -16,7 +16,7 @@ import { createEffect, createSelector, createSignal, mapArray, type Accessor } f
 import { createStore, produce } from 'solid-js/store'
 import { createWritableStream, readClipBlob, writeBlob } from '~/opfs'
 import { action, defer, hold } from '~/primitives/action'
-import { getActivePlacements } from '~/primitives/compile-layout-timeline'
+import { getActivePlacements } from '@eddy/timeline'
 import { createResourceMap } from '~/primitives/create-resource-map'
 import { deepResource } from '~/primitives/deep-resource'
 import { makeDebugInfo as initDebugInfo } from '~/primitives/make-debug-info'

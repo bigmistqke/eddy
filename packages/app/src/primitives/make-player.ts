@@ -5,7 +5,7 @@ import { debug, getGlobalPerfMonitor, makeLoop } from '@eddy/utils'
 import { createEffect, createMemo, createSignal, on, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import { PREVIEW_CLIP_ID } from '~/constants'
-import { compileLayoutTimeline, type CompiledTimeline } from '~/primitives/compile-layout-timeline'
+import { compileLayoutTimeline, type CompiledTimeline } from '@eddy/timeline'
 import { makeAheadScheduler, SCHEDULE_AHEAD } from '~/primitives/make-ahead-scheduler'
 import {
   makePlayback,

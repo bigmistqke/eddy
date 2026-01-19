@@ -1,5 +1,5 @@
 import { expose, type Transferred } from '@bigmistqke/rpc/messenger'
-import { assertedNotNullish, debug } from '@eddy/utils'
+import { debug } from '@eddy/utils'
 import {
   makeBrightnessEffect,
   makeColorizeEffect,
@@ -21,7 +21,7 @@ import {
   type EffectParamRef,
   type EffectRef,
   type Placement,
-} from '~/primitives/compile-layout-timeline'
+} from '@eddy/timeline'
 
 /** Map of effect type names to factory functions */
 export const effectCatalog = {

@@ -3024,6 +3024,149 @@
       "created_at": "2026-01-19T18:15:11.536631+01:00",
       "updated_at": "2026-01-19T18:15:11.536631+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"80bd3a5\",\"confidence\":95}"
+    },
+    {
+      "id": 276,
+      "change_id": "9d98b87a-dd38-4ed9-b676-6d201626808d",
+      "node_type": "observation",
+      "title": "Eddy as a suite of apps sharing lexicons/runtime",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T20:59:06.381361+01:00",
+      "updated_at": "2026-01-19T20:59:06.381361+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Reframing eddy from single app to suite of specialized video editing tools:\\n\\n- jam.eddy.dj: Mobile, musical collaboration focused (original idea)\\n- mini.eddy.dj: Swiss army knife of video manipulation, quick transforms\\n- studio.eddy.dj: Premiere-style desktop editor, multi-track, professional\\n\\nArchitecture enables this:\\n- Lexicons define portable project format across all apps\\n- Shared effects/pipelines runtime\\n- ATProto sync works across all apps\\n\\nEach app is opinionated about UX but shares the core. \\\"eddy\\\" becomes the ecosystem brand.\"}"
+    },
+    {
+      "id": 277,
+      "change_id": "d46b72c3-6bb4-4d10-9e06-e618e6ff4460",
+      "node_type": "observation",
+      "title": "jam.eddy.dj design: grid-based video sequencer",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T21:13:03.958577+01:00",
+      "updated_at": "2026-01-19T21:13:03.958577+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":80,\"prompt\":\"Design direction for jam.eddy.dj - mobile musical video collaboration:\\n\\nCore concept: Step sequencer meets video compositor\\n- Rows = tracks/layers (yours or collaborators)\\n- Columns = beats/moments in time\\n- Cells = video clips\\n- Column header = visual layout (how clips composite: grid, pip, split, etc.)\\n\\nInteractions:\\n- Tap cell → gallery → select clip\\n- Drag across row → \\\"paint\\\" clip across columns\\n- Adaptive grid → adjust precision (fewer/more columns)\\n- Pinch/edge → extend grid\\n\\nPrior art: github.com/bigmistqke/pianissimo\\n- Mobile-first piano roll with similar grid interaction\\n- Mode-based tools (draw, erase, select, duration)\\n- Automerge CRDT collaboration\\n- Adaptive grid for precision control\\n- Not 1:1 mapping but strong inspiration for touch gestures and grid UX\"}"
+    },
+    {
+      "id": 278,
+      "change_id": "b41a71c0-96b2-42b0-8eeb-353f4f932311",
+      "node_type": "observation",
+      "title": "jam.eddy.dj: dual view + per-column duration",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T21:20:32.417289+01:00",
+      "updated_at": "2026-01-19T21:20:32.417289+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Refined design for jam.eddy.dj:\\n\\nTWO VIEWS, ONE DATA MODEL:\\n\\n1. Sequencer View (what plays when)\\n   - Traditional grid: rows = tracks, columns = time\\n   - Paint clips, drag to extend\\n   - Continue vs loop behavior (merged cells vs separate)\\n\\n2. Layout View (how it looks)  \\n   - Per-column visual compositor\\n   - Layout defines cell count: [full]=1, [pip]=2, [2x2]=4, [3-up]=3\\n   - Assign which tracks go in which slots\\n   - Each column is its own spatial world\\n\\nPER-COLUMN DURATION (not global grid):\\n- Each column has duration: 1 bar, 1/2, 1/4, 1/8, 1/16\\n- Narrow columns = fast stutter, wide = sustained moment\\n- Mix freely - no global grid resolution to manage\\n- Simpler than pianissimo's adaptive grid approach\\n- Fits \\\"each column is its own world\\\" model\\n\\nColumn = { layout, duration, slots[] }\"}"
+    },
+    {
+      "id": 279,
+      "change_id": "381393d4-26fa-4e01-bf86-6cc0864074a6",
+      "node_type": "observation",
+      "title": "jam.eddy.dj: orientation-based UI modes",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T21:26:15.988364+01:00",
+      "updated_at": "2026-01-19T21:26:15.988364+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Three views with PIP preview:\\n\\n1. Preview - rendered output (can be full-screen or floating PIP)\\n2. Sequencer - what plays when (tracks × time)\\n3. Layout - how it looks per column (spatial arrangement)\\n\\nWhen in sequencer/layout: preview floats as draggable PIP window\\n\\nORIENTATION-BASED UI MODES:\\n\\nPortrait (content mode):\\n- Preview-focused, large video display\\n- Quick edits, playback, record\\n- One-handed, casual use\\n\\nLandscape (workspace mode):\\n- Sequencer/layout focused\\n- More room for timeline editing\\n- Preview as sidebar (9:16 fits nicely)\\n- Two-handed, focused editing\\n\\nAuto-rotate adapts UI purpose, not just scales it.\\nNo explicit mode toggle - device orientation IS the mode switch.\"}"
+    },
+    {
+      "id": 280,
+      "change_id": "9bfaf399-fcbe-42a2-bbb5-7f96f4936114",
+      "node_type": "observation",
+      "title": "jam.eddy.dj: auto-layout for jamming workflow",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T21:32:31.054217+01:00",
+      "updated_at": "2026-01-19T21:32:31.054217+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":70,\"prompt\":\"JAMMING vs COMPOSING - reducing friction for play-along:\\n\\nProblem: Full layout control is too much cognitive load when jamming/recording.\\nYou want to focus on performing, not arranging.\\n\\nSolution direction: Auto-layout option\\n\\n- Auto-layout ON: system picks layout per column based on active track count\\n  (1 track = full, 2 = split, 3+ = grid, etc.)\\n- Auto-layout OFF: manual control per column\\n\\nCould be:\\n- Global toggle (auto-layout on/off)\\n- Per-column lock (🔒 locked keeps layout, 🔓 unlocked auto-adjusts)\\n- Or both - global default + per-column override\\n\\nCore insight: jamming needs less friction, composing needs more control.\\nMove fluidly between them - jam first with auto, refine later with manual.\\n\\nStill fuzzy on exact UX - open design question.\"}"
+    },
+    {
+      "id": 281,
+      "change_id": "1b219028-ec9f-47ac-a065-3f1ec7ea7370",
+      "node_type": "goal",
+      "title": "Implement jam.eddy.dj - Grid-Based Video Sequencer",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T21:41:23.388594+01:00",
+      "updated_at": "2026-01-19T21:41:23.388594+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"Implement the following plan:\\n\\n# Implement jam.eddy.dj - Grid-Based Video Sequencer\\n\\n**Goal:** Create a mobile-first collaborative video sequencer app with grid-based composition.\\n\\n## Overview\\n\\njam.eddy.dj is a new app in the eddy suite - a 4-track-inspired video sequencer for musical collaboration.\\n\\n**Core Concepts:**\\n- Columns = time segments (variable duration per column: 1 bar, 1/2, 1/4, etc.)\\n- Rows/Tracks = layers of video clips\\n- Layout per column = spatial arrangement (full, pip, 2x2, 3-up, etc.)\\n- Auto-layout option for jamming (manual control for composing)\\n\\n**Three Views:**\\n1. **Preview** - rendered output (full-screen or floating PIP)\\n2. **Sequencer** - what plays when (tracks × columns grid, paint clips)\\n3. **Layout** - how it looks per column (spatial arrangement)\\n\\n**Orientation-Based UI:**\\n- Portrait = content mode (preview-focused, playback, record)\\n- Landscape = workspace mode (sequencer/layout editing)\"}"
+    },
+    {
+      "id": 282,
+      "change_id": "ec89e421-e067-4c14-aa33-1f72ce355cce",
+      "node_type": "action",
+      "title": "Create app.eddy.jam.ts lexicon",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T21:41:35.516876+01:00",
+      "updated_at": "2026-01-19T21:41:35.516876+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 283,
+      "change_id": "c2542a47-a35a-405c-bdc4-105387783e92",
+      "node_type": "decision",
+      "title": "Timeline compiler architecture for nested groups",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T21:48:28.613252+01:00",
+      "updated_at": "2026-01-19T21:48:28.613252+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 284,
+      "change_id": "1836d27f-0636-4af7-b8d6-074ca3480164",
+      "node_type": "observation",
+      "title": "Suite architecture: @eddy/timeline (pure), @eddy/solid (hooks/components), app-specific packages",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T21:51:27.150205+01:00",
+      "updated_at": "2026-01-19T21:51:27.150205+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 285,
+      "change_id": "e34b4e18-799e-4145-bec3-0d143bef6a49",
+      "node_type": "action",
+      "title": "Create @eddy/timeline package",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T21:51:44.313906+01:00",
+      "updated_at": "2026-01-19T21:51:44.313906+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 286,
+      "change_id": "053f2434-4bc1-46e5-aaa3-4632e71f4cb7",
+      "node_type": "outcome",
+      "title": "@eddy/timeline package created with nested group support, 18 tests passing",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T22:22:55.812732+01:00",
+      "updated_at": "2026-01-19T22:22:55.812732+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 287,
+      "change_id": "08737083-34ab-460c-a076-5e070c823ffb",
+      "node_type": "action",
+      "title": "Update packages/app to use @eddy/timeline",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T22:23:03.814392+01:00",
+      "updated_at": "2026-01-19T22:23:03.814392+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 288,
+      "change_id": "5d2c9a5d-664c-4923-b3e0-e26e0a6c8e40",
+      "node_type": "outcome",
+      "title": "packages/app updated to use @eddy/timeline - builds and type-checks",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T22:55:06.663592+01:00",
+      "updated_at": "2026-01-19T22:55:06.663592+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -5611,6 +5754,116 @@
       "weight": 1.0,
       "rationale": "Build refactor committed",
       "created_at": "2026-01-19T18:15:16.897147+01:00"
+    },
+    {
+      "id": 236,
+      "from_node_id": 276,
+      "to_node_id": 277,
+      "from_change_id": "9d98b87a-dd38-4ed9-b676-6d201626808d",
+      "to_change_id": "d46b72c3-6bb4-4d10-9e06-e618e6ff4460",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Design direction for jam app",
+      "created_at": "2026-01-19T21:13:10.689491+01:00"
+    },
+    {
+      "id": 237,
+      "from_node_id": 277,
+      "to_node_id": 278,
+      "from_change_id": "d46b72c3-6bb4-4d10-9e06-e618e6ff4460",
+      "to_change_id": "b41a71c0-96b2-42b0-8eeb-353f4f932311",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Design refinement",
+      "created_at": "2026-01-19T21:20:38.051731+01:00"
+    },
+    {
+      "id": 238,
+      "from_node_id": 278,
+      "to_node_id": 279,
+      "from_change_id": "b41a71c0-96b2-42b0-8eeb-353f4f932311",
+      "to_change_id": "381393d4-26fa-4e01-bf86-6cc0864074a6",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "UI/UX refinement",
+      "created_at": "2026-01-19T21:26:20.614560+01:00"
+    },
+    {
+      "id": 239,
+      "from_node_id": 279,
+      "to_node_id": 280,
+      "from_change_id": "381393d4-26fa-4e01-bf86-6cc0864074a6",
+      "to_change_id": "9bfaf399-fcbe-42a2-bbb5-7f96f4936114",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Workflow consideration",
+      "created_at": "2026-01-19T21:32:36.028612+01:00"
+    },
+    {
+      "id": 240,
+      "from_node_id": 281,
+      "to_node_id": 283,
+      "from_change_id": "1b219028-ec9f-47ac-a065-3f1ec7ea7370",
+      "to_change_id": "c2542a47-a35a-405c-bdc4-105387783e92",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Core requirement for jam",
+      "created_at": "2026-01-19T21:48:34.433385+01:00"
+    },
+    {
+      "id": 241,
+      "from_node_id": 283,
+      "to_node_id": 284,
+      "from_change_id": "c2542a47-a35a-405c-bdc4-105387783e92",
+      "to_change_id": "1836d27f-0636-4af7-b8d6-074ca3480164",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Architecture direction",
+      "created_at": "2026-01-19T21:51:32.865200+01:00"
+    },
+    {
+      "id": 242,
+      "from_node_id": 283,
+      "to_node_id": 285,
+      "from_change_id": "c2542a47-a35a-405c-bdc4-105387783e92",
+      "to_change_id": "e34b4e18-799e-4145-bec3-0d143bef6a49",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-01-19T21:51:55.514817+01:00"
+    },
+    {
+      "id": 243,
+      "from_node_id": 285,
+      "to_node_id": 286,
+      "from_change_id": "e34b4e18-799e-4145-bec3-0d143bef6a49",
+      "to_change_id": "053f2434-4bc1-46e5-aaa3-4632e71f4cb7",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation complete",
+      "created_at": "2026-01-19T22:22:56.680740+01:00"
+    },
+    {
+      "id": 244,
+      "from_node_id": 286,
+      "to_node_id": 287,
+      "from_change_id": "053f2434-4bc1-46e5-aaa3-4632e71f4cb7",
+      "to_change_id": "08737083-34ab-460c-a076-5e070c823ffb",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Next step",
+      "created_at": "2026-01-19T22:23:10.933278+01:00"
+    },
+    {
+      "id": 245,
+      "from_node_id": 287,
+      "to_node_id": 288,
+      "from_change_id": "08737083-34ab-460c-a076-5e070c823ffb",
+      "to_change_id": "5d2c9a5d-664c-4923-b3e0-e26e0a6c8e40",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation complete",
+      "created_at": "2026-01-19T22:55:07.009273+01:00"
     }
   ]
 }
