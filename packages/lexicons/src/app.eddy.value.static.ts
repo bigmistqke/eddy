@@ -2,7 +2,7 @@ import type { LexiconDoc } from '@atproto/lexicon'
 
 export default {
   lexicon: 1,
-  id: 'app.eddy.values',
+  id: 'app.eddy.value.static',
   defs: {
     staticValue: {
       type: 'object',
@@ -34,7 +34,7 @@ export default {
     staticVec2: {
       type: 'object',
       description:
-        "A static 2D vector. Each component is an integer scaled by 100 (e.g., [50, 100] = [0.5, 1.0]).",
+        'A static 2D vector. Each component is an integer scaled by 100 (e.g., [50, 100] = [0.5, 1.0]).',
       required: ['value'],
       properties: {
         value: {
@@ -50,7 +50,7 @@ export default {
     staticVec3: {
       type: 'object',
       description:
-        "A static 3D vector. Each component is an integer scaled by 100 (e.g., [100, 50, 0] = [1.0, 0.5, 0.0]).",
+        'A static 3D vector. Each component is an integer scaled by 100 (e.g., [100, 50, 0] = [1.0, 0.5, 0.0]).',
       required: ['value'],
       properties: {
         value: {
@@ -66,7 +66,7 @@ export default {
     staticVec4: {
       type: 'object',
       description:
-        "A static 4D vector. Each component is an integer scaled by 100 (e.g., [100, 50, 0, 100] = [1.0, 0.5, 0.0, 1.0]).",
+        'A static 4D vector. Each component is an integer scaled by 100 (e.g., [100, 50, 0, 100] = [1.0, 0.5, 0.0, 1.0]).',
       required: ['value'],
       properties: {
         value: {

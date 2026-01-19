@@ -10,7 +10,7 @@ export default {
       properties: {
         value: {
           type: 'union',
-          refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */,
+          refs: ['app.eddy.value.static#staticValue'],
           description: 'Volume (0-100, where 100 = unity gain)',
         },
       },
@@ -22,7 +22,7 @@ export default {
       properties: {
         value: {
           type: 'union',
-          refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */,
+          refs: ['app.eddy.value.static#staticValue'],
           description: 'Stereo position (0 = left, 50 = center, 100 = right)',
         },
       },
@@ -33,17 +33,17 @@ export default {
       properties: {
         mix: {
           type: 'union',
-          refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */,
+          refs: ['app.eddy.value.static#staticValue'],
           description: 'Wet/dry mix (0 = dry, 100 = wet)',
         },
         decay: {
           type: 'union',
-          refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */,
+          refs: ['app.eddy.value.static#staticValue'],
           description: 'Decay time scaled by 100 (e.g., 200 = 2 seconds)',
         },
         preDelay: {
           type: 'union',
-          refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */,
+          refs: ['app.eddy.value.static#staticValue'],
           description: 'Pre-delay in milliseconds (0-100)',
         },
       },
@@ -54,7 +54,10 @@ export default {
       required: ['type', 'params'],
       properties: {
         type: { type: 'string', const: 'audio.gain' },
-        enabled: { type: 'union', refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */ },
+        enabled: {
+          type: 'union',
+          refs: ['app.eddy.value.static#staticValue'],
+        },
         params: { type: 'ref', ref: '#gain.params' },
       },
     },
@@ -64,7 +67,10 @@ export default {
       required: ['type', 'params'],
       properties: {
         type: { type: 'string', const: 'audio.pan' },
-        enabled: { type: 'union', refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */ },
+        enabled: {
+          type: 'union',
+          refs: ['app.eddy.value.static#staticValue'],
+        },
         params: { type: 'ref', ref: '#pan.params' },
       },
     },
@@ -78,7 +84,10 @@ export default {
           type: 'string',
           description: "Custom effect identifier (e.g., 'audio.vendor.effectName')",
         },
-        enabled: { type: 'union', refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */ },
+        enabled: {
+          type: 'union',
+          refs: ['app.eddy.value.static#staticValue'],
+        },
       },
     },
 
@@ -88,7 +97,10 @@ export default {
       required: ['type', 'params'],
       properties: {
         type: { type: 'string', const: 'audio.reverb' },
-        enabled: { type: 'union', refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */ },
+        enabled: {
+          type: 'union',
+          refs: ['app.eddy.value.static#staticValue'],
+        },
         params: { type: 'ref', ref: '#reverb.params' },
       },
     },

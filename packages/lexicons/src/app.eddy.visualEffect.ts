@@ -9,32 +9,32 @@ export default {
       properties: {
         x: {
           type: 'union',
-          refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */,
+          refs: ['app.eddy.value.static#staticValue'],
           description: 'X offset (0-1 relative to canvas)',
         },
         y: {
           type: 'union',
-          refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */,
+          refs: ['app.eddy.value.static#staticValue'],
           description: 'Y offset (0-1 relative to canvas)',
         },
         scale: {
           type: 'union',
-          refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */,
+          refs: ['app.eddy.value.static#staticValue'],
           description: 'Uniform scale (0-1, where 1 = 100%)',
         },
         rotation: {
           type: 'union',
-          refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */,
+          refs: ['app.eddy.value.static#staticValue'],
           description: 'Rotation (0-1, where 1 = 360 degrees)',
         },
         anchorX: {
           type: 'union',
-          refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */,
+          refs: ['app.eddy.value.static#staticValue'],
           description: 'Transform anchor X (0-1)',
         },
         anchorY: {
           type: 'union',
-          refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */,
+          refs: ['app.eddy.value.static#staticValue'],
           description: 'Transform anchor Y (0-1)',
         },
       },
@@ -45,7 +45,10 @@ export default {
       required: ['type', 'params'],
       properties: {
         type: { type: 'string', const: 'visual.transform' },
-        enabled: { type: 'union', refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */ },
+        enabled: {
+          type: 'union',
+          refs: ['app.eddy.value.static#staticValue'],
+        },
         params: { type: 'ref', ref: '#transform.params' },
       },
     },
@@ -56,12 +59,12 @@ export default {
       properties: {
         value: {
           type: 'union',
-          refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */,
+          refs: ['app.eddy.value.static#staticValue'],
           description: 'Opacity (0-100)',
         },
         blendMode: {
           type: 'ref',
-          ref: 'app.eddy.values#staticBlendMode',
+          ref: 'app.eddy.value.static#staticBlendMode',
         },
       },
     },
@@ -72,7 +75,7 @@ export default {
       properties: {
         value: {
           type: 'union',
-          refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */,
+          refs: ['app.eddy.value.static#staticValue'],
           description: 'Brightness adjustment (-100 to 100, 0 = no change)',
         },
       },
@@ -84,7 +87,7 @@ export default {
       properties: {
         value: {
           type: 'union',
-          refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */,
+          refs: ['app.eddy.value.static#staticValue'],
           description: 'Contrast multiplier (0-200, 100 = no change)',
         },
       },
@@ -96,7 +99,7 @@ export default {
       properties: {
         value: {
           type: 'union',
-          refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */,
+          refs: ['app.eddy.value.static#staticValue'],
           description: 'Saturation multiplier (0-200, 100 = no change, 0 = grayscale)',
         },
       },
@@ -108,12 +111,12 @@ export default {
       properties: {
         color: {
           type: 'union',
-          refs: ['app.eddy.values#staticVec3'] /* TODO: add 'app.eddy.project#curveVec3' back when curve system is implemented */,
+          refs: ['app.eddy.value.static#staticVec3'],
           description: 'Tint color as RGB, each component 0-100 (e.g., [100, 0, 0] = red)',
         },
         intensity: {
           type: 'union',
-          refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */,
+          refs: ['app.eddy.value.static#staticValue'],
           description: 'Colorize intensity (0 = original, 100 = full tint)',
         },
       },
@@ -124,7 +127,10 @@ export default {
       required: ['type', 'params'],
       properties: {
         type: { type: 'string', const: 'visual.opacity' },
-        enabled: { type: 'union', refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */ },
+        enabled: {
+          type: 'union',
+          refs: ['app.eddy.value.static#staticValue'],
+        },
         params: { type: 'ref', ref: '#opacity.params' },
       },
     },
@@ -135,7 +141,10 @@ export default {
       required: ['type', 'params'],
       properties: {
         type: { type: 'string', const: 'visual.brightness' },
-        enabled: { type: 'union', refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */ },
+        enabled: {
+          type: 'union',
+          refs: ['app.eddy.value.static#staticValue'],
+        },
         params: { type: 'ref', ref: '#brightness.params' },
       },
     },
@@ -146,7 +155,10 @@ export default {
       required: ['type', 'params'],
       properties: {
         type: { type: 'string', const: 'visual.contrast' },
-        enabled: { type: 'union', refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */ },
+        enabled: {
+          type: 'union',
+          refs: ['app.eddy.value.static#staticValue'],
+        },
         params: { type: 'ref', ref: '#contrast.params' },
       },
     },
@@ -157,7 +169,10 @@ export default {
       required: ['type', 'params'],
       properties: {
         type: { type: 'string', const: 'visual.saturation' },
-        enabled: { type: 'union', refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */ },
+        enabled: {
+          type: 'union',
+          refs: ['app.eddy.value.static#staticValue'],
+        },
         params: { type: 'ref', ref: '#saturation.params' },
       },
     },
@@ -168,7 +183,10 @@ export default {
       required: ['type', 'params'],
       properties: {
         type: { type: 'string', const: 'visual.colorize' },
-        enabled: { type: 'union', refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */ },
+        enabled: {
+          type: 'union',
+          refs: ['app.eddy.value.static#staticValue'],
+        },
         params: { type: 'ref', ref: '#colorize.params' },
       },
     },
@@ -182,10 +200,13 @@ export default {
           type: 'string',
           description: "Custom effect identifier (e.g., 'visual.vendor.effectName')",
         },
-        enabled: { type: 'union', refs: ['app.eddy.values#staticValue'] /* TODO: add 'app.eddy.project#curveRef' back when curve system is implemented */ },
+        enabled: {
+          type: 'union',
+          refs: ['app.eddy.value.static#staticValue'],
+        },
         params: {
           type: 'ref',
-          ref: 'app.eddy.values#customParams',
+          ref: 'app.eddy.value.static#customParams',
         },
       },
     },

@@ -1,23 +1,29 @@
 import {
   createLookup,
-  /* atprotoRefs, type AtprotoRefs, bundleLexicons */ lexiconToValibot,
+  lexiconToValibot,
   type InferLexiconOutput,
 } from '@bigmistqke/lexicon-to-valibot'
 import strongRefLexicon from '@bigmistqke/typed-lexicons/com/atproto/repo/strongRef'
 import type * as v from 'valibot'
 import audioEffectLexicon from './app.eddy.audioEffect'
+import clipLexicon from './app.eddy.clip'
+import groupLexicon from './app.eddy.group'
 import projectLexicon from './app.eddy.project'
 import stemLexicon from './app.eddy.stem'
-import valuesLexicon from './app.eddy.values'
+import trackLexicon from './app.eddy.track'
+import staticValueLexicon from './app.eddy.value.static'
 import visualEffectLexicon from './app.eddy.visualEffect'
 
 const lookup = createLookup(
-  projectLexicon,
   audioEffectLexicon,
-  visualEffectLexicon,
+  clipLexicon,
+  groupLexicon,
+  projectLexicon,
   stemLexicon,
-  valuesLexicon,
   strongRefLexicon,
+  trackLexicon,
+  staticValueLexicon,
+  visualEffectLexicon,
 )
 
 // SDK format validators for parsing incoming data from PDS
@@ -28,7 +34,10 @@ export const visualEffectValidators = lexiconToValibot(visualEffectLexicon, {
   lookup,
   format: 'sdk',
 })
-export const valuesValidators = lexiconToValibot(valuesLexicon, { lookup, format: 'sdk' })
+export const valuesValidators = lexiconToValibot(staticValueLexicon, { lookup, format: 'sdk' })
+export const trackValidators = lexiconToValibot(trackLexicon, { lookup, format: 'sdk' })
+export const clipValidators = lexiconToValibot(clipLexicon, { lookup, format: 'sdk' })
+export const groupValidators = lexiconToValibot(groupLexicon, { lookup, format: 'sdk' })
 
 // Wire format validators for validating outgoing data to PDS
 export const projectWireValidators = lexiconToValibot(projectLexicon, { lookup, format: 'wire' })
@@ -41,15 +50,15 @@ export const visualEffectWireValidators = lexiconToValibot(visualEffectLexicon, 
   lookup,
   format: 'wire',
 })
-export const valuesWireValidators = lexiconToValibot(valuesLexicon, { lookup, format: 'wire' })
+export const valuesWireValidators = lexiconToValibot(staticValueLexicon, { lookup, format: 'wire' })
 
 // Types inferred from validators (satisfies preserves literal types without readonly)
 export type Project = v.InferOutput<typeof projectValidators.main>
 export type Canvas = v.InferOutput<typeof projectValidators.canvas>
-export type Track = v.InferOutput<typeof projectValidators.track>
-export type Clip = v.InferOutput<typeof projectValidators.clip>
-export type ClipSourceStem = v.InferOutput<(typeof projectValidators)['clipSource.stem']>
-export type ClipSourceGroup = v.InferOutput<(typeof projectValidators)['clipSource.group']>
+export type Track = v.InferOutput<typeof trackValidators.track>
+export type Clip = v.InferOutput<typeof clipValidators.clip>
+export type ClipSourceStem = v.InferOutput<(typeof clipValidators)['clipSource.stem']>
+export type ClipSourceGroup = v.InferOutput<(typeof clipValidators)['clipSource.group']>
 export type ClipSource = ClipSourceStem | ClipSourceGroup
 export type StaticValue = v.InferOutput<typeof valuesValidators.staticValue>
 export type StaticVec2 = v.InferOutput<typeof valuesValidators.staticVec2>
@@ -62,10 +71,10 @@ export type CustomParams = v.InferOutput<typeof valuesValidators.customParams>
 export type StemRef = InferLexiconOutput<typeof strongRefLexicon, 'main'>
 
 // Group types
-export type Group = v.InferOutput<(typeof projectValidators)['group']>
-export type Member = v.InferOutput<(typeof projectValidators)['member']>
-export type MemberVoid = v.InferOutput<(typeof projectValidators)['member.void']>
-export type LayoutGrid = v.InferOutput<(typeof projectValidators)['layout.grid']>
+export type Group = v.InferOutput<(typeof groupValidators)['group']>
+export type Member = v.InferOutput<(typeof groupValidators)['member']>
+export type MemberVoid = v.InferOutput<(typeof groupValidators)['member.void']>
+export type LayoutGrid = v.InferOutput<(typeof groupValidators)['layout.grid']>
 
 // Audio effect types
 export type AudioEffectGain = v.InferOutput<typeof audioEffectValidators.gain>
@@ -91,15 +100,15 @@ export type VisualEffect =
   | VisualEffectColorize
   | VisualEffectCustom
 
-// Curve types
-export type CurveKeyframe = v.InferOutput<(typeof projectValidators)['curve.keyframe']>
-export type CurveEnvelope = v.InferOutput<(typeof projectValidators)['curve.envelope']>
-export type CurveLfo = v.InferOutput<(typeof projectValidators)['curve.lfo']>
-export type Curve = CurveKeyframe | CurveEnvelope | CurveLfo
-
 export type Value = StaticValue // TODO: add | CurveRef when curve system is implemented
 
 // Stem types
 export type Stem = v.InferOutput<typeof stemValidators.main>
 export type AudioMeta = v.InferOutput<typeof stemValidators.audioMeta>
 export type VideoMeta = v.InferOutput<typeof stemValidators.videoMeta>
+
+// // Curve types
+// export type CurveKeyframe = v.InferOutput<(typeof projectValidators)['curve.keyframe']>
+// export type CurveEnvelope = v.InferOutput<(typeof projectValidators)['curve.envelope']>
+// export type CurveLfo = v.InferOutput<(typeof projectValidators)['curve.lfo']>
+// export type Curve = CurveKeyframe | CurveEnvelope | CurveLfo
