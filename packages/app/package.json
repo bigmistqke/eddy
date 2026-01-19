@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@bigmistqke/rpc": "^0.1.3",
+    "@bigmistqke/typed-lexicons": "^0.1.2",
     "@bigmistqke/solid-whenever": "^0.1.1",
     "@bigmistqke/view.gl": "^0.1.12",
     "@eddy/atproto": "workspace:*",
@@ -34,5 +35,8 @@
     "vite": "^6.0.0",
     "vite-plugin-solid": "^2.11.0",
     "vitest": "^3.0.0"
+  },
+  "peerDependencies": {
+    "@bigmistqke/typed-lexicons": "^0.1.2"
   }
 }

@@ -7,8 +7,11 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev": "pnpm --filter @eddy/app dev",
-    "build": "pnpm -r build",
+    "dev": "pnpm run build:packages && pnpm run dev:all",
+    "dev:all": "pnpm --filter @eddy/app dev & pnpm run dev:packages",
+    "dev:packages": "pnpm --filter \"./packages/*\" --filter \"!@eddy/app\" dev",
+    "build": "pnpm run build:packages && pnpm --filter @eddy/app build",
+    "build:packages": "pnpm --filter \"./packages/*\" --filter \"!@eddy/app\" build",
     "preview": "pnpm --filter @eddy/app preview",
     "test": "pnpm -r test",
     "test:run": "pnpm -r test:run",

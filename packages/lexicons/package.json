@@ -2,21 +2,31 @@
   "name": "@eddy/lexicons",
   "version": "0.0.1",
   "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
   },
   "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
     "types": "tsc --noEmit"
   },
   "dependencies": {
     "@atproto/lexicon": "^0.6.0",
     "@bigmistqke/lexicon-to-valibot": "^0.1.7",
-    "@bigmistqke/typed-lexicons": "0.1.0",
+    "@bigmistqke/typed-lexicons": "^0.1.2",
     "valibot": "^1.2.0"
   },
   "devDependencies": {
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vite": "^6.4.1",
+    "vite-plugin-dts": "^4.0.0"
+  },
+  "peerDependencies": {
+    "@bigmistqke/typed-lexicons": "^0.1.2"
   }
 }
