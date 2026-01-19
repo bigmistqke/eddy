@@ -1,27 +1,43 @@
 [
   {
-    "hash": "a0667374111aac5aff8aed63dfee0d336952202b",
-    "short_hash": "a066737",
+    "hash": "3cef022126c9ba40da0273f7867306f2d0b5f9ff",
+    "short_hash": "3cef022",
     "author": "bigmistqke",
-    "date": "2026-01-19T12:59:14+01:00",
-    "message": "chore: enable sourcemaps for library packages",
-    "files_changed": 6
-  },
-  {
-    "hash": "a0667374111aac5aff8aed63dfee0d336952202b",
-    "short_hash": "a066737",
-    "author": "bigmistqke",
-    "date": "2026-01-19T12:59:14+01:00",
-    "message": "chore: enable sourcemaps for library packages",
-    "files_changed": 6
-  },
-  {
-    "hash": "cbbb6ff8121417877c43ebe144e8b25f2149a394",
-    "short_hash": "cbbb6ff",
-    "author": "bigmistqke",
-    "date": "2026-01-19T11:57:32+01:00",
-    "message": "chore: sync deciduous graph",
+    "date": "2026-01-19T18:02:59+01:00",
+    "message": "fix: bundle AudioWorklet as separate entry for library builds\n\nBuild ring-buffer-processor as separate entry with deps bundled inline.\nUse runtime new URL() pattern to resolve worklet path.",
     "files_changed": 2
+  },
+  {
+    "hash": "3cef022126c9ba40da0273f7867306f2d0b5f9ff",
+    "short_hash": "3cef022",
+    "author": "bigmistqke",
+    "date": "2026-01-19T18:02:59+01:00",
+    "message": "fix: bundle AudioWorklet as separate entry for library builds\n\nBuild ring-buffer-processor as separate entry with deps bundled inline.\nUse runtime new URL() pattern to resolve worklet path.",
+    "files_changed": 2
+  },
+  {
+    "hash": "c1b9aea36f5d3203a5cea4b8c97c06dcc83bc7fa",
+    "short_hash": "c1b9aea",
+    "author": "bigmistqke",
+    "date": "2026-01-19T18:02:53+01:00",
+    "message": "feat: implement pipeline branching with weighted outputs\n\nAdd pipeline types with weighted output arrays for parallel signal routing.\nAudio uses GainNodes for weighted routing, video compiles branches to single shader.",
+    "files_changed": 11
+  },
+  {
+    "hash": "c1b9aea36f5d3203a5cea4b8c97c06dcc83bc7fa",
+    "short_hash": "c1b9aea",
+    "author": "bigmistqke",
+    "date": "2026-01-19T18:02:53+01:00",
+    "message": "feat: implement pipeline branching with weighted outputs\n\nAdd pipeline types with weighted output arrays for parallel signal routing.\nAudio uses GainNodes for weighted routing, video compiles branches to single shader.",
+    "files_changed": 11
+  },
+  {
+    "hash": "a0667374111aac5aff8aed63dfee0d336952202b",
+    "short_hash": "a066737",
+    "author": "bigmistqke",
+    "date": "2026-01-19T12:59:14+01:00",
+    "message": "chore: enable sourcemaps for library packages",
+    "files_changed": 6
   },
   {
     "hash": "7074f2cf8814869437195016dac96c6a66cd0dbe",

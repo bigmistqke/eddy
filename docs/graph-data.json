@@ -2980,6 +2980,28 @@
       "created_at": "2026-01-19T16:28:07.742796+01:00",
       "updated_at": "2026-01-19T16:28:07.742796+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 272,
+      "change_id": "2c930b3a-bc0d-4f7d-9a5f-bbf4106f3f20",
+      "node_type": "outcome",
+      "title": "Committed: feat: implement pipeline branching with weighted outputs",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T18:03:33.824654+01:00",
+      "updated_at": "2026-01-19T18:03:33.824654+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"c1b9aea\",\"confidence\":95}"
+    },
+    {
+      "id": 273,
+      "change_id": "0ba6f8bd-1ab4-4aac-9464-3a0f096fa642",
+      "node_type": "outcome",
+      "title": "Committed: fix: bundle AudioWorklet as separate entry for library builds",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T18:04:51.798850+01:00",
+      "updated_at": "2026-01-19T18:04:51.798850+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"3cef022\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -5534,6 +5556,28 @@
       "weight": 1.0,
       "rationale": "Completed",
       "created_at": "2026-01-19T16:28:07.784437+01:00"
+    },
+    {
+      "id": 233,
+      "from_node_id": 270,
+      "to_node_id": 272,
+      "from_change_id": "39acba5b-e373-4ca8-a363-6e21ddc6a943",
+      "to_change_id": "2c930b3a-bc0d-4f7d-9a5f-bbf4106f3f20",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation committed",
+      "created_at": "2026-01-19T18:03:33.865122+01:00"
+    },
+    {
+      "id": 234,
+      "from_node_id": 270,
+      "to_node_id": 273,
+      "from_change_id": "39acba5b-e373-4ca8-a363-6e21ddc6a943",
+      "to_change_id": "0ba6f8bd-1ab4-4aac-9464-3a0f096fa642",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Build fix committed",
+      "created_at": "2026-01-19T18:04:51.850185+01:00"
     }
   ]
 }
