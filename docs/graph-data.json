@@ -2743,7 +2743,7 @@
       "id": 250,
       "change_id": "074f21d6-a2f0-4620-8913-3c6f17c05716",
       "node_type": "outcome",
-      "title": "Committed: refactor - move static value definitions to app.eddy.value.static lexicon",
+      "title": "Committed: refactor - move static value definitions to app.eddy.values lexicon",
       "description": null,
       "status": "pending",
       "created_at": "2026-01-19T00:31:44.383838+01:00",
@@ -2760,6 +2760,28 @@
       "created_at": "2026-01-19T00:31:44.525277+01:00",
       "updated_at": "2026-01-19T00:31:44.525277+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"ef786f7\",\"confidence\":95}"
+    },
+    {
+      "id": 252,
+      "change_id": "59125b85-10e7-4d2f-b5ee-3183a79426a7",
+      "node_type": "outcome",
+      "title": "Committed: refactor - split project lexicon into separate domain files",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T01:57:45.797272+01:00",
+      "updated_at": "2026-01-19T01:57:45.797272+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"cf7f50f\",\"confidence\":95}"
+    },
+    {
+      "id": 253,
+      "change_id": "f863894c-7473-49f4-9e75-04fe83c08d57",
+      "node_type": "outcome",
+      "title": "Committed: chore - update dependencies",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T01:57:45.826161+01:00",
+      "updated_at": "2026-01-19T01:57:45.826161+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"743b0d5\",\"confidence\":95}"
     }
   ],
   "edges": [

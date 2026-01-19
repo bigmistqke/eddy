@@ -1,5 +1,37 @@
 [
   {
+    "hash": "743b0d5703977f24103a9b51ec4a9128a685fc06",
+    "short_hash": "743b0d5",
+    "author": "bigmistqke",
+    "date": "2026-01-19T01:57:38+01:00",
+    "message": "chore: update dependencies",
+    "files_changed": 2
+  },
+  {
+    "hash": "743b0d5703977f24103a9b51ec4a9128a685fc06",
+    "short_hash": "743b0d5",
+    "author": "bigmistqke",
+    "date": "2026-01-19T01:57:38+01:00",
+    "message": "chore: update dependencies",
+    "files_changed": 2
+  },
+  {
+    "hash": "cf7f50f1b891ef60ee1729cc591bfedf6c8e1ff9",
+    "short_hash": "cf7f50f",
+    "author": "bigmistqke",
+    "date": "2026-01-19T01:57:34+01:00",
+    "message": "refactor: split project lexicon into separate domain files",
+    "files_changed": 10
+  },
+  {
+    "hash": "cf7f50f1b891ef60ee1729cc591bfedf6c8e1ff9",
+    "short_hash": "cf7f50f",
+    "author": "bigmistqke",
+    "date": "2026-01-19T01:57:34+01:00",
+    "message": "refactor: split project lexicon into separate domain files",
+    "files_changed": 10
+  },
+  {
     "hash": "ef786f74b9be47b5fcc290e80fc9920900d592e6",
     "short_hash": "ef786f7",
     "author": "bigmistqke",
@@ -12,24 +44,8 @@
     "short_hash": "f65554b",
     "author": "bigmistqke",
     "date": "2026-01-19T00:31:34+01:00",
-    "message": "refactor: move static value definitions to app.eddy.value.static lexicon",
+    "message": "refactor: move static value definitions to app.eddy.values lexicon",
     "files_changed": 5
-  },
-  {
-    "hash": "f65554be24f9966521a0dae6fee458695bd1e4ed",
-    "short_hash": "f65554b",
-    "author": "bigmistqke",
-    "date": "2026-01-19T00:31:34+01:00",
-    "message": "refactor: move static value definitions to app.eddy.value.static lexicon",
-    "files_changed": 5
-  },
-  {
-    "hash": "056f497e231da2c0f7cc4d4c85fbdac7cccb3d6c",
-    "short_hash": "056f497",
-    "author": "bigmistqke",
-    "date": "2026-01-18T19:25:07+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
   },
   {
     "hash": "254704f0e72bf515c015173ad93a759e0d6ba960",
