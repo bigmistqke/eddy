@@ -1,27 +1,43 @@
 [
   {
+    "hash": "ef786f74b9be47b5fcc290e80fc9920900d592e6",
+    "short_hash": "ef786f7",
+    "author": "bigmistqke",
+    "date": "2026-01-19T00:31:39+01:00",
+    "message": "chore: add local dependency overrides",
+    "files_changed": 4
+  },
+  {
+    "hash": "f65554be24f9966521a0dae6fee458695bd1e4ed",
+    "short_hash": "f65554b",
+    "author": "bigmistqke",
+    "date": "2026-01-19T00:31:34+01:00",
+    "message": "refactor: move static value definitions to app.eddy.value.static lexicon",
+    "files_changed": 5
+  },
+  {
+    "hash": "f65554be24f9966521a0dae6fee458695bd1e4ed",
+    "short_hash": "f65554b",
+    "author": "bigmistqke",
+    "date": "2026-01-19T00:31:34+01:00",
+    "message": "refactor: move static value definitions to app.eddy.value.static lexicon",
+    "files_changed": 5
+  },
+  {
+    "hash": "056f497e231da2c0f7cc4d4c85fbdac7cccb3d6c",
+    "short_hash": "056f497",
+    "author": "bigmistqke",
+    "date": "2026-01-18T19:25:07+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
     "hash": "254704f0e72bf515c015173ad93a759e0d6ba960",
     "short_hash": "254704f",
     "author": "bigmistqke",
     "date": "2026-01-18T19:24:45+01:00",
     "message": "refactor: split effect lexicons into separate files\n\n- Extract audio effects to app.eddy.audioEffect.ts\n- Extract visual effects to app.eddy.visualEffect.ts\n- Update index.ts with cross-lexicon ref resolution\n- Reduces app.eddy.project.ts from 921 to 644 lines",
     "files_changed": 4
-  },
-  {
-    "hash": "55fa159ab31a9cd7c98e6d7e3cf0183abce9d797",
-    "short_hash": "55fa159",
-    "author": "bigmistqke",
-    "date": "2026-01-18T19:17:22+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "8b42b6b1a645c8dc01182beb644d24404421e7d4",
-    "short_hash": "8b42b6b",
-    "author": "bigmistqke",
-    "date": "2026-01-18T19:17:01+01:00",
-    "message": "feat: add staticBlendMode and customParams types for consistent effect params\n\n- Add staticBlendMode type with { value: 'normal' | ... } pattern\n- Add customParams as empty object for extensible custom effects\n- Update blendMode in visualEffect.opacity to use staticBlendMode ref\n- Update visualEffect.custom.params to use customParams ref\n- Update Track.tsx to use VisualEffect from lexicons",
-    "files_changed": 3
   },
   {
     "hash": "8b42b6b1a645c8dc01182beb644d24404421e7d4",
