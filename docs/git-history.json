@@ -1,10 +1,26 @@
 [
   {
-    "hash": "3cef022126c9ba40da0273f7867306f2d0b5f9ff",
-    "short_hash": "3cef022",
+    "hash": "80bd3a50091235e621e4a3417ff1e663019abfaa",
+    "short_hash": "80bd3a5",
     "author": "bigmistqke",
-    "date": "2026-01-19T18:02:59+01:00",
-    "message": "fix: bundle AudioWorklet as separate entry for library builds\n\nBuild ring-buffer-processor as separate entry with deps bundled inline.\nUse runtime new URL() pattern to resolve worklet path.",
+    "date": "2026-01-19T18:14:59+01:00",
+    "message": "refactor: convert library packages from vite to tsup\n\nFaster builds with esbuild. Audio worklet uses noExternal to bundle deps.",
+    "files_changed": 21
+  },
+  {
+    "hash": "ac5d69ece5609dc78980a7918752140c40569194",
+    "short_hash": "ac5d69e",
+    "author": "bigmistqke",
+    "date": "2026-01-19T18:05:08+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
+    "hash": "e6d6f6e1c339cd00c6d5717f7b395c15de22316f",
+    "short_hash": "e6d6f6e",
+    "author": "bigmistqke",
+    "date": "2026-01-19T18:03:03+01:00",
+    "message": "chore: sync deciduous graph",
     "files_changed": 2
   },
   {
@@ -14,14 +30,6 @@
     "date": "2026-01-19T18:02:59+01:00",
     "message": "fix: bundle AudioWorklet as separate entry for library builds\n\nBuild ring-buffer-processor as separate entry with deps bundled inline.\nUse runtime new URL() pattern to resolve worklet path.",
     "files_changed": 2
-  },
-  {
-    "hash": "c1b9aea36f5d3203a5cea4b8c97c06dcc83bc7fa",
-    "short_hash": "c1b9aea",
-    "author": "bigmistqke",
-    "date": "2026-01-19T18:02:53+01:00",
-    "message": "feat: implement pipeline branching with weighted outputs\n\nAdd pipeline types with weighted output arrays for parallel signal routing.\nAudio uses GainNodes for weighted routing, video compiles branches to single shader.",
-    "files_changed": 11
   },
   {
     "hash": "c1b9aea36f5d3203a5cea4b8c97c06dcc83bc7fa",
