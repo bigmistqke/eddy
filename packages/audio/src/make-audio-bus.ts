@@ -26,13 +26,27 @@ export interface AudioBus {
   useMediaStreamOutput: () => void
   /** Switch back to direct destination output */
   useDirectOutput: () => void
+  /** Set the amount (gain) for a specific output by index (for weighted routing) */
+  setOutputAmount: (index: number, amount: number) => void
+  /** Get the number of outputs */
+  outputCount: () => number
+}
+
+/** Single output destination with weight */
+export interface AudioBusOutput {
+  /** Target AudioNode to connect to */
+  destination: AudioNode
+  /** Output amount 0-1 (default 1) */
+  amount?: number
 }
 
 export interface AudioBusConfig {
   /** Audio effects to apply */
   effects: AudioEffect[]
-  /** Optional destination node (defaults to master mixer) */
+  /** Optional single destination node (defaults to AudioContext.destination) */
   destination?: AudioNode
+  /** Optional weighted outputs for parallel routing (overrides destination if provided) */
+  outputs?: AudioBusOutput[]
 }
 
 // Track elements that have been connected (can only create one source per element ever)
@@ -41,7 +55,7 @@ const connectedElements = new WeakMap<HTMLMediaElement, MediaElementAudioSourceN
 /**
  * Create an audio bus for live playback.
  * Uses the element system to build effect nodes from effects.
- * Connects to destination (master mixer by default).
+ * Supports weighted outputs for parallel signal routing.
  *
  * @param configOrEffects - Either an AudioBusConfig object or an AudioEffect[] array (for backwards compatibility)
  */
@@ -56,9 +70,37 @@ export function makeAudioBus(configOrEffects: AudioBusConfig | AudioEffect[]): A
   // Build effect nodes using the element system
   const pipeline = makeEffectChain(ctx, config.effects)
 
-  // Connect pipeline output to destination (AudioContext.destination by default for root)
-  const originalDestination = config.destination ?? ctx.destination
-  pipeline.output.connect(originalDestination)
+  // Output gain nodes for weighted routing
+  const outputGains: GainNode[] = []
+
+  // Determine output configuration
+  if (config.outputs && config.outputs.length > 0) {
+    // Weighted outputs mode: create GainNode for each output
+    for (const output of config.outputs) {
+      const gain = ctx.createGain()
+      gain.gain.value = output.amount ?? 1
+      pipeline.output.connect(gain)
+      gain.connect(output.destination)
+      outputGains.push(gain)
+    }
+  } else {
+    // Single destination mode (backwards compatible)
+    const originalDestination = config.destination ?? ctx.destination
+    // Create a gain node for consistency (allows setOutputAmount to work)
+    const gain = ctx.createGain()
+    gain.gain.value = 1
+    pipeline.output.connect(gain)
+    gain.connect(originalDestination)
+    outputGains.push(gain)
+  }
+
+  // Store original destinations for reconnecting after MediaStream mode
+  const originalDestinations = outputGains.map((gain, index) => {
+    if (config.outputs && config.outputs[index]) {
+      return config.outputs[index].destination
+    }
+    return config.destination ?? ctx.destination
+  })
 
   let currentSource: MediaElementAudioSourceNode | null = null
   const connectedNodes = new Set<AudioNode>()
@@ -132,16 +174,21 @@ export function makeAudioBus(configOrEffects: AudioBusConfig | AudioEffect[]): A
     useMediaStreamOutput() {
       if (usingMediaStreamOutput) return
 
-      // Disconnect from original destination
-      pipeline.output.disconnect()
+      // Disconnect all output gains from their destinations
+      for (const gain of outputGains) {
+        gain.disconnect()
+      }
 
       // Create MediaStream destination if needed
       if (!mediaStreamDest) {
         mediaStreamDest = ctx.createMediaStreamDestination()
       }
 
-      // Connect to MediaStream destination
-      pipeline.output.connect(mediaStreamDest)
+      // Connect all output gains to MediaStream destination
+      // (audio sums at the MediaStream destination)
+      for (const gain of outputGains) {
+        gain.connect(mediaStreamDest)
+      }
 
       // Create audio element if needed
       if (!audioElement) {
@@ -165,13 +212,28 @@ export function makeAudioBus(configOrEffects: AudioBusConfig | AudioEffect[]): A
         audioElement.srcObject = null
       }
 
-      // Disconnect from MediaStream destination
-      pipeline.output.disconnect()
+      // Disconnect all output gains from MediaStream destination
+      for (const gain of outputGains) {
+        gain.disconnect()
+      }
 
-      // Connect back to original destination
-      pipeline.output.connect(originalDestination)
+      // Reconnect each output gain to its original destination
+      for (let index = 0; index < outputGains.length; index++) {
+        outputGains[index].connect(originalDestinations[index])
+      }
 
       usingMediaStreamOutput = false
+    },
+
+    setOutputAmount(index: number, amount: number) {
+      const gain = outputGains[index]
+      if (gain) {
+        gain.gain.setValueAtTime(amount, ctx.currentTime)
+      }
+    },
+
+    outputCount() {
+      return outputGains.length
     },
   }
 }

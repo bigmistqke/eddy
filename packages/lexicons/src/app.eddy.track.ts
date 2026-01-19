@@ -23,35 +23,14 @@ export default {
           maxLength: 256,
         },
         audioPipeline: {
-          type: 'array',
-          items: {
-            type: 'union',
-            refs: [
-              'app.eddy.audioEffect#pan',
-              'app.eddy.audioEffect#gain',
-              'app.eddy.audioEffect#reverb',
-              'app.eddy.audioEffect#custom',
-            ],
-          },
-          maxLength: 16,
-          description: 'Track-level audio effect chain',
+          type: 'ref',
+          ref: 'app.eddy.pipeline#audioPipeline',
+          description: 'Track-level audio effect chain with weighted outputs',
         },
         videoPipeline: {
-          type: 'array',
-          items: {
-            type: 'union',
-            refs: [
-              'app.eddy.visualEffect#transform',
-              'app.eddy.visualEffect#opacity',
-              'app.eddy.visualEffect#brightness',
-              'app.eddy.visualEffect#contrast',
-              'app.eddy.visualEffect#saturation',
-              'app.eddy.visualEffect#colorize',
-              'app.eddy.visualEffect#custom',
-            ],
-          },
-          maxLength: 16,
-          description: 'Track-level video effect chain',
+          type: 'ref',
+          ref: 'app.eddy.pipeline#videoPipeline',
+          description: 'Track-level video effect chain with weighted outputs',
         },
         muted: {
           type: 'union',

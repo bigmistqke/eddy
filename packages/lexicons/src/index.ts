@@ -8,6 +8,7 @@ import type * as v from 'valibot'
 import audioEffectLexicon from './app.eddy.audioEffect'
 import clipLexicon from './app.eddy.clip'
 import groupLexicon from './app.eddy.group'
+import pipelineLexicon from './app.eddy.pipeline'
 import projectLexicon from './app.eddy.project'
 import stemLexicon from './app.eddy.stem'
 import trackLexicon from './app.eddy.track'
@@ -20,6 +21,7 @@ const lookup = createLookup(
   clipLexicon,
   curveLexicon,
   groupLexicon,
+  pipelineLexicon,
   projectLexicon,
   stemLexicon,
   strongRefLexicon,
@@ -41,6 +43,7 @@ export const curveValidators = lexiconToValibot(curveLexicon, { lookup, format: 
 export const trackValidators = lexiconToValibot(trackLexicon, { lookup, format: 'sdk' })
 export const clipValidators = lexiconToValibot(clipLexicon, { lookup, format: 'sdk' })
 export const groupValidators = lexiconToValibot(groupLexicon, { lookup, format: 'sdk' })
+export const pipelineValidators = lexiconToValibot(pipelineLexicon, { lookup, format: 'sdk' })
 
 // Wire format validators for validating outgoing data to PDS
 export const projectWireValidators = lexiconToValibot(projectLexicon, { lookup, format: 'wire' })
@@ -55,6 +58,7 @@ export const visualEffectWireValidators = lexiconToValibot(visualEffectLexicon, 
 })
 export const valuesWireValidators = lexiconToValibot(staticValueLexicon, { lookup, format: 'wire' })
 export const curveWireValidators = lexiconToValibot(curveLexicon, { lookup, format: 'wire' })
+export const pipelineWireValidators = lexiconToValibot(pipelineLexicon, { lookup, format: 'wire' })
 
 // Types inferred from validators (satisfies preserves literal types without readonly)
 export type Project = v.InferOutput<typeof projectValidators.main>
@@ -79,6 +83,11 @@ export type Group = v.InferOutput<(typeof groupValidators)['group']>
 export type Member = v.InferOutput<(typeof groupValidators)['member']>
 export type MemberVoid = v.InferOutput<(typeof groupValidators)['member.void']>
 export type LayoutGrid = v.InferOutput<(typeof groupValidators)['layout.grid']>
+
+// Pipeline types
+export type PipelineOutput = v.InferOutput<typeof pipelineValidators.output>
+export type AudioPipeline = v.InferOutput<typeof pipelineValidators.audioPipeline>
+export type VideoPipeline = v.InferOutput<typeof pipelineValidators.videoPipeline>
 
 // Audio effect types
 export type AudioEffectGain = v.InferOutput<typeof audioEffectValidators.gain>
@@ -116,16 +125,3 @@ export type CurveKeyframe = v.InferOutput<typeof curveValidators.keyframe>
 export type CurveEnvelope = v.InferOutput<typeof curveValidators.envelope>
 export type CurveLfo = v.InferOutput<typeof curveValidators.lfo>
 export type Curve = CurveKeyframe | CurveEnvelope | CurveLfo
-
-// Mutable utility type for store usage (removes readonly)
-type Mutable<T> = T extends readonly (infer U)[]
-  ? Mutable<U>[]
-  : T extends object
-    ? { -readonly [K in keyof T]: Mutable<T[K]> }
-    : T
-
-// Mutable versions for solid-js stores
-export type MutableProject = Mutable<Project>
-export type MutableTrack = Mutable<Track>
-export type MutableClip = Mutable<Clip>
-export type MutableGroup = Mutable<Group>

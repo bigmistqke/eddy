@@ -1,6 +1,6 @@
 import { rpc, transfer, type RPC } from '@bigmistqke/rpc/messenger'
-import { makeAudioBus, type AudioBus } from '@eddy/audio'
-import type { Group, Project } from '@eddy/lexicons'
+import { makeAudioBus, type AudioBus, type AudioBusOutput } from '@eddy/audio'
+import type { AudioPipeline, Group, PipelineOutput, Project, StaticValue } from '@eddy/lexicons'
 import { debug, getGlobalPerfMonitor, makeLoop } from '@eddy/utils'
 import { createEffect, createMemo, createSignal, on, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
@@ -172,6 +172,14 @@ interface ClipEntry {
 /**********************************************************************************/
 
 /**
+ * Resolve a StaticValue to a number (0-100 scale from lexicon -> 0-1 for audio).
+ */
+function resolveStaticValue(value: StaticValue | undefined, defaultValue: number): number {
+  if (!value) return defaultValue
+  return value.value / 100
+}
+
+/**
  * Inject a preview clip into a track, replacing its existing clips.
  * Used as middleware before compilation when a track is in preview mode.
  */
@@ -327,6 +335,49 @@ export async function makePlayer(options: CreatePlayerOptions): Promise<Player> 
     return proj.groups[0]
   }
 
+  /**
+   * Resolve pipeline outputs to AudioBusOutputs.
+   * If outputs are specified in the pipeline, resolve refs to actual AudioNodes.
+   * Falls back to hierarchical destination if no outputs or ref not found.
+   */
+  function resolveAudioOutputs(
+    pipeline: AudioPipeline | undefined,
+    hierarchicalDestination: AudioNode | undefined,
+  ): AudioBusOutput[] | undefined {
+    const outputs = pipeline?.outputs
+    if (!outputs || outputs.length === 0) {
+      return undefined // Use single destination mode
+    }
+
+    const resolved: AudioBusOutput[] = []
+    for (const output of outputs) {
+      // Try to resolve the ref to a group or track
+      const targetGroup = groups[output.ref]
+      const targetTrack = tracks[output.ref]
+
+      let destination: AudioNode
+      if (targetGroup) {
+        destination = targetGroup.audioPipeline.effectChain.input
+      } else if (targetTrack) {
+        destination = targetTrack.audioPipeline.effectChain.input
+      } else if (hierarchicalDestination) {
+        // Fallback to hierarchical destination if ref not resolved
+        log('output ref not found, using hierarchical destination', { ref: output.ref })
+        destination = hierarchicalDestination
+      } else {
+        // Skip this output if no destination available
+        continue
+      }
+
+      resolved.push({
+        destination,
+        amount: resolveStaticValue(output.amount, 1),
+      })
+    }
+
+    return resolved.length > 0 ? resolved : undefined
+  }
+
   /** Get or create a group entry (audio pipeline) */
   function getOrCreateGroup(groupId: string): GroupEntry {
     const group = groups[groupId]
@@ -337,26 +388,33 @@ export async function makePlayer(options: CreatePlayerOptions): Promise<Player> 
 
     log('creating group entry', { groupId })
 
-    // Look up group's audio effects from project
+    // Look up group's audio pipeline from project
     const projectGroup = project().groups.find(g => g.id === groupId)
-    const effects = projectGroup?.audioPipeline ?? []
+    const pipeline = projectGroup?.audioPipeline
+    const effects = pipeline?.effects ?? []
 
     // Find parent group to route to (or master if root)
     const parentMap = buildParentMap()
     const parentGroup = parentMap.get(groupId)
-    const rootGroup = getRootGroup()
 
-    let destination: AudioNode | undefined
+    let hierarchicalDestination: AudioNode | undefined
     if (parentGroup && parentGroup.id !== groupId) {
       // Route to parent group's audio bus
       const parentEntry = getOrCreateGroup(parentGroup.id)
-      destination = parentEntry.audioPipeline.effectChain.input
+      hierarchicalDestination = parentEntry.audioPipeline.effectChain.input
     }
     // If no parent (root group), destination is undefined → routes to master
 
+    // Resolve outputs if specified, otherwise use hierarchical destination
+    const outputs = resolveAudioOutputs(pipeline, hierarchicalDestination)
+
     const newGroup: GroupEntry = {
       groupId,
-      audioPipeline: makeAudioBus({ effects, destination }),
+      audioPipeline: makeAudioBus({
+        effects,
+        destination: outputs ? undefined : hierarchicalDestination,
+        outputs,
+      }),
     }
     setGroups(groupId, newGroup)
 
@@ -381,25 +439,33 @@ export async function makePlayer(options: CreatePlayerOptions): Promise<Player> 
 
     log('creating track entry', { trackId })
 
-    // Look up track's audio effects from project
+    // Look up track's audio pipeline from project
     const projectTrack = project().tracks.find(t => t.id === trackId)
-    const effects = projectTrack?.audioPipeline ?? []
+    const pipeline = projectTrack?.audioPipeline
+    const effects = pipeline?.effects ?? []
 
     // Find parent group to route to
     const parentMap = buildParentMap()
     const parentGroup = parentMap.get(trackId)
 
-    let destination: AudioNode | undefined
+    let hierarchicalDestination: AudioNode | undefined
     if (parentGroup) {
       // Route to parent group's audio bus
       const groupEntry = getOrCreateGroup(parentGroup.id)
-      destination = groupEntry.audioPipeline.effectChain.input
+      hierarchicalDestination = groupEntry.audioPipeline.effectChain.input
     }
     // If no parent group, destination is undefined → routes to master
 
+    // Resolve outputs if specified, otherwise use hierarchical destination
+    const outputs = resolveAudioOutputs(pipeline, hierarchicalDestination)
+
     const newTrack: TrackEntry = {
       trackId,
-      audioPipeline: makeAudioBus({ effects, destination }),
+      audioPipeline: makeAudioBus({
+        effects,
+        destination: outputs ? undefined : hierarchicalDestination,
+        outputs,
+      }),
     }
     setTracks(trackId, newTrack)
 

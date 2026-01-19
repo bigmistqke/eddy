@@ -227,9 +227,10 @@ function collectCascadedEffects(
   const refs: EffectRef[] = []
 
   // 1. Clip effects
-  if (clip.videoPipeline) {
-    for (let index = 0; index < clip.videoPipeline.length; index++) {
-      const effect = clip.videoPipeline[index]
+  const clipEffects = clip.videoPipeline?.effects
+  if (clipEffects) {
+    for (let index = 0; index < clipEffects.length; index++) {
+      const effect = clipEffects[index]
       for (const paramKey of getEffectParamKeys(effect)) {
         refs.push({
           key: `clip:${clip.id}:${index}:${paramKey}`,
@@ -240,9 +241,10 @@ function collectCascadedEffects(
   }
 
   // 2. Track effects
-  if (track.videoPipeline) {
-    for (let index = 0; index < track.videoPipeline.length; index++) {
-      const effect = track.videoPipeline[index]
+  const trackEffects = track.videoPipeline?.effects
+  if (trackEffects) {
+    for (let index = 0; index < trackEffects.length; index++) {
+      const effect = trackEffects[index]
       for (const paramKey of getEffectParamKeys(effect)) {
         refs.push({
           key: `track:${track.id}:${index}:${paramKey}`,
@@ -257,9 +259,10 @@ function collectCascadedEffects(
   let parentGroup = parentMap.get(currentId)
 
   while (parentGroup) {
-    if (parentGroup.videoPipeline) {
-      for (let index = 0; index < parentGroup.videoPipeline.length; index++) {
-        const effect = parentGroup.videoPipeline[index]
+    const groupEffects = parentGroup.videoPipeline?.effects
+    if (groupEffects) {
+      for (let index = 0; index < groupEffects.length; index++) {
+        const effect = groupEffects[index]
         for (const paramKey of getEffectParamKeys(effect)) {
           refs.push({
             key: `group:${parentGroup.id}:${index}:${paramKey}`,

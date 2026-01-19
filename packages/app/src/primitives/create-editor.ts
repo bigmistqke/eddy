@@ -61,7 +61,7 @@ function makeDefaultProject(): Project {
           columns: 2,
           rows: 2,
         },
-        audioPipeline: [{ type: 'audio.gain', params: { value: { value: 100 } } }],
+        audioPipeline: { effects: [{ type: 'audio.gain', params: { value: { value: 100 } } }] },
       },
     ],
     tracks: [
@@ -69,53 +69,65 @@ function makeDefaultProject(): Project {
         id: 'track-0',
         name: 'Track 1',
         clips: [],
-        audioPipeline: [
-          { type: 'audio.gain', params: { value: { value: 100 } } },
-          { type: 'audio.pan', params: { value: { value: 50 } } },
-        ],
-        videoPipeline: [
-          { type: 'visual.brightness', params: { value: { value: 50 } } },
-          {
-            type: 'visual.colorize',
-            params: { color: { value: [100, 80, 60] }, intensity: { value: 50 } },
-          },
-        ],
+        audioPipeline: {
+          effects: [
+            { type: 'audio.gain', params: { value: { value: 100 } } },
+            { type: 'audio.pan', params: { value: { value: 50 } } },
+          ],
+        },
+        videoPipeline: {
+          effects: [
+            { type: 'visual.brightness', params: { value: { value: 50 } } },
+            {
+              type: 'visual.colorize',
+              params: { color: { value: [100, 80, 60] }, intensity: { value: 50 } },
+            },
+          ],
+        },
       },
       {
         id: 'track-1',
         name: 'Track 2',
         clips: [],
-        audioPipeline: [
-          { type: 'audio.gain', params: { value: { value: 100 } } },
-          { type: 'audio.pan', params: { value: { value: 50 } } },
-        ],
-        videoPipeline: [
-          { type: 'visual.brightness', params: { value: { value: 0 } } },
-          {
-            type: 'visual.colorize',
-            params: { color: { value: [100, 80, 60] }, intensity: { value: 50 } },
-          },
-        ],
+        audioPipeline: {
+          effects: [
+            { type: 'audio.gain', params: { value: { value: 100 } } },
+            { type: 'audio.pan', params: { value: { value: 50 } } },
+          ],
+        },
+        videoPipeline: {
+          effects: [
+            { type: 'visual.brightness', params: { value: { value: 0 } } },
+            {
+              type: 'visual.colorize',
+              params: { color: { value: [100, 80, 60] }, intensity: { value: 50 } },
+            },
+          ],
+        },
       },
       {
         id: 'track-2',
         name: 'Track 3',
         clips: [],
-        audioPipeline: [
-          { type: 'audio.gain', params: { value: { value: 100 } } },
-          { type: 'audio.pan', params: { value: { value: 50 } } },
-        ],
-        videoPipeline: [{ type: 'visual.brightness', params: { value: { value: 0 } } }],
+        audioPipeline: {
+          effects: [
+            { type: 'audio.gain', params: { value: { value: 100 } } },
+            { type: 'audio.pan', params: { value: { value: 50 } } },
+          ],
+        },
+        videoPipeline: { effects: [{ type: 'visual.brightness', params: { value: { value: 0 } } }] },
       },
       {
         id: 'track-3',
         name: 'Track 4',
         clips: [],
-        audioPipeline: [
-          { type: 'audio.gain', params: { value: { value: 100 } } },
-          { type: 'audio.pan', params: { value: { value: 50 } } },
-        ],
-        videoPipeline: [{ type: 'visual.brightness', params: { value: { value: 0 } } }],
+        audioPipeline: {
+          effects: [
+            { type: 'audio.gain', params: { value: { value: 100 } } },
+            { type: 'audio.pan', params: { value: { value: 50 } } },
+          ],
+        },
+        videoPipeline: { effects: [{ type: 'visual.brightness', params: { value: { value: 0 } } }] },
       },
     ],
     createdAt: new Date().toISOString(),
@@ -249,6 +261,7 @@ export function createEditor(options: CreateEditorOptions) {
       'tracks',
       t => t.id === trackId,
       'audioPipeline',
+      'effects',
       effectIndex,
       effect => {
         if (
@@ -273,7 +286,7 @@ export function createEditor(options: CreateEditorOptions) {
 
   function getEffectValue(trackId: string, effectIndex: number): number {
     const track = project().tracks.find(t => t.id === trackId)
-    const effect = track?.audioPipeline?.[effectIndex]
+    const effect = track?.audioPipeline?.effects?.[effectIndex]
     if (
       effect &&
       'params' in effect &&
@@ -289,7 +302,7 @@ export function createEditor(options: CreateEditorOptions) {
 
   function getTrackPipeline(trackId: string): AudioEffect[] {
     const track = project().tracks.find(t => t.id === trackId)
-    return track?.audioPipeline ?? []
+    return track?.audioPipeline?.effects ?? []
   }
 
   // Video effect helpers (parallel to audio effects)
@@ -299,6 +312,7 @@ export function createEditor(options: CreateEditorOptions) {
       'tracks',
       t => t.id === trackId,
       'videoPipeline',
+      'effects',
       effectIndex,
       effect => {
         if (
@@ -324,7 +338,7 @@ export function createEditor(options: CreateEditorOptions) {
 
   function getVideoEffectValue(trackId: string, effectIndex: number): number {
     const track = project().tracks.find(t => t.id === trackId)
-    const effect = track?.videoPipeline?.[effectIndex]
+    const effect = track?.videoPipeline?.effects?.[effectIndex]
     if (
       effect &&
       'params' in effect &&
@@ -350,6 +364,7 @@ export function createEditor(options: CreateEditorOptions) {
       'tracks',
       t => t.id === trackId,
       'videoPipeline',
+      'effects',
       effectIndex,
       effect => {
         if (!effect || !('params' in effect) || !effect.params) return effect
@@ -368,7 +383,7 @@ export function createEditor(options: CreateEditorOptions) {
 
   function getVideoPipeline(trackId: string) {
     const track = project().tracks.find(t => t.id === trackId)
-    return track?.videoPipeline ?? []
+    return track?.videoPipeline?.effects ?? []
   }
 
   function addRecording(trackId: string, clipId: string, duration: number, offset: number) {
@@ -755,7 +770,7 @@ export function createEditor(options: CreateEditorOptions) {
 
       // Decode and mix audio from all clips
       for (const track of _project.tracks) {
-        const effects = track.audioPipeline ?? []
+        const effects = track.audioPipeline?.effects ?? []
 
         for (const clip of track.clips) {
           const buffer = await getClipBuffer(clip.id)

@@ -1,3 +1,4 @@
+export * from './compile-branching-program'
 export * from './compile-effect-program'
 export * from './make-effect-manager'
 export * from './make-effect-registry'
