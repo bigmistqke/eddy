@@ -51,6 +51,9 @@ importers:
       '@eddy/media':
         specifier: workspace:*
         version: link:../media
+      '@eddy/solid':
+        specifier: workspace:*
+        version: link:../solid
       '@eddy/timeline':
         specifier: workspace:*
         version: link:../timeline
@@ -173,6 +176,19 @@ importers:
         specifier: ^1.27.3
         version: 1.28.0
     devDependencies:
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+
+  packages/solid:
+    dependencies:
+      '@eddy/utils':
+        specifier: workspace:*
+        version: link:../utils
+    devDependencies:
+      solid-js:
+        specifier: ^1.9.0
+        version: 1.9.10
       typescript:
         specifier: ^5.7.0
         version: 5.9.3

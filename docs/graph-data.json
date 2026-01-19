@@ -3167,6 +3167,149 @@
       "created_at": "2026-01-19T22:55:06.663592+01:00",
       "updated_at": "2026-01-19T22:55:06.663592+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 289,
+      "change_id": "6007ca28-5aa8-4e38-b038-be0ee7373733",
+      "node_type": "outcome",
+      "title": "Committed: feat: extract @eddy/timeline package with nested group support",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T23:57:24.940020+01:00",
+      "updated_at": "2026-01-19T23:57:24.940020+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"a43db50\",\"confidence\":95}"
+    },
+    {
+      "id": 290,
+      "change_id": "b926bcf3-eec9-4258-8351-30e376781dfd",
+      "node_type": "action",
+      "title": "Create @eddy/solid package for shared SolidJS hooks and components",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T23:59:15.591541+01:00",
+      "updated_at": "2026-01-19T23:59:15.591541+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 291,
+      "change_id": "dd6ce9f4-2fef-4cf7-a92c-24bddf621ea5",
+      "node_type": "outcome",
+      "title": "@eddy/solid package created with action, resource, deep-resource, create-resource-map, create-clock primitives",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T00:02:58.244951+01:00",
+      "updated_at": "2026-01-20T00:02:58.244951+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 292,
+      "change_id": "be103883-f6b7-4e88-b26c-46560c283214",
+      "node_type": "decision",
+      "title": "Package structure for compositor/playback extraction",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T00:16:34.916594+01:00",
+      "updated_at": "2026-01-20T00:16:34.916594+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":80}"
+    },
+    {
+      "id": 293,
+      "change_id": "22228f38-61cd-40ac-8d32-d78fd1784174",
+      "node_type": "option",
+      "title": "Option A: Expand @eddy/video with compositor engine",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T00:16:47.204034+01:00",
+      "updated_at": "2026-01-20T00:16:47.204034+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":70}"
+    },
+    {
+      "id": 294,
+      "change_id": "494aae29-7b96-47a3-8ac6-a7edd16a3322",
+      "node_type": "option",
+      "title": "Option B: New @eddy/compositor package",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T00:16:47.913790+01:00",
+      "updated_at": "2026-01-20T00:16:47.913790+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":70}"
+    },
+    {
+      "id": 295,
+      "change_id": "e3412566-c54b-4306-94e1-fb710ff3a59a",
+      "node_type": "option",
+      "title": "Option C: New @eddy/runtime package",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T00:16:48.575729+01:00",
+      "updated_at": "2026-01-20T00:16:48.575729+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":60}"
+    },
+    {
+      "id": 296,
+      "change_id": "93d68c6f-3064-4426-b404-12118b87a3d1",
+      "node_type": "option",
+      "title": "Option D: Keep in apps, share via copy/adapt",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T00:16:49.279490+01:00",
+      "updated_at": "2026-01-20T00:16:49.279490+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":50}"
+    },
+    {
+      "id": 297,
+      "change_id": "9904fbb6-ff36-4743-86b4-e7f74f7e6409",
+      "node_type": "observation",
+      "title": "Option A tradeoffs: Keeps video-related code together, but @eddy/video becomes heavier. May conflate low-level WebGL with high-level orchestration.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T00:17:14.516650+01:00",
+      "updated_at": "2026-01-20T00:17:14.516650+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":75}"
+    },
+    {
+      "id": 298,
+      "change_id": "b1f793f7-4f4e-4b7f-8106-fc9719ff9896",
+      "node_type": "observation",
+      "title": "Option B tradeoffs: Clear separation - @eddy/video stays low-level, @eddy/compositor handles orchestration. But adds another package.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T00:17:15.222843+01:00",
+      "updated_at": "2026-01-20T00:17:15.222843+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":75}"
+    },
+    {
+      "id": 299,
+      "change_id": "1c62d83e-bf70-48cb-b97c-9b37bda799de",
+      "node_type": "observation",
+      "title": "Option C tradeoffs: Generic name, could include both compositor and playback. But 'runtime' is vague.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T00:17:15.897586+01:00",
+      "updated_at": "2026-01-20T00:17:15.897586+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":65}"
+    },
+    {
+      "id": 300,
+      "change_id": "69290499-0c41-4c75-8928-298cc38497d5",
+      "node_type": "observation",
+      "title": "Option D tradeoffs: Simplest short-term, but leads to duplication. jam.eddy.dj would copy/adapt from app.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T00:17:16.586632+01:00",
+      "updated_at": "2026-01-20T00:17:16.586632+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":60}"
+    },
+    {
+      "id": 301,
+      "change_id": "8cc2083d-849c-4c65-b307-7b2a1726c577",
+      "node_type": "observation",
+      "title": "Naming decision: makeVideoCompositor (low-level WebGL) + makeVideoRenderer (high-level orchestration from compositor.worker.ts)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T00:35:36.414378+01:00",
+      "updated_at": "2026-01-20T00:35:36.414378+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     }
   ],
   "edges": [
@@ -5864,6 +6007,149 @@
       "weight": 1.0,
       "rationale": "Implementation complete",
       "created_at": "2026-01-19T22:55:07.009273+01:00"
+    },
+    {
+      "id": 246,
+      "from_node_id": 287,
+      "to_node_id": 289,
+      "from_change_id": "08737083-34ab-460c-a076-5e070c823ffb",
+      "to_change_id": "6007ca28-5aa8-4e38-b038-be0ee7373733",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-19T23:57:29.259102+01:00"
+    },
+    {
+      "id": 247,
+      "from_node_id": 281,
+      "to_node_id": 290,
+      "from_change_id": "1b219028-ec9f-47ac-a065-3f1ec7ea7370",
+      "to_change_id": "b926bcf3-eec9-4258-8351-30e376781dfd",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Suite infrastructure",
+      "created_at": "2026-01-19T23:59:16.000893+01:00"
+    },
+    {
+      "id": 248,
+      "from_node_id": 290,
+      "to_node_id": 291,
+      "from_change_id": "b926bcf3-eec9-4258-8351-30e376781dfd",
+      "to_change_id": "dd6ce9f4-2fef-4cf7-a92c-24bddf621ea5",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation complete",
+      "created_at": "2026-01-20T00:02:58.848121+01:00"
+    },
+    {
+      "id": 249,
+      "from_node_id": 292,
+      "to_node_id": 293,
+      "from_change_id": "be103883-f6b7-4e88-b26c-46560c283214",
+      "to_change_id": "22228f38-61cd-40ac-8d32-d78fd1784174",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Option",
+      "created_at": "2026-01-20T00:16:59.712266+01:00"
+    },
+    {
+      "id": 250,
+      "from_node_id": 292,
+      "to_node_id": 294,
+      "from_change_id": "be103883-f6b7-4e88-b26c-46560c283214",
+      "to_change_id": "494aae29-7b96-47a3-8ac6-a7edd16a3322",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Option",
+      "created_at": "2026-01-20T00:16:59.721246+01:00"
+    },
+    {
+      "id": 251,
+      "from_node_id": 292,
+      "to_node_id": 295,
+      "from_change_id": "be103883-f6b7-4e88-b26c-46560c283214",
+      "to_change_id": "e3412566-c54b-4306-94e1-fb710ff3a59a",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Option",
+      "created_at": "2026-01-20T00:16:59.729603+01:00"
+    },
+    {
+      "id": 252,
+      "from_node_id": 292,
+      "to_node_id": 296,
+      "from_change_id": "be103883-f6b7-4e88-b26c-46560c283214",
+      "to_change_id": "93d68c6f-3064-4426-b404-12118b87a3d1",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Option",
+      "created_at": "2026-01-20T00:16:59.738103+01:00"
+    },
+    {
+      "id": 253,
+      "from_node_id": 293,
+      "to_node_id": 297,
+      "from_change_id": "22228f38-61cd-40ac-8d32-d78fd1784174",
+      "to_change_id": "9904fbb6-ff36-4743-86b4-e7f74f7e6409",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Tradeoffs",
+      "created_at": "2026-01-20T00:17:29.214276+01:00"
+    },
+    {
+      "id": 254,
+      "from_node_id": 294,
+      "to_node_id": 298,
+      "from_change_id": "494aae29-7b96-47a3-8ac6-a7edd16a3322",
+      "to_change_id": "b1f793f7-4f4e-4b7f-8106-fc9719ff9896",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Tradeoffs",
+      "created_at": "2026-01-20T00:17:29.223118+01:00"
+    },
+    {
+      "id": 255,
+      "from_node_id": 295,
+      "to_node_id": 299,
+      "from_change_id": "e3412566-c54b-4306-94e1-fb710ff3a59a",
+      "to_change_id": "1c62d83e-bf70-48cb-b97c-9b37bda799de",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Tradeoffs",
+      "created_at": "2026-01-20T00:17:29.232011+01:00"
+    },
+    {
+      "id": 256,
+      "from_node_id": 296,
+      "to_node_id": 300,
+      "from_change_id": "93d68c6f-3064-4426-b404-12118b87a3d1",
+      "to_change_id": "69290499-0c41-4c75-8928-298cc38497d5",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Tradeoffs",
+      "created_at": "2026-01-20T00:17:29.240702+01:00"
+    },
+    {
+      "id": 257,
+      "from_node_id": 281,
+      "to_node_id": 292,
+      "from_change_id": "1b219028-ec9f-47ac-a065-3f1ec7ea7370",
+      "to_change_id": "be103883-f6b7-4e88-b26c-46560c283214",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Architecture decision for suite",
+      "created_at": "2026-01-20T00:17:29.938703+01:00"
+    },
+    {
+      "id": 258,
+      "from_node_id": 292,
+      "to_node_id": 301,
+      "from_change_id": "be103883-f6b7-4e88-b26c-46560c283214",
+      "to_change_id": "8cc2083d-849c-4c65-b307-7b2a1726c577",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Chosen approach",
+      "created_at": "2026-01-20T00:35:37.176859+01:00"
     }
   ]
 }

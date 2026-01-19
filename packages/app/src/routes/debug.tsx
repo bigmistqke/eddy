@@ -7,9 +7,8 @@
 
 import { $MESSENGER, rpc, transfer } from '@bigmistqke/rpc/messenger'
 import type { Demuxer } from '@eddy/media'
+import { action, defer, hold, resource } from '@eddy/solid'
 import { createSignal, Match, Show, Switch } from 'solid-js'
-import { action, defer, hold } from '~/primitives/action'
-import { resource } from '~/primitives/resource'
 import type { CaptureWorkerMethods } from '~/workers/debug-capture.worker'
 import DebugCaptureWorker from '~/workers/debug-capture.worker?worker'
 import type { MuxerWorkerMethods } from '~/workers/debug-muxer.worker'

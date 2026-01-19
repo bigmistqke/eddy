@@ -21,7 +21,7 @@ import type { AudioPlaybackWorkerMethods } from '~/workers/playback.audio.worker
 import AudioPlaybackWorker from '~/workers/playback.audio.worker?worker'
 import type { VideoPlaybackWorkerMethods } from '~/workers/playback.video.worker'
 import VideoPlaybackWorker from '~/workers/playback.video.worker?worker'
-import { createClock, type Clock } from './create-clock'
+import { createClock, type Clock } from '@eddy/solid'
 
 const log = debug('make-player', false)
 const perf = getGlobalPerfMonitor()
