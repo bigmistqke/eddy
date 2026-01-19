@@ -14,7 +14,10 @@ import {
   type AudioRingBuffer,
 } from './audio-ring-buffer'
 import type { RingBufferProcessorMethods } from './ring-buffer-processor'
-import workletURL from './ring-buffer-processor?worker&url'
+
+// Use variable to prevent Vite from inlining - worklet is built as separate entry
+const workletPath = './ring-buffer-processor.js'
+const workletURL = new URL(workletPath, import.meta.url).href
 
 const log = debug('audio:make-audio-scheduler', false)
 
