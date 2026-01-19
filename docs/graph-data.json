@@ -2804,6 +2804,17 @@
       "created_at": "2026-01-19T11:56:57.277814+01:00",
       "updated_at": "2026-01-19T11:56:57.277814+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"7074f2c\",\"confidence\":95}"
+    },
+    {
+      "id": 256,
+      "change_id": "8a862417-d025-4412-8cd8-5538fa4bc042",
+      "node_type": "outcome",
+      "title": "Committed: chore: enable sourcemaps for library packages",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T12:59:24.117368+01:00",
+      "updated_at": "2026-01-19T12:59:24.117368+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"a066737\",\"confidence\":95}"
     }
   ],
   "edges": [

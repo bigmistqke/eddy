@@ -1,5 +1,21 @@
 [
   {
+    "hash": "a0667374111aac5aff8aed63dfee0d336952202b",
+    "short_hash": "a066737",
+    "author": "bigmistqke",
+    "date": "2026-01-19T12:59:14+01:00",
+    "message": "chore: enable sourcemaps for library packages",
+    "files_changed": 6
+  },
+  {
+    "hash": "cbbb6ff8121417877c43ebe144e8b25f2149a394",
+    "short_hash": "cbbb6ff",
+    "author": "bigmistqke",
+    "date": "2026-01-19T11:57:32+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
     "hash": "7074f2cf8814869437195016dac96c6a66cd0dbe",
     "short_hash": "7074f2c",
     "author": "bigmistqke",
@@ -8,20 +24,12 @@
     "files_changed": 3
   },
   {
-    "hash": "cdfe98284418f9a6989cdb7eab3d1bafb76f14fc",
-    "short_hash": "cdfe982",
+    "hash": "7074f2cf8814869437195016dac96c6a66cd0dbe",
+    "short_hash": "7074f2c",
     "author": "bigmistqke",
-    "date": "2026-01-19T11:56:36+01:00",
-    "message": "chore: convert packages to vite library mode\n\nReplaces tsup with vite library mode for all workspace packages.\nThis fixes module resolution issues with typed-lexicons subpath exports.",
-    "files_changed": 15
-  },
-  {
-    "hash": "6c80028cc716ed95a7494931bd6a071035b81b9a",
-    "short_hash": "6c80028",
-    "author": "bigmistqke",
-    "date": "2026-01-19T01:57:54+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
+    "date": "2026-01-19T11:56:43+01:00",
+    "message": "feat: add curve lexicon validators and mutable types\n\n- Add curveValidators and curveWireValidators for curve data\n- Export CurveKeyframe, CurveEnvelope, CurveLfo, Curve types\n- Add Mutable utility type for solid-js store usage\n- Export MutableProject, MutableTrack, MutableClip, MutableGroup",
+    "files_changed": 3
   },
   {
     "hash": "743b0d5703977f24103a9b51ec4a9128a685fc06",
