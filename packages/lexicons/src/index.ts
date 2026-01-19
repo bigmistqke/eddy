@@ -11,12 +11,14 @@ import groupLexicon from './app.eddy.group'
 import projectLexicon from './app.eddy.project'
 import stemLexicon from './app.eddy.stem'
 import trackLexicon from './app.eddy.track'
+import curveLexicon from './app.eddy.value.curve'
 import staticValueLexicon from './app.eddy.value.static'
 import visualEffectLexicon from './app.eddy.visualEffect'
 
 const lookup = createLookup(
   audioEffectLexicon,
   clipLexicon,
+  curveLexicon,
   groupLexicon,
   projectLexicon,
   stemLexicon,
@@ -35,6 +37,7 @@ export const visualEffectValidators = lexiconToValibot(visualEffectLexicon, {
   format: 'sdk',
 })
 export const valuesValidators = lexiconToValibot(staticValueLexicon, { lookup, format: 'sdk' })
+export const curveValidators = lexiconToValibot(curveLexicon, { lookup, format: 'sdk' })
 export const trackValidators = lexiconToValibot(trackLexicon, { lookup, format: 'sdk' })
 export const clipValidators = lexiconToValibot(clipLexicon, { lookup, format: 'sdk' })
 export const groupValidators = lexiconToValibot(groupLexicon, { lookup, format: 'sdk' })
@@ -51,6 +54,7 @@ export const visualEffectWireValidators = lexiconToValibot(visualEffectLexicon, 
   format: 'wire',
 })
 export const valuesWireValidators = lexiconToValibot(staticValueLexicon, { lookup, format: 'wire' })
+export const curveWireValidators = lexiconToValibot(curveLexicon, { lookup, format: 'wire' })
 
 // Types inferred from validators (satisfies preserves literal types without readonly)
 export type Project = v.InferOutput<typeof projectValidators.main>
@@ -107,8 +111,21 @@ export type Stem = v.InferOutput<typeof stemValidators.main>
 export type AudioMeta = v.InferOutput<typeof stemValidators.audioMeta>
 export type VideoMeta = v.InferOutput<typeof stemValidators.videoMeta>
 
-// // Curve types
-// export type CurveKeyframe = v.InferOutput<(typeof projectValidators)['curve.keyframe']>
-// export type CurveEnvelope = v.InferOutput<(typeof projectValidators)['curve.envelope']>
-// export type CurveLfo = v.InferOutput<(typeof projectValidators)['curve.lfo']>
-// export type Curve = CurveKeyframe | CurveEnvelope | CurveLfo
+// Curve types
+export type CurveKeyframe = v.InferOutput<typeof curveValidators.keyframe>
+export type CurveEnvelope = v.InferOutput<typeof curveValidators.envelope>
+export type CurveLfo = v.InferOutput<typeof curveValidators.lfo>
+export type Curve = CurveKeyframe | CurveEnvelope | CurveLfo
+
+// Mutable utility type for store usage (removes readonly)
+type Mutable<T> = T extends readonly (infer U)[]
+  ? Mutable<U>[]
+  : T extends object
+    ? { -readonly [K in keyof T]: Mutable<T[K]> }
+    : T
+
+// Mutable versions for solid-js stores
+export type MutableProject = Mutable<Project>
+export type MutableTrack = Mutable<Track>
+export type MutableClip = Mutable<Clip>
+export type MutableGroup = Mutable<Group>

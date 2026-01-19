@@ -9,9 +9,9 @@ import {
   resumeAudioContext,
 } from '@eddy/audio'
 import type { AudioEffect, Clip, ClipSource, ClipSourceStem, Project, Track } from '@eddy/lexicons'
-import type { EffectValue } from '@eddy/video'
 import { makeMuxer } from '@eddy/media'
 import { assertedNotNullish, debug } from '@eddy/utils'
+import type { EffectValue } from '@eddy/video'
 import { createEffect, createSelector, createSignal, mapArray, type Accessor } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
 import { createWritableStream, readClipBlob, writeBlob } from '~/opfs'
