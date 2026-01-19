@@ -6,9 +6,9 @@
       "node_type": "action",
       "title": "chore(debug): remove per-frame logging spam in render loop",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:10.033363+01:00",
-      "updated_at": "2026-01-09T02:33:10.033363+01:00",
+      "updated_at": "2026-01-19T13:12:02.453184+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"602a450\",\"confidence\":60,\"files\":[\"packages/app/src/routes/debug.tsx\"]}"
     },
     {
@@ -17,9 +17,9 @@
       "node_type": "action",
       "title": "refactor: rename action.resolve() to action.promise()",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:10.065586+01:00",
-      "updated_at": "2026-01-09T02:33:10.065586+01:00",
+      "updated_at": "2026-01-19T13:12:02.462063+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"dd840ad\",\"confidence\":80,\"files\":[\"packages/app/src/hooks/action.ts\",\"packages/app/src/hooks/create-editor.ts\"]}"
     },
     {
@@ -28,9 +28,9 @@
       "node_type": "action",
       "title": "feat: add audio capture and muxing to recording pipeline",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:10.110092+01:00",
-      "updated_at": "2026-01-09T02:33:10.110092+01:00",
+      "updated_at": "2026-01-19T13:12:02.470584+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"b9c9b9e\",\"confidence\":90,\"files\":[\"packages/app/src/hooks/create-editor.ts\",\"packages/app/src/workers/capture.worker.ts\",\"packages/app/src/workers/muxer.worker.ts\"]}"
     },
     {
@@ -39,9 +39,9 @@
       "node_type": "action",
       "title": "fix: fix audio scheduling related noise with ring buffer",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:10.152812+01:00",
-      "updated_at": "2026-01-09T02:33:10.152812+01:00",
+      "updated_at": "2026-01-19T13:12:02.478872+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"ca079e8\",\"confidence\":85,\"files\":[\"packages/app/src/hooks/create-editor.ts\",\"packages/app/src/workers/capture.worker.ts\",\"packages/app/vite.config.ts\",\"packages/playback/src/audio-ring-buffer.ts\",\"packages/playback/src/audio-scheduler.ts\",\"packages/playback/src/playback.ts\"]}"
     },
     {
@@ -50,9 +50,9 @@
       "node_type": "action",
       "title": "chore: clean up worker files",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:10.197316+01:00",
-      "updated_at": "2026-01-09T02:33:10.197316+01:00",
+      "updated_at": "2026-01-19T13:12:02.487215+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"5e37ff1\",\"confidence\":60,\"files\":[\"packages/app/src/workers/capture.worker.ts\",\"packages/app/src/workers/compositor.worker.ts\",\"packages/app/src/workers/debug-capture.worker.ts\",\"packages/app/src/workers/debug-muxer.worker.ts\",\"packages/app/src/workers/demux.worker.ts\",\"packages/app/src/workers/muxer.worker.ts\",\"packages/app/src/workers/recording.worker.ts\"]}"
     },
     {
@@ -61,9 +61,9 @@
       "node_type": "action",
       "title": "refactor: extract audio worklet processor to separate file",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:10.241465+01:00",
-      "updated_at": "2026-01-09T02:33:10.241465+01:00",
+      "updated_at": "2026-01-19T13:06:14.688341+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"2280d96\",\"confidence\":80,\"files\":[\"package.json\",\"packages/playback/package.json\",\"packages/playback/src/audio-ring-buffer-processor.ts\",\"packages/playback/src/audio-scheduler.ts\",\"packages/playback/src/playback.ts\",\"packages/playback/tsconfig.json\",\"pnpm-lock.yaml\"]}"
     },
     {
@@ -72,9 +72,9 @@
       "node_type": "action",
       "title": "feat: add download button to track UI",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:10.284509+01:00",
-      "updated_at": "2026-01-09T02:33:10.284509+01:00",
+      "updated_at": "2026-01-19T13:12:02.495778+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"1580cca\",\"confidence\":90,\"files\":[\"packages/app/src/components/editor/Editor.tsx\",\"packages/app/src/components/editor/Track.module.css\",\"packages/app/src/components/editor/Track.tsx\",\"packages/app/src/hooks/create-editor.ts\"]}"
     },
     {
@@ -83,9 +83,9 @@
       "node_type": "action",
       "title": "fix: audio quality degradation when recording while playing back",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:10.327282+01:00",
-      "updated_at": "2026-01-09T02:33:10.327282+01:00",
+      "updated_at": "2026-01-19T13:12:02.504199+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"03ed3a5\",\"confidence\":85,\"files\":[\"packages/app/src/hooks/create-editor.ts\",\"packages/app/src/workers/capture.worker.ts\",\"packages/codecs/src/muxer.ts\",\"packages/mixer/src/mixer.ts\"]}"
     },
     {
@@ -94,9 +94,9 @@
       "node_type": "action",
       "title": "docs: update CLAUDE.md and consolidate architecture docs",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:10.370630+01:00",
-      "updated_at": "2026-01-09T02:33:10.370630+01:00",
+      "updated_at": "2026-01-19T13:12:02.512370+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"73d4e59\",\"confidence\":70,\"files\":[\"ARCHITECTURE.md\",\"CLAUDE.md\",\"DESIGN.md\",\"MVP.md\"]}"
     },
     {
@@ -105,9 +105,9 @@
       "node_type": "action",
       "title": "refactor: improve action() API and add JSDoc examples",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:10.413621+01:00",
-      "updated_at": "2026-01-09T02:33:10.413621+01:00",
+      "updated_at": "2026-01-19T13:12:02.520563+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"9ff1684\",\"confidence\":80,\"files\":[\"packages/app/src/hooks/action.ts\",\"packages/app/src/hooks/create-editor.ts\",\"packages/app/src/hooks/create-slot.ts\",\"packages/app/src/utils.ts\"]}"
     },
     {
@@ -116,9 +116,9 @@
       "node_type": "action",
       "title": "refactor: update lexicons for data-driven timeline architecture",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:10.456028+01:00",
-      "updated_at": "2026-01-09T02:33:10.456028+01:00",
+      "updated_at": "2026-01-19T13:06:14.696770+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"f921336\",\"confidence\":80,\"files\":[\"REFACTOR_PLAN.md\",\"packages/app/src/hooks/action.ts\",\"packages/app/src/hooks/create-editor.ts\",\"packages/app/src/hooks/deep-resource.ts\",\"packages/app/src/lib/atproto/crud.ts\",\"packages/app/src/utils.ts\",\"packages/lexicons/src/app.eddy.project.ts\",\"packages/lexicons/src/index.ts\"]}"
     },
     {
@@ -127,9 +127,9 @@
       "node_type": "action",
       "title": "fix: prevent AudioContext from being closed when using shared context",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:10.498668+01:00",
-      "updated_at": "2026-01-09T02:33:10.498668+01:00",
+      "updated_at": "2026-01-19T13:12:02.528777+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"7d30ce3\",\"confidence\":85,\"files\":[\"packages/playback/src/audio-scheduler.ts\",\"packages/playback/src/playback.ts\"]}"
     },
     {
@@ -138,9 +138,9 @@
       "node_type": "action",
       "title": "chore: add root tsconfig.json and pnpm types script",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:10.542327+01:00",
-      "updated_at": "2026-01-09T02:33:10.542327+01:00",
+      "updated_at": "2026-01-19T13:05:20.882276+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"e8d3211\",\"confidence\":60,\"files\":[\"CLAUDE.md\",\"package.json\",\"packages/app/tsconfig.json\",\"packages/codecs/tsconfig.json\",\"packages/compositor/tsconfig.json\",\"packages/lexicons/tsconfig.json\",\"packages/mixer/tsconfig.json\",\"packages/playback/tsconfig.json\",\"packages/utils/tsconfig.json\",\"tsconfig.json\"]}"
     },
     {
@@ -149,9 +149,9 @@
       "node_type": "action",
       "title": "feat: add layout resolver (Ticket 2)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:10.585029+01:00",
-      "updated_at": "2026-01-09T02:33:10.585029+01:00",
+      "updated_at": "2026-01-19T13:06:14.704879+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"d04b8a0\",\"confidence\":90,\"files\":[\"packages/app/src/lib/layout-resolver.ts\",\"packages/app/src/lib/layout-types.ts\"]}"
     },
     {
@@ -160,9 +160,9 @@
       "node_type": "action",
       "title": "test: add layout-resolver tests",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:10.642255+01:00",
-      "updated_at": "2026-01-09T02:33:10.642255+01:00",
+      "updated_at": "2026-01-19T13:06:14.712950+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"036f6e8\",\"confidence\":75,\"files\":[\"packages/app/package.json\",\"packages/app/src/lib/__tests__/layout-resolver.test.ts\",\"packages/app/vitest.config.ts\",\"pnpm-lock.yaml\"]}"
     },
     {
@@ -171,9 +171,9 @@
       "node_type": "action",
       "title": "feat: refactor compositor to use layout timeline (Ticket 3)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:10.685203+01:00",
-      "updated_at": "2026-01-09T02:33:10.685203+01:00",
+      "updated_at": "2026-01-19T13:07:31.405280+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"3155f9d\",\"confidence\":90,\"files\":[\"packages/app/src/components/editor/Editor.tsx\",\"packages/app/src/hooks/create-editor.ts\",\"packages/app/src/hooks/create-player.ts\",\"packages/app/src/hooks/create-slot.ts\",\"packages/app/src/lib/__tests__/layout-resolver.test.ts\",\"packages/app/src/lib/create-debug-info.ts\",\"packages/app/src/lib/layout-resolver.ts\",\"packages/app/src/lib/layout-types.ts\",\"packages/app/src/routes/debug.tsx\",\"packages/app/src/workers/compositor.worker.ts\"]}"
     },
     {
@@ -182,9 +182,9 @@
       "node_type": "action",
       "title": "refactor: simplify SegmentSource to single clip type",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:10.728381+01:00",
-      "updated_at": "2026-01-09T02:33:10.728381+01:00",
+      "updated_at": "2026-01-19T13:12:03.497081+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"726da7d\",\"confidence\":80,\"files\":[\"packages/app/src/lib/layout-resolver.ts\",\"packages/app/src/lib/layout-types.ts\"]}"
     },
     {
@@ -193,9 +193,9 @@
       "node_type": "action",
       "title": "fix: don't re-upload remote stems when publishing",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:10.771303+01:00",
-      "updated_at": "2026-01-09T02:33:10.771303+01:00",
+      "updated_at": "2026-01-19T13:12:03.506144+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"ecd1bbe\",\"confidence\":85,\"files\":[\"packages/app/src/hooks/create-editor.ts\",\"packages/app/src/lib/layout-resolver.ts\"]}"
     },
     {
@@ -204,9 +204,9 @@
       "node_type": "action",
       "title": "feat: render Editor UI from project data (Ticket 5)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:10.813971+01:00",
-      "updated_at": "2026-01-09T02:33:10.813971+01:00",
+      "updated_at": "2026-01-19T13:12:03.514445+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"41ce4fb\",\"confidence\":90,\"files\":[\"packages/app/src/components/editor/Editor.module.css\",\"packages/app/src/components/editor/Editor.tsx\",\"packages/app/src/components/editor/Track.tsx\",\"packages/app/src/hooks/create-editor.ts\",\"packages/app/src/lib/atproto/crud.ts\"]}"
     },
     {
@@ -215,9 +215,9 @@
       "node_type": "action",
       "title": "style: move track controls next to sliders to prevent layout shift",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:10.856949+01:00",
-      "updated_at": "2026-01-09T02:33:10.856949+01:00",
+      "updated_at": "2026-01-19T13:12:03.522552+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"a363d75\",\"confidence\":65,\"files\":[\"packages/app/src/components/editor/Track.module.css\",\"packages/app/src/components/editor/Track.tsx\"]}"
     },
     {
@@ -226,9 +226,9 @@
       "node_type": "action",
       "title": "fix: resolve type errors in playback and deep-resource",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:10.899618+01:00",
-      "updated_at": "2026-01-09T02:33:10.899618+01:00",
+      "updated_at": "2026-01-19T13:12:03.530726+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"3ca0f44\",\"confidence\":85,\"files\":[\"packages/app/src/hooks/deep-resource.ts\",\"packages/app/tsconfig.json\",\"packages/playback/src/audio-scheduler.ts\"]}"
     },
     {
@@ -237,9 +237,9 @@
       "node_type": "action",
       "title": "refactor: add worker-to-worker frame transfer to compositor",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:10.943143+01:00",
-      "updated_at": "2026-01-09T02:33:10.943143+01:00",
+      "updated_at": "2026-01-19T13:12:03.538996+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"ea3aaa1\",\"confidence\":80,\"files\":[\"packages/app/src/hooks/create-slot.ts\",\"packages/app/src/lib/create-debug-info.ts\",\"packages/app/src/workers/compositor.worker.ts\"]}"
     },
     {
@@ -248,9 +248,9 @@
       "node_type": "action",
       "title": "feat: add playback worker for demux/decode with frame streaming",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:10.989614+01:00",
-      "updated_at": "2026-01-09T02:33:10.989614+01:00",
+      "updated_at": "2026-01-19T13:06:14.721339+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"e612555\",\"confidence\":90,\"files\":[\"packages/app/src/workers/playback.worker.ts\"]}"
     },
     {
@@ -259,9 +259,9 @@
       "node_type": "action",
       "title": "refactor: use playback workers in player instead of slots",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:11.032347+01:00",
-      "updated_at": "2026-01-09T02:33:11.032347+01:00",
+      "updated_at": "2026-01-19T13:12:03.547083+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"8cb264d\",\"confidence\":80,\"files\":[\"packages/app/src/hooks/create-player.ts\"]}"
     },
     {
@@ -270,9 +270,9 @@
       "node_type": "action",
       "title": "fix: show initial frame after loading clip",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:11.076697+01:00",
-      "updated_at": "2026-01-09T02:33:11.076697+01:00",
+      "updated_at": "2026-01-19T13:12:03.555289+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"31340ab\",\"confidence\":85,\"files\":[\"packages/app/src/hooks/create-player.ts\"]}"
     },
     {
@@ -281,9 +281,9 @@
       "node_type": "action",
       "title": "refactor: bikeshed workers",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:11.119391+01:00",
-      "updated_at": "2026-01-09T02:33:11.119391+01:00",
+      "updated_at": "2026-01-19T13:12:03.563707+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"c9fa802\",\"confidence\":80,\"files\":[\"packages/app/src/workers/capture.worker.ts\",\"packages/app/src/workers/compositor.worker.ts\",\"packages/app/src/workers/debug-capture.worker.ts\",\"packages/app/src/workers/debug-muxer.worker.ts\",\"packages/app/src/workers/demux.worker.ts\",\"packages/app/src/workers/muxer.worker.ts\",\"packages/app/src/workers/playback.worker.ts\",\"packages/app/src/workers/recording.worker.ts\"]}"
     },
     {
@@ -292,9 +292,9 @@
       "node_type": "action",
       "title": "refactor: replace Map+versionTrack-signal with store",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:11.162943+01:00",
-      "updated_at": "2026-01-09T02:33:11.162943+01:00",
+      "updated_at": "2026-01-19T13:12:03.572226+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"65255dc\",\"confidence\":80,\"files\":[\"packages/app/src/hooks/create-player.ts\"]}"
     },
     {
@@ -303,9 +303,9 @@
       "node_type": "action",
       "title": "refactor: bikeshedding",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:11.206254+01:00",
-      "updated_at": "2026-01-09T02:33:11.206254+01:00",
+      "updated_at": "2026-01-19T13:12:04.508552+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"2c3f113\",\"confidence\":80,\"files\":[\"packages/app/src/hooks/create-editor.ts\",\"packages/app/src/routes/debug.tsx\",\"packages/app/src/workers/compositor.worker.ts\"]}"
     },
     {
@@ -314,9 +314,9 @@
       "node_type": "action",
       "title": "refactor: remove redundant recording.worker.ts",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:11.258304+01:00",
-      "updated_at": "2026-01-09T02:33:11.258304+01:00",
+      "updated_at": "2026-01-19T13:12:04.517054+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"b4966d3\",\"confidence\":80,\"files\":[\"packages/app/src/workers/recording.worker.ts\"]}"
     },
     {
@@ -325,9 +325,9 @@
       "node_type": "action",
       "title": "refactor: clean up player and worker code",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:33:11.309091+01:00",
-      "updated_at": "2026-01-09T02:33:11.309091+01:00",
+      "updated_at": "2026-01-19T13:12:04.525347+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"ab10d5a\",\"confidence\":80,\"files\":[\"packages/app/src/hooks/create-player.ts\",\"packages/app/src/workers/capture.worker.ts\",\"packages/app/src/workers/compositor.worker.ts\",\"packages/app/src/workers/debug-capture.worker.ts\",\"packages/app/src/workers/debug-muxer.worker.ts\",\"packages/app/src/workers/demux.worker.ts\",\"packages/app/src/workers/muxer.worker.ts\",\"packages/app/src/workers/playback.worker.ts\"]}"
     },
     {
@@ -435,9 +435,9 @@
       "node_type": "decision",
       "title": "How to measure/profile performance bottlenecks",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T03:01:56.976330+01:00",
-      "updated_at": "2026-01-09T03:01:56.976330+01:00",
+      "updated_at": "2026-01-19T14:52:25.320652+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":70,\"issue\":2}"
     },
     {
@@ -501,9 +501,9 @@
       "node_type": "action",
       "title": "Scaffold Playwright performance testing workflow",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T03:04:52.310245+01:00",
-      "updated_at": "2026-01-09T03:04:52.310245+01:00",
+      "updated_at": "2026-01-19T13:12:04.533495+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -776,9 +776,9 @@
       "node_type": "action",
       "title": "Create WorkerPool class for managing playback worker lifecycle",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T12:06:17.962+01:00",
-      "updated_at": "2026-01-09T12:06:17.962+01:00",
+      "updated_at": "2026-01-19T13:05:20.891562+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -809,9 +809,9 @@
       "node_type": "action",
       "title": "Add trackViewports to LayoutTimeline for preview rendering",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T14:16:17.385205+01:00",
-      "updated_at": "2026-01-09T14:16:17.385205+01:00",
+      "updated_at": "2026-01-19T13:07:31.413600+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"layout-types.ts\",\"timeline-compiler.ts\",\"compositor.worker.ts\"]}"
     },
     {
@@ -842,9 +842,9 @@
       "node_type": "action",
       "title": "Add TimeInput component to transport bar",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T14:35:32.452759+01:00",
-      "updated_at": "2026-01-09T14:35:32.452759+01:00",
+      "updated_at": "2026-01-19T13:12:04.542434+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"Editor.tsx\",\"Editor.module.css\"]}"
     },
     {
@@ -864,9 +864,9 @@
       "node_type": "action",
       "title": "Fix loop detection - track previous time to detect clock reset",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T14:41:38.637343+01:00",
-      "updated_at": "2026-01-09T14:41:38.637343+01:00",
+      "updated_at": "2026-01-19T13:12:04.550729+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"create-player.ts\"]}"
     },
     {
@@ -908,9 +908,9 @@
       "node_type": "action",
       "title": "Update clearRecording and downloadClip to work on clip at current time",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T23:38:36.056482+01:00",
-      "updated_at": "2026-01-09T23:38:36.056482+01:00",
+      "updated_at": "2026-01-19T13:12:04.558717+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"files\":[\"create-editor.ts\"]}"
     },
     {
@@ -919,9 +919,9 @@
       "node_type": "action",
       "title": "Implement getClipAtTime helper and modify clearRecording/downloadClip to operate on clip at current time",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T23:40:39.082600+01:00",
-      "updated_at": "2026-01-09T23:40:39.082600+01:00",
+      "updated_at": "2026-01-19T13:12:04.566877+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -963,9 +963,9 @@
       "node_type": "action",
       "title": "Implement gapless worker handoff for looping",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-10T01:02:08.136415+01:00",
-      "updated_at": "2026-01-10T01:02:08.136415+01:00",
+      "updated_at": "2026-01-19T13:12:04.575523+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -1029,9 +1029,9 @@
       "node_type": "action",
       "title": "Plan and execute worker refactor: modules for mux/demux, cleanup stale packages, thin worker wrappers",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-10T02:28:34.692336+01:00",
-      "updated_at": "2026-01-10T02:28:34.692336+01:00",
+      "updated_at": "2026-01-19T13:12:04.583547+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -1040,9 +1040,9 @@
       "node_type": "action",
       "title": "Refactor workers to thin RPC wrappers around @eddy/playback and @eddy/compositor modules",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-10T02:48:42.659735+01:00",
-      "updated_at": "2026-01-10T02:48:42.659735+01:00",
+      "updated_at": "2026-01-19T13:06:14.729909+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"7ce0b3d\",\"confidence\":90}"
     },
     {
@@ -1095,9 +1095,9 @@
       "node_type": "action",
       "title": "Ticket 1: Add decoder.decodeQueueSize backpressure to playback",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-12T18:25:28.193572+01:00",
-      "updated_at": "2026-01-12T18:25:28.193572+01:00",
+      "updated_at": "2026-01-19T13:12:05.530446+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"In create-playback.ts decodeAndBuffer():\\n\\n```ts\\nif (decoder.decodeQueueSize > THRESHOLD && !sample.isKeyframe) {\\n  return // skip delta frame\\n}\\ndecoder.decode(chunk)\\n```\\n\\n- Add DECODE_QUEUE_THRESHOLD constant (start with 3)\\n- Log when skipping for debugging\\n- No external dependencies, self-contained change\"}"
     },
     {
@@ -1106,9 +1106,9 @@
       "node_type": "action",
       "title": "Ticket 2: SAB scheduler for recorder queue backpressure",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-12T18:25:42.321564+01:00",
-      "updated_at": "2026-01-12T18:25:42.321564+01:00",
+      "updated_at": "2026-01-19T13:12:05.539470+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Create packages/scheduler or packages/app/src/lib/scheduler:\\n\\n```ts\\n// scheduler.ts\\nexport function createScheduler() {\\n  const buffer = new SharedArrayBuffer(4)\\n  const view = new Int32Array(buffer)\\n  return { buffer, view }\\n}\\n\\nexport function createPlaybackScheduler(buffer: SharedArrayBuffer) {\\n  const view = new Int32Array(buffer)\\n  return {\\n    shouldSkipDeltaFrames: () => Atomics.load(view, 0) === 1\\n  }\\n}\\n\\nexport function createRecordingScheduler(buffer: SharedArrayBuffer) {\\n  const view = new Int32Array(buffer)\\n  return {\\n    updateFromEncoder(queueSize: number) {\\n      if (queueSize > 5) Atomics.store(view, 0, 1)\\n      else if (queueSize < 2) Atomics.store(view, 0, 0)\\n    }\\n  }\\n}\\n```\\n\\nIntegration:\\n- Main thread: create SAB, pass to worker pool and muxer\\n- Muxer: call updateFromEncoder after each encode\\n- Playback: check shouldSkipDeltaFrames before decode\"}"
     },
     {
@@ -1139,9 +1139,9 @@
       "node_type": "action",
       "title": "Ticket 1: Make createWorkerPool generic with factory functions",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-12T19:23:04.257296+01:00",
-      "updated_at": "2026-01-12T19:23:04.257296+01:00",
+      "updated_at": "2026-01-19T13:06:14.738332+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -1150,9 +1150,9 @@
       "node_type": "action",
       "title": "Ticket 2: Reuse decoder in playback worker if config matches (flush vs destroy)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-12T19:23:04.419626+01:00",
-      "updated_at": "2026-01-12T19:23:04.419626+01:00",
+      "updated_at": "2026-01-19T13:12:05.547581+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -1216,9 +1216,9 @@
       "node_type": "action",
       "title": "Fix: clear animationFrameId on early returns in streamLoop",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-12T20:27:07.769614+01:00",
-      "updated_at": "2026-01-12T20:27:07.769614+01:00",
+      "updated_at": "2026-01-19T13:12:05.556417+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -1271,9 +1271,9 @@
       "node_type": "action",
       "title": "Fix: include 'playing' clips in play() filter so they get re-seeked/restarted",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-12T20:48:07.401176+01:00",
-      "updated_at": "2026-01-12T20:48:07.401176+01:00",
+      "updated_at": "2026-01-19T13:12:05.564858+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -1315,9 +1315,9 @@
       "node_type": "action",
       "title": "Create offline audio mixer with OfflineAudioContext",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-14T00:18:10.579710+01:00",
-      "updated_at": "2026-01-14T00:18:10.579710+01:00",
+      "updated_at": "2026-01-19T13:05:20.899785+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -1348,9 +1348,9 @@
       "node_type": "action",
       "title": "Add default audioPipeline with gain/pan to createDefaultProject",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-14T10:57:49.996265+01:00",
-      "updated_at": "2026-01-14T10:57:49.996265+01:00",
+      "updated_at": "2026-01-19T13:12:05.573131+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -1370,9 +1370,9 @@
       "node_type": "action",
       "title": "Connect audio source to pipeline for live playback",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-14T11:02:25.375907+01:00",
-      "updated_at": "2026-01-14T11:02:25.375907+01:00",
+      "updated_at": "2026-01-19T13:12:05.581260+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -1403,9 +1403,9 @@
       "node_type": "action",
       "title": "Restore AudioWorklet-based audio scheduler with ring buffer",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-14T11:14:54.925279+01:00",
-      "updated_at": "2026-01-14T11:14:54.925279+01:00",
+      "updated_at": "2026-01-19T13:05:20.907847+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -1414,9 +1414,9 @@
       "node_type": "action",
       "title": "Refactor playback into createVideoPlayback, createAudioPlayback, and createPlayback orchestrator",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-14T11:31:43.723012+01:00",
-      "updated_at": "2026-01-14T11:31:43.723012+01:00",
+      "updated_at": "2026-01-19T13:05:20.915728+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -1535,9 +1535,9 @@
       "node_type": "action",
       "title": "Implement punch-through clip behavior in timeline compiler",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-14T16:14:59.394716+01:00",
-      "updated_at": "2026-01-14T16:14:59.394716+01:00",
+      "updated_at": "2026-01-19T13:07:31.421732+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -1579,9 +1579,9 @@
       "node_type": "action",
       "title": "Explore VP9 keyframes-only muxing to fix decoder errors during export",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-14T17:23:54.787753+01:00",
-      "updated_at": "2026-01-14T17:23:54.787753+01:00",
+      "updated_at": "2026-01-19T13:12:05.589530+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -1590,9 +1590,9 @@
       "node_type": "decision",
       "title": "Effect system: nested chains with parallel + ref nodes",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-15T11:15:46.339064+01:00",
-      "updated_at": "2026-01-15T11:15:46.339064+01:00",
+      "updated_at": "2026-01-19T15:03:24.441254+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Design for effect/signal processing in lexicon:\\n\\nCore model:\\n- effect: individual processor (gain, eq, reverb, etc.)\\n- parallel: splits signal into sub-chains, mixes back with weights\\n- ref: references a reusable bus by id\\n\\nEffect chain is array (sequential by default):\\n[effect, effect, parallel, effect]\\n\\nParallel node enables split/merge:\\n{ type: 'parallel', chains: Effect[][], weights?: number[] }\\n\\nRef node enables composition:\\n{ type: 'ref', bus: string }\\n\\nProject-level busses for reuse:\\nbusses: { 'verb': [...], 'delay': [...] }\\n\\nBenefits:\\n- Linear by default, parallel when needed\\n- Reusable via refs\\n- Busses can compose other busses\\n- Serializable (no circular refs)\\n- DAW-like routing flexibility\"}"
     },
     {
@@ -1623,9 +1623,9 @@
       "node_type": "decision",
       "title": "Effect chains: parallel + expand for composition",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-15T12:34:26.476856+01:00",
-      "updated_at": "2026-01-15T12:34:26.476856+01:00",
+      "updated_at": "2026-01-19T15:03:24.450590+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Effect chains support composition:\\n\\neffect types:\\n- Regular effects (gain, eq, blur, glsl, etc.)\\n- parallel: split signal into sub-chains, mix back with weights\\n- expand: inline a reusable chain template (macro, not shared)\\n\\nChain templates (project-level, for reuse):\\nchains: {\\n  'my-eq': [{ type: 'eq' }, { type: 'comp' }]\\n}\\n\\nexpand = copy-paste inline (each use is independent)\\nbus routing = shared destination (signals mix)\"}"
     },
     {
@@ -1645,9 +1645,9 @@
       "node_type": "decision",
       "title": "Routing: explicit send vs route types",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-15T13:10:28.041706+01:00",
-      "updated_at": "2026-01-15T13:10:28.041706+01:00",
+      "updated_at": "2026-01-19T15:04:31.488895+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Two operations for connecting to busses:\\n\\nsend: parallel copy, signal continues\\n{ \\\"type\\\": \\\"send\\\", \\\"ref\\\": \\\"reverb\\\", \\\"amount\\\": 0.3 }\\n\\nroute: final destination, signal ends (always 100%)\\n{ \\\"type\\\": \\\"route\\\", \\\"ref\\\": \\\"track1-audio\\\" }\\n\\nChosen approach: explicit types\\n- Clearer intent, self-documenting\\n- Common DAW terminology\\n- route is obviously terminal\\n- Prevents dead code mistakes\\n\\nAlternative considered: passthrough param\\n{ \\\"ref\\\": \\\"bus\\\", \\\"amount\\\": 0.3, \\\"passthrough\\\": 1 }  // send\\n{ \\\"ref\\\": \\\"bus\\\", \\\"amount\\\": 1, \\\"passthrough\\\": 0 }    // route\\n- More flexible (partial passthrough possible)\\n- But less readable, easier to make mistakes\\n- Could revisit if we need partial passthrough (0.5)\"}"
     },
     {
@@ -1711,9 +1711,9 @@
       "node_type": "action",
       "title": "Create OPFS module with paths, write, and source utilities",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T00:49:08.516268+01:00",
-      "updated_at": "2026-01-17T00:49:08.516268+01:00",
+      "updated_at": "2026-01-19T13:05:20.923677+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -1722,9 +1722,9 @@
       "node_type": "action",
       "title": "Refactor playback to use Source interface instead of ArrayBuffer",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T00:49:08.682270+01:00",
-      "updated_at": "2026-01-17T00:49:08.682270+01:00",
+      "updated_at": "2026-01-19T13:06:14.746927+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -1733,9 +1733,9 @@
       "node_type": "action",
       "title": "Update muxer to write to OPFS after finalize",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T00:49:08.810154+01:00",
-      "updated_at": "2026-01-17T00:49:08.810154+01:00",
+      "updated_at": "2026-01-19T13:07:31.430200+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -1744,9 +1744,9 @@
       "node_type": "action",
       "title": "Update stemClips resourceMap to write fetched blobs to OPFS",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T00:49:08.930257+01:00",
-      "updated_at": "2026-01-17T00:49:08.930257+01:00",
+      "updated_at": "2026-01-19T13:07:31.442311+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -1755,9 +1755,9 @@
       "node_type": "action",
       "title": "Remove buffer storage from ClipEntry - workers read from OPFS for gapless handoff",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T00:49:09.049121+01:00",
-      "updated_at": "2026-01-17T00:49:09.049121+01:00",
+      "updated_at": "2026-01-19T13:12:05.597811+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -1832,9 +1832,9 @@
       "node_type": "action",
       "title": "Add streamStemToOPFS to stream ATProto blobs directly to OPFS",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T01:05:20.491036+01:00",
-      "updated_at": "2026-01-17T01:05:20.491036+01:00",
+      "updated_at": "2026-01-19T13:12:05.606322+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -1887,9 +1887,9 @@
       "node_type": "action",
       "title": "refactor: apply discriminated union state machine to create-audio-playback",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T16:57:13.901543+01:00",
-      "updated_at": "2026-01-17T16:57:13.901543+01:00",
+      "updated_at": "2026-01-19T13:06:14.755317+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -1909,9 +1909,9 @@
       "node_type": "action",
       "title": "refactor: apply state machine pattern to video and playback modules",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T17:09:24.222222+01:00",
-      "updated_at": "2026-01-17T17:09:24.222222+01:00",
+      "updated_at": "2026-01-19T13:07:31.450842+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -1931,9 +1931,9 @@
       "node_type": "action",
       "title": "refactor: replace handoff with ahead-scheduler",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T17:33:05.262726+01:00",
-      "updated_at": "2026-01-17T17:33:05.262726+01:00",
+      "updated_at": "2026-01-19T13:05:20.932536+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -2129,9 +2129,9 @@
       "node_type": "action",
       "title": "Create video effects system with Symbol-based GLSL composition",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T19:49:00.581923+01:00",
-      "updated_at": "2026-01-17T19:49:00.581923+01:00",
+      "updated_at": "2026-01-19T13:05:20.940888+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -2162,9 +2162,9 @@
       "node_type": "action",
       "title": "Sketch video bus architecture parallel to audio busses",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T19:55:53.653244+01:00",
-      "updated_at": "2026-01-17T19:55:53.653244+01:00",
+      "updated_at": "2026-01-19T13:12:05.614560+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":80}"
     },
     {
@@ -2217,9 +2217,9 @@
       "node_type": "action",
       "title": "Add video effects UI with registry and track controls",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T20:04:39.513808+01:00",
-      "updated_at": "2026-01-17T20:04:39.513808+01:00",
+      "updated_at": "2026-01-19T13:05:20.949556+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":80}"
     },
     {
@@ -2239,9 +2239,9 @@
       "node_type": "action",
       "title": "Simplified lexicon by commenting out curveRef",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T20:43:48.011927+01:00",
-      "updated_at": "2026-01-17T20:43:48.011927+01:00",
+      "updated_at": "2026-01-19T13:06:14.763447+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -2283,9 +2283,9 @@
       "node_type": "action",
       "title": "Wire video pipeline to compositor worker for cascading effects",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T20:47:14.856718+01:00",
-      "updated_at": "2026-01-17T20:47:14.856718+01:00",
+      "updated_at": "2026-01-19T13:06:14.771522+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -2481,9 +2481,9 @@
       "node_type": "action",
       "title": "Refactored video effects to use explicit registry injection",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T16:26:05.967515+01:00",
-      "updated_at": "2026-01-18T16:26:05.967515+01:00",
+      "updated_at": "2026-01-19T13:05:20.957901+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -2558,9 +2558,9 @@
       "node_type": "action",
       "title": "Add audioPipeline to Group schema in lexicon",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T17:34:46.552488+01:00",
-      "updated_at": "2026-01-18T17:34:46.552488+01:00",
+      "updated_at": "2026-01-19T13:05:20.966240+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -2569,9 +2569,9 @@
       "node_type": "action",
       "title": "Modify makeAudioBus to accept optional destination",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T17:36:04.691768+01:00",
-      "updated_at": "2026-01-18T17:36:04.691768+01:00",
+      "updated_at": "2026-01-19T13:06:14.779610+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -2580,9 +2580,9 @@
       "node_type": "action",
       "title": "Add group audio buses and wire hierarchy in make-player",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T17:36:50.546023+01:00",
-      "updated_at": "2026-01-18T17:36:50.546023+01:00",
+      "updated_at": "2026-01-19T13:06:14.788013+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -2591,9 +2591,9 @@
       "node_type": "action",
       "title": "Remove masterAudioPipeline and masterVideoPipeline - use rootGroup instead",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T17:40:15.970833+01:00",
-      "updated_at": "2026-01-18T17:40:15.970833+01:00",
+      "updated_at": "2026-01-19T13:07:31.458991+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -2613,9 +2613,9 @@
       "node_type": "action",
       "title": "Move setMasterVolume control to root group's audio bus via player",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T17:42:49.177461+01:00",
-      "updated_at": "2026-01-18T17:42:49.177461+01:00",
+      "updated_at": "2026-01-19T13:07:31.468097+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -2624,9 +2624,9 @@
       "node_type": "action",
       "title": "Remove getMasterMixer - root group connects directly to AudioContext.destination",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T17:43:29.983897+01:00",
-      "updated_at": "2026-01-18T17:43:29.983897+01:00",
+      "updated_at": "2026-01-19T13:07:31.476180+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -2668,9 +2668,9 @@
       "node_type": "action",
       "title": "Design staticVec2/staticVec3/staticVec4 schema types",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T18:01:19.533355+01:00",
-      "updated_at": "2026-01-18T18:01:19.533355+01:00",
+      "updated_at": "2026-01-19T13:05:20.974568+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -2815,6 +2815,171 @@
       "created_at": "2026-01-19T12:59:24.117368+01:00",
       "updated_at": "2026-01-19T12:59:24.117368+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"a066737\",\"confidence\":95}"
+    },
+    {
+      "id": 257,
+      "change_id": "7f20b5d9-f852-40ba-a292-737fa5a8f002",
+      "node_type": "outcome",
+      "title": "Playwright + CDP tracing chosen for performance profiling",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T14:52:29.778457+01:00",
+      "updated_at": "2026-01-19T14:52:29.778457+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 258,
+      "change_id": "099fb3a4-549d-4635-bce4-2ae8e67d4e00",
+      "node_type": "observation",
+      "title": "Parallel/expand nodes unnecessary - weighted output arrays create parallelism via graph topology",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T15:03:07.520468+01:00",
+      "updated_at": "2026-01-19T15:03:07.520468+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"Simplification to effect system architecture:\\n\\nCurrent design (decisions 145, 148) proposed:\\n- parallel node: splits signal into sub-chains, mixes back\\n- expand node: inlines reusable chain templates\\n\\nSimpler model:\\n- Pipeline = sequential effects array + outputs array\\n- outputs: [{ ref: string, amount: number }]\\n- Parallelism emerges from multiple outputs (split)\\n- Merging is implicit when multiple pipelines route to same bus\\n\\nExample:\\n```ts\\npipeline: {\\n  effects: [gain, eq, comp],  // always sequential\\n  outputs: [\\n    { ref: 'reverb', amount: 0.3 },\\n    { ref: 'delay', amount: 0.2 },\\n    { ref: 'master', amount: 1.0 }\\n  ]\\n}\\n```\\n\\nBenefits:\\n1. No special node types needed (parallel, expand)\\n2. Matches actual DAW routing model\\n3. Graph topology = signal flow (what you see is what you get)\\n4. Reuse via routing to shared buses, not template expansion\\n5. Simpler lexicon schema\"}"
+    },
+    {
+      "id": 259,
+      "change_id": "2b373b11-1cfb-4de1-bd35-494ddc8ec779",
+      "node_type": "observation",
+      "title": "send/route distinction unnecessary - implicit in output array structure",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T15:04:27.681857+01:00",
+      "updated_at": "2026-01-19T15:04:27.681857+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"With weighted outputs array, send vs route becomes implicit:\\n\\n- Multiple outputs = sends (signal splits to each)\\n- Single output at 1.0 = route (terminal)\\n\\nNo explicit type field needed:\\n```ts\\n// \\\"send\\\" to reverb + \\\"route\\\" to master\\noutputs: [\\n  { ref: 'reverb', amount: 0.3 },\\n  { ref: 'master', amount: 1.0 }\\n]\\n\\n// pure \\\"route\\\" \\noutputs: [\\n  { ref: 'master', amount: 1.0 }\\n]\\n```\\n\\nThe topology IS the semantics.\"}"
+    },
+    {
+      "id": 260,
+      "change_id": "a2d820db-6924-4b62-948b-56555b9824a6",
+      "node_type": "observation",
+      "title": "Audio vs video parallelism: audio merges implicitly via Web Audio graph, video requires explicit framebuffer compositing",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T15:05:42.329562+01:00",
+      "updated_at": "2026-01-19T15:05:42.329562+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"Asymmetry between audio and video parallel routing:\\n\\nAudio:\\n- Web Audio graph handles mixing implicitly\\n- Multiple inputs to same AudioNode = automatic sum\\n- Parallelism is \\\"free\\\" - just connect nodes\\n\\nVideo:\\n- No implicit merge mechanism\\n- Multiple branches targeting same output need explicit compositing\\n- Must render each branch to framebuffer, then combine\\n- Arithmetic for blending (add, multiply, weighted average, etc.) is our responsibility\\n\\nImplementation implications:\\n- Audio: weighted outputs just map to Web Audio connections with gain nodes\\n- Video: need framebuffer management + composition shader for branch merging\"}"
+    },
+    {
+      "id": 261,
+      "change_id": "323f8078-dcd6-46b5-a302-4a1d4ee16d19",
+      "node_type": "goal",
+      "title": "Implement video effect branch merging with framebuffer compositing",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T15:05:51.743494+01:00",
+      "updated_at": "2026-01-19T15:05:51.743494+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":80,\"prompt\":\"Implement explicit branch merging for video effect pipelines:\\n\\nRequirements:\\n- Render each branch to intermediate framebuffer\\n- Composition shader to combine branches with weights\\n- Support common blend operations (add, multiply, screen, etc.)\\n- Efficient framebuffer reuse/pooling\\n\\nUnlike audio where Web Audio handles mixing, video needs manual implementation of the merge step when multiple pipelines output to the same destination.\"}"
+    },
+    {
+      "id": 262,
+      "change_id": "bd6abb43-3191-418f-bd96-9e7108cea1f3",
+      "node_type": "observation",
+      "title": "Video effects blocked: multi-pass (blur, bloom, glow) - no FBO abstraction",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T15:10:08.916074+01:00",
+      "updated_at": "2026-01-19T15:10:08.916074+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"Multi-pass effects require rendering to intermediate framebuffers then reading back.\\n\\nCurrent system compiles to single fragment shader that runs once per pixel.\\nNo render-to-texture capability exists.\\n\\nExamples blocked: Gaussian blur (separable = 2 passes), bloom, glow, shadows, depth-of-field\\n\\nWould need:\\n- Framebuffer Object (FBO) abstraction in VideoCompositor\\n- renderToTexture(placement): WebGLTexture method\\n- Pipeline that chains: shader1 → FBO1 → shader2 → FBO2 → canvas\"}"
+    },
+    {
+      "id": 263,
+      "change_id": "f1372676-db2a-4079-9786-68e76a2b2690",
+      "node_type": "observation",
+      "title": "Video effects blocked: temporal (motion blur, trails) - no previous frame access",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T15:10:11.298465+01:00",
+      "updated_at": "2026-01-19T15:10:11.298465+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"Temporal effects need access to previous frame's pixel data.\\n\\nCurrent system renders each frame independently from single input texture (u_video).\\nNo frame history stored or accessible in shaders.\\n\\nExamples blocked: Motion blur, trail effects, ghosting, frame averaging, echo\\n\\nWould need:\\n- Frame history buffer (ring buffer of N previous frames)\\n- Additional texture uniforms (u_previousFrame, u_frameHistory[N])\\n- Memory management for frame retention\"}"
+    },
+    {
+      "id": 264,
+      "change_id": "9dc41785-9c8c-422d-9622-3be316eafe23",
+      "node_type": "observation",
+      "title": "Video effects blocked: multi-source (displacement, LUTs, masks) - only u_video texture",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T15:10:13.166063+01:00",
+      "updated_at": "2026-01-19T15:10:13.166063+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"Effects sampling multiple sources need additional texture inputs.\\n\\nCurrent system only binds one texture: u_video at TEXTURE0.\\nNo mechanism to load secondary textures into effects.\\n\\nExamples blocked: Displacement maps, lookup tables (color grading LUTs), masks, chromatic aberration with LUT\\n\\nWould need:\\n- Effect signature to specify required textures\\n- Texture binding slots beyond TEXTURE0\\n- EffectKey expanded to EffectWithInputs type\"}"
+    },
+    {
+      "id": 265,
+      "change_id": "49127667-0c10-4ae7-a026-6789acb77604",
+      "node_type": "observation",
+      "title": "Video effects blocked: cross-placement blend modes - placements render independently",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T15:10:13.934178+01:00",
+      "updated_at": "2026-01-19T15:10:13.934178+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"Advanced blend modes need to read already-rendered pixels.\\n\\nCurrent system renders each placement independently with no context of what was already drawn.\\nBlending done via canvas compositing, not GPU-level.\\n\\nExamples blocked: Screen, overlay, multiply, color dodge/burn, depth-based blending\\n\\nWould need:\\n- Render all placements to FBOs first\\n- Composition pass that reads multiple FBOs\\n- GPU blend mode configuration per placement\"}"
+    },
+    {
+      "id": 266,
+      "change_id": "e20ac127-c87d-4b4f-a25f-d1f9fcd19830",
+      "node_type": "observation",
+      "title": "Video effects blocked: geometry transforms (3D rotation, perspective) - fixed quad vertex shader",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T15:10:14.818547+01:00",
+      "updated_at": "2026-01-19T15:10:14.818547+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"3D/geometry effects need vertex shader flexibility.\\n\\nCurrent system uses compile.toQuad() - renders flat quad to viewport.\\nEffects only work at fragment level, no geometry data available.\\n\\nExamples blocked: 3D rotation, perspective warp, displacement-based geometry, mesh deformation\\n\\nWould need:\\n- Custom vertex shader pipeline\\n- Geometry/mesh data passed to effects\\n- compile() with custom vertex shader instead of compile.toQuad()\"}"
+    },
+    {
+      "id": 267,
+      "change_id": "6771f21b-9ed9-4851-b724-d15c8b1b2b44",
+      "node_type": "observation",
+      "title": "Video effects supported: single-pass per-pixel color transforms with effect chaining",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T15:10:42.687703+01:00",
+      "updated_at": "2026-01-19T15:10:42.687703+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"Current pipeline optimized for color grading:\\n\\nSupported:\\n- Per-pixel color transforms (brightness, contrast, saturation, colorize)\\n- Effect chaining (multiple effects compiled to single shader)\\n- Effect deduplication (same type used N times → array uniforms)\\n- Instance-specific parameters (each effect instance has own values)\\n- Multi-parameter effects (e.g. colorize has vec3 color + float intensity)\\n- Real-time parameter updates without recompilation\\n\\nArchitecture: effectKeys[] → count types → compile single shader with functions → one GPU pass\"}"
+    },
+    {
+      "id": 268,
+      "change_id": "f03c66e5-64f6-44b0-ab95-1bb631c0ebed",
+      "node_type": "observation",
+      "title": "Video branch merging: compile parallel branches to single shader, not FBOs",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T15:12:55.457620+01:00",
+      "updated_at": "2026-01-19T15:12:55.457620+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"prompt\":\"Parallel branches from same source can merge in single fragment shader:\\n\\n```glsl\\n// Branches compiled as inline expressions\\nvec4 branchA = applyBrightness(applyContrast(texColor));\\nvec4 branchB = applySaturation(applyColorize(texColor));\\nvec4 merged = branchA * weightA + branchB * weightB;\\n```\\n\\nBenefits:\\n- Single GPU pass, no intermediate textures\\n- No FBO overhead or memory allocation\\n- Branches are just code paths in same shader\\n- Compiler can optimize across branches\\n\\nFBOs only needed when:\\n- Branch output feeds another branch's input (serial dependency)\\n- True multi-pass effects (blur that must read own output)\\n- Cross-placement compositing (reading already-rendered content)\\n\\nThis simplifies goal 261 - most parallel routing compiles to single program.\"}"
+    },
+    {
+      "id": 269,
+      "change_id": "8e68ca58-39ac-4660-973c-b30cee1fe8d9",
+      "node_type": "goal",
+      "title": "Implement effect pipeline branching with weighted outputs",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T15:15:41.293632+01:00",
+      "updated_at": "2026-01-19T15:15:41.293632+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Implement branching for effect pipelines using weighted outputs model:\\n\\n1. Update lexicons - pipeline outputs as array of weighted refs\\n2. Implement audio branching - Web Audio gain nodes for weighted routing\\n3. Implement video branching - compile parallel branches to single shader\\n\\nBased on observations 258, 259, 268: parallelism via graph topology, not special node types.\"}"
+    },
+    {
+      "id": 270,
+      "change_id": "39acba5b-e373-4ca8-a363-6e21ddc6a943",
+      "node_type": "action",
+      "title": "Implement pipeline branching lexicons and runtime",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T16:08:15.252244+01:00",
+      "updated_at": "2026-01-19T16:08:15.252244+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 271,
+      "change_id": "72428e49-e0fd-4cb0-a9db-0369ae449c76",
+      "node_type": "outcome",
+      "title": "Pipeline branching with weighted outputs implemented",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-19T16:28:07.742796+01:00",
+      "updated_at": "2026-01-19T16:28:07.742796+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -5138,6 +5303,237 @@
       "weight": 1.0,
       "rationale": "Implementation result",
       "created_at": "2026-01-19T00:31:49.446976+01:00"
+    },
+    {
+      "id": 212,
+      "from_node_id": 40,
+      "to_node_id": 257,
+      "from_change_id": "c07f12ec-a781-486c-b212-1accf78b7fdd",
+      "to_change_id": "7f20b5d9-f852-40ba-a292-737fa5a8f002",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Decision resolved - Option E implemented",
+      "created_at": "2026-01-19T14:52:33.330050+01:00"
+    },
+    {
+      "id": 213,
+      "from_node_id": 145,
+      "to_node_id": 258,
+      "from_change_id": "143d0372-1417-4000-b6d6-c6ff5185ae01",
+      "to_change_id": "099fb3a4-549d-4635-bce4-2ae8e67d4e00",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Simplifies - parallel node replaced by weighted outputs",
+      "created_at": "2026-01-19T15:03:12.674187+01:00"
+    },
+    {
+      "id": 214,
+      "from_node_id": 148,
+      "to_node_id": 258,
+      "from_change_id": "5f294284-c55b-46de-a5a8-1b6df518a198",
+      "to_change_id": "099fb3a4-549d-4635-bce4-2ae8e67d4e00",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Simplifies - expand node replaced by routing to shared buses",
+      "created_at": "2026-01-19T15:03:12.853415+01:00"
+    },
+    {
+      "id": 215,
+      "from_node_id": 147,
+      "to_node_id": 258,
+      "from_change_id": "a679a885-087c-4ef7-93cd-f5741e066556",
+      "to_change_id": "099fb3a4-549d-4635-bce4-2ae8e67d4e00",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Reinforces - weighted outputs are the parallelism mechanism",
+      "created_at": "2026-01-19T15:03:19.059122+01:00"
+    },
+    {
+      "id": 216,
+      "from_node_id": 150,
+      "to_node_id": 259,
+      "from_change_id": "ee944d4b-7626-40ad-b449-17f19c8f862f",
+      "to_change_id": "2b373b11-1cfb-4de1-bd35-494ddc8ec779",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Simplifies - no explicit types needed",
+      "created_at": "2026-01-19T15:04:31.479070+01:00"
+    },
+    {
+      "id": 217,
+      "from_node_id": 258,
+      "to_node_id": 259,
+      "from_change_id": "099fb3a4-549d-4635-bce4-2ae8e67d4e00",
+      "to_change_id": "2b373b11-1cfb-4de1-bd35-494ddc8ec779",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Same insight - topology is semantics",
+      "created_at": "2026-01-19T15:04:35.100843+01:00"
+    },
+    {
+      "id": 218,
+      "from_node_id": 258,
+      "to_node_id": 260,
+      "from_change_id": "099fb3a4-549d-4635-bce4-2ae8e67d4e00",
+      "to_change_id": "a2d820db-6924-4b62-948b-56555b9824a6",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation consideration for video",
+      "created_at": "2026-01-19T15:05:55.762189+01:00"
+    },
+    {
+      "id": 219,
+      "from_node_id": 260,
+      "to_node_id": 261,
+      "from_change_id": "a2d820db-6924-4b62-948b-56555b9824a6",
+      "to_change_id": "323f8078-dcd6-46b5-a302-4a1d4ee16d19",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Drives implementation goal",
+      "created_at": "2026-01-19T15:05:55.771348+01:00"
+    },
+    {
+      "id": 220,
+      "from_node_id": 147,
+      "to_node_id": 260,
+      "from_change_id": "a679a885-087c-4ef7-93cd-f5741e066556",
+      "to_change_id": "a2d820db-6924-4b62-948b-56555b9824a6",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Video implementation challenge for bus model",
+      "created_at": "2026-01-19T15:05:59.759516+01:00"
+    },
+    {
+      "id": 221,
+      "from_node_id": 261,
+      "to_node_id": 262,
+      "from_change_id": "323f8078-dcd6-46b5-a302-4a1d4ee16d19",
+      "to_change_id": "bd6abb43-3191-418f-bd96-9e7108cea1f3",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "FBO needed for branch merging AND multi-pass effects",
+      "created_at": "2026-01-19T15:10:21.314738+01:00"
+    },
+    {
+      "id": 222,
+      "from_node_id": 261,
+      "to_node_id": 263,
+      "from_change_id": "323f8078-dcd6-46b5-a302-4a1d4ee16d19",
+      "to_change_id": "f1372676-db2a-4079-9786-68e76a2b2690",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Related video pipeline limitation",
+      "created_at": "2026-01-19T15:10:21.323377+01:00"
+    },
+    {
+      "id": 223,
+      "from_node_id": 261,
+      "to_node_id": 264,
+      "from_change_id": "323f8078-dcd6-46b5-a302-4a1d4ee16d19",
+      "to_change_id": "9dc41785-9c8c-422d-9622-3be316eafe23",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Related video pipeline limitation",
+      "created_at": "2026-01-19T15:10:21.331608+01:00"
+    },
+    {
+      "id": 224,
+      "from_node_id": 261,
+      "to_node_id": 265,
+      "from_change_id": "323f8078-dcd6-46b5-a302-4a1d4ee16d19",
+      "to_change_id": "49127667-0c10-4ae7-a026-6789acb77604",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Blend modes needed for branch merging",
+      "created_at": "2026-01-19T15:10:21.342220+01:00"
+    },
+    {
+      "id": 225,
+      "from_node_id": 261,
+      "to_node_id": 266,
+      "from_change_id": "323f8078-dcd6-46b5-a302-4a1d4ee16d19",
+      "to_change_id": "e20ac127-c87d-4b4f-a25f-d1f9fcd19830",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Related video pipeline limitation",
+      "created_at": "2026-01-19T15:10:21.351974+01:00"
+    },
+    {
+      "id": 226,
+      "from_node_id": 267,
+      "to_node_id": 262,
+      "from_change_id": "6771f21b-9ed9-4851-b724-d15c8b1b2b44",
+      "to_change_id": "bd6abb43-3191-418f-bd96-9e7108cea1f3",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Contrast: what's supported vs blocked",
+      "created_at": "2026-01-19T15:10:47.138854+01:00"
+    },
+    {
+      "id": 227,
+      "from_node_id": 261,
+      "to_node_id": 268,
+      "from_change_id": "323f8078-dcd6-46b5-a302-4a1d4ee16d19",
+      "to_change_id": "f03c66e5-64f6-44b0-ab95-1bb631c0ebed",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Simpler approach - single shader compilation",
+      "created_at": "2026-01-19T15:13:00.287951+01:00"
+    },
+    {
+      "id": 228,
+      "from_node_id": 268,
+      "to_node_id": 262,
+      "from_change_id": "f03c66e5-64f6-44b0-ab95-1bb631c0ebed",
+      "to_change_id": "bd6abb43-3191-418f-bd96-9e7108cea1f3",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Reduces FBO need to specific cases only",
+      "created_at": "2026-01-19T15:13:00.299812+01:00"
+    },
+    {
+      "id": 229,
+      "from_node_id": 258,
+      "to_node_id": 269,
+      "from_change_id": "099fb3a4-549d-4635-bce4-2ae8e67d4e00",
+      "to_change_id": "8e68ca58-39ac-4660-973c-b30cee1fe8d9",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation of weighted outputs model",
+      "created_at": "2026-01-19T15:15:45.728104+01:00"
+    },
+    {
+      "id": 230,
+      "from_node_id": 268,
+      "to_node_id": 269,
+      "from_change_id": "f03c66e5-64f6-44b0-ab95-1bb631c0ebed",
+      "to_change_id": "8e68ca58-39ac-4660-973c-b30cee1fe8d9",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Video approach: single shader compilation",
+      "created_at": "2026-01-19T15:15:45.739093+01:00"
+    },
+    {
+      "id": 231,
+      "from_node_id": 269,
+      "to_node_id": 270,
+      "from_change_id": "8e68ca58-39ac-4660-973c-b30cee1fe8d9",
+      "to_change_id": "39acba5b-e373-4ca8-a363-6e21ddc6a943",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-01-19T16:08:15.293252+01:00"
+    },
+    {
+      "id": 232,
+      "from_node_id": 270,
+      "to_node_id": 271,
+      "from_change_id": "39acba5b-e373-4ca8-a363-6e21ddc6a943",
+      "to_change_id": "72428e49-e0fd-4cb0-a9db-0369ae449c76",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Completed",
+      "created_at": "2026-01-19T16:28:07.784437+01:00"
     }
   ]
 }
