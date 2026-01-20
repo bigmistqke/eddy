@@ -192,6 +192,35 @@ if (!player()) return
 player().play()
 ```
 
+### SolidJS Control Flow
+
+Use component control flow (`Show`, `For`, `Switch`, `Match`) instead of ternaries and `&&`:
+
+```tsx
+// Good - component control flow
+<Show when={user()}>{user => <Profile user={user()} />}</Show>
+
+// Bad - ternary
+{user() ? <Profile user={user()} /> : null}
+
+// Bad - && pattern
+{user() && <Profile user={user()} />}
+```
+
+Use the callback form of `Show` to get a narrowed accessor instead of `!` assertions:
+
+```tsx
+// Good - callback form narrows the type
+<Show when={props.value !== null && props.value}>
+  {value => <span>{value()}</span>}
+</Show>
+
+// Bad - non-null assertion
+<Show when={props.value !== null}>
+  <span>{props.value!}</span>
+</Show>
+```
+
 ### Naming
 
 **Function prefixes:**
