@@ -3321,6 +3321,50 @@
       "created_at": "2026-01-20T00:36:59.958811+01:00",
       "updated_at": "2026-01-20T00:36:59.958811+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"c6a0cf5\",\"confidence\":95}"
+    },
+    {
+      "id": 303,
+      "change_id": "ae0972ff-68a5-4470-8a73-1345122c7f8e",
+      "node_type": "observation",
+      "title": "Naming correction: makeVideoRenderer is the WebGL layer (current compositor.ts → make-video-renderer.ts), makeVideoCompositor is the orchestration logic from compositor.worker.ts (minus worker RPC)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T00:39:41.325583+01:00",
+      "updated_at": "2026-01-20T00:39:41.325583+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 304,
+      "change_id": "5ee222ca-c27d-4aa5-989d-94ed8ffdbfe3",
+      "node_type": "action",
+      "title": "Extract makeVideoRenderer and makeVideoCompositor from compositor.ts and compositor.worker.ts",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T00:40:09.199977+01:00",
+      "updated_at": "2026-01-20T00:40:09.199977+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 305,
+      "change_id": "71c1e9de-caf4-42b8-b027-a26122905dbc",
+      "node_type": "outcome",
+      "title": "Extracted makeVideoRenderer (WebGL) and makeVideoCompositor (orchestration) - worker reduced from 550 to 210 lines",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T00:48:39.385371+01:00",
+      "updated_at": "2026-01-20T00:48:39.385371+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 306,
+      "change_id": "f849e488-60a0-4e69-9873-957cb034dab9",
+      "node_type": "outcome",
+      "title": "Committed: refactor - extract makeVideoRenderer and makeVideoCompositor",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T01:44:53.273838+01:00",
+      "updated_at": "2026-01-20T01:44:53.273838+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"93cc521\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -6172,6 +6216,50 @@
       "weight": 1.0,
       "rationale": "Committed",
       "created_at": "2026-01-20T00:37:04.678203+01:00"
+    },
+    {
+      "id": 260,
+      "from_node_id": 301,
+      "to_node_id": 303,
+      "from_change_id": "8cc2083d-849c-4c65-b307-7b2a1726c577",
+      "to_change_id": "ae0972ff-68a5-4470-8a73-1345122c7f8e",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "User correction on naming",
+      "created_at": "2026-01-20T00:39:45.863348+01:00"
+    },
+    {
+      "id": 261,
+      "from_node_id": 292,
+      "to_node_id": 304,
+      "from_change_id": "be103883-f6b7-4e88-b26c-46560c283214",
+      "to_change_id": "5ee222ca-c27d-4aa5-989d-94ed8ffdbfe3",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation of package extraction",
+      "created_at": "2026-01-20T00:40:15.082439+01:00"
+    },
+    {
+      "id": 262,
+      "from_node_id": 304,
+      "to_node_id": 305,
+      "from_change_id": "5ee222ca-c27d-4aa5-989d-94ed8ffdbfe3",
+      "to_change_id": "71c1e9de-caf4-42b8-b027-a26122905dbc",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation complete",
+      "created_at": "2026-01-20T00:48:43.741004+01:00"
+    },
+    {
+      "id": 263,
+      "from_node_id": 305,
+      "to_node_id": 306,
+      "from_change_id": "71c1e9de-caf4-42b8-b027-a26122905dbc",
+      "to_change_id": "f849e488-60a0-4e69-9873-957cb034dab9",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-20T01:44:58.845818+01:00"
     }
   ]
 }
