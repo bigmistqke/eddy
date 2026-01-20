@@ -3552,6 +3552,39 @@
       "created_at": "2026-01-21T00:05:13.446483+01:00",
       "updated_at": "2026-01-21T00:05:13.446483+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"3270f80\",\"confidence\":95}"
+    },
+    {
+      "id": 324,
+      "change_id": "298a0b3b-9790-493d-8287-f2531a9e3446",
+      "node_type": "observation",
+      "title": "Coding style: Prefer colocating components in same file instead of one-component-per-file. Files are an abstraction boundary - only split when necessary. Use /******/ section titles when colocating.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T00:09:14.598138+01:00",
+      "updated_at": "2026-01-21T00:09:14.598138+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 325,
+      "change_id": "7030ffe6-8797-4bad-8c7e-fd3ef2c4bed6",
+      "node_type": "observation",
+      "title": "TODO: Audit codebase for file organization violations - colocate components where appropriate. Examples: packages/jam/src/components/layout/ and packages/jam/src/components/sequencer/ have one-component-per-file that could be colocated",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T00:09:47.361697+01:00",
+      "updated_at": "2026-01-21T00:09:47.361697+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 326,
+      "change_id": "b8780041-7cfd-4ce7-9640-2a31b2ca9abe",
+      "node_type": "outcome",
+      "title": "Committed: fix: improve clip painting and visual styling",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T00:13:56.547289+01:00",
+      "updated_at": "2026-01-21T00:13:56.547289+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"439ee8f\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -6623,6 +6656,39 @@
       "weight": 1.0,
       "rationale": "Implementation committed",
       "created_at": "2026-01-21T00:05:17.847821+01:00"
+    },
+    {
+      "id": 280,
+      "from_node_id": 313,
+      "to_node_id": 324,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "298a0b3b-9790-493d-8287-f2531a9e3446",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Coding pattern preference",
+      "created_at": "2026-01-21T00:09:19.381377+01:00"
+    },
+    {
+      "id": 281,
+      "from_node_id": 324,
+      "to_node_id": 325,
+      "from_change_id": "298a0b3b-9790-493d-8287-f2531a9e3446",
+      "to_change_id": "7030ffe6-8797-4bad-8c7e-fd3ef2c4bed6",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Follow-up action needed",
+      "created_at": "2026-01-21T00:09:51.009586+01:00"
+    },
+    {
+      "id": 282,
+      "from_node_id": 313,
+      "to_node_id": 326,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "b8780041-7cfd-4ce7-9640-2a31b2ca9abe",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Bug fix committed",
+      "created_at": "2026-01-21T00:13:56.559769+01:00"
     }
   ]
 }

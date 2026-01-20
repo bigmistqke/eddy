@@ -1,19 +1,27 @@
 [
   {
-    "hash": "2fe37790238df971152113f7f70bf6eb7885f010",
-    "short_hash": "2fe3779",
+    "hash": "a1629423cd39a21a8bfc99b6b72d253152959225",
+    "short_hash": "a162942",
     "author": "bigmistqke",
-    "date": "2026-01-21T00:05:04+01:00",
-    "message": "docs: add SolidJS control flow coding preferences",
+    "date": "2026-01-21T00:13:44+01:00",
+    "message": "docs: add file organization coding preferences",
     "files_changed": 1
   },
   {
-    "hash": "3270f800bf122c1ffb725e3c8054dd22dd7f693d",
-    "short_hash": "3270f80",
+    "hash": "439ee8f129871b3a04cfe60a7ad05c0faa6fe836",
+    "short_hash": "439ee8f",
     "author": "bigmistqke",
-    "date": "2026-01-21T00:05:00+01:00",
-    "message": "feat: add jam package with grid-based video sequencer\n\nGrid-based UI for sequencing video clips through changing layouts.\nIncludes sequencer grid, layout editor, and clip span visualization.",
-    "files_changed": 32
+    "date": "2026-01-21T00:13:39+01:00",
+    "message": "fix: improve clip painting and visual styling\n\nPainting now extends clips instead of creating separate ones per cell.\nConnected cells have no gaps and bigger border radius for clip ends.",
+    "files_changed": 3
+  },
+  {
+    "hash": "439ee8f129871b3a04cfe60a7ad05c0faa6fe836",
+    "short_hash": "439ee8f",
+    "author": "bigmistqke",
+    "date": "2026-01-21T00:13:39+01:00",
+    "message": "fix: improve clip painting and visual styling\n\nPainting now extends clips instead of creating separate ones per cell.\nConnected cells have no gaps and bigger border radius for clip ends.",
+    "files_changed": 3
   },
   {
     "hash": "3270f800bf122c1ffb725e3c8054dd22dd7f693d",
