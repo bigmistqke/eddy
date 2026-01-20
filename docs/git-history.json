@@ -1,19 +1,19 @@
 [
   {
+    "hash": "2158e6131908dc1199643a96b584aee08a962035",
+    "short_hash": "2158e61",
+    "author": "bigmistqke",
+    "date": "2026-01-20T20:17:07+01:00",
+    "message": "chore: link local @bigmistqke/rpc package",
+    "files_changed": 2
+  },
+  {
     "hash": "1c3d3bacecb310fb39bf2b69589e4ae4d4b42c1d",
     "short_hash": "1c3d3ba",
     "author": "bigmistqke",
     "date": "2026-01-20T20:17:04+01:00",
     "message": "fix: await audio scheduler init call",
     "files_changed": 2
-  },
-  {
-    "hash": "f4aa29df4fb95595f24398baf9495bbb7f0efb49",
-    "short_hash": "f4aa29d",
-    "author": "bigmistqke",
-    "date": "2026-01-20T20:17:00+01:00",
-    "message": "refactor: clean up playback worker code style",
-    "files_changed": 3
   },
   {
     "hash": "1e1352b8b4abd6bad459ee9f0d1257290fc71c08",

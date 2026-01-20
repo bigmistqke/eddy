@@ -2866,9 +2866,9 @@
       "node_type": "goal",
       "title": "Implement video effect branch merging with framebuffer compositing",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-19T15:05:51.743494+01:00",
-      "updated_at": "2026-01-19T15:05:51.743494+01:00",
+      "updated_at": "2026-01-20T20:57:43.317345+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":80,\"prompt\":\"Implement explicit branch merging for video effect pipelines:\\n\\nRequirements:\\n- Render each branch to intermediate framebuffer\\n- Composition shader to combine branches with weights\\n- Support common blend operations (add, multiply, screen, etc.)\\n- Efficient framebuffer reuse/pooling\\n\\nUnlike audio where Web Audio handles mixing, video needs manual implementation of the merge step when multiple pipelines output to the same destination.\"}"
     },
     {
@@ -2954,9 +2954,9 @@
       "node_type": "goal",
       "title": "Implement effect pipeline branching with weighted outputs",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-19T15:15:41.293632+01:00",
-      "updated_at": "2026-01-19T15:15:41.293632+01:00",
+      "updated_at": "2026-01-20T20:35:56.926787+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Implement branching for effect pipelines using weighted outputs model:\\n\\n1. Update lexicons - pipeline outputs as array of weighted refs\\n2. Implement audio branching - Web Audio gain nodes for weighted routing\\n3. Implement video branching - compile parallel branches to single shader\\n\\nBased on observations 258, 259, 268: parallelism via graph topology, not special node types.\"}"
     },
     {
@@ -3376,6 +3376,61 @@
       "created_at": "2026-01-20T03:30:48.745527+01:00",
       "updated_at": "2026-01-20T03:30:48.745527+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"1e1352b\",\"confidence\":95}"
+    },
+    {
+      "id": 308,
+      "change_id": "69d25f6d-0e5f-4902-83b1-2956265bbee8",
+      "node_type": "observation",
+      "title": "FBO compositing needed for advanced multi-pass video effects",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T20:57:37.534607+01:00",
+      "updated_at": "2026-01-20T20:57:37.534607+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"Future consideration: Framebuffer compositing will be needed for:\\n- Serial dependencies (branch output feeds another branch's input)\\n- True multi-pass effects (blur that must read own output)\\n- Cross-placement compositing (reading already-rendered content)\\n\\nCurrent single-shader compilation handles most parallel routing cases.\\nFBO approach is more complex but enables effects that can't be expressed in one pass.\"}"
+    },
+    {
+      "id": 309,
+      "change_id": "33e30a0b-f2fe-4e4d-b473-2ae127f5bb2d",
+      "node_type": "observation",
+      "title": "jam.eddy.dj: clips flow through layouts, not bound to columns",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T22:45:39.998125+01:00",
+      "updated_at": "2026-01-20T22:45:39.998125+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"Key design clarification: Clips are independent of columns.\\n\\n- A track's clip can play continuously across multiple columns\\n- Columns are \\\"layout keyframes\\\" - moments where spatial arrangement changes\\n- The clip keeps playing while the layout morphs around it\\n\\nExample: A clip spanning columns 1-4 smoothly transitions through each column's layout as playback progresses.\\n\\nThis separates \\\"what plays\\\" (clip layer) from \\\"how it looks\\\" (layout layer).\"}"
+    },
+    {
+      "id": 310,
+      "change_id": "0be49f0d-9ccb-43cb-bc0b-afce24e8c765",
+      "node_type": "observation",
+      "title": "jam.eddy.dj: grid-snapped clips for mobile UX",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T22:45:50.517461+01:00",
+      "updated_at": "2026-01-20T22:45:50.517461+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Design decision: Clips snap to column boundaries (not free-flowing).\\n\\nRationale:\\n- Mobile-first: touch-friendly interactions (tap/drag cells)\\n- No precision edge-dragging needed\\n- Variable column duration (1 bar, 1/2, 1/4, etc.) still provides timing flexibility\\n- Narrow columns = quick moments, wide columns = sustained\\n\\nA clip spanning columns 2-5:\\n- Starts at column 2's start time\\n- Ends at column 5's end time\\n- Transitions through each column's layout\\n\\nGrid snapping keeps the \\\"clips flow through layouts\\\" concept while simplifying interaction.\"}"
+    },
+    {
+      "id": 311,
+      "change_id": "cca942dd-c140-429b-981a-cd568137bb37",
+      "node_type": "observation",
+      "title": "jam.eddy.dj: uses existing lexicon, columns are UI layer",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T22:46:01.467550+01:00",
+      "updated_at": "2026-01-20T22:46:01.467550+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"Design decision: jam.eddy.dj uses the same Project/Track/Clip/Group lexicon as eddy.dj.\\n\\nTrack/Clip model (from existing lexicon):\\n- Track contains Clips in sequence (only one plays at a time)\\n- Clips can contain Groups with nested Track references\\n- Same hierarchy: <track><clip><group><track id=\\\"1\\\"/></group></clip>...</track>\\n\\nColumns are a UI concept layered on top:\\n1. Define time segment boundaries (where clip edges snap)\\n2. Layout keyframes (spatial arrangement changes)\\n\\njam.eddy.dj is a different UI paradigm (grid-based) for the same underlying data model, not a new data model.\"}"
+    },
+    {
+      "id": 312,
+      "change_id": "682d7e3e-dde8-4630-a517-ce4a504e7de1",
+      "node_type": "observation",
+      "title": "jam.eddy.dj: two independent layers (clip + layout)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T22:46:12.025010+01:00",
+      "updated_at": "2026-01-20T22:46:12.025010+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"Architecture insight: jam.eddy.dj has two independent layers.\\n\\n1. CLIP LAYER - what plays when\\n   - Tracks with clips that span columns (grid-snapped)\\n   - Clips play continuously, independent of layout changes\\n   - Sequencer View edits this layer\\n\\n2. LAYOUT LAYER - how it looks\\n   - Columns as \\\"layout keyframes\\\" defining spatial arrangement\\n   - Each column: layout type (full/pip/2x2) + slot assignments\\n   - Layout View edits this layer\\n\\nAt render time:\\n- Find current column at time T\\n- Get active tracks for that column\\n- Render according to column's layout\\n- Clips transition smoothly through layouts\\n\\nThe interweaving: clips flow through changing layouts as time progresses.\"}"
     }
   ],
   "edges": [
@@ -6282,6 +6337,61 @@
       "weight": 1.0,
       "rationale": "Reverted - simpler workflow without build step",
       "created_at": "2026-01-20T03:30:57.278087+01:00"
+    },
+    {
+      "id": 265,
+      "from_node_id": 268,
+      "to_node_id": 308,
+      "from_change_id": "f03c66e5-64f6-44b0-ab95-1bb631c0ebed",
+      "to_change_id": "69d25f6d-0e5f-4902-83b1-2956265bbee8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Future expansion of single-shader approach",
+      "created_at": "2026-01-20T20:57:43.305964+01:00"
+    },
+    {
+      "id": 266,
+      "from_node_id": 281,
+      "to_node_id": 309,
+      "from_change_id": "1b219028-ec9f-47ac-a065-3f1ec7ea7370",
+      "to_change_id": "33e30a0b-f2fe-4e4d-b473-2ae127f5bb2d",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Design refinement",
+      "created_at": "2026-01-20T22:46:18.406665+01:00"
+    },
+    {
+      "id": 267,
+      "from_node_id": 309,
+      "to_node_id": 310,
+      "from_change_id": "33e30a0b-f2fe-4e4d-b473-2ae127f5bb2d",
+      "to_change_id": "0be49f0d-9ccb-43cb-bc0b-afce24e8c765",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "UX decision",
+      "created_at": "2026-01-20T22:46:18.419046+01:00"
+    },
+    {
+      "id": 268,
+      "from_node_id": 310,
+      "to_node_id": 311,
+      "from_change_id": "0be49f0d-9ccb-43cb-bc0b-afce24e8c765",
+      "to_change_id": "cca942dd-c140-429b-981a-cd568137bb37",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Data model decision",
+      "created_at": "2026-01-20T22:46:18.430901+01:00"
+    },
+    {
+      "id": 269,
+      "from_node_id": 311,
+      "to_node_id": 312,
+      "from_change_id": "cca942dd-c140-429b-981a-cd568137bb37",
+      "to_change_id": "682d7e3e-dde8-4630-a517-ce4a504e7de1",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Architecture summary",
+      "created_at": "2026-01-20T22:46:18.456258+01:00"
     }
   ]
 }
