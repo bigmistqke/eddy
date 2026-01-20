@@ -317,6 +317,40 @@ function createPlaybackTiming() { ... }
 
 Note: Barrel files (index.ts re-exports) do NOT need JSDoc explanation at top.
 
+### File Organization
+
+Prefer colocating components in the same file instead of one component per file. Think of files as an abstraction boundary - only create a new file when truly necessary (e.g., the component is reused elsewhere, or the file becomes unwieldy).
+
+When colocating multiple components, use section comment titles:
+
+```tsx
+/**********************************************************************************/
+/*                                                                                */
+/*                                  Track Label                                   */
+/*                                                                                */
+/**********************************************************************************/
+
+function TrackLabel(props: TrackLabelProps) { ... }
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                     Cell                                       */
+/*                                                                                */
+/**********************************************************************************/
+
+function Cell(props: CellProps) { ... }
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                     Grid                                       */
+/*                                                                                */
+/**********************************************************************************/
+
+export function Grid(props: GridProps) { ... }
+```
+
+Only export the main component; keep helpers private to the file.
+
 ## Decision Graph
 
 Deciduous tracks goals, decisions, actions, outcomes, and observations in a persistent graph that survives context loss.
