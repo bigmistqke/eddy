@@ -3365,6 +3365,17 @@
       "created_at": "2026-01-20T01:44:53.273838+01:00",
       "updated_at": "2026-01-20T01:44:53.273838+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"93cc521\",\"confidence\":95}"
+    },
+    {
+      "id": 307,
+      "change_id": "1bef9aaa-1fc7-44e4-b8c7-31a5d048a2aa",
+      "node_type": "outcome",
+      "title": "Committed: refactor - revert library packages to src entries, remove tsup build",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T03:30:48.745527+01:00",
+      "updated_at": "2026-01-20T03:30:48.745527+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"1e1352b\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -6260,6 +6271,17 @@
       "weight": 1.0,
       "rationale": "Committed",
       "created_at": "2026-01-20T01:44:58.845818+01:00"
+    },
+    {
+      "id": 264,
+      "from_node_id": 275,
+      "to_node_id": 307,
+      "from_change_id": "c304c07b-9998-4aab-b197-e9dc2cb51805",
+      "to_change_id": "1bef9aaa-1fc7-44e4-b8c7-31a5d048a2aa",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Reverted - simpler workflow without build step",
+      "created_at": "2026-01-20T03:30:57.278087+01:00"
     }
   ]
 }

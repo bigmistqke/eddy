@@ -1,11 +1,27 @@
 [
   {
-    "hash": "93cc521a1ebb416eb8704e3ed14e49a06075efe8",
-    "short_hash": "93cc521",
+    "hash": "1c3d3bacecb310fb39bf2b69589e4ae4d4b42c1d",
+    "short_hash": "1c3d3ba",
     "author": "bigmistqke",
-    "date": "2026-01-20T01:44:48+01:00",
-    "message": "refactor: extract makeVideoRenderer and makeVideoCompositor from compositor worker\n\n- makeVideoRenderer: WebGL layer (textures, shaders, rendering)\n- makeVideoCompositor: orchestration (frames, timeline, effects)\n- compositor.worker.ts reduced to thin RPC wrapper",
-    "files_changed": 6
+    "date": "2026-01-20T20:17:04+01:00",
+    "message": "fix: await audio scheduler init call",
+    "files_changed": 2
+  },
+  {
+    "hash": "f4aa29df4fb95595f24398baf9495bbb7f0efb49",
+    "short_hash": "f4aa29d",
+    "author": "bigmistqke",
+    "date": "2026-01-20T20:17:00+01:00",
+    "message": "refactor: clean up playback worker code style",
+    "files_changed": 3
+  },
+  {
+    "hash": "1e1352b8b4abd6bad459ee9f0d1257290fc71c08",
+    "short_hash": "1e1352b",
+    "author": "bigmistqke",
+    "date": "2026-01-20T03:30:42+01:00",
+    "message": "refactor: revert library packages to src entries, remove tsup build\n\nAll packages except lexicons now use ./src/index.ts directly.\nNo build step required - Vite handles transpilation at dev/build time.",
+    "files_changed": 18
   },
   {
     "hash": "93cc521a1ebb416eb8704e3ed14e49a06075efe8",
@@ -14,14 +30,6 @@
     "date": "2026-01-20T01:44:48+01:00",
     "message": "refactor: extract makeVideoRenderer and makeVideoCompositor from compositor worker\n\n- makeVideoRenderer: WebGL layer (textures, shaders, rendering)\n- makeVideoCompositor: orchestration (frames, timeline, effects)\n- compositor.worker.ts reduced to thin RPC wrapper",
     "files_changed": 6
-  },
-  {
-    "hash": "c6a0cf567caf7ba2170668d6a0cdc68ad40c3849",
-    "short_hash": "c6a0cf5",
-    "author": "bigmistqke",
-    "date": "2026-01-20T00:36:43+01:00",
-    "message": "feat: extract @eddy/solid package with shared SolidJS primitives\n\n- Create @eddy/solid package with action, resource, deep-resource, create-resource-map, create-clock\n- action: async actions with abort/cleanup, phased actions\n- resource: enhanced createResource with proper cleanup\n- deep-resource: resource + store reconciliation\n- create-resource-map: reactive map of resources\n- create-clock: clock for time management\n- Update packages/app to import from @eddy/solid",
-    "files_changed": 22
   },
   {
     "hash": "c6a0cf567caf7ba2170668d6a0cdc68ad40c3849",
