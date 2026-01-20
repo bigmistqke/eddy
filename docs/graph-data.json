@@ -3431,6 +3431,127 @@
       "created_at": "2026-01-20T22:46:12.025010+01:00",
       "updated_at": "2026-01-20T22:46:12.025010+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"Architecture insight: jam.eddy.dj has two independent layers.\\n\\n1. CLIP LAYER - what plays when\\n   - Tracks with clips that span columns (grid-snapped)\\n   - Clips play continuously, independent of layout changes\\n   - Sequencer View edits this layer\\n\\n2. LAYOUT LAYER - how it looks\\n   - Columns as \\\"layout keyframes\\\" defining spatial arrangement\\n   - Each column: layout type (full/pip/2x2) + slot assignments\\n   - Layout View edits this layer\\n\\nAt render time:\\n- Find current column at time T\\n- Get active tracks for that column\\n- Render according to column's layout\\n- Clips transition smoothly through layouts\\n\\nThe interweaving: clips flow through changing layouts as time progresses.\"}"
+    },
+    {
+      "id": 313,
+      "change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "node_type": "goal",
+      "title": "Implement jam.eddy.dj grid-based video sequencer",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T23:17:24.733432+01:00",
+      "updated_at": "2026-01-20T23:17:24.733432+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 314,
+      "change_id": "448b11a6-d01d-40b7-acda-028f456064d4",
+      "node_type": "action",
+      "title": "Create packages/jam with Vite + SolidJS setup",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T23:17:40.829527+01:00",
+      "updated_at": "2026-01-20T23:17:40.829527+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 315,
+      "change_id": "879722fb-5543-46cc-8e7e-d5f99bafde54",
+      "node_type": "action",
+      "title": "Add JamColumn metadata to lexicons",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T23:19:05.375407+01:00",
+      "updated_at": "2026-01-20T23:19:05.375407+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 316,
+      "change_id": "93b5b602-0f51-42bd-b109-820a1e7bd23c",
+      "node_type": "action",
+      "title": "Create compile-jam-timeline.ts",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T23:24:54.410050+01:00",
+      "updated_at": "2026-01-20T23:24:54.410050+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 317,
+      "change_id": "dc839ce1-8fad-4e00-9620-561284c8679b",
+      "node_type": "action",
+      "title": "Create create-jam.ts state management",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T23:26:06.204459+01:00",
+      "updated_at": "2026-01-20T23:26:06.204459+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 318,
+      "change_id": "ceaaeb7f-a7d4-4a74-bea4-662901aff7d6",
+      "node_type": "action",
+      "title": "Build Grid sequencer component",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T23:41:24.573966+01:00",
+      "updated_at": "2026-01-20T23:41:24.573966+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 319,
+      "change_id": "c25930d4-0c6f-4444-9f76-b533ee2d17b0",
+      "node_type": "action",
+      "title": "Build Layout editor component",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T23:42:43.556149+01:00",
+      "updated_at": "2026-01-20T23:42:43.556149+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 320,
+      "change_id": "deb5a1bb-a632-4518-b2a1-7146b6ece90f",
+      "node_type": "outcome",
+      "title": "Jam UI foundation complete - sequencer grid, layout editor, transport controls working",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-20T23:50:08.083440+01:00",
+      "updated_at": "2026-01-20T23:50:08.083440+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 321,
+      "change_id": "575b3759-993c-42af-9a15-328171dfe18f",
+      "node_type": "observation",
+      "title": "SolidJS: Use component control flow (Show/For/Switch) instead of ternaries and &&. Use Show callback form for type narrowing instead of ! assertions",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T00:01:59.179713+01:00",
+      "updated_at": "2026-01-21T00:01:59.179713+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 322,
+      "change_id": "e4f50826-237e-4fea-9250-c06ce56a69d8",
+      "node_type": "observation",
+      "title": "TODO: Audit codebase for SolidJS control flow violations - replace ternaries and && patterns with Show/For/Switch components, fix ! assertions with callback form",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T00:03:08.792157+01:00",
+      "updated_at": "2026-01-21T00:03:08.792157+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 323,
+      "change_id": "77e58e16-f0e4-4415-a7b5-158c95f472e5",
+      "node_type": "outcome",
+      "title": "Committed: feat: add jam package with grid-based video sequencer",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T00:05:13.446483+01:00",
+      "updated_at": "2026-01-21T00:05:13.446483+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"3270f80\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -6392,6 +6513,116 @@
       "weight": 1.0,
       "rationale": "Architecture summary",
       "created_at": "2026-01-20T22:46:18.456258+01:00"
+    },
+    {
+      "id": 270,
+      "from_node_id": 313,
+      "to_node_id": 314,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "448b11a6-d01d-40b7-acda-028f456064d4",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Phase 1 implementation",
+      "created_at": "2026-01-20T23:17:40.864728+01:00"
+    },
+    {
+      "id": 271,
+      "from_node_id": 313,
+      "to_node_id": 315,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "879722fb-5543-46cc-8e7e-d5f99bafde54",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Phase 1 - lexicon extension",
+      "created_at": "2026-01-20T23:19:05.513967+01:00"
+    },
+    {
+      "id": 272,
+      "from_node_id": 313,
+      "to_node_id": 316,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "93b5b602-0f51-42bd-b109-820a1e7bd23c",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Phase 1 - timeline compilation",
+      "created_at": "2026-01-20T23:24:54.443+01:00"
+    },
+    {
+      "id": 273,
+      "from_node_id": 313,
+      "to_node_id": 317,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "dc839ce1-8fad-4e00-9620-561284c8679b",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Phase 2 - state management",
+      "created_at": "2026-01-20T23:26:06.297648+01:00"
+    },
+    {
+      "id": 274,
+      "from_node_id": 313,
+      "to_node_id": 318,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "ceaaeb7f-a7d4-4a74-bea4-662901aff7d6",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Phase 3 - sequencer UI",
+      "created_at": "2026-01-20T23:41:24.622208+01:00"
+    },
+    {
+      "id": 275,
+      "from_node_id": 313,
+      "to_node_id": 319,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "c25930d4-0c6f-4444-9f76-b533ee2d17b0",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Phase 4 - layout editor",
+      "created_at": "2026-01-20T23:42:43.635581+01:00"
+    },
+    {
+      "id": 276,
+      "from_node_id": 313,
+      "to_node_id": 320,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "deb5a1bb-a632-4518-b2a1-7146b6ece90f",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Phase 1-4 complete",
+      "created_at": "2026-01-20T23:50:08.116416+01:00"
+    },
+    {
+      "id": 277,
+      "from_node_id": 313,
+      "to_node_id": 321,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "575b3759-993c-42af-9a15-328171dfe18f",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Coding pattern discovered during jam implementation",
+      "created_at": "2026-01-21T00:02:07.312739+01:00"
+    },
+    {
+      "id": 278,
+      "from_node_id": 321,
+      "to_node_id": 322,
+      "from_change_id": "575b3759-993c-42af-9a15-328171dfe18f",
+      "to_change_id": "e4f50826-237e-4fea-9250-c06ce56a69d8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Follow-up action needed",
+      "created_at": "2026-01-21T00:03:12.567722+01:00"
+    },
+    {
+      "id": 279,
+      "from_node_id": 313,
+      "to_node_id": 323,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "77e58e16-f0e4-4415-a7b5-158c95f472e5",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation committed",
+      "created_at": "2026-01-21T00:05:17.847821+01:00"
     }
   ]
 }

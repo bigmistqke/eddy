@@ -1,19 +1,27 @@
 [
   {
-    "hash": "2158e6131908dc1199643a96b584aee08a962035",
-    "short_hash": "2158e61",
+    "hash": "2fe37790238df971152113f7f70bf6eb7885f010",
+    "short_hash": "2fe3779",
     "author": "bigmistqke",
-    "date": "2026-01-20T20:17:07+01:00",
-    "message": "chore: link local @bigmistqke/rpc package",
-    "files_changed": 2
+    "date": "2026-01-21T00:05:04+01:00",
+    "message": "docs: add SolidJS control flow coding preferences",
+    "files_changed": 1
   },
   {
-    "hash": "1c3d3bacecb310fb39bf2b69589e4ae4d4b42c1d",
-    "short_hash": "1c3d3ba",
+    "hash": "3270f800bf122c1ffb725e3c8054dd22dd7f693d",
+    "short_hash": "3270f80",
     "author": "bigmistqke",
-    "date": "2026-01-20T20:17:04+01:00",
-    "message": "fix: await audio scheduler init call",
-    "files_changed": 2
+    "date": "2026-01-21T00:05:00+01:00",
+    "message": "feat: add jam package with grid-based video sequencer\n\nGrid-based UI for sequencing video clips through changing layouts.\nIncludes sequencer grid, layout editor, and clip span visualization.",
+    "files_changed": 32
+  },
+  {
+    "hash": "3270f800bf122c1ffb725e3c8054dd22dd7f693d",
+    "short_hash": "3270f80",
+    "author": "bigmistqke",
+    "date": "2026-01-21T00:05:00+01:00",
+    "message": "feat: add jam package with grid-based video sequencer\n\nGrid-based UI for sequencing video clips through changing layouts.\nIncludes sequencer grid, layout editor, and clip span visualization.",
+    "files_changed": 32
   },
   {
     "hash": "1e1352b8b4abd6bad459ee9f0d1257290fc71c08",
