@@ -8,6 +8,7 @@ import type * as v from 'valibot'
 import audioEffectLexicon from './app.eddy.audioEffect'
 import clipLexicon from './app.eddy.clip'
 import groupLexicon from './app.eddy.group'
+import jamLexicon from './app.eddy.jam'
 import pipelineLexicon from './app.eddy.pipeline'
 import projectLexicon from './app.eddy.project'
 import stemLexicon from './app.eddy.stem'
@@ -21,6 +22,7 @@ const lookup = createLookup(
   clipLexicon,
   curveLexicon,
   groupLexicon,
+  jamLexicon,
   pipelineLexicon,
   projectLexicon,
   stemLexicon,
@@ -43,6 +45,7 @@ export const curveValidators = lexiconToValibot(curveLexicon, { lookup, format: 
 export const trackValidators = lexiconToValibot(trackLexicon, { lookup, format: 'sdk' })
 export const clipValidators = lexiconToValibot(clipLexicon, { lookup, format: 'sdk' })
 export const groupValidators = lexiconToValibot(groupLexicon, { lookup, format: 'sdk' })
+export const jamValidators = lexiconToValibot(jamLexicon, { lookup, format: 'sdk' })
 export const pipelineValidators = lexiconToValibot(pipelineLexicon, { lookup, format: 'sdk' })
 
 // Wire format validators for validating outgoing data to PDS
@@ -58,6 +61,7 @@ export const visualEffectWireValidators = lexiconToValibot(visualEffectLexicon, 
 })
 export const valuesWireValidators = lexiconToValibot(staticValueLexicon, { lookup, format: 'wire' })
 export const curveWireValidators = lexiconToValibot(curveLexicon, { lookup, format: 'wire' })
+export const jamWireValidators = lexiconToValibot(jamLexicon, { lookup, format: 'wire' })
 export const pipelineWireValidators = lexiconToValibot(pipelineLexicon, { lookup, format: 'wire' })
 
 // Types inferred from validators (satisfies preserves literal types without readonly)
@@ -125,3 +129,9 @@ export type CurveKeyframe = v.InferOutput<typeof curveValidators.keyframe>
 export type CurveEnvelope = v.InferOutput<typeof curveValidators.envelope>
 export type CurveLfo = v.InferOutput<typeof curveValidators.lfo>
 export type Curve = CurveKeyframe | CurveEnvelope | CurveLfo
+
+// Jam types
+export type JamMetadata = v.InferOutput<typeof jamValidators.metadata>
+export type JamColumn = v.InferOutput<typeof jamValidators.column>
+export type JamColumnDuration = v.InferOutput<typeof jamValidators.columnDuration>
+export type JamLayoutType = v.InferOutput<typeof jamValidators.layoutType>

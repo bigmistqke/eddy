@@ -1,0 +1,21 @@
+.container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 8px;
+}
+
+.button {
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  background: #1a1a1a;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.button.selected {
+  background: #2d5a87;
+  border-color: #4a9eff;
+}

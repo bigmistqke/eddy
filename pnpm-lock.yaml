@@ -154,6 +154,55 @@ importers:
         specifier: ^6.4.1
         version: 6.4.1(@types/node@25.0.9)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)
 
+  packages/jam:
+    dependencies:
+      '@bigmistqke/rpc':
+        specifier: link:../../../rpc/packages/rpc
+        version: link:../../../rpc/packages/rpc
+      '@eddy/audio':
+        specifier: workspace:*
+        version: link:../audio
+      '@eddy/lexicons':
+        specifier: workspace:*
+        version: link:../lexicons
+      '@eddy/media':
+        specifier: workspace:*
+        version: link:../media
+      '@eddy/solid':
+        specifier: workspace:*
+        version: link:../solid
+      '@eddy/timeline':
+        specifier: workspace:*
+        version: link:../timeline
+      '@eddy/utils':
+        specifier: workspace:*
+        version: link:../utils
+      '@eddy/video':
+        specifier: workspace:*
+        version: link:../video
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      solid-js:
+        specifier: ^1.9.0
+        version: 1.9.10
+    devDependencies:
+      '@types/audioworklet':
+        specifier: ^0.0.92
+        version: 0.0.92
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.7
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vite:
+        specifier: ^6.0.0
+        version: 6.4.1(@types/node@22.19.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)
+      vite-plugin-solid:
+        specifier: ^2.11.0
+        version: 2.11.10(solid-js@1.9.10)(vite@6.4.1(@types/node@22.19.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2))
+
   packages/lexicons:
     dependencies:
       '@atproto/lexicon':
@@ -3025,7 +3074,7 @@ snapshots:
 
   '@types/yauzl@2.10.3':
     dependencies:
-      '@types/node': 25.0.9
+      '@types/node': 22.19.7
     optional: true
 
   '@vitest/expect@2.1.9':

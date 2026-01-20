@@ -1,0 +1,101 @@
+.app {
+  display: grid;
+  height: 100%;
+}
+
+.app[data-orientation="portrait"] {
+  grid-template-rows: 1fr auto auto;
+}
+
+.app[data-orientation="landscape"] {
+  grid-template-columns: 1fr 280px;
+  grid-template-rows: 1fr auto;
+}
+
+.preview {
+  display: grid;
+  place-items: center;
+  background: #111;
+  min-height: 200px;
+}
+
+.preview canvas {
+  max-width: 100%;
+  max-height: 100%;
+  background: #000;
+}
+
+.sidebar {
+  background: #0a0a0a;
+  border-left: 1px solid #222;
+  overflow-y: auto;
+}
+
+.app[data-orientation="portrait"] .sidebar {
+  border-left: none;
+  border-top: 1px solid #222;
+}
+
+.sequencer {
+  background: #0a0a0a;
+  border-top: 1px solid #222;
+  overflow-x: auto;
+}
+
+.app[data-orientation="landscape"] .sequencer {
+  grid-column: 1 / 3;
+}
+
+.transport {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  background: #111;
+  border-top: 1px solid #222;
+}
+
+.transportButton {
+  padding: 8px 16px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #ccc;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.transportButton:hover {
+  background: #252525;
+}
+
+.transportButton.active {
+  background: #2d5a87;
+  border-color: #4a9eff;
+  color: #fff;
+}
+
+.time {
+  display: grid;
+  place-items: center;
+  padding: 0 16px;
+  font-family: monospace;
+  font-size: 14px;
+  color: #888;
+}
+
+.bpmInput {
+  width: 60px;
+  padding: 8px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #ccc;
+  font-size: 14px;
+  text-align: center;
+}
+
+.bpmLabel {
+  font-size: 12px;
+  color: #666;
+  margin-left: 4px;
+}

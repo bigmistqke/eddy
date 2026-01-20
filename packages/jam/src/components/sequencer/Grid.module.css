@@ -1,0 +1,8 @@
+.grid {
+  display: grid;
+  gap: 2px;
+  padding: 8px;
+  background: #0a0a0a;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
