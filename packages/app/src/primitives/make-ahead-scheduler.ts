@@ -120,7 +120,7 @@ export function makeAheadScheduler(config: AheadSchedulerConfig): AheadScheduler
       // Get audio destination
       const audioDestination = getAudioDestination(trackId)
 
-      // Acquire workers from pools
+      // Acquire workers from pools (sync)
       const videoWorker = videoWorkerPool.acquire()
       const audioWorker = audioWorkerPool.acquire()
 
@@ -132,7 +132,7 @@ export function makeAheadScheduler(config: AheadSchedulerConfig): AheadScheduler
         audioDestination,
       })
 
-      // Store entry immediately (to prevent duplicate scheduling)
+      // Store entry immediately with playback
       const entry: ScheduledEntry = {
         playback,
         mediaTime,
@@ -141,28 +141,29 @@ export function makeAheadScheduler(config: AheadSchedulerConfig): AheadScheduler
       }
       scheduled.set(clipId, entry)
 
-      // Load and seek async
-      playback
-        .load(clipId)
-        .then(() => playback.seek(mediaTime))
-        .then(() => {
-          // Check entry still exists (might have been canceled)
-          const current = scheduled.get(clipId)
-          if (current === entry) {
+      // Load and seek async (entry already stored to prevent duplicate scheduling)
+      ;(async () => {
+        try {
+          await playback.load(clipId)
+          await playback.seek(mediaTime)
+
+          // Check entry still exists (might have been canceled during load)
+          const afterLoad = scheduled.get(clipId)
+          if (afterLoad === entry) {
             entry.ready = true
             entry.loading = false
             log('schedule: ready', { clipId, mediaTime })
           }
-        })
-        .catch(error => {
+        } catch (error) {
           log('schedule: failed', { clipId, mediaTime, error })
           // Clean up on failure
           const current = scheduled.get(clipId)
           if (current === entry) {
             cleanupEntry(entry)
-            scheduled.delete(clipId)
           }
-        })
+          scheduled.delete(clipId)
+        }
+      })()
     },
 
     hasScheduled(clipId) {

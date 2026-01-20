@@ -1,3 +1,11 @@
+/**
+ * Video Playback Worker
+ *
+ * Thin RPC wrapper around makeVideoPlayback. Handles worker-specific concerns:
+ * - RPC exposure via @bigmistqke/rpc/messenger
+ * - Worker-to-worker MessagePort connections for frame transfer to compositor
+ */
+
 import { expose, rpc, transfer, type RPC } from '@bigmistqke/rpc/messenger'
 import type { VideoTrackInfo } from '@eddy/media'
 import { debug } from '@eddy/utils'
@@ -10,6 +18,10 @@ import {
 } from '~/primitives/make-scheduler'
 
 const log = debug('playback.video.worker', false)
+
+// Unique worker ID for debugging
+const workerId = Math.random().toString(36).substring(2, 8)
+log('Worker created with ID:', workerId)
 
 /** Methods exposed by compositor worker (subset we need) */
 interface CompositorFrameMethods {
@@ -60,9 +72,12 @@ export interface VideoPlaybackWorkerMethods {
 /*                                                                                */
 /**********************************************************************************/
 
-// Unique worker ID for debugging
-const workerId = Math.random().toString(36).substring(2, 8)
-log('Worker created with ID:', workerId)
+// Compositor connection
+let compositor: RPC<CompositorFrameMethods> | null = null
+let clipId = ''
+
+// Scheduler for cross-worker coordination
+let scheduler: PlaybackScheduler | null = null
 
 const playback = makeVideoPlayback({
   onFrame(frame) {
@@ -82,16 +97,9 @@ const playback = makeVideoPlayback({
   },
 })
 
-// Compositor connection
-let compositor: RPC<CompositorFrameMethods> | null = null
-let clipId = ''
-
-// Scheduler for cross-worker coordination
-let scheduler: PlaybackScheduler | null = null
-
 /**********************************************************************************/
 /*                                                                                */
-/*                                     Methods                                    */
+/*                                    Expose                                      */
 /*                                                                                */
 /**********************************************************************************/
 
@@ -106,15 +114,12 @@ expose<VideoPlaybackWorkerMethods>({
 
   setSchedulerBuffer(buffer) {
     log('setSchedulerBuffer')
-
     scheduler = makeScheduler(buffer).playback
   },
 
-  async load(clipId) {
-    log('load', { clipId })
-
-    // Create OPFS source and load
-    const source = await makeOPFSSource(clipId)
+  async load(id) {
+    log('load', { clipId: id })
+    const source = await makeOPFSSource(id)
     return playback.load(source)
   },
 

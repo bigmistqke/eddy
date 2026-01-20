@@ -1,3 +1,11 @@
+/**
+ * Audio Playback Worker
+ *
+ * Thin RPC wrapper around makeAudioPlayback. Handles worker-specific concerns:
+ * - RPC exposure via @bigmistqke/rpc/messenger
+ * - Ring buffer writing for audio sample transfer to AudioWorklet
+ */
+
 import { expose, transfer } from '@bigmistqke/rpc/messenger'
 import {
   makeAudioPlayback,
@@ -13,6 +21,12 @@ const log = debug('playback.audio.worker', false)
 
 /** Buffer ahead by this many seconds */
 const BUFFER_AHEAD_SECONDS = 0.5
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                     Types                                      */
+/*                                                                                */
+/**********************************************************************************/
 
 export interface AudioPlaybackWorkerMethods {
   /** Set ring buffer for writing decoded audio samples */
@@ -55,6 +69,85 @@ export interface AudioPlaybackWorkerMethods {
 
 /**********************************************************************************/
 /*                                                                                */
+/*                                     Utils                                      */
+/*                                                                                */
+/**********************************************************************************/
+
+/** Simple linear interpolation resampling */
+function resample(input: Float32Array, inputRate: number, outputRate: number): Float32Array {
+  if (inputRate === outputRate) return input
+
+  const ratio = inputRate / outputRate
+  const outputLength = Math.floor(input.length / ratio)
+  const output = new Float32Array(outputLength)
+
+  for (let i = 0; i < outputLength; i++) {
+    const srcIndex = i * ratio
+    const srcIndexFloor = Math.floor(srcIndex)
+    const srcIndexCeil = Math.min(srcIndexFloor + 1, input.length - 1)
+    const t = srcIndex - srcIndexFloor
+    output[i] = input[srcIndexFloor]! * (1 - t) + input[srcIndexCeil]! * t
+  }
+
+  return output
+}
+
+/** Extract samples from AudioData to Float32Array per channel */
+function extractAudioSamples(audioData: AudioData): Float32Array[] {
+  const numberOfChannels = audioData.numberOfChannels
+  const numberOfFrames = audioData.numberOfFrames
+  const format = audioData.format
+
+  const channels: Float32Array[] = []
+
+  if (format === 'f32-planar') {
+    for (let ch = 0; ch < numberOfChannels; ch++) {
+      const channelData = new Float32Array(numberOfFrames)
+      audioData.copyTo(channelData, { planeIndex: ch })
+      channels.push(channelData)
+    }
+  } else if (format === 'f32') {
+    const byteSize = audioData.allocationSize({ planeIndex: 0 })
+    const tempBuffer = new ArrayBuffer(byteSize)
+    audioData.copyTo(tempBuffer, { planeIndex: 0 })
+    const interleaved = new Float32Array(tempBuffer)
+    for (let ch = 0; ch < numberOfChannels; ch++) {
+      const channelData = new Float32Array(numberOfFrames)
+      for (let i = 0; i < numberOfFrames; i++) {
+        channelData[i] = interleaved[i * numberOfChannels + ch]!
+      }
+      channels.push(channelData)
+    }
+  } else if (format === 's16') {
+    const byteSize = audioData.allocationSize({ planeIndex: 0 })
+    const tempBuffer = new ArrayBuffer(byteSize)
+    audioData.copyTo(tempBuffer, { planeIndex: 0 })
+    const interleaved = new Int16Array(tempBuffer)
+    for (let ch = 0; ch < numberOfChannels; ch++) {
+      const channelData = new Float32Array(numberOfFrames)
+      for (let i = 0; i < numberOfFrames; i++) {
+        channelData[i] = interleaved[i * numberOfChannels + ch]! / 32768
+      }
+      channels.push(channelData)
+    }
+  } else {
+    // Fallback
+    for (let ch = 0; ch < numberOfChannels; ch++) {
+      const channelData = new Float32Array(numberOfFrames)
+      try {
+        audioData.copyTo(channelData, { planeIndex: ch, format: 'f32-planar' })
+      } catch {
+        channelData.fill(0)
+      }
+      channels.push(channelData)
+    }
+  }
+
+  return channels
+}
+
+/**********************************************************************************/
+/*                                                                                */
 /*                                     State                                      */
 /*                                                                                */
 /**********************************************************************************/
@@ -88,104 +181,6 @@ function getCurrentMediaTime(): number {
   return playbackStartMediaTime + elapsed
 }
 
-/** Simple linear interpolation resampling */
-function resample(input: Float32Array, inputRate: number, outputRate: number): Float32Array {
-  if (inputRate === outputRate) return input
-
-  const ratio = inputRate / outputRate
-  const outputLength = Math.floor(input.length / ratio)
-  const output = new Float32Array(outputLength)
-
-  for (let i = 0; i < outputLength; i++) {
-    const srcIndex = i * ratio
-    const srcIndexFloor = Math.floor(srcIndex)
-    const srcIndexCeil = Math.min(srcIndexFloor + 1, input.length - 1)
-    const t = srcIndex - srcIndexFloor
-    output[i] = input[srcIndexFloor] * (1 - t) + input[srcIndexCeil] * t
-  }
-
-  return output
-}
-
-/** Extract samples from AudioData to Float32Array per channel */
-function extractAudioSamples(audioData: AudioData): Float32Array[] {
-  const numberOfChannels = audioData.numberOfChannels
-  const numberOfFrames = audioData.numberOfFrames
-  const format = audioData.format
-
-  const channels: Float32Array[] = []
-
-  if (format === 'f32-planar') {
-    for (let ch = 0; ch < numberOfChannels; ch++) {
-      const channelData = new Float32Array(numberOfFrames)
-      audioData.copyTo(channelData, { planeIndex: ch })
-      channels.push(channelData)
-    }
-  } else if (format === 'f32') {
-    const byteSize = audioData.allocationSize({ planeIndex: 0 })
-    const tempBuffer = new ArrayBuffer(byteSize)
-    audioData.copyTo(tempBuffer, { planeIndex: 0 })
-    const interleaved = new Float32Array(tempBuffer)
-    for (let ch = 0; ch < numberOfChannels; ch++) {
-      const channelData = new Float32Array(numberOfFrames)
-      for (let i = 0; i < numberOfFrames; i++) {
-        channelData[i] = interleaved[i * numberOfChannels + ch]
-      }
-      channels.push(channelData)
-    }
-  } else if (format === 's16') {
-    const byteSize = audioData.allocationSize({ planeIndex: 0 })
-    const tempBuffer = new ArrayBuffer(byteSize)
-    audioData.copyTo(tempBuffer, { planeIndex: 0 })
-    const interleaved = new Int16Array(tempBuffer)
-    for (let ch = 0; ch < numberOfChannels; ch++) {
-      const channelData = new Float32Array(numberOfFrames)
-      for (let i = 0; i < numberOfFrames; i++) {
-        channelData[i] = interleaved[i * numberOfChannels + ch] / 32768
-      }
-      channels.push(channelData)
-    }
-  } else {
-    // Fallback
-    for (let ch = 0; ch < numberOfChannels; ch++) {
-      const channelData = new Float32Array(numberOfFrames)
-      try {
-        audioData.copyTo(channelData, { planeIndex: ch, format: 'f32-planar' })
-      } catch {
-        channelData.fill(0)
-      }
-      channels.push(channelData)
-    }
-  }
-
-  return channels
-}
-
-/** Schedule decoded audio for playback */
-function scheduleAudio(audioData: AudioData): void {
-  // Extract samples
-  const channels = extractAudioSamples(audioData)
-  const sampleRate = audioData.sampleRate
-  const mediaTime = audioData.timestamp / 1_000_000 // Convert from microseconds to seconds
-
-  // Add to pending queue (keep sorted by media time)
-  const sample: PendingSample = { mediaTime, channels, sampleRate }
-  let inserted = false
-  for (let i = 0; i < pendingSamples.length; i++) {
-    if (mediaTime < pendingSamples[i].mediaTime) {
-      pendingSamples.splice(i, 0, sample)
-      inserted = true
-      break
-    }
-  }
-  if (!inserted) {
-    pendingSamples.push(sample)
-  }
-
-  // Immediately try to flush
-  flushPendingSamples()
-}
-
 /** Flush pending samples to ring buffer up to current time + buffer ahead */
 function flushPendingSamples(): void {
   if (!ringBufferWriter || !targetSampleRate) return
@@ -195,8 +190,8 @@ function flushPendingSamples(): void {
   const targetTime = currentMedia + BUFFER_AHEAD_SECONDS
 
   while (pendingSamples.length > 0) {
-    const sample = pendingSamples[0]
-    const sampleDuration = sample.channels[0].length / sample.sampleRate
+    const sample = pendingSamples[0]!
+    const sampleDuration = sample.channels[0]!.length / sample.sampleRate
 
     // Skip samples in the past
     if (sample.mediaTime + sampleDuration < currentMedia) {
@@ -211,13 +206,11 @@ function flushPendingSamples(): void {
     // Resample if needed
     let channelsToWrite = sample.channels
     if (sample.sampleRate !== targetSampleRate) {
-      channelsToWrite = sample.channels.map(ch =>
-        resample(ch, sample.sampleRate, targetSampleRate!),
-      )
+      channelsToWrite = sample.channels.map(ch => resample(ch, sample.sampleRate, targetSampleRate!))
     }
 
     // Try to write to ring buffer
-    const frameCount = channelsToWrite[0].length
+    const frameCount = channelsToWrite[0]!.length
     const written = ringBufferWriter.write(channelsToWrite, frameCount)
 
     if (written === frameCount) {
@@ -228,7 +221,7 @@ function flushPendingSamples(): void {
       const ratio = sample.sampleRate / targetSampleRate
       const originalWritten = Math.floor(written * ratio)
       for (let ch = 0; ch < sample.channels.length; ch++) {
-        sample.channels[ch] = sample.channels[ch].slice(originalWritten)
+        sample.channels[ch] = sample.channels[ch]!.slice(originalWritten)
       }
       sample.mediaTime += originalWritten / sample.sampleRate
       break // Buffer is full
@@ -247,11 +240,30 @@ const schedulingLoop = makeLoop(() => {
   flushPendingSamples()
 })
 
-/**********************************************************************************/
-/*                                                                                */
-/*                                    Playback                                    */
-/*                                                                                */
-/**********************************************************************************/
+/** Schedule decoded audio for playback */
+function scheduleAudio(audioData: AudioData): void {
+  // Extract samples
+  const channels = extractAudioSamples(audioData)
+  const sampleRate = audioData.sampleRate
+  const mediaTime = audioData.timestamp / 1_000_000 // Convert from microseconds to seconds
+
+  // Add to pending queue (keep sorted by media time)
+  const sample: PendingSample = { mediaTime, channels, sampleRate }
+  let inserted = false
+  for (let i = 0; i < pendingSamples.length; i++) {
+    if (mediaTime < pendingSamples[i]!.mediaTime) {
+      pendingSamples.splice(i, 0, sample)
+      inserted = true
+      break
+    }
+  }
+  if (!inserted) {
+    pendingSamples.push(sample)
+  }
+
+  // Immediately try to flush
+  flushPendingSamples()
+}
 
 const playback = makeAudioPlayback({
   onAudio(audioData) {
@@ -270,7 +282,7 @@ const playback = makeAudioPlayback({
 
 /**********************************************************************************/
 /*                                                                                */
-/*                                     Methods                                    */
+/*                                    Expose                                      */
 /*                                                                                */
 /**********************************************************************************/
 
@@ -288,8 +300,6 @@ expose<AudioPlaybackWorkerMethods>({
 
   async load(clipId) {
     log('load', { clipId })
-
-    // Create OPFS source and load
     const source = await makeOPFSSource(clipId)
     return playback.load(source)
   },
