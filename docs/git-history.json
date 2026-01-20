@@ -1,5 +1,21 @@
 [
   {
+    "hash": "c6a0cf567caf7ba2170668d6a0cdc68ad40c3849",
+    "short_hash": "c6a0cf5",
+    "author": "bigmistqke",
+    "date": "2026-01-20T00:36:43+01:00",
+    "message": "feat: extract @eddy/solid package with shared SolidJS primitives\n\n- Create @eddy/solid package with action, resource, deep-resource, create-resource-map, create-clock\n- action: async actions with abort/cleanup, phased actions\n- resource: enhanced createResource with proper cleanup\n- deep-resource: resource + store reconciliation\n- create-resource-map: reactive map of resources\n- create-clock: clock for time management\n- Update packages/app to import from @eddy/solid",
+    "files_changed": 22
+  },
+  {
+    "hash": "a43db500dd1f6269127d739bff03f82e4325337a",
+    "short_hash": "a43db50",
+    "author": "bigmistqke",
+    "date": "2026-01-19T23:57:12+01:00",
+    "message": "feat: extract @eddy/timeline package with nested group support\n\n- Create @eddy/timeline package with compileLayoutTimeline, findSegmentAtTime, getActivePlacements\n- Add recursive compilation for nested groups (clips can reference groups for layout transitions)\n- Add TimeWindow constraint to clip inner content to parent clip duration\n- Update packages/app to import from @eddy/timeline\n- Remove old compile-layout-timeline.ts from packages/app\n- 18 tests passing including layout transition test case",
+    "files_changed": 16
+  },
+  {
     "hash": "a43db500dd1f6269127d739bff03f82e4325337a",
     "short_hash": "a43db50",
     "author": "bigmistqke",
@@ -14,14 +30,6 @@
     "date": "2026-01-19T18:15:26+01:00",
     "message": "chore: sync deciduous graph",
     "files_changed": 2
-  },
-  {
-    "hash": "80bd3a50091235e621e4a3417ff1e663019abfaa",
-    "short_hash": "80bd3a5",
-    "author": "bigmistqke",
-    "date": "2026-01-19T18:14:59+01:00",
-    "message": "refactor: convert library packages from vite to tsup\n\nFaster builds with esbuild. Audio worklet uses noExternal to bundle deps.",
-    "files_changed": 21
   },
   {
     "hash": "80bd3a50091235e621e4a3417ff1e663019abfaa",
