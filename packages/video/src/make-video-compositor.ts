@@ -1,12 +1,23 @@
 /**
  * Make Video Compositor
  *
- * WebGL-based video frame compositing. Renders VideoFrames to an OffscreenCanvas
- * with viewport positioning. Effect chains are managed externally via EffectManager.
+ * High-level video composition orchestration. Manages frames, preview streams,
+ * effect chain compilation, and timeline-based rendering. Uses VideoRenderer
+ * for the actual WebGL rendering.
  */
 
-import { assertedNotNullish, debug } from '@eddy/utils'
-import type { CompiledEffectChain } from './effect-manager'
+import { debug } from '@eddy/utils'
+import type {
+  CompiledEffectChain,
+  EffectKey,
+  EffectManager,
+  EffectRegistry,
+} from './effect-manager'
+import { makeEffectManager } from './effect-manager'
+import type { EffectValue } from './effects'
+import { makeVideoRenderer, type VideoRenderer } from './make-video-renderer'
+import type { CompiledTimeline, EffectParamRef, EffectRef, Placement } from '@eddy/timeline'
+import { getActivePlacements } from '@eddy/timeline'
 
 const log = debug('video:make-video-compositor', false)
 
@@ -16,68 +27,91 @@ const log = debug('video:make-video-compositor', false)
 /*                                                                                */
 /**********************************************************************************/
 
-/** Viewport in canvas coordinates */
-export interface Viewport {
-  x: number
-  y: number
+/** Stats returned from render() for dropped frame tracking */
+export interface RenderStats {
+  /** Number of placements that should have rendered */
+  expected: number
+  /** Number of placements that actually had frames */
+  rendered: number
+  /** Number of placements that were missing frames (dropped) */
+  dropped: number
+  /** Number of placements that rendered a stale/repeated frame */
+  stale: number
+}
+
+/** Configuration for creating a VideoCompositor */
+export interface VideoCompositorConfig {
+  /** Main canvas for visible rendering */
+  canvas: OffscreenCanvas
+  /** Canvas dimensions */
   width: number
   height: number
+  /** Effect registry for compiling effect chains */
+  effectRegistry: EffectRegistry
+  /** Clip ID used for preview frames (e.g., camera preview during recording) */
+  previewClipId: string
 }
 
-/** A placement to render */
-export interface RenderPlacement {
-  /** Unique ID for this placement (used for texture caching) */
-  id: string
-  /** VideoFrame to render */
-  frame: VideoFrame
-  /** Where to render on canvas */
-  viewport: Viewport
-  /** Compiled effect chain to use (undefined = use passthrough) */
-  effectChain?: CompiledEffectChain
-  /** Called before rendering to set up effect uniforms */
-  onBeforeRender?: () => void
-}
-
-/** A placement to render by pre-uploaded texture ID */
-export interface RenderByIdPlacement {
-  /** Texture ID (must have been uploaded via uploadFrame) */
-  id: string
-  /** Where to render on canvas */
-  viewport: Viewport
-  /** Compiled effect chain to use (undefined = use passthrough) */
-  effectChain?: CompiledEffectChain
-  /** Called before rendering to set up effect uniforms */
-  onBeforeRender?: () => void
+/** Track last rendered frame info per clipId for stale detection */
+interface LastFrameInfo {
+  /** VideoFrame.timestamp (microseconds) */
+  timestamp: number
+  /** VideoFrame.duration (microseconds) */
+  duration: number
 }
 
 export interface VideoCompositor {
-  /** Canvas width */
-  readonly width: number
-  /** Canvas height */
-  readonly height: number
-  /** The WebGL context */
-  readonly gl: WebGL2RenderingContext | WebGLRenderingContext
-  /** The passthrough chain (no effects) - for rendering without effects */
-  readonly passthrough: CompiledEffectChain
-  /** Capture the current canvas as a VideoFrame */
-  captureFrame(timestamp: number): VideoFrame
-  /** Clear the canvas with a background color */
-  clear(r?: number, g?: number, b?: number, a?: number): void
-  /** Delete a texture by ID */
-  deleteTexture(id: string): void
+  /** The main renderer (for external access if needed) */
+  readonly mainRenderer: VideoRenderer
+  /** The capture renderer (for pre-rendering) */
+  readonly captureRenderer: VideoRenderer
+  /** The main effect manager */
+  readonly mainEffectManager: EffectManager
+  /** The capture effect manager */
+  readonly captureEffectManager: EffectManager
+
+  /** Set the compiled layout timeline */
+  setTimeline(timeline: CompiledTimeline): void
+
+  /**
+   * Set an effect param value by source coordinates.
+   * @param sourceType - 'clip' | 'track' | 'group' | 'master'
+   * @param sourceId - ID of the source (clipId, trackId, groupId, or 'master')
+   * @param effectIndex - Index within that source's effect pipeline
+   * @param paramKey - Parameter key within the effect (e.g., 'value', 'color', 'intensity')
+   * @param value - The effect value (scalar or vector, already scaled appropriately)
+   */
+  setEffectValue(
+    sourceType: 'clip' | 'track' | 'group' | 'master',
+    sourceId: string,
+    effectIndex: number,
+    paramKey: string,
+    value: EffectValue,
+  ): void
+
+  /** Set a preview stream for a track (continuously reads latest frame) */
+  setPreviewStream(trackId: string, stream: ReadableStream<VideoFrame> | null): void
+
+  /** Set a playback frame for a clip (for time-synced playback) */
+  setFrame(clipId: string, frame: VideoFrame | null): void
+
+  /** Render at time T (queries timeline internally). Returns frame availability stats. */
+  render(time: number): RenderStats
+
+  /** Render to capture canvas at time T */
+  renderToCaptureCanvas(time: number): void
+
+  /** Render and capture a frame for export (returns VideoFrame) */
+  renderAndCapture(time: number): VideoFrame | null
+
+  /** Render with provided frames and capture (for export) */
+  renderFramesAndCapture(
+    time: number,
+    frameEntries: Array<{ clipId: string; frame: VideoFrame }>,
+  ): VideoFrame | null
+
   /** Clean up resources */
   destroy(): void
-  /**
-   * Upload a frame to a texture without rendering
-   * (useful for capture canvas pre-staging)
-   */
-  uploadFrame(id: string, frame: VideoFrame): void
-  /** Render multiple placements (clears first) */
-  render(placements: RenderPlacement[]): void
-  /** Render pre-uploaded textures by ID */
-  renderById(placements: RenderByIdPlacement[]): void
-  /** Render a single placement */
-  renderPlacement(placement: RenderPlacement): void
 }
 
 /**********************************************************************************/
@@ -86,30 +120,26 @@ export interface VideoCompositor {
 /*                                                                                */
 /**********************************************************************************/
 
-/** Create a video texture with standard settings */
-function makeVideoTexture(gl: WebGL2RenderingContext | WebGLRenderingContext): WebGLTexture {
-  const texture = gl.createTexture()
-  if (!texture) throw new Error('Failed to create texture')
+/** Create onBeforeRender callback that applies effect values to controls */
+function makeOnBeforeRender(
+  chain: CompiledEffectChain,
+  effectRefs: EffectRef[],
+  effectParamRefs: EffectParamRef[],
+  effectValues: Map<string, EffectValue>,
+): () => void {
+  return () => {
+    for (let index = 0; index < effectRefs.length; index++) {
+      const value = effectValues.get(effectRefs[index].key)
+      if (value === undefined) continue
 
-  gl.bindTexture(gl.TEXTURE_2D, texture)
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+      const paramRef = effectParamRefs[index]
+      const control = chain.controls[paramRef.chainIndex]
+      if (!control || typeof control[paramRef.paramKey] !== 'function') continue
 
-  return texture
-}
-
-/** Convert viewport from layout coordinates (y=0 at top) to WebGL coordinates (y=0 at bottom) */
-function viewportToWebGL(viewport: Viewport, canvasHeight: number): Viewport {
-  return {
-    x: viewport.x,
-    y: canvasHeight - viewport.y - viewport.height,
-    width: viewport.width,
-    height: viewport.height,
+      control[paramRef.paramKey](value)
+    }
   }
 }
-
 
 /**********************************************************************************/
 /*                                                                                */
@@ -117,176 +147,396 @@ function viewportToWebGL(viewport: Viewport, canvasHeight: number): Viewport {
 /*                                                                                */
 /**********************************************************************************/
 
-// Inline passthrough shader compilation using view.gl
-import { compile, glsl, uniform } from '@bigmistqke/view.gl/tag'
-
-const passthroughFragment = glsl`
-  precision mediump float;
-
-  ${uniform.sampler2D('u_video')}
-
-  varying vec2 v_uv;
-
-  void main() {
-    vec2 uv = v_uv * 0.5 + 0.5;
-    uv.y = 1.0 - uv.y;
-    gl_FragColor = texture2D(u_video, uv);
-  }
-`
-
 /**
- * Create a compositor for an OffscreenCanvas.
- * Handles texture management and rendering. Effect compilation is external.
+ * Create a video compositor for orchestrating frame rendering.
+ * Manages frames, preview streams, effect chains, and timeline-based composition.
  */
-export function makeVideoCompositor(canvas: OffscreenCanvas): VideoCompositor {
-  const gl = assertedNotNullish(
-    canvas.getContext('webgl2') ?? canvas.getContext('webgl'),
-    'WebGL not supported',
-  )
+export function makeVideoCompositor(config: VideoCompositorConfig): VideoCompositor {
+  const { canvas, width, height, effectRegistry, previewClipId } = config
 
-  const textures = new Map<string, WebGLTexture>()
+  // Renderers
+  const mainRenderer = makeVideoRenderer(canvas)
+  const captureCanvas = new OffscreenCanvas(width, height)
+  const captureRenderer = makeVideoRenderer(captureCanvas)
 
-  // Compile passthrough shader
-  const passthroughCompiled = compile.toQuad(gl, passthroughFragment)
-  const passthrough: CompiledEffectChain = {
-    program: passthroughCompiled.program,
-    view: passthroughCompiled.view as CompiledEffectChain['view'],
-    controls: [],
+  // Effect managers (one per renderer, sharing GL context)
+  const mainEffectManager = makeEffectManager(mainRenderer.gl, effectRegistry)
+  const captureEffectManager = makeEffectManager(captureRenderer.gl, effectRegistry)
+
+  // Current compiled timeline
+  let compiledTimeline: CompiledTimeline | null = null
+
+  // Frame sources - keyed by clipId
+  const frames = new Map<string, VideoFrame>()
+
+  // Preview frames - keyed by trackId (for camera preview during recording)
+  let previewFrame: VideoFrame | null = null
+  const previewReaders = new Map<string, ReadableStreamDefaultReader<VideoFrame>>()
+
+  // Track last rendered frame info per clipId for stale detection
+  const lastRenderedFrame = new Map<string, LastFrameInfo>()
+
+  // Effect chains cached by effectSignature (hash of effect types)
+  const effectChainsBySignature = new Map<string, CompiledEffectChain>()
+
+  // Effect values keyed by pre-computed key from EffectRef
+  const effectValues = new Map<string, EffectValue>()
+
+  // Render stats (reset each frame)
+  let renderStats: RenderStats = { expected: 0, rendered: 0, dropped: 0, stale: 0 }
+
+  log('VideoCompositor initialized', { width, height })
+
+  /**
+   * Get or compile an effect chain for a given signature.
+   * Compiles lazily on first encounter.
+   */
+  function getOrCompileEffectChain(
+    effectManager: EffectManager,
+    { effectId, effectKeys }: { effectId: string; effectKeys: EffectKey[] },
+  ): CompiledEffectChain | undefined {
+    if (!effectId || effectKeys.length === 0) return undefined
+
+    // Check cache (skip registerEffectChain call if we already have it)
+    const cached = effectChainsBySignature.get(effectId)
+    if (cached) return cached
+
+    // Register with effect manager (uses signature as ID for caching)
+    const compiled = effectManager.registerEffectChain({ effectId, effectKeys })
+    effectChainsBySignature.set(effectId, compiled)
+
+    log('Compiled effect chain', { id: effectId, effectCount: effectKeys.length })
+
+    return compiled
   }
 
-  let currentProgram: WebGLProgram | null = null
+  function setFrame(clipId: string, frame: VideoFrame | null): void {
+    // Close previous playback frame
+    const prevFrame = frames.get(clipId)
+    if (prevFrame) {
+      prevFrame.close()
+    }
 
-  log('VideoCompositor initialized', { width: canvas.width, height: canvas.height })
-
-  /** Switch to a different shader program if needed */
-  function useChain(chain: CompiledEffectChain): void {
-    if (currentProgram !== chain.program) {
-      currentProgram = chain.program
-      gl.useProgram(currentProgram)
+    if (frame) {
+      frames.set(clipId, frame)
+    } else {
+      frames.delete(clipId)
     }
   }
 
-  function clear(r = 0.1, g = 0.1, b = 0.1, a = 1.0): void {
-    gl.viewport(0, 0, canvas.width, canvas.height)
-    gl.clearColor(r, g, b, a)
-    gl.clear(gl.COLOR_BUFFER_BIT)
-  }
+  async function readPreviewStream(
+    trackId: string,
+    stream: ReadableStream<VideoFrame>,
+  ): Promise<void> {
+    log('readPreviewStream: starting', { trackId })
+    const reader = stream.getReader()
+    previewReaders.set(trackId, reader)
 
-  function renderPlacement(placement: RenderPlacement): void {
-    // Get or create texture
-    let texture = textures.get(placement.id)
-    if (!texture) {
-      texture = makeVideoTexture(gl)
-      textures.set(placement.id, texture)
+    try {
+      while (true) {
+        const { done, value: frame } = await reader.read()
+        if (done) {
+          log('readPreviewStream: stream done', { trackId })
+          break
+        }
+
+        // Close previous frame and store new one
+        if (previewFrame) {
+          previewFrame.close()
+        }
+        previewFrame = frame
+      }
+    } catch (error) {
+      log('readPreviewStream: error', { trackId, error })
     }
 
-    // Upload frame to texture
-    gl.activeTexture(gl.TEXTURE0)
-    gl.bindTexture(gl.TEXTURE_2D, texture)
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, placement.frame)
+    previewReaders.delete(trackId)
+    log('readPreviewStream: ended', { trackId })
+  }
 
-    // Use the effect chain (or passthrough)
-    const chain = placement.effectChain ?? passthrough
-    useChain(chain)
+  function updateRenderStats(
+    time: number,
+    frame: VideoFrame | null | undefined,
+    placement: Placement,
+    isPreview: boolean,
+  ): void {
+    if (!frame) {
+      renderStats.dropped++
+      return
+    }
+    const frameKey = isPreview ? `preview-${placement.trackId}` : placement.clipId
+    const lastInfo = lastRenderedFrame.get(frameKey)
 
-    // Let caller set up effect uniforms
-    placement.onBeforeRender?.()
+    // Check for stale frame - only count as stale if a new frame SHOULD be available
+    if (lastInfo && frame.timestamp === lastInfo.timestamp && lastInfo.duration > 0) {
+      // Same frame as before - check if current render time exceeds frame's valid period
+      const frameEndTime = (lastInfo.timestamp + lastInfo.duration) / 1_000_000
+      if (time >= frameEndTime) {
+        // Render time is past when next frame should be available - this is truly stale
+        renderStats.stale++
+      }
+    }
 
-    // Convert viewport to WebGL coordinates (y flipped)
-    const vp = viewportToWebGL(placement.viewport, canvas.height)
-    gl.viewport(vp.x, vp.y, vp.width, vp.height)
+    lastRenderedFrame.set(frameKey, {
+      timestamp: frame.timestamp,
+      duration: frame.duration ?? 0,
+    })
 
-    // Draw
-    chain.view.uniforms.u_video.set(0)
-    chain.view.attributes.a_quad.bind()
-    gl.drawArrays(gl.TRIANGLES, 0, 6)
+    renderStats.rendered++
   }
 
   return {
-    get width(): number {
-      return canvas.width
+    get mainRenderer() {
+      return mainRenderer
     },
 
-    get height(): number {
-      return canvas.height
+    get captureRenderer() {
+      return captureRenderer
     },
 
-    get gl() {
-      return gl
+    get mainEffectManager() {
+      return mainEffectManager
     },
 
-    passthrough,
-
-    clear,
-    renderPlacement,
-
-    render(placements: RenderPlacement[]): void {
-      clear()
-      for (const placement of placements) {
-        renderPlacement(placement)
-      }
+    get captureEffectManager() {
+      return captureEffectManager
     },
 
-    uploadFrame(id: string, frame: VideoFrame): void {
-      let texture = textures.get(id)
-      if (!texture) {
-        texture = makeVideoTexture(gl)
-        textures.set(id, texture)
-      }
+    setFrame,
 
-      gl.activeTexture(gl.TEXTURE0)
-      gl.bindTexture(gl.TEXTURE_2D, texture)
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, frame)
-    },
-
-    renderById(placements: RenderByIdPlacement[]): void {
-      clear()
-
-      for (const placement of placements) {
-        const texture = textures.get(placement.id)
-        if (!texture) continue
-
-        gl.activeTexture(gl.TEXTURE0)
-        gl.bindTexture(gl.TEXTURE_2D, texture)
-
-        // Use the effect chain (or passthrough)
-        const chain = placement.effectChain ?? passthrough
-        useChain(chain)
-
-        // Let caller set up effect uniforms
-        placement.onBeforeRender?.()
-
-        const vp = viewportToWebGL(placement.viewport, canvas.height)
-        gl.viewport(vp.x, vp.y, vp.width, vp.height)
-
-        chain.view.uniforms.u_video.set(0)
-        chain.view.attributes.a_quad.bind()
-        gl.drawArrays(gl.TRIANGLES, 0, 6)
-      }
-    },
-
-    captureFrame(timestamp: number): VideoFrame {
-      return new VideoFrame(canvas, {
-        timestamp,
-        alpha: 'discard',
+    setTimeline(newTimeline) {
+      compiledTimeline = newTimeline
+      log('setTimeline', {
+        duration: compiledTimeline.duration,
+        segments: compiledTimeline.segments.length,
       })
     },
 
-    deleteTexture(id: string): void {
-      const texture = textures.get(id)
-      if (texture) {
-        gl.deleteTexture(texture)
-        textures.delete(id)
+    setEffectValue(sourceType, sourceId, effectIndex, paramKey, value) {
+      const key = `${sourceType}:${sourceId}:${effectIndex}:${paramKey}`
+      effectValues.set(key, value)
+      log('setEffectValue', { key, value })
+    },
+
+    setPreviewStream(trackId, stream) {
+      log('setPreviewStream', { trackId, hasStream: !!stream })
+
+      // Cancel existing reader
+      const existingReader = previewReaders.get(trackId)
+      if (existingReader) {
+        existingReader.cancel()
+        previewReaders.delete(trackId)
+      }
+
+      // Close existing preview frame
+      if (previewFrame) {
+        previewFrame.close()
+        previewFrame = null
+      }
+
+      // Start reading new stream
+      if (stream) {
+        readPreviewStream(trackId, stream)
       }
     },
 
-    destroy(): void {
-      log('destroy')
-      // Clean up textures
-      for (const texture of textures.values()) {
-        gl.deleteTexture(texture)
+    render(time): RenderStats {
+      if (!compiledTimeline) return renderStats
+
+      // Reset stats
+      renderStats = { expected: 0, rendered: 0, dropped: 0, stale: 0 }
+
+      // Clear canvas
+      mainRenderer.clear()
+
+      // Query timeline for active placements at this time
+      const activePlacements = getActivePlacements(compiledTimeline, time)
+      renderStats.expected = activePlacements.length
+
+      // Render all active placements
+      for (const { placement } of activePlacements) {
+        // Get frame from appropriate source based on clipId
+        const isPreview = placement.clipId === previewClipId
+        const frame = isPreview ? previewFrame : frames.get(placement.clipId)
+
+        updateRenderStats(time, frame, placement, isPreview)
+
+        if (!frame) {
+          continue
+        }
+
+        // Use trackId for texture key when preview (avoids collision with playback textures)
+        const textureKey = isPreview ? `preview-${placement.trackId}` : placement.clipId
+
+        // Get or compile effect chain from placement's signature
+        const effectChain = getOrCompileEffectChain(mainEffectManager, placement)
+
+        mainRenderer.renderPlacement({
+          id: textureKey,
+          frame,
+          viewport: placement.viewport,
+          effectChain,
+          onBeforeRender: effectChain
+            ? makeOnBeforeRender(
+                effectChain,
+                placement.effectRefs,
+                placement.effectParamRefs,
+                effectValues,
+              )
+            : undefined,
+        })
       }
-      textures.clear()
+
+      return renderStats
+    },
+
+    renderToCaptureCanvas(time) {
+      if (!compiledTimeline) return
+
+      // Query timeline for active placements
+      const activePlacements = getActivePlacements(compiledTimeline, time)
+
+      // Render using pre-uploaded textures
+      captureRenderer.renderById(
+        activePlacements.map(({ placement }) => {
+          const effectChain = getOrCompileEffectChain(captureEffectManager, placement)
+          return {
+            id: placement.clipId,
+            viewport: placement.viewport,
+            effectChain: effectChain ?? undefined,
+            onBeforeRender: effectChain
+              ? makeOnBeforeRender(
+                  effectChain,
+                  placement.effectRefs,
+                  placement.effectParamRefs,
+                  effectValues,
+                )
+              : undefined,
+          }
+        }),
+      )
+    },
+
+    renderAndCapture(time) {
+      if (!compiledTimeline) return null
+
+      // Clear canvas
+      mainRenderer.clear()
+
+      // Query timeline for active placements at this time
+      const activePlacements = getActivePlacements(compiledTimeline, time)
+
+      // Render all active placements
+      for (const { placement } of activePlacements) {
+        // Get frame from appropriate source based on clipId
+        const isPreview = placement.clipId === previewClipId
+        const frame = isPreview ? previewFrame : frames.get(placement.clipId)
+
+        if (!frame) {
+          continue
+        }
+
+        // Use trackId for texture key when preview (avoids collision with playback textures)
+        const textureKey = isPreview ? `preview-${placement.trackId}` : placement.clipId
+
+        // Get or compile effect chain from placement's signature
+        const effectChain = getOrCompileEffectChain(mainEffectManager, placement)
+
+        mainRenderer.renderPlacement({
+          id: textureKey,
+          frame,
+          viewport: placement.viewport,
+          effectChain: effectChain ?? undefined,
+          onBeforeRender: effectChain
+            ? makeOnBeforeRender(
+                effectChain,
+                placement.effectRefs,
+                placement.effectParamRefs,
+                effectValues,
+              )
+            : undefined,
+        })
+      }
+
+      // Capture the frame (timestamp in microseconds)
+      return mainRenderer.captureFrame(time * 1_000_000)
+    },
+
+    renderFramesAndCapture(time, frameEntries) {
+      if (!compiledTimeline) return null
+
+      // Build a temporary frame map from the provided frames
+      const exportFrames = new Map<string, VideoFrame>()
+      for (const { clipId, frame } of frameEntries) {
+        exportFrames.set(clipId, frame)
+      }
+
+      // Clear canvas
+      mainRenderer.clear()
+
+      // Query timeline for active placements at this time
+      const activePlacements = getActivePlacements(compiledTimeline, time)
+
+      // Render all active placements using provided frames
+      for (const { placement } of activePlacements) {
+        const frame = exportFrames.get(placement.clipId)
+        if (!frame) continue
+
+        // Get or compile effect chain from placement's signature
+        const effectChain = getOrCompileEffectChain(mainEffectManager, placement)
+
+        mainRenderer.renderPlacement({
+          id: placement.clipId,
+          frame,
+          viewport: placement.viewport,
+          effectChain: effectChain ?? undefined,
+          onBeforeRender: effectChain
+            ? makeOnBeforeRender(
+                effectChain,
+                placement.effectRefs,
+                placement.effectParamRefs,
+                effectValues,
+              )
+            : undefined,
+        })
+      }
+
+      // Capture the frame (timestamp in microseconds)
+      const capturedFrame = mainRenderer.captureFrame(time * 1_000_000)
+
+      // Close the provided frames (they were transferred to us)
+      for (const frame of exportFrames.values()) {
+        frame.close()
+      }
+
+      return capturedFrame
+    },
+
+    destroy() {
+      log('destroy')
+
+      // Close all frames
+      for (const frame of frames.values()) {
+        frame.close()
+      }
+      frames.clear()
+
+      previewFrame?.close()
+      previewFrame = null
+
+      // Cancel all preview readers
+      for (const reader of previewReaders.values()) {
+        reader.cancel()
+      }
+      previewReaders.clear()
+
+      // Destroy renderers
+      mainRenderer.destroy()
+      captureRenderer.destroy()
+
+      // Destroy effect managers
+      mainEffectManager.destroy()
+      captureEffectManager.destroy()
     },
   }
 }

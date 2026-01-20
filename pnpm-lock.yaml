@@ -220,6 +220,9 @@ importers:
       '@eddy/media':
         specifier: workspace:*
         version: link:../media
+      '@eddy/timeline':
+        specifier: workspace:*
+        version: link:../timeline
       '@eddy/utils':
         specifier: workspace:*
         version: link:../utils
