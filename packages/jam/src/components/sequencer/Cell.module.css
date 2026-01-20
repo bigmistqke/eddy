@@ -32,7 +32,7 @@
   border-radius: 8px 0 0 8px;
   border-color: #2d5a87;
   border-right: none;
-  margin-right: -2px;
+  margin-right: -8px;
   position: relative;
   z-index: 1;
 }
@@ -44,8 +44,8 @@
   border-color: #2d5a87;
   border-left: none;
   border-right: none;
-  margin-left: -2px;
-  margin-right: -2px;
+  margin-left: -8px;
+  margin-right: -8px;
   position: relative;
   z-index: 1;
 }
@@ -56,7 +56,7 @@
   border-radius: 0 8px 8px 0;
   border-color: #2d5a87;
   border-left: none;
-  margin-left: -2px;
+  margin-left: -8px;
   position: relative;
   z-index: 1;
 }
@@ -68,6 +68,24 @@
 .cell[data-clip="end"].current {
   background: #4a9eff;
   border-color: #4a9eff;
+}
+
+/* Clips not assigned to a visible slot - dimmed appearance */
+.cell[data-clip="single"][data-visible="false"],
+.cell[data-clip="start"][data-visible="false"],
+.cell[data-clip="middle"][data-visible="false"],
+.cell[data-clip="end"][data-visible="false"] {
+  background: #1e3a52;
+  border-color: #1e3a52;
+  opacity: 0.6;
+}
+
+.cell[data-clip="single"][data-visible="false"].current,
+.cell[data-clip="start"][data-visible="false"].current,
+.cell[data-clip="middle"][data-visible="false"].current,
+.cell[data-clip="end"][data-visible="false"].current {
+  background: #2a5a80;
+  border-color: #2a5a80;
 }
 
 /* Slot indicator */

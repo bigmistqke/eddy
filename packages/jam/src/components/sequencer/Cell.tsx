@@ -33,10 +33,14 @@ export interface CellProps {
 /**********************************************************************************/
 
 export function Cell(props: CellProps) {
+  const isVisible = () => props.slotIndex !== null
+  const hasClip = () => props.clipPosition !== 'none'
+
   return (
     <div
       class={clsx(styles.cell, props.isCurrent && styles.current)}
       data-clip={props.clipPosition}
+      data-visible={hasClip() && isVisible()}
       onPointerDown={event => {
         event.preventDefault()
         props.onToggle()

@@ -1,6 +1,7 @@
 .grid {
   display: grid;
-  gap: 2px;
+  row-gap: 2px;
+  column-gap: 8px;
   padding: 8px;
   background: #0a0a0a;
   overflow-x: auto;

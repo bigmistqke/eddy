@@ -35,6 +35,8 @@ export interface CreateJamOptions {
   initialProject?: Project
   /** Initial jam metadata */
   initialMetadata?: JamMetadata
+  /** Initial track video URL mapping */
+  initialTrackVideos?: Record<string, string>
   /** Canvas size for layout calculations */
   canvasSize: { width: number; height: number }
 }
@@ -113,6 +115,15 @@ function makeDefaultMetadata(): JamMetadata {
   }
 }
 
+function makeDefaultTrackVideos(): Record<string, string> {
+  return {
+    'track-0': '/videos/big-buck-bunny.webm',
+    'track-1': '/videos/sample-5s.webm',
+    'track-2': '/videos/sample-10s.webm',
+    'track-3': '/videos/sample-15s.webm',
+  }
+}
+
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
@@ -132,6 +143,9 @@ export function createJam(options: CreateJamOptions) {
   )
   const [metadata, setMetadata] = createStore<JamMetadata>(
     options.initialMetadata ?? makeDefaultMetadata()
+  )
+  const [trackVideos, setTrackVideos] = createStore<Record<string, string>>(
+    options.initialTrackVideos ?? makeDefaultTrackVideos()
   )
 
   // Playback state
@@ -613,6 +627,7 @@ export function createJam(options: CreateJamOptions) {
     // State
     project,
     metadata,
+    trackVideos,
     timeline,
     duration,
     currentTime,
@@ -651,6 +666,10 @@ export function createJam(options: CreateJamOptions) {
     addTrack,
     removeTrack,
     renameTrack,
+
+    // Track video actions
+    getTrackVideoUrl: (trackId: string) => trackVideos[trackId],
+    setTrackVideoUrl: (trackId: string, url: string) => setTrackVideos(trackId, url),
 
     // Playback actions
     play,
