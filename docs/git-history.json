@@ -1,19 +1,27 @@
 [
   {
-    "hash": "a1629423cd39a21a8bfc99b6b72d253152959225",
-    "short_hash": "a162942",
+    "hash": "77ba666d214ae92b2f5c29e74cb554690c1aeef2",
+    "short_hash": "77ba666",
     "author": "bigmistqke",
-    "date": "2026-01-21T00:13:44+01:00",
-    "message": "docs: add file organization coding preferences",
-    "files_changed": 1
+    "date": "2026-01-21T00:29:56+01:00",
+    "message": "feat: improve jam sequencer UX\n\n- Increased column gap for clearer clip boundaries\n- Added trackVideos store with 4 test video URLs\n- Dimmed styling for clips not in visible slots\n- Slot number indicator on visible clips",
+    "files_changed": 4
   },
   {
-    "hash": "439ee8f129871b3a04cfe60a7ad05c0faa6fe836",
-    "short_hash": "439ee8f",
+    "hash": "9c85a92d7ed8a10fab24c8b799d662a1b09a3fa0",
+    "short_hash": "9c85a92",
     "author": "bigmistqke",
-    "date": "2026-01-21T00:13:39+01:00",
-    "message": "fix: improve clip painting and visual styling\n\nPainting now extends clips instead of creating separate ones per cell.\nConnected cells have no gaps and bigger border radius for clip ends.",
-    "files_changed": 3
+    "date": "2026-01-21T00:14:15+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
+    "hash": "ca08812c4634ea9827ebba16242930503b17e926",
+    "short_hash": "ca08812",
+    "author": "bigmistqke",
+    "date": "2026-01-21T00:13:50+01:00",
+    "message": "chore: add test videos for jam",
+    "files_changed": 4
   },
   {
     "hash": "439ee8f129871b3a04cfe60a7ad05c0faa6fe836",
