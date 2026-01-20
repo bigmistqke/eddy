@@ -203,8 +203,9 @@ export async function makeAudioScheduler(
   })
   workletNode.connect(destination)
 
-  const audioWorkletMethods = rpc<RingBufferProcessorMethods>(workletNode.port)
-  audioWorkletMethods.init(sampleBuffer, controlBuffer)
+  // Initialize the ring buffer processor with SharedArrayBuffers
+  const processorRpc = rpc<RingBufferProcessorMethods>(workletNode.port)
+  await processorRpc.init(sampleBuffer, controlBuffer)
 
   // State
   let state: AudioSchedulerState = 'stopped'

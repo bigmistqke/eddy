@@ -22,9 +22,10 @@ class RingBufferProcessor extends AudioWorkletProcessor {
     this.capacity = 0
     this.channels = 2
 
+    // Expose init method to receive SharedArrayBuffers
     expose<RingBufferProcessorMethods>(
       {
-        init: (sampleBuffer, controlBuffer) => {
+        init: (sampleBuffer: SharedArrayBuffer, controlBuffer: SharedArrayBuffer) => {
           this.samples = new Float32Array(sampleBuffer)
           this.control = new Int32Array(controlBuffer)
           this.channels = Atomics.load(this.control, CHANNELS)
