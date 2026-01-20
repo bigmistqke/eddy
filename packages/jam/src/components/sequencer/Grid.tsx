@@ -34,6 +34,8 @@ export function Grid(props: GridProps) {
 
   const [isPainting, setIsPainting] = createSignal(false)
   const [paintMode, setPaintMode] = createSignal<'add' | 'remove' | null>(null)
+  const [paintStartColumn, setPaintStartColumn] = createSignal<number | null>(null)
+  const [paintTrackId, setPaintTrackId] = createSignal<string | null>(null)
 
   const columns = () => jam.metadata.columns
   const tracks = () => jam.project.tracks
@@ -47,16 +49,25 @@ export function Grid(props: GridProps) {
     // Start painting mode
     setIsPainting(true)
     setPaintMode(hadClip ? 'remove' : 'add')
+    setPaintStartColumn(columnIndex)
+    setPaintTrackId(trackId)
   }
 
   function handleCellPointerEnter(event: PointerEvent, trackId: string, columnIndex: number) {
     if (!isPainting() || !(event.buttons & 1)) return
 
     const mode = paintMode()
+    const startColumn = paintStartColumn()
+    const startTrackId = paintTrackId()
+
+    // Only allow painting on the same track
+    if (trackId !== startTrackId) return
+
     const hasClip = jam.hasClipAtColumn(trackId, columnIndex)
 
-    if (mode === 'add' && !hasClip) {
-      jam.createClipAtColumn(trackId, columnIndex)
+    if (mode === 'add' && !hasClip && startColumn !== null) {
+      // Extend the clip from the start column to include this column
+      jam.extendClipToColumn(trackId, startColumn, columnIndex)
     } else if (mode === 'remove' && hasClip) {
       jam.removeClipAtColumn(trackId, columnIndex)
     }
@@ -65,6 +76,8 @@ export function Grid(props: GridProps) {
   function handlePointerUp() {
     setIsPainting(false)
     setPaintMode(null)
+    setPaintStartColumn(null)
+    setPaintTrackId(null)
   }
 
   return (

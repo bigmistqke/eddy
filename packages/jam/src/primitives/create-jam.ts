@@ -645,6 +645,7 @@ export function createJam(options: CreateJamOptions) {
     hasClipAtColumn,
     createClipAtColumn,
     removeClipAtColumn,
+    extendClipToColumn,
 
     // Track actions
     addTrack,
