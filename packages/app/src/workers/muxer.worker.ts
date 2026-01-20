@@ -1,4 +1,12 @@
-import { expose } from '@bigmistqke/rpc/messenger'
+/**
+ * Muxer Worker
+ *
+ * Thin RPC wrapper around makeMuxer. Handles encoding and muxing of video/audio frames.
+ * - RPC exposure via @bigmistqke/rpc/messenger
+ * - Worker-to-worker MessagePort connections for receiving frames from capture worker
+ */
+
+import { expose, handle, type Handled } from '@bigmistqke/rpc/messenger'
 import { makeMuxer, type AudioFrameData, type Muxer, type VideoFrameData } from '@eddy/media'
 import { debug } from '@eddy/utils'
 import { writeBlob } from '~/opfs'
@@ -9,6 +17,30 @@ import {
 } from '~/primitives/make-scheduler'
 
 const log = debug('muxer.worker', false)
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                     Types                                      */
+/*                                                                                */
+/**********************************************************************************/
+
+/** Methods returned by init() as a sub-proxy */
+export interface MuxerMethods {
+  /** Add a video frame to be encoded */
+  addVideoFrame(data: VideoFrameData): void
+
+  /** Add audio samples to be encoded */
+  addAudioFrame(data: AudioFrameData): void
+
+  /**
+   * Signal end of stream and finalize the output.
+   * Writes the encoded WebM to OPFS and returns the clipId.
+   */
+  finalize(clipId: string): Promise<{ clipId: string; frameCount: number }>
+
+  /** Reset state for next recording */
+  reset(): void
+}
 
 export interface MuxerWorkerMethods {
   /**
@@ -24,62 +56,32 @@ export interface MuxerWorkerMethods {
   setCapturePort(port: MessagePort): void
 
   /**
-   * Pre-initialize the muxer (creates VP9 encoder + Opus encoder).
-   * Call this before recording to avoid startup delay.
+   * Initialize the muxer (creates VP9 encoder + Opus encoder).
+   * Returns methods as sub-proxy.
    */
-  preInit(): Promise<void>
-
-  /**
-   * Add a video frame to be encoded.
-   */
-  addVideoFrame(data: VideoFrameData): void
-
-  /**
-   * Add audio samples to be encoded.
-   */
-  addAudioFrame(data: AudioFrameData): void
-
-  /**
-   * Signal end of stream and finalize the output.
-   * Writes the encoded WebM to OPFS and returns the clipId.
-   */
-  finalize(clipId: string): Promise<{ clipId: string; frameCount: number }>
-
-  /** Reset state for next recording */
-  reset(): void
+  init(): Promise<Handled<MuxerMethods>>
 }
 
 /**********************************************************************************/
 /*                                                                                */
-/*                                     Methods                                    */
+/*                                     State                                      */
 /*                                                                                */
 /**********************************************************************************/
 
-// Worker state
-let muxer: Muxer | null = null
-let capturedFrameCount = 0
 let scheduler: RecorderScheduler | null = null
 
-function addVideoFrame(data: VideoFrameData) {
-  if (!muxer) {
-    log('not initialized, dropping video frame')
-    return
-  }
-  muxer.addVideoFrame(data)
+// Capture port methods reference (needs to be updated when muxer is created)
+let capturePortMethods: {
+  addVideoFrame: (data: VideoFrameData) => void
+  addAudioFrame: (data: AudioFrameData) => void
+  captureEnded: (frameCount: number) => void
+} | null = null
 
-  // Update scheduler with queue depth for backpressure signaling
-  if (scheduler) {
-    scheduler.updateFromEncoder(muxer.videoQueueSize)
-  }
-}
-
-function addAudioFrame(data: AudioFrameData) {
-  if (!muxer) {
-    log('not initialized, dropping audio frame')
-    return
-  }
-  muxer.addAudioFrame(data)
-}
+/**********************************************************************************/
+/*                                                                                */
+/*                                    Expose                                      */
+/*                                                                                */
+/**********************************************************************************/
 
 expose<MuxerWorkerMethods>({
   setSchedulerBuffer(buffer) {
@@ -87,61 +89,86 @@ expose<MuxerWorkerMethods>({
     scheduler = makeScheduler(buffer as SchedulerBuffer).recorder
   },
 
-  addVideoFrame,
-  addAudioFrame,
-
   setCapturePort(port) {
     log('received capture port')
+
+    // Create placeholder methods that will be updated when init() is called
+    capturePortMethods = {
+      addVideoFrame: () => log('not initialized, dropping video frame'),
+      addAudioFrame: () => log('not initialized, dropping audio frame'),
+      captureEnded: () => {},
+    }
+
     // Expose methods on this port for capture worker to call
     expose(
       {
-        addVideoFrame,
-        addAudioFrame,
-        captureEnded: (frameCount: number) => {
-          capturedFrameCount = frameCount
-          log('capture ended', { frameCount: capturedFrameCount })
-        },
+        addVideoFrame: (data: VideoFrameData) => capturePortMethods?.addVideoFrame(data),
+        addAudioFrame: (data: AudioFrameData) => capturePortMethods?.addAudioFrame(data),
+        captureEnded: (frameCount: number) => capturePortMethods?.captureEnded(frameCount),
       },
       { to: port },
     )
   },
 
-  async preInit() {
-    if (muxer?.isReady) return
+  async init() {
+    log('initializing VP9 + Opus encoders...')
 
-    log('pre-initializing VP9 + Opus encoders...')
-
-    muxer = makeMuxer({ videoCodec: 'vp9', videoBitrate: 2_000_000, audio: true })
+    const muxer = makeMuxer({ videoCodec: 'vp9', videoBitrate: 2_000_000, audio: true })
     await muxer.init()
 
-    log('pre-initialization complete')
-  },
+    let capturedFrameCount = 0
 
-  async finalize(clipId) {
-    log('finalizing', { clipId, captured: capturedFrameCount })
-
-    if (!muxer) {
-      return { clipId, frameCount: 0 }
+    // Update capture port methods to use this muxer
+    if (capturePortMethods) {
+      capturePortMethods.addVideoFrame = (data: VideoFrameData) => {
+        muxer.addVideoFrame(data)
+        if (scheduler) {
+          scheduler.updateFromEncoder(muxer.videoQueueSize)
+        }
+      }
+      capturePortMethods.addAudioFrame = (data: AudioFrameData) => {
+        muxer.addAudioFrame(data)
+      }
+      capturePortMethods.captureEnded = (frameCount: number) => {
+        capturedFrameCount = frameCount
+        log('capture ended', { frameCount })
+      }
     }
 
-    const result = await muxer.finalize()
+    log('initialization complete')
 
-    log('finalized', { clipId, frames: result.videoFrameCount, bytes: result.blob.size })
+    return handle({
+      addVideoFrame(data) {
+        muxer.addVideoFrame(data)
+        if (scheduler) {
+          scheduler.updateFromEncoder(muxer.videoQueueSize)
+        }
+      },
 
-    // Write to OPFS
-    await writeBlob(clipId, result.blob)
+      addAudioFrame(data) {
+        muxer.addAudioFrame(data)
+      },
 
-    log('written to OPFS', { clipId })
+      async finalize(clipId) {
+        log('finalizing', { clipId, captured: capturedFrameCount })
 
-    return { clipId, frameCount: result.videoFrameCount }
-  },
+        const result = await muxer.finalize()
 
-  reset() {
-    capturedFrameCount = 0
-    muxer?.reset()
-    muxer = null
+        log('finalized', { clipId, frames: result.videoFrameCount, bytes: result.blob.size })
 
-    // Reset scheduler to idle (recording stopped)
-    scheduler?.reset()
+        // Write to OPFS
+        await writeBlob(clipId, result.blob)
+
+        log('written to OPFS', { clipId })
+
+        return { clipId, frameCount: result.videoFrameCount }
+      },
+
+      reset() {
+        capturedFrameCount = 0
+        muxer.reset()
+        scheduler?.reset()
+      },
+    } satisfies MuxerMethods)
   },
 })

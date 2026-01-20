@@ -1,13 +1,26 @@
-import { expose, rpc } from '@bigmistqke/rpc/messenger'
+/**
+ * Capture Worker
+ *
+ * Captures video and audio frames from streams and forwards them to the muxer.
+ * Handles worker-specific concerns:
+ * - RPC exposure via @bigmistqke/rpc/messenger
+ * - Worker-to-worker MessagePort connections for frame transfer to muxer
+ */
+
+import { expose, handle, rpc, type Handled, type RPC } from '@bigmistqke/rpc/messenger'
 import type { AudioFrameData, VideoFrameData } from '@eddy/media'
 import { debug } from '@eddy/utils'
 
 const log = debug('capture.worker', false)
 
-export interface CaptureWorkerMethods {
-  /** Set the muxer port for forwarding frames (called before start) */
-  setMuxerPort(port: MessagePort): void
+/**********************************************************************************/
+/*                                                                                */
+/*                                     Types                                      */
+/*                                                                                */
+/**********************************************************************************/
 
+/** Methods returned by init() as a sub-proxy */
+export interface CaptureMethods {
   /**
    * Start capturing frames from video and audio streams.
    * Frames are forwarded to the muxer via MessagePort.
@@ -19,6 +32,11 @@ export interface CaptureWorkerMethods {
 
   /** Stop capturing */
   stop(): void
+}
+
+export interface CaptureWorkerMethods {
+  /** Initialize with muxer port for forwarding frames, returns capture methods */
+  init(port: MessagePort): Handled<CaptureMethods>
 }
 
 /** Methods exposed by muxer on the capture port */
@@ -76,7 +94,7 @@ function audioDataToFrameData(audioData: AudioData, firstTimestamp: number): Aud
       for (let channel = 0; channel < numberOfChannels; channel++) {
         const channelData = new Float32Array(numberOfFrames)
         for (let i = 0; i < numberOfFrames; i++) {
-          channelData[i] = interleaved[i * numberOfChannels + channel]
+          channelData[i] = interleaved[i * numberOfChannels + channel]!
         }
         data.push(channelData)
       }
@@ -85,7 +103,7 @@ function audioDataToFrameData(audioData: AudioData, firstTimestamp: number): Aud
       for (let channel = 0; channel < numberOfChannels; channel++) {
         const channelData = new Float32Array(numberOfFrames)
         for (let i = 0; i < numberOfFrames; i++) {
-          channelData[i] = interleaved[i * numberOfChannels + channel] / 32768
+          channelData[i] = interleaved[i * numberOfChannels + channel]! / 32768
         }
         data.push(channelData)
       }
@@ -111,112 +129,110 @@ function audioDataToFrameData(audioData: AudioData, firstTimestamp: number): Aud
 
 /**********************************************************************************/
 /*                                                                                */
-/*                                     Methods                                    */
+/*                                    Expose                                      */
 /*                                                                                */
 /**********************************************************************************/
 
-let currentSessionId = 0
-let videoReader: ReadableStreamDefaultReader<VideoFrame> | null = null
-let audioReader: ReadableStreamDefaultReader<AudioData> | null = null
-let muxer: ReturnType<typeof rpc<MuxerPortMethods>> | null = null
-
 expose<CaptureWorkerMethods>({
-  setMuxerPort(port) {
+  init(port) {
     port.start()
-    muxer = rpc<MuxerPortMethods>(port)
+    const muxer = rpc<MuxerPortMethods>(port)
     log('received muxer port')
-  },
 
-  async start(videoStream, audioStream) {
-    if (!muxer) {
-      throw new Error('No muxer - call setMuxerPort first')
-    }
+    // Session state
+    let currentSessionId = 0
+    let videoReader: ReadableStreamDefaultReader<VideoFrame> | null = null
+    let audioReader: ReadableStreamDefaultReader<AudioData> | null = null
 
-    // Increment session ID to invalidate any previous capture loops
-    const sessionId = ++currentSessionId
-    const isCurrentSession = () => sessionId === currentSessionId
+    return handle({
+      async start(videoStream, audioStream) {
+        // Increment session ID to invalidate any previous capture loops
+        const sessionId = ++currentSessionId
+        const isCurrentSession = () => sessionId === currentSessionId
 
-    log('starting', { sessionId, hasAudio: !!audioStream })
+        log('starting', { sessionId, hasAudio: !!audioStream })
 
-    let firstVideoTimestamp: number | null = null
-    let firstAudioTimestamp: number | null = null
-    let videoFrameCount = 0
+        let firstVideoTimestamp: number | null = null
+        let firstAudioTimestamp: number | null = null
+        let videoFrameCount = 0
 
-    // Start audio capture in parallel (fire and forget)
-    let audioFrameCount = 0
-    if (audioStream) {
-      audioReader = audioStream.getReader()
-      // Capture the reader reference for this session
-      const myAudioReader = audioReader
-      ;(async () => {
+        // Start audio capture in parallel (fire and forget)
+        let audioFrameCount = 0
+        if (audioStream) {
+          audioReader = audioStream.getReader()
+          // Capture the reader reference for this session
+          const myAudioReader = audioReader
+          ;(async () => {
+            try {
+              while (isCurrentSession()) {
+                const { done, value: audioData } = await myAudioReader.read()
+                if (done || !audioData || !isCurrentSession()) break
+
+                // Log first frame's audio format for debugging
+                if (firstAudioTimestamp === null) {
+                  firstAudioTimestamp = audioData.timestamp
+                  log('first audio frame', {
+                    sessionId,
+                    format: audioData.format,
+                    sampleRate: audioData.sampleRate,
+                    numberOfChannels: audioData.numberOfChannels,
+                    numberOfFrames: audioData.numberOfFrames,
+                    timestamp: audioData.timestamp,
+                  })
+                }
+
+                const frameData = audioDataToFrameData(audioData, firstAudioTimestamp)
+                muxer.addAudioFrame(frameData)
+                audioFrameCount++
+              }
+            } catch (err) {
+              if (isCurrentSession()) {
+                log('audio error', err)
+              }
+            }
+            log('audio capture done', { sessionId, audioFrameCount })
+          })()
+        }
+
+        // Video capture
+        videoReader = videoStream.getReader()
+
         try {
           while (isCurrentSession()) {
-            const { done, value: audioData } = await myAudioReader.read()
-            if (done || !audioData || !isCurrentSession()) break
+            const { done, value: frame } = await videoReader.read()
+            if (done || !frame || !isCurrentSession()) break
 
-            // Log first frame's audio format for debugging
-            if (firstAudioTimestamp === null) {
-              firstAudioTimestamp = audioData.timestamp
-              log('first audio frame', {
-                sessionId,
-                format: audioData.format,
-                sampleRate: audioData.sampleRate,
-                numberOfChannels: audioData.numberOfChannels,
-                numberOfFrames: audioData.numberOfFrames,
-                timestamp: audioData.timestamp,
-              })
+            // Use first frame's timestamp as reference
+            if (firstVideoTimestamp === null) {
+              firstVideoTimestamp = frame.timestamp
             }
 
-            const frameData = audioDataToFrameData(audioData, firstAudioTimestamp)
-            muxer!.addAudioFrame(frameData)
-            audioFrameCount++
+            const timestamp = (frame.timestamp! - firstVideoTimestamp) / 1_000_000
+            const data = await copyVideoFrameToBuffer(frame)
+            muxer.addVideoFrame({ ...data, timestamp })
+            videoFrameCount++
           }
         } catch (err) {
           if (isCurrentSession()) {
-            log('audio error', err)
+            log('video error', err)
+            throw err
           }
         }
-        log('audio capture done', { sessionId, audioFrameCount })
-      })()
-    }
 
-    // Video capture
-    videoReader = videoStream.getReader()
-
-    try {
-      while (isCurrentSession()) {
-        const { done, value: frame } = await videoReader.read()
-        if (done || !frame || !isCurrentSession()) break
-
-        // Use first frame's timestamp as reference
-        if (firstVideoTimestamp === null) {
-          firstVideoTimestamp = frame.timestamp
+        // Only signal end if this session is still current
+        if (isCurrentSession()) {
+          muxer.captureEnded(videoFrameCount)
+          log('done', { sessionId, videoFrameCount })
         }
+      },
 
-        const timestamp = (frame.timestamp - firstVideoTimestamp) / 1_000_000
-        const data = await copyVideoFrameToBuffer(frame)
-        muxer.addVideoFrame({ ...data, timestamp })
-        videoFrameCount++
-      }
-    } catch (err) {
-      if (isCurrentSession()) {
-        log('video error', err)
-        throw err
-      }
-    }
-
-    // Only signal end if this session is still current
-    if (isCurrentSession()) {
-      muxer.captureEnded(videoFrameCount)
-      log('done', { sessionId, videoFrameCount })
-    }
-  },
-
-  stop() {
-    // Increment session ID to invalidate current capture loops
-    currentSessionId++
-    videoReader?.cancel().catch(() => {})
-    audioReader?.cancel().catch(() => {})
-    log('stop', { newSessionId: currentSessionId })
+      stop() {
+        // Increment session ID to invalidate current capture loops
+        currentSessionId++
+        videoReader?.cancel().catch(() => {})
+        audioReader?.cancel().catch(() => {})
+        log('stop', { newSessionId: currentSessionId })
+      },
+    } satisfies CaptureMethods)
   },
 })

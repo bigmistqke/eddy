@@ -1,12 +1,25 @@
-import { expose } from '@bigmistqke/rpc/messenger'
-import { makeDemuxer, type DemuxedSample, type Demuxer, type DemuxerInfo } from '@eddy/media'
+/**
+ * Demux Worker
+ *
+ * Thin RPC wrapper around makeDemuxer. Handles demuxing of media files.
+ */
+
+import { expose, handle, type Handled } from '@bigmistqke/rpc/messenger'
+import { makeDemuxer, type DemuxedSample, type DemuxerInfo } from '@eddy/media'
 import { debug } from '@eddy/utils'
 
 const log = debug('demux-worker.worker', false)
 
-export interface DemuxWorkerMethods {
-  /** Initialize demuxer with file data */
-  init(buffer: ArrayBuffer): Promise<DemuxerInfo>
+/**********************************************************************************/
+/*                                                                                */
+/*                                     Types                                      */
+/*                                                                                */
+/**********************************************************************************/
+
+/** Methods returned by init() as a sub-proxy */
+export interface DemuxerMethods {
+  /** Get demuxer info (duration, tracks, etc.) */
+  getInfo(): DemuxerInfo
 
   /** Get WebCodecs VideoDecoderConfig */
   getVideoConfig(): Promise<VideoDecoderConfig>
@@ -27,70 +40,53 @@ export interface DemuxWorkerMethods {
   destroy(): void
 }
 
-/**********************************************************************************/
-/*                                                                                */
-/*                                     Methods                                    */
-/*                                                                                */
-/**********************************************************************************/
+export interface DemuxWorkerMethods {
+  /** Initialize demuxer with file data, returns methods as sub-proxy */
+  init(buffer: ArrayBuffer): Promise<Handled<DemuxerMethods>>
+}
 
-// Worker state
-let demuxer: Demuxer | null = null
+/**********************************************************************************/
+/*                                                                                */
+/*                                    Expose                                      */
+/*                                                                                */
+/**********************************************************************************/
 
 expose<DemuxWorkerMethods>({
   async init(buffer) {
     log('init', { size: buffer.byteLength })
 
-    // Clean up previous instance
-    if (demuxer) {
-      demuxer.destroy()
-    }
-
-    demuxer = await makeDemuxer(buffer)
+    const demuxer = await makeDemuxer(buffer)
     log('init complete', { duration: demuxer.info.duration })
 
-    return demuxer.info
-  },
+    return handle({
+      getInfo() {
+        return demuxer.info
+      },
 
-  async getVideoConfig() {
-    if (!demuxer) {
-      throw new Error('Demuxer not initialized')
-    }
-    return demuxer.getVideoConfig()
-  },
+      getVideoConfig() {
+        return demuxer.getVideoConfig()
+      },
 
-  async getAudioConfig() {
-    if (!demuxer) {
-      throw new Error('Demuxer not initialized')
-    }
-    return demuxer.getAudioConfig()
-  },
+      getAudioConfig() {
+        return demuxer.getAudioConfig()
+      },
 
-  async getSamples(trackId, startTime, endTime) {
-    if (!demuxer) {
-      throw new Error('Demuxer not initialized')
-    }
-    return demuxer.getSamples(trackId, startTime, endTime)
-  },
+      getSamples(trackId, startTime, endTime) {
+        return demuxer.getSamples(trackId, startTime, endTime)
+      },
 
-  async getAllSamples(trackId) {
-    if (!demuxer) {
-      throw new Error('Demuxer not initialized')
-    }
-    return demuxer.getAllSamples(trackId)
-  },
+      getAllSamples(trackId) {
+        return demuxer.getAllSamples(trackId)
+      },
 
-  async getKeyframeBefore(trackId, time) {
-    if (!demuxer) {
-      throw new Error('Demuxer not initialized')
-    }
-    return demuxer.getKeyframeBefore(trackId, time)
-  },
+      getKeyframeBefore(trackId, time) {
+        return demuxer.getKeyframeBefore(trackId, time)
+      },
 
-  destroy() {
-    log('destroy')
-    if (demuxer) {
-      demuxer.destroy()
-      demuxer = null
-    }
+      destroy() {
+        log('destroy')
+        demuxer.destroy()
+      },
+    } satisfies DemuxerMethods)
   },
 })

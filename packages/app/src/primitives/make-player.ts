@@ -15,7 +15,7 @@ import {
 } from '~/primitives/make-playback'
 import type { SchedulerBuffer } from '~/primitives/make-scheduler'
 import { makeWorkerPool } from '~/primitives/make-worker-pool'
-import type { CompositorWorkerMethods } from '~/workers/compositor.worker'
+import type { CompositorMethods, CompositorWorkerMethods } from '~/workers/compositor.worker'
 import CompositorWorker from '~/workers/compositor.worker?worker'
 import type { AudioPlaybackWorkerMethods } from '~/workers/playback.audio.worker'
 import AudioPlaybackWorker from '~/workers/playback.audio.worker?worker'
@@ -99,7 +99,7 @@ export interface PlayerActions {
   startRenderLoop: () => void
 }
 
-export type Compositor = Omit<RPC<CompositorWorkerMethods>, 'init' | 'setPreviewStream'> & {
+export type Compositor = Omit<RPC<CompositorMethods>, 'setPreviewStream'> & {
   canvas: HTMLCanvasElement
   /** Takes MediaStream (converted to ReadableStream internally) */
   setPreviewStream(trackId: string, stream: MediaStream | null): void
@@ -234,10 +234,10 @@ export async function makePlayer(options: CreatePlayerOptions): Promise<Player> 
   canvasElement.height = height
   const offscreen = canvasElement.transferControlToOffscreen()
 
-  // Create compositor worker
+  // Create compositor worker and initialize with canvas
   const compositorWorker = new CompositorWorker()
-  const compositorRpc = rpc<CompositorWorkerMethods>(compositorWorker)
-  await compositorRpc.init(transfer(offscreen), width, height)
+  const compositorWorkerRpc = rpc<CompositorWorkerMethods>(compositorWorker)
+  const compositorRpc = await compositorWorkerRpc.init(transfer(offscreen), width, height)
 
   // Track preview processors for cleanup
   const previewProcessors = new Map<string, MediaStreamTrackProcessor<VideoFrame>>()
@@ -473,7 +473,7 @@ export async function makePlayer(options: CreatePlayerOptions): Promise<Player> 
   }
 
   /** Get or create a clip entry (orchestrated playback) */
-  function getOrCreateClip(clipId: string, trackId: string): ClipEntry {
+  async function getOrCreateClip(clipId: string, trackId: string): Promise<ClipEntry> {
     const clip = clips[clipId]
 
     if (clip) {
@@ -868,8 +868,8 @@ export async function makePlayer(options: CreatePlayerOptions): Promise<Player> 
       // Ensure track exists (for audio routing)
       getOrCreateTrack(trackId)
 
-      // Get or create clip entry
-      const clip = getOrCreateClip(clipId, trackId)
+      // Get or create clip entry (now async)
+      const clip = await getOrCreateClip(clipId, trackId)
       setClips(clipId, 'state', 'loading')
 
       // Load from OPFS (workers read the file directly)

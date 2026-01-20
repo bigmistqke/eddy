@@ -6,7 +6,7 @@
  * - Worker-to-worker MessagePort connections for frame transfer
  */
 
-import { expose, type Transferred } from '@bigmistqke/rpc/messenger'
+import { expose, handle, type Handled, type Transferred } from '@bigmistqke/rpc/messenger'
 import type { CompiledTimeline } from '@eddy/timeline'
 import { debug } from '@eddy/utils'
 import {
@@ -18,7 +18,6 @@ import {
   makeVideoCompositor,
   type EffectValue,
   type RenderStats,
-  type VideoCompositor,
 } from '@eddy/video'
 import { PREVIEW_CLIP_ID } from '~/constants'
 
@@ -41,10 +40,8 @@ const log = debug('compositor.worker', false)
 /*                                                                                */
 /**********************************************************************************/
 
-export interface CompositorWorkerMethods {
-  /** Initialize with OffscreenCanvas */
-  init(canvas: OffscreenCanvas, width: number, height: number): Promise<void>
-
+/** Methods returned by init() as a sub-proxy */
+export interface CompositorMethods {
   /** Set the compiled layout timeline */
   setTimeline(timeline: CompiledTimeline): void
 
@@ -95,118 +92,116 @@ export interface CompositorWorkerMethods {
   destroy(): void
 }
 
+export interface CompositorWorkerMethods {
+  /** Initialize the compositor with canvas and dimensions, returns methods as sub-proxy */
+  init(canvas: OffscreenCanvas, width: number, height: number): Handled<CompositorMethods>
+}
+
 // Re-export RenderStats for consumers
 export type { RenderStats }
 
 /**********************************************************************************/
 /*                                                                                */
-/*                                     State                                      */
-/*                                                                                */
-/**********************************************************************************/
-
-let compositor: VideoCompositor | null = null
-
-// Playback worker connections - keyed by clipId (worker-specific concern)
-const playbackWorkerPorts = new Map<string, MessagePort>()
-
-/**********************************************************************************/
-/*                                                                                */
-/*                                    Methods                                     */
+/*                                    Expose                                      */
 /*                                                                                */
 /**********************************************************************************/
 
 expose<CompositorWorkerMethods>({
-  async init(offscreenCanvas, width, height) {
+  init(canvas, width, height) {
     log('init', { width, height })
 
-    compositor = makeVideoCompositor({
-      canvas: offscreenCanvas,
+    const compositor = makeVideoCompositor({
+      canvas,
       width,
       height,
       effectRegistry,
       previewClipId: PREVIEW_CLIP_ID,
     })
-  },
 
-  setTimeline(timeline) {
-    compositor?.setTimeline(timeline)
-  },
+    // Playback worker connections - keyed by clipId (worker-specific concern)
+    const playbackWorkerPorts = new Map<string, MessagePort>()
 
-  setEffectValue(sourceType, sourceId, effectIndex, paramKey, value) {
-    compositor?.setEffectValue(sourceType, sourceId, effectIndex, paramKey, value)
-  },
-
-  setPreviewStream(trackId, stream) {
-    compositor?.setPreviewStream(trackId, stream)
-  },
-
-  setFrame(clipId, frame) {
-    compositor?.setFrame(clipId, frame as VideoFrame | null)
-  },
-
-  connectPlaybackWorker(clipId, port) {
-    log('connectPlaybackWorker', { clipId })
-
-    // Disconnect existing port for this clip
-    const existingPort = playbackWorkerPorts.get(clipId)
-    if (existingPort) {
-      existingPort.close()
-    }
-
-    // Store the port
-    playbackWorkerPorts.set(clipId, port)
-
-    // Expose setFrame method on this port for playback worker to call
-    expose(
-      {
-        setFrame(clipId: string, frame: VideoFrame | null) {
-          compositor?.setFrame(clipId, frame)
-        },
+    return handle({
+      setTimeline(timeline) {
+        compositor.setTimeline(timeline)
       },
-      { to: port },
-    )
-  },
 
-  disconnectPlaybackWorker(clipId) {
-    log('disconnectPlaybackWorker', { clipId })
+      setEffectValue(sourceType, sourceId, effectIndex, paramKey, value) {
+        compositor.setEffectValue(sourceType, sourceId, effectIndex, paramKey, value)
+      },
 
-    const port = playbackWorkerPorts.get(clipId)
-    if (port) {
-      port.close()
-      playbackWorkerPorts.delete(clipId)
-    }
+      setPreviewStream(trackId, stream) {
+        compositor.setPreviewStream(trackId, stream)
+      },
 
-    // Clear any remaining frame for this clip
-    compositor?.setFrame(clipId, null)
-  },
+      setFrame(clipId, frame) {
+        compositor.setFrame(clipId, frame as VideoFrame | null)
+      },
 
-  render(time) {
-    return compositor?.render(time) ?? { expected: 0, rendered: 0, dropped: 0, stale: 0 }
-  },
+      connectPlaybackWorker(clipId, port) {
+        log('connectPlaybackWorker', { clipId })
 
-  renderToCaptureCanvas(time) {
-    compositor?.renderToCaptureCanvas(time)
-  },
+        // Disconnect existing port for this clip
+        const existingPort = playbackWorkerPorts.get(clipId)
+        if (existingPort) {
+          existingPort.close()
+        }
 
-  renderAndCapture(time) {
-    return compositor?.renderAndCapture(time) ?? null
-  },
+        // Store the port
+        playbackWorkerPorts.set(clipId, port)
 
-  renderFramesAndCapture(time, frameEntries) {
-    return compositor?.renderFramesAndCapture(time, frameEntries) ?? null
-  },
+        // Expose setFrame method on this port for playback worker to call
+        expose(
+          {
+            setFrame(clipId: string, frame: VideoFrame | null) {
+              compositor.setFrame(clipId, frame)
+            },
+          },
+          { to: port },
+        )
+      },
 
-  destroy() {
-    log('destroy')
+      disconnectPlaybackWorker(clipId) {
+        log('disconnectPlaybackWorker', { clipId })
 
-    // Close all ports (worker-specific cleanup)
-    for (const port of playbackWorkerPorts.values()) {
-      port.close()
-    }
-    playbackWorkerPorts.clear()
+        const port = playbackWorkerPorts.get(clipId)
+        if (port) {
+          port.close()
+          playbackWorkerPorts.delete(clipId)
+        }
 
-    // Destroy compositor
-    compositor?.destroy()
-    compositor = null
+        // Clear any remaining frame for this clip
+        compositor.setFrame(clipId, null)
+      },
+
+      render(time) {
+        return compositor.render(time)
+      },
+
+      renderToCaptureCanvas(time) {
+        compositor.renderToCaptureCanvas(time)
+      },
+
+      renderAndCapture(time) {
+        return compositor.renderAndCapture(time)
+      },
+
+      renderFramesAndCapture(time, frameEntries) {
+        return compositor.renderFramesAndCapture(time, frameEntries)
+      },
+
+      destroy() {
+        log('destroy')
+
+        // Close all ports (worker-specific cleanup)
+        for (const port of playbackWorkerPorts.values()) {
+          port.close()
+        }
+        playbackWorkerPorts.clear()
+
+        // Destroy compositor
+        compositor.destroy()
+      },
+    } satisfies CompositorMethods)
   },
 })

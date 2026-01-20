@@ -19,9 +19,9 @@ import { getActivePlacements } from '@eddy/timeline'
 import { createWritableStream, readClipBlob, writeBlob } from '~/opfs'
 import { makeDebugInfo as initDebugInfo } from '~/primitives/make-debug-info'
 import { SCHEDULER_BUFFER } from '~/primitives/make-scheduler'
-import type { CaptureWorkerMethods } from '~/workers/capture.worker'
+import type { CaptureMethods, CaptureWorkerMethods } from '~/workers/capture.worker'
 import CaptureWorker from '~/workers/capture.worker?worker'
-import type { MuxerWorkerMethods } from '~/workers/muxer.worker'
+import type { MuxerMethods, MuxerWorkerMethods } from '~/workers/muxer.worker'
 import MuxerWorker from '~/workers/muxer.worker?worker'
 import { makePlayer } from './make-player'
 
@@ -181,28 +181,32 @@ export function createEditor(options: CreateEditorOptions) {
   // Pre-initialize capture and muxer workers
   const [workers] = resource(async ({ onCleanup }) => {
     log('creating workers...')
-    const capture = rpc<CaptureWorkerMethods>(new CaptureWorker())
-    const muxer = rpc<MuxerWorkerMethods>(new MuxerWorker())
+    const captureWorker = new CaptureWorker()
+    const muxerWorker = new MuxerWorker()
+
+    const captureWorkerRpc = rpc<CaptureWorkerMethods>(captureWorker)
+    const muxerWorkerRpc = rpc<MuxerWorkerMethods>(muxerWorker)
 
     onCleanup(() => {
-      capture[$MESSENGER].terminate()
-      muxer[$MESSENGER].terminate()
+      captureWorkerRpc[$MESSENGER].terminate()
+      muxerWorkerRpc[$MESSENGER].terminate()
     })
 
     // Pass scheduler buffer to muxer for backpressure signaling
-    muxer.setSchedulerBuffer(SCHEDULER_BUFFER)
+    muxerWorkerRpc.setSchedulerBuffer(SCHEDULER_BUFFER)
 
     // Create MessageChannel to connect capture → muxer
     const channel = new MessageChannel()
 
-    // Set up ports via RPC
-    await Promise.all([
-      muxer.setCapturePort(transfer(channel.port2)),
-      capture.setMuxerPort(transfer(channel.port1)),
-    ])
+    // Set up capture port on muxer
+    await muxerWorkerRpc.setCapturePort(transfer(channel.port2))
 
-    // Pre-initialize VP9 encoder (avoids ~2s startup during recording)
-    await muxer.preInit()
+    // Initialize capture with muxer port, returns capture methods
+    const capture = await captureWorkerRpc.init(transfer(channel.port1))
+
+    // Initialize muxer (VP9 + Opus encoders), returns muxer methods
+    const muxer = await muxerWorkerRpc.init()
+
     log('workers ready')
 
     return { capture, muxer }
@@ -594,7 +598,6 @@ export function createEditor(options: CreateEditorOptions) {
 
       // Reset muxer for next recording
       await _workers.muxer.reset()
-      await _workers.muxer.preInit()
 
       await player()?.stop()
 
