@@ -1,5 +1,29 @@
 [
   {
+    "hash": "4f2f67ca8ff1ddb41b71f323e3c584dd8d88a6d9",
+    "short_hash": "4f2f67c",
+    "author": "bigmistqke",
+    "date": "2026-01-21T03:55:54+01:00",
+    "message": "refactor: merge column header and timeline into single button\n\nClicking a column button now both selects it for editing and seeks\nthe playhead to that position. Removes redundant header row.",
+    "files_changed": 2
+  },
+  {
+    "hash": "942d2fbb2775adec73076a5197467ba65abee937",
+    "short_hash": "942d2fb",
+    "author": "bigmistqke",
+    "date": "2026-01-21T03:52:33+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
+    "hash": "47d655b2802fc8e977630ef4f389078de452ac79",
+    "short_hash": "47d655b",
+    "author": "bigmistqke",
+    "date": "2026-01-21T03:52:03+01:00",
+    "message": "refactor: restructure sequencer with scrollable tracks and fixed ruler\n\n- Split into header row, scrollable tracks container, and ruler row\n- Tracks overflow vertically while ruler stays fixed at bottom\n- Column highlighting extends through all sections\n- Added spacer and filler rows for continuous column backgrounds",
+    "files_changed": 2
+  },
+  {
     "hash": "47d655b2802fc8e977630ef4f389078de452ac79",
     "short_hash": "47d655b",
     "author": "bigmistqke",
@@ -14,22 +38,6 @@
     "date": "2026-01-21T03:51:56+01:00",
     "message": "feat: make preview a draggable overlay\n\nPreview is now a floating overlay that can be repositioned by dragging.\nIncludes drag handle with column info display.",
     "files_changed": 4
-  },
-  {
-    "hash": "c6826651b37ea57c487ebf5ca9472b6bca7a6fa4",
-    "short_hash": "c682665",
-    "author": "bigmistqke",
-    "date": "2026-01-21T03:51:56+01:00",
-    "message": "feat: make preview a draggable overlay\n\nPreview is now a floating overlay that can be repositioned by dragging.\nIncludes drag handle with column info display.",
-    "files_changed": 4
-  },
-  {
-    "hash": "942f1655b9a8e910867a8855a3e57eca9a85c965",
-    "short_hash": "942f165",
-    "author": "bigmistqke",
-    "date": "2026-01-21T03:26:00+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
   },
   {
     "hash": "7b9f910ba1b1c4cee1e9a8f3a7bcfc83859dd619",
