@@ -1,11 +1,12 @@
 import { rpc, transfer, type RPC } from '@bigmistqke/rpc/messenger'
 import { makeAudioBus, type AudioBus, type AudioBusOutput } from '@eddy/audio'
-import type { AudioPipeline, Group, PipelineOutput, Project, StaticValue } from '@eddy/lexicons'
-import { debug, getGlobalPerfMonitor, makeLoop } from '@eddy/utils'
+import type { AudioPipeline, Group, Project, StaticValue } from '@eddy/lexicons'
+import { createClock, type Clock } from '@eddy/solid'
+import { compileLayoutTimeline, type CompiledTimeline } from '@eddy/timeline'
+import { debug, makeMonitor, makeLoop } from '@eddy/utils'
 import { createEffect, createMemo, createSignal, on, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import { PREVIEW_CLIP_ID } from '~/constants'
-import { compileLayoutTimeline, type CompiledTimeline } from '@eddy/timeline'
 import { makeAheadScheduler, SCHEDULE_AHEAD } from '~/primitives/make-ahead-scheduler'
 import {
   makePlayback,
@@ -21,14 +22,16 @@ import type { AudioPlaybackWorkerMethods } from '~/workers/playback.audio.worker
 import AudioPlaybackWorker from '~/workers/playback.audio.worker?worker'
 import type { VideoPlaybackWorkerMethods } from '~/workers/playback.video.worker'
 import VideoPlaybackWorker from '~/workers/playback.video.worker?worker'
-import { createClock, type Clock } from '@eddy/solid'
 
 const log = debug('make-player', false)
-const perf = getGlobalPerfMonitor()
+const monitor = makeMonitor<
+  'renderLoop',
+  'frames-expected' | 'frames-rendered' | 'frames-dropped' | 'frames-stale'
+>()
 
-// Expose perf monitor globally for console debugging
+// Expose perf stats globally for console debugging
 if (typeof window !== 'undefined') {
-  ;(window as any).eddy = { perf }
+  ;(window as any).eddy = { monitor }
 }
 
 /**********************************************************************************/
@@ -647,57 +650,56 @@ export async function makePlayer(options: CreatePlayerOptions): Promise<Player> 
    * Render loop - drives compositor rendering and handles looping.
    * Video frames are streamed directly from playback workers to compositor.
    */
-  const renderLoop = makeLoop(() => {
-    perf.start('renderLoop')
 
-    const time = clock.tick()
-    const playing = clock.isPlaying()
-    const looping = clock.loop()
-    const duration = maxDuration()
+  const renderLoop = makeLoop(
+    monitor('renderLoop', () => {
+      const time = clock.tick()
+      const playing = clock.isPlaying()
+      const looping = clock.loop()
+      const duration = maxDuration()
 
-    // Detect loop reset (clock jumped backward while playing)
-    if (playing && time < prevTime) {
-      log('loop reset detected', { prevTime, time })
-      // Activate scheduled playbacks for all playing clips
-      const playingClips = Object.values(clips).filter(clip => clip.state === 'playing')
-      for (const clip of playingClips) {
-        activateScheduledPlayback(clip, 0)
-      }
-    }
-    prevTime = time
-
-    // Schedule playbacks ahead when playing
-    if (playing && duration > 0) {
-      // Calculate schedule-ahead time (with modulo for looping)
-      const scheduleTime = looping ? (time + SCHEDULE_AHEAD) % duration : time + SCHEDULE_AHEAD
-
-      // Only schedule if we're approaching a transition point
-      // For looping: schedule when near the end (scheduleTime wraps to start)
-      const nearLoopEnd = looping && time + SCHEDULE_AHEAD >= duration
-
-      if (nearLoopEnd) {
-        const playingClips = Object.values(clips).filter(
-          clip => clip.state === 'playing' && !aheadScheduler.hasScheduled(clip.clipId),
-        )
+      // Detect loop reset (clock jumped backward while playing)
+      if (playing && time < prevTime) {
+        log('loop reset detected', { prevTime, time })
+        // Activate scheduled playbacks for all playing clips
+        const playingClips = Object.values(clips).filter(clip => clip.state === 'playing')
         for (const clip of playingClips) {
-          aheadScheduler.schedule(clip.clipId, clip.trackId, scheduleTime)
+          activateScheduledPlayback(clip, 0)
         }
       }
-    }
+      prevTime = time
 
-    // Render compositor at current time and track frame availability
-    compositor.render(time).then(stats => {
-      // Track dropped frames (only when playing and expecting frames)
-      if (playing && stats.expected > 0) {
-        perf.count('frames-expected', stats.expected)
-        perf.count('frames-rendered', stats.rendered)
-        perf.count('frames-dropped', stats.dropped)
-        perf.count('frames-stale', stats.stale)
+      // Schedule playbacks ahead when playing
+      if (playing && duration > 0) {
+        // Calculate schedule-ahead time (with modulo for looping)
+        const scheduleTime = looping ? (time + SCHEDULE_AHEAD) % duration : time + SCHEDULE_AHEAD
+
+        // Only schedule if we're approaching a transition point
+        // For looping: schedule when near the end (scheduleTime wraps to start)
+        const nearLoopEnd = looping && time + SCHEDULE_AHEAD >= duration
+
+        if (nearLoopEnd) {
+          const playingClips = Object.values(clips).filter(
+            clip => clip.state === 'playing' && !aheadScheduler.hasScheduled(clip.clipId),
+          )
+          for (const clip of playingClips) {
+            aheadScheduler.schedule(clip.clipId, clip.trackId, scheduleTime)
+          }
+        }
       }
-    })
 
-    perf.end('renderLoop')
-  })
+      // Render compositor at current time and track frame availability
+      compositor.render(time).then(stats => {
+        // Track dropped frames (only when playing and expecting frames)
+        if (playing && stats.expected > 0) {
+          monitor.count('frames-expected', stats.expected)
+          monitor.count('frames-rendered', stats.rendered)
+          monitor.count('frames-dropped', stats.dropped)
+          monitor.count('frames-stale', stats.stale)
+        }
+      })
+    }),
+  )
 
   function destroy(): void {
     renderLoop.stop()
@@ -992,9 +994,9 @@ export async function makePlayer(options: CreatePlayerOptions): Promise<Player> 
     // Utilities
     getAudioPipeline: (trackId: string) => tracks[trackId]?.audioPipeline,
     getGroupAudioPipeline: (groupId: string) => groups[groupId]?.audioPipeline,
-    logPerf: () => perf.logSummary(),
+    logPerf: monitor.log,
     resetPerf: () => {
-      perf.reset()
+      monitor.reset()
       // Reset playback perf too
       for (const clip of Object.values(clips)) {
         clip.playback.resetPerf()
@@ -1015,7 +1017,7 @@ export async function makePlayer(options: CreatePlayerOptions): Promise<Player> 
       )
 
       return {
-        main: perf.getAllStats(),
+        main: { ...monitor.getAllStats(), counters: monitor.getCounters() },
         workers: workerStats,
       }
     },

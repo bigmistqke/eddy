@@ -6,7 +6,7 @@
  */
 
 import type { AudioTrackInfo, DemuxedSample } from '@eddy/media'
-import { createPerfMonitor, debug, makeLoop } from '@eddy/utils'
+import { debug, makeMonitor, makeLoop } from '@eddy/utils'
 import {
   ALL_FORMATS,
   EncodedPacketSink,
@@ -433,7 +433,7 @@ function transitionToSeeking(
 
 /** Create a new audio playback engine instance */
 export function makeAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}): AudioPlayback {
-  const perf = createPerfMonitor()
+  const monitor = makeMonitor<'demux' | 'decode' | 'transferAudio'>()
 
   let state: PlaybackStateMachine = { type: 'idle' }
 
@@ -465,6 +465,12 @@ export function makeAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}):
     return decoder
   }
 
+  const transferAudio = monitor('transferAudio', (buffered: BufferedAudio, callback: AudioCallback) => {
+    const audioData = bufferedToAudioData(buffered)
+    lastSentTimestamp = buffered.timestamp
+    callback(audioData)
+  })
+
   function sendAudio(time: number): void {
     if (!onAudio || !isLoaded(state)) return
 
@@ -475,11 +481,7 @@ export function makeAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}):
       return
     }
 
-    perf.start('transferAudio')
-    const audioData = bufferedToAudioData(buffered)
-    lastSentTimestamp = buffered.timestamp
-    onAudio(audioData)
-    perf.end('transferAudio')
+    transferAudio(buffered, onAudio)
   }
 
   async function decodePacket(
@@ -501,6 +503,13 @@ export function makeAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}):
     })
   }
 
+  const demux = monitor('demux', <T>(operation: () => T): T => operation())
+  const decode = monitor('decode', (
+    packet: EncodedPacket,
+    decoder: AudioDecoder,
+    audioTrack: InputAudioTrack,
+  ) => decodePacket(packet, decoder, audioTrack))
+
   async function bufferAhead(fromTime: number): Promise<void> {
     if (!isLoaded(state)) return
     if (isBuffering) return
@@ -511,24 +520,19 @@ export function makeAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}):
     if (bufferPosition >= targetEnd) return
 
     isBuffering = true
-    perf.start('bufferAhead')
 
     log('bufferAhead', { fromTime, targetEnd, bufferPosition })
 
     const streamDirectly = !!onAudio
 
     try {
-      perf.start('demux')
-      let packet = await audioSink.getPacket(bufferPosition)
-      if (!packet) {
-        packet = await audioSink.getFirstPacket()
-      }
-      perf.end('demux')
+      let packet = await demux(async () => {
+        const pkt = await audioSink.getPacket(bufferPosition)
+        return pkt ?? (await audioSink.getFirstPacket())
+      })
 
       while (packet && packet.timestamp < targetEnd) {
-        perf.start('decode')
-        const audioData = await decodePacket(packet, decoder, audioTrack)
-        perf.end('decode')
+        const audioData = await decode(packet, decoder, audioTrack)
 
         if (audioData) {
           if (streamDirectly) {
@@ -542,14 +546,11 @@ export function makeAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}):
           bufferPosition = packet.timestamp + packet.duration
         }
 
-        perf.start('demux')
-        packet = await audioSink.getNextPacket(packet)
-        perf.end('demux')
+        packet = await demux(() => audioSink.getNextPacket(packet!))
       }
     } catch (error) {
       console.error('[playback:audio] bufferAhead error', error)
     } finally {
-      perf.end('bufferAhead')
       isBuffering = false
     }
   }
@@ -813,11 +814,11 @@ export function makeAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}):
     },
 
     getPerf() {
-      return perf.getAllStats()
+      return monitor.getAllStats()
     },
 
     resetPerf(): void {
-      perf.reset()
+      monitor.reset()
     },
   } satisfies AudioPlayback
 }

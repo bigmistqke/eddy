@@ -4,6 +4,9 @@ import solid from 'vite-plugin-solid'
 
 export default defineConfig({
   plugins: [solid()],
+  define: {
+    __ENABLE_PERF__: process.env.NODE_ENV !== 'production',
+  },
   resolve: {
     alias: {
       '~': resolve(__dirname, 'src'),

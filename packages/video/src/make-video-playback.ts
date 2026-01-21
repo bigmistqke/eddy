@@ -6,7 +6,7 @@
  */
 
 import type { DemuxedSample, VideoTrackInfo } from '@eddy/media'
-import { assertedNotNullish, createPerfMonitor, debug, makeLoop } from '@eddy/utils'
+import { assertedNotNullish, debug, makeMonitor, makeLoop } from '@eddy/utils'
 import {
   ALL_FORMATS,
   EncodedPacketSink,
@@ -348,13 +348,19 @@ export function makeVideoPlayback({
   onFrame,
   shouldSkipDeltaFrame,
 }: VideoPlaybackConfig = {}): VideoPlayback {
-  const perf = createPerfMonitor()
+  const monitor = makeMonitor<'demux' | 'decode' | 'transferFrame'>()
 
   let state: PlaybackStateMachine = { type: 'idle' }
 
   let bufferPosition = 0
   let isBuffering = false
   let lastSentTimestamp: number | null = null
+
+  const transferFrame = monitor('transferFrame', (frameData: FrameData, callback: FrameCallback) => {
+    const frame = dataToFrame(frameData)
+    lastSentTimestamp = frameData.timestamp
+    callback(frame)
+  })
 
   function sendFrame(time: number): void {
     if (!onFrame || !isLoaded(state)) return
@@ -374,13 +380,14 @@ export function makeVideoPlayback({
       return
     }
 
-    // Create VideoFrame and send to callback
-    perf.start('transferFrame')
-    const frame = dataToFrame(frameData)
-    lastSentTimestamp = frameData.timestamp
-    onFrame(frame)
-    perf.end('transferFrame')
+    transferFrame(frameData, onFrame)
   }
+
+  const demux = monitor('demux', <T>(operation: () => T): T => operation())
+  const decode = monitor('decode', (decoder: VideoDecoderHandle, sample: DemuxedSample) => {
+    const maybeResult = decoder.decode(sample)
+    return maybeResult instanceof Promise ? maybeResult : Promise.resolve(maybeResult)
+  })
 
   async function bufferAhead(fromTime: number): Promise<void> {
     if (!isLoaded(state)) return
@@ -392,25 +399,19 @@ export function makeVideoPlayback({
     if (bufferPosition >= targetEnd) return
 
     isBuffering = true
-    perf.start('bufferAhead')
     log('bufferAhead', { fromTime, targetEnd, bufferPosition })
 
     try {
-      perf.start('demux')
-      let packet = await videoSink.getPacket(bufferPosition)
-      if (!packet) {
-        packet = await videoSink.getFirstPacket()
-      }
-      perf.end('demux')
+      let packet = await demux(async () => {
+        const pkt = await videoSink.getPacket(bufferPosition)
+        return pkt ?? (await videoSink.getFirstPacket())
+      })
 
       let decoded = 0
       while (packet && packet.timestamp < targetEnd && decoded < BUFFER_AHEAD_FRAMES) {
         const sample = packetToSample(packet, videoTrack.id)
 
-        perf.start('decode')
-        const maybeResult = decoder.decode(sample)
-        const result = maybeResult instanceof Promise ? await maybeResult : maybeResult
-        perf.end('decode')
+        const result = await decode(decoder, sample)
 
         switch (result.type) {
           case 'frame': {
@@ -445,14 +446,11 @@ export function makeVideoPlayback({
           }
         }
 
-        perf.start('demux')
-        packet = await videoSink.getNextPacket(packet)
-        perf.end('demux')
+        packet = await demux(() => videoSink.getNextPacket(packet!))
       }
     } catch (error) {
       console.error('[playback:engine] bufferAhead error', error)
     } finally {
-      perf.end('bufferAhead')
       isBuffering = false
     }
   }
@@ -799,11 +797,11 @@ export function makeVideoPlayback({
     },
 
     getPerf() {
-      return perf.getAllStats()
+      return monitor.getAllStats()
     },
 
     resetPerf(): void {
-      perf.reset()
+      monitor.reset()
     },
 
     sendCurrentFrame(): void {
