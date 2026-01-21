@@ -336,9 +336,9 @@
       "node_type": "outcome",
       "title": "Committed: add deciduous decision graph workflow",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:46:06.936429+01:00",
-      "updated_at": "2026-01-09T02:46:06.936429+01:00",
+      "updated_at": "2026-01-21T21:56:03.656899+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"4302675\",\"confidence\":95}"
     },
     {
@@ -358,9 +358,9 @@
       "node_type": "outcome",
       "title": "Created 5 GitHub issues with prioritization",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T02:55:52.826352+01:00",
-      "updated_at": "2026-01-09T02:55:52.826352+01:00",
+      "updated_at": "2026-01-21T21:56:22.503408+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -380,9 +380,9 @@
       "node_type": "option",
       "title": "Option A: Pause decode during recording",
       "description": null,
-      "status": "pending",
+      "status": "rejected",
       "created_at": "2026-01-09T02:58:45.284597+01:00",
-      "updated_at": "2026-01-09T02:58:45.284597+01:00",
+      "updated_at": "2026-01-21T22:06:43.717562+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":70}"
     },
     {
@@ -391,9 +391,9 @@
       "node_type": "option",
       "title": "Option B: Pre-decode all frames to memory before playback",
       "description": null,
-      "status": "pending",
+      "status": "rejected",
       "created_at": "2026-01-09T02:58:45.511920+01:00",
-      "updated_at": "2026-01-09T02:58:45.511920+01:00",
+      "updated_at": "2026-01-21T22:06:43.735475+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":65}"
     },
     {
@@ -413,9 +413,9 @@
       "node_type": "option",
       "title": "Option D: Use different codec/format more suited for editing (ProRes-like)",
       "description": null,
-      "status": "pending",
+      "status": "rejected",
       "created_at": "2026-01-09T02:58:45.908973+01:00",
-      "updated_at": "2026-01-09T02:58:45.908973+01:00",
+      "updated_at": "2026-01-21T22:06:43.748935+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":50}"
     },
     {
@@ -424,9 +424,9 @@
       "node_type": "option",
       "title": "Option E: Offload decode to GPU via WebGPU/WebGL",
       "description": null,
-      "status": "pending",
+      "status": "rejected",
       "created_at": "2026-01-09T02:58:46.117332+01:00",
-      "updated_at": "2026-01-09T02:58:46.117332+01:00",
+      "updated_at": "2026-01-21T22:06:43.758590+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":45}"
     },
     {
@@ -446,9 +446,9 @@
       "node_type": "option",
       "title": "Option A: Chrome DevTools Performance tab + screenshot",
       "description": null,
-      "status": "pending",
+      "status": "rejected",
       "created_at": "2026-01-09T03:02:05.174930+01:00",
-      "updated_at": "2026-01-09T03:02:05.174930+01:00",
+      "updated_at": "2026-01-21T22:06:43.768887+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":75}"
     },
     {
@@ -457,9 +457,9 @@
       "node_type": "option",
       "title": "Option B: User Timing API (performance.mark/measure) + export",
       "description": null,
-      "status": "pending",
+      "status": "rejected",
       "created_at": "2026-01-09T03:02:05.380830+01:00",
-      "updated_at": "2026-01-09T03:02:05.380830+01:00",
+      "updated_at": "2026-01-21T22:06:43.779480+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":80}"
     },
     {
@@ -468,9 +468,9 @@
       "node_type": "option",
       "title": "Option C: stats.js (FPS/MS/MB overlay)",
       "description": null,
-      "status": "pending",
+      "status": "rejected",
       "created_at": "2026-01-09T03:02:05.561310+01:00",
-      "updated_at": "2026-01-09T03:02:05.561310+01:00",
+      "updated_at": "2026-01-21T22:06:43.793003+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":70}"
     },
     {
@@ -490,9 +490,9 @@
       "node_type": "option",
       "title": "Option E: Playwright + CDP tracing (automated, headless)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T03:03:49.791469+01:00",
-      "updated_at": "2026-01-09T03:03:49.791469+01:00",
+      "updated_at": "2026-01-21T22:03:18.850832+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -523,9 +523,9 @@
       "node_type": "outcome",
       "title": "Committed: fix SolidJS store mutation bug and type errors",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T03:38:04.742010+01:00",
-      "updated_at": "2026-01-09T03:38:04.742010+01:00",
+      "updated_at": "2026-01-21T21:56:03.668478+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"9b026c7\",\"confidence\":95}"
     },
     {
@@ -534,9 +534,9 @@
       "node_type": "outcome",
       "title": "Committed: add perf instrumentation to playback workers",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T03:38:10.535212+01:00",
-      "updated_at": "2026-01-09T03:38:10.535212+01:00",
+      "updated_at": "2026-01-21T21:56:03.679596+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"d041f49\",\"confidence\":95}"
     },
     {
@@ -578,9 +578,9 @@
       "node_type": "option",
       "title": "Option G: Scheduler API (scheduler.postTask) - browser-native priority scheduling",
       "description": null,
-      "status": "pending",
+      "status": "rejected",
       "created_at": "2026-01-09T03:51:46.711580+01:00",
-      "updated_at": "2026-01-09T03:51:46.711580+01:00",
+      "updated_at": "2026-01-21T22:06:43.802641+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":75,\"prompt\":\"Browser's Scheduler API for priority-based task scheduling:\\n\\nMECHANISM:\\n- Use scheduler.postTask() with priority hints\\n- Recording: 'user-blocking' (highest priority)\\n- Playback decode: 'user-visible' normally, 'background' during recording\\n- Browser scheduler handles thread contention intelligently\\n\\nPROS:\\n- Browser-native, well-optimized\\n- Integrates with browser's rendering pipeline\\n- No manual coordination needed\\n- Works across workers\\n\\nCONS:\\n- Relatively new API (Chrome 94+, no Firefox/Safari)\\n- Less granular control than manual approach\\n- Can't guarantee frame timing\\n- Polyfill needed for unsupported browsers\\n\\nIMPLEMENTATION SKETCH:\\n```ts\\n// Recording - highest priority\\nawait scheduler.postTask(() => muxFrame(frame), { priority: 'user-blocking' })\\n\\n// Playback - yield to recording\\nawait scheduler.postTask(() => decodeFrame(sample), { \\n  priority: isRecording ? 'background' : 'user-visible' \\n})\\n\\n// Or use scheduler.yield() to let higher priority run\\nfor (const sample of samples) {\\n  await scheduler.yield()\\n  decode(sample)\\n}\\n```\"}"
     },
     {
@@ -589,9 +589,9 @@
       "node_type": "option",
       "title": "Option H: Backpressure + adaptive quality - workers signal load, coordinator throttles",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T03:51:54.293920+01:00",
-      "updated_at": "2026-01-09T03:51:54.293920+01:00",
+      "updated_at": "2026-01-21T22:03:18.862812+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Backpressure-based adaptive system:\\n\\nMECHANISM:\\n- Each worker reports load metrics via existing RPC\\n- Central coordinator (main thread or dedicated worker) tracks system load\\n- When recording starts: coordinator tells playback workers to reduce work\\n- Playback workers adapt: skip frames, reduce buffer size, lower decode quality\\n\\nADAPTIVE STRATEGIES:\\n1. Frame skipping: Only decode keyframes during recording\\n2. Buffer reduction: 30 frames → 5 frames during recording\\n3. Quality reduction: Request lower resolution decode if codec supports\\n4. Temporal decimation: Decode every 2nd frame, interpolate visually\\n\\nPROS:\\n- Uses existing RPC infrastructure\\n- Graceful degradation\\n- No SharedArrayBuffer requirements\\n- Easy to tune thresholds\\n\\nCONS:\\n- Slightly higher latency (async messages)\\n- Coordination logic on main thread\\n- Need to implement in each worker\\n\\nIMPLEMENTATION SKETCH:\\n```ts\\n// Coordinator\\nfunction onRecordingStart() {\\n  for (const worker of playbackWorkers) {\\n    worker.setMode('low-priority')\\n  }\\n}\\n\\n// Playback worker\\nsetMode(mode: 'normal' | 'low-priority') {\\n  if (mode === 'low-priority') {\\n    BUFFER_MAX_FRAMES = 5\\n    skipNonKeyframes = true\\n  }\\n}\\n```\"}"
     },
     {
@@ -699,9 +699,9 @@
       "node_type": "option",
       "title": "Track-centric slots (current): Slot per track with nested segments per clip. Query O(slots × segments), viewport duplicated.",
       "description": null,
-      "status": "pending",
+      "status": "rejected",
       "created_at": "2026-01-09T11:47:59.747070+01:00",
-      "updated_at": "2026-01-09T11:47:59.747070+01:00",
+      "updated_at": "2026-01-21T22:06:43.813143+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":70}"
     },
     {
@@ -710,9 +710,9 @@
       "node_type": "option",
       "title": "Layout-segment-centric: Segments are periods of stable layout, each with flat placements list. Query O(log n), supports animated layouts.",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T11:47:59.926877+01:00",
-      "updated_at": "2026-01-09T11:47:59.926877+01:00",
+      "updated_at": "2026-01-21T22:03:18.872032+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -787,9 +787,9 @@
       "node_type": "outcome",
       "title": "Committed: clip-based playback with worker pool",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T12:25:26.987216+01:00",
-      "updated_at": "2026-01-09T12:25:26.987216+01:00",
+      "updated_at": "2026-01-21T21:56:03.690759+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"bd6cf69\",\"confidence\":95}"
     },
     {
@@ -820,9 +820,9 @@
       "node_type": "outcome",
       "title": "Committed: fix preview rendering with segment-based timeline",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T14:28:36.362154+01:00",
-      "updated_at": "2026-01-09T14:28:36.362154+01:00",
+      "updated_at": "2026-01-21T21:56:03.702205+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"de93467\",\"confidence\":95}"
     },
     {
@@ -853,9 +853,9 @@
       "node_type": "outcome",
       "title": "Committed: feat add time input to transport bar for scrubbing",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T14:39:26.124576+01:00",
-      "updated_at": "2026-01-09T14:39:26.124576+01:00",
+      "updated_at": "2026-01-21T21:56:03.713881+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"7739a28\",\"confidence\":95}"
     },
     {
@@ -930,9 +930,9 @@
       "node_type": "outcome",
       "title": "Fixed clearRecording and downloadClip to operate on clip at current playback time",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-09T23:41:54.538645+01:00",
-      "updated_at": "2026-01-09T23:41:54.538645+01:00",
+      "updated_at": "2026-01-21T21:56:22.516953+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -941,9 +941,9 @@
       "node_type": "outcome",
       "title": "Committed: fix bin/download buttons + frame quality tracking",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-10T00:30:30.715232+01:00",
-      "updated_at": "2026-01-10T00:30:30.715232+01:00",
+      "updated_at": "2026-01-21T21:56:03.724832+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"HEAD~2\",\"confidence\":95}"
     },
     {
@@ -952,9 +952,9 @@
       "node_type": "outcome",
       "title": "Committed: feat frame quality tracking with stale detection",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-10T00:30:30.751302+01:00",
-      "updated_at": "2026-01-10T00:30:30.751302+01:00",
+      "updated_at": "2026-01-21T21:56:03.735868+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"HEAD~1\",\"confidence\":95}"
     },
     {
@@ -985,9 +985,9 @@
       "node_type": "outcome",
       "title": "Committed: fix gapless worker handoff for seamless looping",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-10T02:12:19.993286+01:00",
-      "updated_at": "2026-01-10T02:12:19.993286+01:00",
+      "updated_at": "2026-01-21T21:56:03.751747+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"HEAD~1\",\"confidence\":95}"
     },
     {
@@ -996,9 +996,9 @@
       "node_type": "outcome",
       "title": "Committed: add loop perf test to workflow docs",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-10T02:12:20.042837+01:00",
-      "updated_at": "2026-01-10T02:12:20.042837+01:00",
+      "updated_at": "2026-01-21T21:56:03.763725+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"9369ebd\",\"confidence\":95}"
     },
     {
@@ -1007,9 +1007,9 @@
       "node_type": "outcome",
       "title": "Committed: fix stale frame detection accounts for frame duration",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-10T02:20:14.810056+01:00",
-      "updated_at": "2026-01-10T02:20:14.810056+01:00",
+      "updated_at": "2026-01-21T21:56:03.775398+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"HEAD~1\",\"confidence\":95}"
     },
     {
@@ -1051,9 +1051,9 @@
       "node_type": "outcome",
       "title": "Workers reduced by ~1800 lines total - demux (264→101), playback (861→167), compositor (464→340)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-10T02:48:47.689669+01:00",
-      "updated_at": "2026-01-10T02:48:47.689669+01:00",
+      "updated_at": "2026-01-21T21:56:22.528636+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"7ce0b3d\",\"confidence\":90}"
     },
     {
@@ -1062,9 +1062,9 @@
       "node_type": "outcome",
       "title": "Committed: closure factory pattern refactor + docs update",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-12T17:18:43.704189+01:00",
-      "updated_at": "2026-01-12T17:18:43.704189+01:00",
+      "updated_at": "2026-01-21T21:56:03.788292+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"HEAD~2\",\"confidence\":95}"
     },
     {
@@ -1117,9 +1117,9 @@
       "node_type": "outcome",
       "title": "Committed: decoder queue backpressure (Ticket 1)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-12T18:30:57.153896+01:00",
-      "updated_at": "2026-01-12T18:30:57.153896+01:00",
+      "updated_at": "2026-01-21T21:56:03.802049+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"d9b3db3\",\"confidence\":95}"
     },
     {
@@ -1128,9 +1128,9 @@
       "node_type": "outcome",
       "title": "Committed SAB scheduler for cross-worker recording backpressure",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-12T19:10:34.685019+01:00",
-      "updated_at": "2026-01-12T19:10:34.685019+01:00",
+      "updated_at": "2026-01-21T21:56:03.814388+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"HEAD~1\",\"confidence\":95}"
     },
     {
@@ -1161,9 +1161,9 @@
       "node_type": "outcome",
       "title": "Generic worker pool with factory functions",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-12T19:26:15.074590+01:00",
-      "updated_at": "2026-01-12T19:26:15.074590+01:00",
+      "updated_at": "2026-01-21T21:56:22.540414+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"43f16f4\",\"confidence\":95}"
     },
     {
@@ -1172,9 +1172,9 @@
       "node_type": "outcome",
       "title": "Decoder reuse when config matches",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-12T19:36:58.585150+01:00",
-      "updated_at": "2026-01-12T19:36:58.585150+01:00",
+      "updated_at": "2026-01-21T21:56:22.553112+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"fa9a2d2\",\"confidence\":95}"
     },
     {
@@ -1183,9 +1183,9 @@
       "node_type": "outcome",
       "title": "Committed: remove redundant reset() after decoder reuse refactor",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-12T20:04:19.915902+01:00",
-      "updated_at": "2026-01-12T20:04:19.915902+01:00",
+      "updated_at": "2026-01-21T21:56:03.826515+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"6d6ffa7\",\"confidence\":95}"
     },
     {
@@ -1227,9 +1227,9 @@
       "node_type": "outcome",
       "title": "Created createLoop utility and refactored createPlayback + createPlayer to use it",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-12T20:40:16.664735+01:00",
-      "updated_at": "2026-01-12T20:40:16.664735+01:00",
+      "updated_at": "2026-01-21T21:56:22.570551+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -1238,9 +1238,9 @@
       "node_type": "outcome",
       "title": "Committed: fix stuck frame bug with createLoop utility",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-12T20:44:08.635418+01:00",
-      "updated_at": "2026-01-12T20:44:08.635418+01:00",
+      "updated_at": "2026-01-21T21:56:03.838758+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"5969b19\",\"confidence\":100}"
     },
     {
@@ -1293,9 +1293,9 @@
       "node_type": "outcome",
       "title": "Stuck clip bug fixed - sync decode() return path prevents frame orphaning in hot loop",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-14T00:05:39.735284+01:00",
-      "updated_at": "2026-01-14T00:05:39.735284+01:00",
+      "updated_at": "2026-01-21T21:56:22.588338+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"fce67a6\",\"confidence\":95}"
     },
     {
@@ -1326,9 +1326,9 @@
       "node_type": "outcome",
       "title": "Committed: feat: add video export with offline rendering",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-14T10:31:40.127755+01:00",
-      "updated_at": "2026-01-14T10:31:40.127755+01:00",
+      "updated_at": "2026-01-21T21:56:03.850825+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"d96bdab\",\"confidence\":95}"
     },
     {
@@ -1359,9 +1359,9 @@
       "node_type": "outcome",
       "title": "Default project now has audioPipeline with gain/pan - elements created correctly",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-14T10:58:26.805164+01:00",
-      "updated_at": "2026-01-14T10:58:26.805164+01:00",
+      "updated_at": "2026-01-21T21:56:22.601516+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -1392,9 +1392,9 @@
       "node_type": "outcome",
       "title": "Audio playback connected via HTMLAudioElement per clip, synced with play/pause/seek/stop",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-14T11:05:29.994444+01:00",
-      "updated_at": "2026-01-14T11:05:29.994444+01:00",
+      "updated_at": "2026-01-21T21:56:22.613779+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -1425,9 +1425,9 @@
       "node_type": "outcome",
       "title": "Committed: refactor video/audio playback with ring buffer scheduling",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-14T14:45:16.716355+01:00",
-      "updated_at": "2026-01-14T14:45:16.716355+01:00",
+      "updated_at": "2026-01-21T21:56:03.862579+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"5a3cc79\",\"confidence\":95}"
     },
     {
@@ -1436,9 +1436,9 @@
       "node_type": "outcome",
       "title": "Reorganized into domain-based packages: @eddy/audio, @eddy/video, @eddy/media",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-14T15:37:08.303092+01:00",
-      "updated_at": "2026-01-14T15:37:08.303092+01:00",
+      "updated_at": "2026-01-21T21:56:22.625991+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"1b4a427\",\"confidence\":95}"
     },
     {
@@ -1447,9 +1447,9 @@
       "node_type": "outcome",
       "title": "Fixed audio repeating last chunk when clip ends - added onEnd callback",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-14T15:42:31.578442+01:00",
-      "updated_at": "2026-01-14T15:42:31.578442+01:00",
+      "updated_at": "2026-01-21T21:56:22.639634+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"7522c41\",\"confidence\":95}"
     },
     {
@@ -1480,9 +1480,9 @@
       "node_type": "option",
       "title": "Array order = layer order (last in array on top)",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-14T16:10:40.875330+01:00",
-      "updated_at": "2026-01-14T16:10:40.875330+01:00",
+      "updated_at": "2026-01-21T22:03:18.885181+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":80,\"prompt\":\"Use clips array order as implicit z-order:\\n- Last clip in array renders last (on top)\\n- When recording, append new clip to end\\n- Reordering = moving clips in array\\n\\nPros:\\n- No schema change\\n- Simple mental model\\n- Works out of the box\\n\\nCons:\\n- Reordering affects array structure\\n- No explicit \\\"layer\\\" concept in UI\"}"
     },
     {
@@ -1491,9 +1491,9 @@
       "node_type": "option",
       "title": "Add explicit z/layer property to Clip",
       "description": null,
-      "status": "pending",
+      "status": "rejected",
       "created_at": "2026-01-14T16:10:50.017867+01:00",
-      "updated_at": "2026-01-14T16:10:50.017867+01:00",
+      "updated_at": "2026-01-21T22:06:43.832874+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":80,\"prompt\":\"Add optional z-index property to Clip lexicon:\\n\\nclip: {\\n  ...existing,\\n  z: integer  // Higher = on top, default = 0 or array index\\n}\\n\\nPros:\\n- Explicit control\\n- Easy to reorder without moving in array\\n- Future-proof for layer UI\\n\\nCons:\\n- Schema change\\n- More complexity\\n- Need to manage z-index values\"}"
     },
     {
@@ -1502,9 +1502,9 @@
       "node_type": "option",
       "title": "Sort by creation time (TID ordering)",
       "description": null,
-      "status": "pending",
+      "status": "rejected",
       "created_at": "2026-01-14T16:10:58.939127+01:00",
-      "updated_at": "2026-01-14T16:10:58.939127+01:00",
+      "updated_at": "2026-01-21T22:06:43.863423+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":75,\"prompt\":\"Use clip ID (TID) as implicit ordering:\\n- Later-created clips have higher TIDs\\n- Sort clips by ID at compile time\\n- Most recent recording always on top\\n\\nPros:\\n- No schema change\\n- Automatic ordering by creation\\n- TIDs are already unique timestamps\\n\\nCons:\\n- Can't manually reorder\\n- Ties layer order to creation time forever\\n- Less intuitive than array order\"}"
     },
     {
@@ -1546,9 +1546,9 @@
       "node_type": "outcome",
       "title": "Punch-through clip behavior: top clip replaces underlying clips in timeline",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-14T16:16:56.839351+01:00",
-      "updated_at": "2026-01-14T16:16:56.839351+01:00",
+      "updated_at": "2026-01-21T21:56:22.656675+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"60e00fe\",\"confidence\":95}"
     },
     {
@@ -1557,9 +1557,9 @@
       "node_type": "outcome",
       "title": "Recording from offset with clip layering: append clips, mute track during recording",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-14T16:29:31.035369+01:00",
-      "updated_at": "2026-01-14T16:29:31.035369+01:00",
+      "updated_at": "2026-01-21T21:56:22.668842+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"01de7f2\",\"confidence\":95}"
     },
     {
@@ -1568,9 +1568,9 @@
       "node_type": "outcome",
       "title": "Split pipeline.ts into audio-elements, create-effect-chain, create-audio-bus modules",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-14T17:10:16.821139+01:00",
-      "updated_at": "2026-01-14T17:10:16.821139+01:00",
+      "updated_at": "2026-01-21T21:56:22.681339+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"ef2cd55\",\"confidence\":95}"
     },
     {
@@ -1601,9 +1601,9 @@
       "node_type": "decision",
       "title": "Lexicon model: clip/track/group separation",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-15T12:32:42.636194+01:00",
-      "updated_at": "2026-01-15T12:32:42.636194+01:00",
+      "updated_at": "2026-01-21T21:58:43.789703+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"Three temporospatial primitives with clear separation:\\n\\nclip (temporal):\\n- Pure time window into source\\n- source: stem | track | group\\n- offset, in, out\\n- Optional pipeline for effects\\n\\ntrack (spatial + timeline):\\n- Contains clips\\n- Optional viewport (for absolute positioning)\\n- Optional pipeline\\n\\ngroup (hierarchy + layout):\\n- Contains tracks | groups (recursive)\\n- Layout mode: grid | absolute | stack\\n- Members have blend mode for compositing\\n\\nEach level can have pipeline: { audio?, video? }\\nCascade implicit: clip → track → group → master\"}"
     },
     {
@@ -1612,9 +1612,9 @@
       "node_type": "decision",
       "title": "Signal graph: bus nodes with weighted outputs",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-15T12:33:04.517933+01:00",
-      "updated_at": "2026-01-15T12:33:04.517933+01:00",
+      "updated_at": "2026-01-21T21:58:43.804001+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"Two-layer architecture separating editing from processing:\\n\\nLayer 1: Temporospatial (editing)\\n- clip, track, group define WHAT plays WHERE and WHEN\\n\\nLayer 2: Signal graph (processing)\\n- Everything is a bus node: { id, effects, output }\\n- Outputs are weighted edges: [{ ref: busId, amount: number }]\\n- Multiple outputs = split/send\\n- Effects chain within each bus\\n\\nBus shape:\\n{\\n  type: 'bus',\\n  id: string,\\n  effects: Effect[],\\n  output: { ref: string, amount: number }[]\\n}\\n\\nSame model for audio and video:\\n- Audio: WebAudio routing\\n- Video: shader chain, framebuffers\\n\\nRouting is explicit, uniform, graph-shaped.\"}"
     },
     {
@@ -1656,9 +1656,9 @@
       "node_type": "outcome",
       "title": "Committed: refactor: consolidate tsconfigs and clean up package dependencies",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-16T22:30:08.060833+01:00",
-      "updated_at": "2026-01-16T22:30:08.060833+01:00",
+      "updated_at": "2026-01-21T21:56:03.876013+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"7104271\",\"confidence\":95}"
     },
     {
@@ -1667,9 +1667,9 @@
       "node_type": "outcome",
       "title": "Committed: refactor: remove perf monitoring and reorganize utils",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-16T22:30:08.171696+01:00",
-      "updated_at": "2026-01-16T22:30:08.171696+01:00",
+      "updated_at": "2026-01-21T21:56:03.900582+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"d2921a7\",\"confidence\":95}"
     },
     {
@@ -1678,9 +1678,9 @@
       "node_type": "outcome",
       "title": "Committed: chore: sync deciduous graph",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-16T22:30:08.285901+01:00",
-      "updated_at": "2026-01-16T22:30:08.285901+01:00",
+      "updated_at": "2026-01-21T21:56:03.917141+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"572cfe2\",\"confidence\":95}"
     },
     {
@@ -1689,9 +1689,9 @@
       "node_type": "outcome",
       "title": "Committed: docs: add diagonjs-powered architecture diagram generation",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-16T23:08:30.338088+01:00",
-      "updated_at": "2026-01-16T23:08:30.338088+01:00",
+      "updated_at": "2026-01-21T21:56:03.932282+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"3f03fe6\",\"confidence\":95}"
     },
     {
@@ -1799,9 +1799,9 @@
       "node_type": "outcome",
       "title": "OPFS storage working - recording writes to OPFS, playback reads via BlobSource, gapless loop handoff works",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T00:51:37.060366+01:00",
-      "updated_at": "2026-01-17T00:51:37.060366+01:00",
+      "updated_at": "2026-01-21T21:56:22.693181+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -1810,9 +1810,9 @@
       "node_type": "outcome",
       "title": "Committed: feat: add OPFS storage for clips to eliminate memory overhead",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T00:53:30.236549+01:00",
-      "updated_at": "2026-01-17T00:53:30.236549+01:00",
+      "updated_at": "2026-01-21T21:56:03.946372+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"2c388ce\",\"confidence\":95}"
     },
     {
@@ -1843,9 +1843,9 @@
       "node_type": "outcome",
       "title": "ATProto streaming to OPFS working - handles both CredentialSession and OAuthSession",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T01:20:38.054163+01:00",
-      "updated_at": "2026-01-17T01:20:38.054163+01:00",
+      "updated_at": "2026-01-21T21:56:22.705085+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -1865,9 +1865,9 @@
       "node_type": "outcome",
       "title": "Committed: feat: stream ATProto stems directly to OPFS",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T01:21:32.443320+01:00",
-      "updated_at": "2026-01-17T01:21:32.443320+01:00",
+      "updated_at": "2026-01-21T21:56:03.958146+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"6135811\",\"confidence\":95}"
     },
     {
@@ -1898,9 +1898,9 @@
       "node_type": "outcome",
       "title": "Committed: discriminated union state machine refactor for audio playback",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T16:57:17.631271+01:00",
-      "updated_at": "2026-01-17T16:57:17.631271+01:00",
+      "updated_at": "2026-01-21T21:56:03.971222+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"973725d\",\"confidence\":95}"
     },
     {
@@ -1920,9 +1920,9 @@
       "node_type": "outcome",
       "title": "Committed state machine refactors for create-video-playback and create-playback",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T17:09:24.255395+01:00",
-      "updated_at": "2026-01-17T17:09:24.255395+01:00",
+      "updated_at": "2026-01-21T21:56:03.983203+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"05767b3\",\"confidence\":95}"
     },
     {
@@ -1942,9 +1942,9 @@
       "node_type": "outcome",
       "title": "Committed: replace handoff mechanism with ahead-scheduler abstraction",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T17:33:09.508656+01:00",
-      "updated_at": "2026-01-17T17:33:09.508656+01:00",
+      "updated_at": "2026-01-21T21:56:03.997283+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"2bb395c\",\"confidence\":95}"
     },
     {
@@ -1953,9 +1953,9 @@
       "node_type": "outcome",
       "title": "Committed: reorganize app modules and extract atproto package",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T17:52:24.253407+01:00",
-      "updated_at": "2026-01-17T17:52:24.253407+01:00",
+      "updated_at": "2026-01-21T21:56:04.009237+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"6dac56d\",\"confidence\":95}"
     },
     {
@@ -1975,9 +1975,9 @@
       "node_type": "outcome",
       "title": "Committed: expand decision graph workflow docs",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T17:52:36.138521+01:00",
-      "updated_at": "2026-01-17T17:52:36.138521+01:00",
+      "updated_at": "2026-01-21T21:56:04.033984+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"9cb61d2\",\"confidence\":95}"
     },
     {
@@ -1986,9 +1986,9 @@
       "node_type": "outcome",
       "title": "Committed: consolidate layout-types into compile-layout-timeline",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T17:55:45.236209+01:00",
-      "updated_at": "2026-01-17T17:55:45.236209+01:00",
+      "updated_at": "2026-01-21T21:56:04.047489+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"4d31bef\",\"confidence\":95}"
     },
     {
@@ -1997,9 +1997,9 @@
       "node_type": "outcome",
       "title": "Committed: rename create-* to make-* in @eddy/audio package",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T18:03:28.276578+01:00",
-      "updated_at": "2026-01-17T18:03:28.276578+01:00",
+      "updated_at": "2026-01-21T21:56:04.059759+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"3348d8a\",\"confidence\":95}"
     },
     {
@@ -2008,9 +2008,9 @@
       "node_type": "outcome",
       "title": "Committed: rename create-* to make-* in video, media, and utils packages",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T18:33:53.274741+01:00",
-      "updated_at": "2026-01-17T18:33:53.274741+01:00",
+      "updated_at": "2026-01-21T21:56:04.071959+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"b043cfa\",\"confidence\":95}"
     },
     {
@@ -2019,9 +2019,9 @@
       "node_type": "outcome",
       "title": "Committed: move auth context from @eddy/atproto to app components",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T18:45:46.935927+01:00",
-      "updated_at": "2026-01-17T18:45:46.935927+01:00",
+      "updated_at": "2026-01-21T21:56:04.084391+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"595d81e\",\"confidence\":95}"
     },
     {
@@ -2030,9 +2030,9 @@
       "node_type": "outcome",
       "title": "Committed: update auth imports after context relocation",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T18:48:51.027543+01:00",
-      "updated_at": "2026-01-17T18:48:51.027543+01:00",
+      "updated_at": "2026-01-21T21:56:04.099336+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"9ca2b96\",\"confidence\":95}"
     },
     {
@@ -2041,9 +2041,9 @@
       "node_type": "outcome",
       "title": "Committed: rename create-player to make-player",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T18:48:51.077265+01:00",
-      "updated_at": "2026-01-17T18:48:51.077265+01:00",
+      "updated_at": "2026-01-21T21:56:04.114466+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"c772d46\",\"confidence\":95}"
     },
     {
@@ -2052,9 +2052,9 @@
       "node_type": "outcome",
       "title": "Committed: clean up unused exports, dependencies, and files",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T18:54:08.185903+01:00",
-      "updated_at": "2026-01-17T18:54:08.185903+01:00",
+      "updated_at": "2026-01-21T21:56:04.127165+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"3bfa262\",\"confidence\":95}"
     },
     {
@@ -2151,9 +2151,9 @@
       "node_type": "outcome",
       "title": "Video effects prototype complete - types, brightness/contrast effects, compose function. Compositor integration deferred pending bus architecture.",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T19:54:29.238436+01:00",
-      "updated_at": "2026-01-17T19:54:29.238436+01:00",
+      "updated_at": "2026-01-21T21:56:22.717573+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -2184,9 +2184,9 @@
       "node_type": "outcome",
       "title": "Video effect chains integrated into compositor - register chains by id, placements reference chains, single shader per chain",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T20:01:06.905636+01:00",
-      "updated_at": "2026-01-17T20:01:06.905636+01:00",
+      "updated_at": "2026-01-21T21:56:22.730646+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -2195,9 +2195,9 @@
       "node_type": "outcome",
       "title": "Committed: feat: integrate video effect chains into compositor",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T20:02:11.569700+01:00",
-      "updated_at": "2026-01-17T20:02:11.569700+01:00",
+      "updated_at": "2026-01-21T21:56:04.141565+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"8d52601\",\"confidence\":95}"
     },
     {
@@ -2250,9 +2250,9 @@
       "node_type": "decision",
       "title": "Design cascading effect pipeline architecture",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T20:44:30.815307+01:00",
-      "updated_at": "2026-01-17T20:44:30.815307+01:00",
+      "updated_at": "2026-01-21T21:58:43.815760+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -2294,9 +2294,9 @@
       "node_type": "outcome",
       "title": "Video pipeline cascading wired up - effects apply to all clips on track",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T20:52:19.038449+01:00",
-      "updated_at": "2026-01-17T20:52:19.038449+01:00",
+      "updated_at": "2026-01-21T21:56:22.742839+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -2305,9 +2305,9 @@
       "node_type": "outcome",
       "title": "Committed: feat: wire video effect pipeline from UI to compositor",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T23:30:29.420252+01:00",
-      "updated_at": "2026-01-17T23:30:29.420252+01:00",
+      "updated_at": "2026-01-21T21:56:04.155236+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"06e8789\",\"confidence\":95}"
     },
     {
@@ -2316,9 +2316,9 @@
       "node_type": "outcome",
       "title": "Committed: fix initial effect uniform values",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-17T23:59:02.954400+01:00",
-      "updated_at": "2026-01-17T23:59:02.954400+01:00",
+      "updated_at": "2026-01-21T21:56:04.169809+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"3fd7cc4\",\"confidence\":95}"
     },
     {
@@ -2327,9 +2327,9 @@
       "node_type": "outcome",
       "title": "Fixed multi-track video effects by moving Symbols to module scope",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T01:29:10.632273+01:00",
-      "updated_at": "2026-01-18T01:29:10.632273+01:00",
+      "updated_at": "2026-01-21T21:56:22.754786+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"35229ef\",\"confidence\":95}"
     },
     {
@@ -2360,9 +2360,9 @@
       "node_type": "outcome",
       "title": "Committed: feat: implement video effect deduplication with array uniforms",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T02:53:11.128424+01:00",
-      "updated_at": "2026-01-18T02:53:11.128424+01:00",
+      "updated_at": "2026-01-21T21:56:04.186576+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"353b032\",\"confidence\":95}"
     },
     {
@@ -2371,9 +2371,9 @@
       "node_type": "outcome",
       "title": "Committed: fix: register video effects only in compositor worker",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T03:22:02.535848+01:00",
-      "updated_at": "2026-01-18T03:22:02.535848+01:00",
+      "updated_at": "2026-01-21T21:56:04.201853+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"17123f3\",\"confidence\":95}"
     },
     {
@@ -2382,9 +2382,9 @@
       "node_type": "outcome",
       "title": "Committed: chore: link view.gl to local package for development",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T03:38:08.032405+01:00",
-      "updated_at": "2026-01-18T03:38:08.032405+01:00",
+      "updated_at": "2026-01-21T21:56:04.216948+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"6aaaef1\",\"confidence\":95}"
     },
     {
@@ -2393,9 +2393,9 @@
       "node_type": "outcome",
       "title": "Committed: chore minor cleanups in video effects code",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T13:49:33.553689+01:00",
-      "updated_at": "2026-01-18T13:49:33.553689+01:00",
+      "updated_at": "2026-01-21T21:56:04.244239+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"29f6cc2\",\"confidence\":95}"
     },
     {
@@ -2415,9 +2415,9 @@
       "node_type": "outcome",
       "title": "Separated effect manager from compositor - cleaner separation of concerns",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T13:56:23.551485+01:00",
-      "updated_at": "2026-01-18T13:56:23.551485+01:00",
+      "updated_at": "2026-01-21T21:56:22.766858+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -2426,9 +2426,9 @@
       "node_type": "outcome",
       "title": "Committed: refactor separate effect manager from compositor",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T13:57:52.417773+01:00",
-      "updated_at": "2026-01-18T13:57:52.417773+01:00",
+      "updated_at": "2026-01-21T21:56:04.259046+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"49b795b\",\"confidence\":95}"
     },
     {
@@ -2448,9 +2448,9 @@
       "node_type": "outcome",
       "title": "Committed: refactor effect catalog code style",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T16:14:24.890512+01:00",
-      "updated_at": "2026-01-18T16:14:24.890512+01:00",
+      "updated_at": "2026-01-21T21:56:04.273353+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"HEAD~1\",\"confidence\":95}"
     },
     {
@@ -2459,9 +2459,9 @@
       "node_type": "outcome",
       "title": "Committed: use published view.gl package",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T16:14:25.032446+01:00",
-      "updated_at": "2026-01-18T16:14:25.032446+01:00",
+      "updated_at": "2026-01-21T21:56:04.287724+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"cffb0d1\",\"confidence\":95}"
     },
     {
@@ -2492,9 +2492,9 @@
       "node_type": "outcome",
       "title": "Committed: refactor separate video effects into effects, effect-registry, and effect-manager directories",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T16:56:21.618308+01:00",
-      "updated_at": "2026-01-18T16:56:21.618308+01:00",
+      "updated_at": "2026-01-21T21:56:04.302928+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"4a7223f\",\"confidence\":95}"
     },
     {
@@ -2503,9 +2503,9 @@
       "node_type": "outcome",
       "title": "Committed: consolidate effect-registry into effect-manager and simplify EffectInstance",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T17:10:04.936980+01:00",
-      "updated_at": "2026-01-18T17:10:04.936980+01:00",
+      "updated_at": "2026-01-21T21:56:04.316719+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"2474e6c\",\"confidence\":95}"
     },
     {
@@ -2514,9 +2514,9 @@
       "node_type": "outcome",
       "title": "Committed: pre-compute effectKeys in timeline compiler",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T17:23:36.655360+01:00",
-      "updated_at": "2026-01-18T17:23:36.655360+01:00",
+      "updated_at": "2026-01-21T21:56:04.330297+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"a8055cd\",\"confidence\":95}"
     },
     {
@@ -2635,9 +2635,9 @@
       "node_type": "outcome",
       "title": "Removed getMasterMixer - root group now handles master volume and MediaStream output routing",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T17:46:59.331899+01:00",
-      "updated_at": "2026-01-18T17:46:59.331899+01:00",
+      "updated_at": "2026-01-21T21:56:22.778751+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -2646,9 +2646,9 @@
       "node_type": "outcome",
       "title": "Committed: feat: implement audio cascade with root group as master",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T17:52:58.352299+01:00",
-      "updated_at": "2026-01-18T17:52:58.352299+01:00",
+      "updated_at": "2026-01-21T21:56:04.344427+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"6fab7aa\",\"confidence\":95}"
     },
     {
@@ -2690,9 +2690,9 @@
       "node_type": "outcome",
       "title": "Committed: feat: implement multi-param effects with pre-computed paramRefs",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T18:34:08.826435+01:00",
-      "updated_at": "2026-01-18T18:34:08.826435+01:00",
+      "updated_at": "2026-01-21T21:56:04.358594+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"571ef27\",\"confidence\":95}"
     },
     {
@@ -2701,9 +2701,9 @@
       "node_type": "outcome",
       "title": "Committed: feat: add UI for colorize effect with vector param support",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T18:40:52.492080+01:00",
-      "updated_at": "2026-01-18T18:40:52.492080+01:00",
+      "updated_at": "2026-01-21T21:56:04.372507+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"879fa0d\",\"confidence\":95}"
     },
     {
@@ -2712,9 +2712,9 @@
       "node_type": "outcome",
       "title": "Committed: refactor effect rendering with onBeforeRender callback",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T19:06:15.135623+01:00",
-      "updated_at": "2026-01-18T19:06:15.135623+01:00",
+      "updated_at": "2026-01-21T21:56:04.385278+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"138e97d\",\"confidence\":95}"
     },
     {
@@ -2723,9 +2723,9 @@
       "node_type": "outcome",
       "title": "Committed: add staticBlendMode and customParams types",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T19:17:07.158881+01:00",
-      "updated_at": "2026-01-18T19:17:07.158881+01:00",
+      "updated_at": "2026-01-21T21:56:04.399017+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"8b42b6b\",\"confidence\":95}"
     },
     {
@@ -2734,9 +2734,9 @@
       "node_type": "outcome",
       "title": "Committed: split effect lexicons into separate files",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-18T19:24:51.947987+01:00",
-      "updated_at": "2026-01-18T19:24:51.947987+01:00",
+      "updated_at": "2026-01-21T21:56:04.410710+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"254704f\",\"confidence\":95}"
     },
     {
@@ -2745,9 +2745,9 @@
       "node_type": "outcome",
       "title": "Committed: refactor - move static value definitions to app.eddy.values lexicon",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-19T00:31:44.383838+01:00",
-      "updated_at": "2026-01-19T00:31:44.383838+01:00",
+      "updated_at": "2026-01-21T21:56:04.422006+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"f65554b\",\"confidence\":95}"
     },
     {
@@ -2756,9 +2756,9 @@
       "node_type": "outcome",
       "title": "Committed: chore - add local dependency overrides",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-19T00:31:44.525277+01:00",
-      "updated_at": "2026-01-19T00:31:44.525277+01:00",
+      "updated_at": "2026-01-21T21:56:04.433423+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"ef786f7\",\"confidence\":95}"
     },
     {
@@ -2767,9 +2767,9 @@
       "node_type": "outcome",
       "title": "Committed: refactor - split project lexicon into separate domain files",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-19T01:57:45.797272+01:00",
-      "updated_at": "2026-01-19T01:57:45.797272+01:00",
+      "updated_at": "2026-01-21T21:56:04.445374+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"cf7f50f\",\"confidence\":95}"
     },
     {
@@ -2778,9 +2778,9 @@
       "node_type": "outcome",
       "title": "Committed: chore - update dependencies",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-19T01:57:45.826161+01:00",
-      "updated_at": "2026-01-19T01:57:45.826161+01:00",
+      "updated_at": "2026-01-21T21:56:04.457120+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"743b0d5\",\"confidence\":95}"
     },
     {
@@ -2789,9 +2789,9 @@
       "node_type": "outcome",
       "title": "Committed: chore: convert packages to vite library mode",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-19T11:56:57.223992+01:00",
-      "updated_at": "2026-01-19T11:56:57.223992+01:00",
+      "updated_at": "2026-01-21T21:56:04.469019+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"HEAD~1\",\"confidence\":95}"
     },
     {
@@ -2800,9 +2800,9 @@
       "node_type": "outcome",
       "title": "Committed: feat: add curve lexicon validators and mutable types",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-19T11:56:57.277814+01:00",
-      "updated_at": "2026-01-19T11:56:57.277814+01:00",
+      "updated_at": "2026-01-21T21:56:04.483424+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"7074f2c\",\"confidence\":95}"
     },
     {
@@ -2811,9 +2811,9 @@
       "node_type": "outcome",
       "title": "Committed: chore: enable sourcemaps for library packages",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-19T12:59:24.117368+01:00",
-      "updated_at": "2026-01-19T12:59:24.117368+01:00",
+      "updated_at": "2026-01-21T21:56:04.495142+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"a066737\",\"confidence\":95}"
     },
     {
@@ -2822,9 +2822,9 @@
       "node_type": "outcome",
       "title": "Playwright + CDP tracing chosen for performance profiling",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-19T14:52:29.778457+01:00",
-      "updated_at": "2026-01-19T14:52:29.778457+01:00",
+      "updated_at": "2026-01-21T21:56:22.797894+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -2965,9 +2965,9 @@
       "node_type": "action",
       "title": "Implement pipeline branching lexicons and runtime",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-19T16:08:15.252244+01:00",
-      "updated_at": "2026-01-19T16:08:15.252244+01:00",
+      "updated_at": "2026-01-21T21:57:34.582507+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -2976,9 +2976,9 @@
       "node_type": "outcome",
       "title": "Pipeline branching with weighted outputs implemented",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-19T16:28:07.742796+01:00",
-      "updated_at": "2026-01-19T16:28:07.742796+01:00",
+      "updated_at": "2026-01-21T21:56:22.815281+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -2987,9 +2987,9 @@
       "node_type": "outcome",
       "title": "Committed: feat: implement pipeline branching with weighted outputs",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-19T18:03:33.824654+01:00",
-      "updated_at": "2026-01-19T18:03:33.824654+01:00",
+      "updated_at": "2026-01-21T21:56:04.507077+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"c1b9aea\",\"confidence\":95}"
     },
     {
@@ -2998,9 +2998,9 @@
       "node_type": "outcome",
       "title": "Committed: fix: bundle AudioWorklet as separate entry for library builds",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-19T18:04:51.798850+01:00",
-      "updated_at": "2026-01-19T18:04:51.798850+01:00",
+      "updated_at": "2026-01-21T21:56:04.518963+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"3cef022\",\"confidence\":95}"
     },
     {
@@ -3009,9 +3009,9 @@
       "node_type": "action",
       "title": "Convert library packages from vite to tsup",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-19T18:15:11.507283+01:00",
-      "updated_at": "2026-01-19T18:15:11.507283+01:00",
+      "updated_at": "2026-01-21T21:57:34.596797+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"80bd3a5\",\"confidence\":95}"
     },
     {
@@ -3020,9 +3020,9 @@
       "node_type": "outcome",
       "title": "Committed: refactor - all library packages now use tsup",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-19T18:15:11.536631+01:00",
-      "updated_at": "2026-01-19T18:15:11.536631+01:00",
+      "updated_at": "2026-01-21T21:56:04.530627+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"80bd3a5\",\"confidence\":95}"
     },
     {
@@ -3086,9 +3086,9 @@
       "node_type": "goal",
       "title": "Implement jam.eddy.dj - Grid-Based Video Sequencer",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-19T21:41:23.388594+01:00",
-      "updated_at": "2026-01-19T21:41:23.388594+01:00",
+      "updated_at": "2026-01-21T12:07:37.702412+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"Implement the following plan:\\n\\n# Implement jam.eddy.dj - Grid-Based Video Sequencer\\n\\n**Goal:** Create a mobile-first collaborative video sequencer app with grid-based composition.\\n\\n## Overview\\n\\njam.eddy.dj is a new app in the eddy suite - a 4-track-inspired video sequencer for musical collaboration.\\n\\n**Core Concepts:**\\n- Columns = time segments (variable duration per column: 1 bar, 1/2, 1/4, etc.)\\n- Rows/Tracks = layers of video clips\\n- Layout per column = spatial arrangement (full, pip, 2x2, 3-up, etc.)\\n- Auto-layout option for jamming (manual control for composing)\\n\\n**Three Views:**\\n1. **Preview** - rendered output (full-screen or floating PIP)\\n2. **Sequencer** - what plays when (tracks × columns grid, paint clips)\\n3. **Layout** - how it looks per column (spatial arrangement)\\n\\n**Orientation-Based UI:**\\n- Portrait = content mode (preview-focused, playback, record)\\n- Landscape = workspace mode (sequencer/layout editing)\"}"
     },
     {
@@ -3097,9 +3097,9 @@
       "node_type": "action",
       "title": "Create app.eddy.jam.ts lexicon",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-19T21:41:35.516876+01:00",
-      "updated_at": "2026-01-19T21:41:35.516876+01:00",
+      "updated_at": "2026-01-21T21:57:34.608843+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -3108,9 +3108,9 @@
       "node_type": "decision",
       "title": "Timeline compiler architecture for nested groups",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-19T21:48:28.613252+01:00",
-      "updated_at": "2026-01-19T21:48:28.613252+01:00",
+      "updated_at": "2026-01-21T21:58:43.833002+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -3130,9 +3130,9 @@
       "node_type": "action",
       "title": "Create @eddy/timeline package",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-19T21:51:44.313906+01:00",
-      "updated_at": "2026-01-19T21:51:44.313906+01:00",
+      "updated_at": "2026-01-21T21:57:34.621250+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -3141,9 +3141,9 @@
       "node_type": "outcome",
       "title": "@eddy/timeline package created with nested group support, 18 tests passing",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-19T22:22:55.812732+01:00",
-      "updated_at": "2026-01-19T22:22:55.812732+01:00",
+      "updated_at": "2026-01-21T21:56:22.827361+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -3152,9 +3152,9 @@
       "node_type": "action",
       "title": "Update packages/app to use @eddy/timeline",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-19T22:23:03.814392+01:00",
-      "updated_at": "2026-01-19T22:23:03.814392+01:00",
+      "updated_at": "2026-01-21T21:57:34.633356+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -3163,9 +3163,9 @@
       "node_type": "outcome",
       "title": "packages/app updated to use @eddy/timeline - builds and type-checks",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-19T22:55:06.663592+01:00",
-      "updated_at": "2026-01-19T22:55:06.663592+01:00",
+      "updated_at": "2026-01-21T21:56:22.839335+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -3174,9 +3174,9 @@
       "node_type": "outcome",
       "title": "Committed: feat: extract @eddy/timeline package with nested group support",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-19T23:57:24.940020+01:00",
-      "updated_at": "2026-01-19T23:57:24.940020+01:00",
+      "updated_at": "2026-01-21T21:56:04.542222+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"a43db50\",\"confidence\":95}"
     },
     {
@@ -3185,9 +3185,9 @@
       "node_type": "action",
       "title": "Create @eddy/solid package for shared SolidJS hooks and components",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-19T23:59:15.591541+01:00",
-      "updated_at": "2026-01-19T23:59:15.591541+01:00",
+      "updated_at": "2026-01-21T21:57:34.646313+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -3196,9 +3196,9 @@
       "node_type": "outcome",
       "title": "@eddy/solid package created with action, resource, deep-resource, create-resource-map, create-clock primitives",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-20T00:02:58.244951+01:00",
-      "updated_at": "2026-01-20T00:02:58.244951+01:00",
+      "updated_at": "2026-01-21T21:56:22.852668+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -3207,9 +3207,9 @@
       "node_type": "decision",
       "title": "Package structure for compositor/playback extraction",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-20T00:16:34.916594+01:00",
-      "updated_at": "2026-01-20T00:16:34.916594+01:00",
+      "updated_at": "2026-01-21T21:58:43.844775+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":80}"
     },
     {
@@ -3218,9 +3218,9 @@
       "node_type": "option",
       "title": "Option A: Expand @eddy/video with compositor engine",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-20T00:16:47.204034+01:00",
-      "updated_at": "2026-01-20T00:16:47.204034+01:00",
+      "updated_at": "2026-01-21T22:03:18.896288+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":70}"
     },
     {
@@ -3229,9 +3229,9 @@
       "node_type": "option",
       "title": "Option B: New @eddy/compositor package",
       "description": null,
-      "status": "pending",
+      "status": "rejected",
       "created_at": "2026-01-20T00:16:47.913790+01:00",
-      "updated_at": "2026-01-20T00:16:47.913790+01:00",
+      "updated_at": "2026-01-21T22:06:43.902562+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":70}"
     },
     {
@@ -3240,9 +3240,9 @@
       "node_type": "option",
       "title": "Option C: New @eddy/runtime package",
       "description": null,
-      "status": "pending",
+      "status": "rejected",
       "created_at": "2026-01-20T00:16:48.575729+01:00",
-      "updated_at": "2026-01-20T00:16:48.575729+01:00",
+      "updated_at": "2026-01-21T22:06:43.888622+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":60}"
     },
     {
@@ -3251,9 +3251,9 @@
       "node_type": "option",
       "title": "Option D: Keep in apps, share via copy/adapt",
       "description": null,
-      "status": "pending",
+      "status": "rejected",
       "created_at": "2026-01-20T00:16:49.279490+01:00",
-      "updated_at": "2026-01-20T00:16:49.279490+01:00",
+      "updated_at": "2026-01-21T22:06:43.918754+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":50}"
     },
     {
@@ -3317,9 +3317,9 @@
       "node_type": "outcome",
       "title": "Committed: feat: extract @eddy/solid package with shared SolidJS primitives",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-20T00:36:59.958811+01:00",
-      "updated_at": "2026-01-20T00:36:59.958811+01:00",
+      "updated_at": "2026-01-21T21:56:04.553744+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"c6a0cf5\",\"confidence\":95}"
     },
     {
@@ -3339,9 +3339,9 @@
       "node_type": "action",
       "title": "Extract makeVideoRenderer and makeVideoCompositor from compositor.ts and compositor.worker.ts",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-20T00:40:09.199977+01:00",
-      "updated_at": "2026-01-20T00:40:09.199977+01:00",
+      "updated_at": "2026-01-21T21:57:34.662989+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -3350,9 +3350,9 @@
       "node_type": "outcome",
       "title": "Extracted makeVideoRenderer (WebGL) and makeVideoCompositor (orchestration) - worker reduced from 550 to 210 lines",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-20T00:48:39.385371+01:00",
-      "updated_at": "2026-01-20T00:48:39.385371+01:00",
+      "updated_at": "2026-01-21T21:56:22.870122+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -3361,9 +3361,9 @@
       "node_type": "outcome",
       "title": "Committed: refactor - extract makeVideoRenderer and makeVideoCompositor",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-20T01:44:53.273838+01:00",
-      "updated_at": "2026-01-20T01:44:53.273838+01:00",
+      "updated_at": "2026-01-21T21:56:04.565439+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"93cc521\",\"confidence\":95}"
     },
     {
@@ -3372,9 +3372,9 @@
       "node_type": "outcome",
       "title": "Committed: refactor - revert library packages to src entries, remove tsup build",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-20T03:30:48.745527+01:00",
-      "updated_at": "2026-01-20T03:30:48.745527+01:00",
+      "updated_at": "2026-01-21T21:56:04.576176+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"1e1352b\",\"confidence\":95}"
     },
     {
@@ -3449,9 +3449,9 @@
       "node_type": "action",
       "title": "Create packages/jam with Vite + SolidJS setup",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-20T23:17:40.829527+01:00",
-      "updated_at": "2026-01-20T23:17:40.829527+01:00",
+      "updated_at": "2026-01-21T21:57:34.677269+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -3460,9 +3460,9 @@
       "node_type": "action",
       "title": "Add JamColumn metadata to lexicons",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-20T23:19:05.375407+01:00",
-      "updated_at": "2026-01-20T23:19:05.375407+01:00",
+      "updated_at": "2026-01-21T21:57:34.692753+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -3471,9 +3471,9 @@
       "node_type": "action",
       "title": "Create compile-jam-timeline.ts",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-20T23:24:54.410050+01:00",
-      "updated_at": "2026-01-20T23:24:54.410050+01:00",
+      "updated_at": "2026-01-21T21:57:34.706765+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -3482,9 +3482,9 @@
       "node_type": "action",
       "title": "Create create-jam.ts state management",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-20T23:26:06.204459+01:00",
-      "updated_at": "2026-01-20T23:26:06.204459+01:00",
+      "updated_at": "2026-01-21T21:57:34.723935+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -3493,9 +3493,9 @@
       "node_type": "action",
       "title": "Build Grid sequencer component",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-20T23:41:24.573966+01:00",
-      "updated_at": "2026-01-20T23:41:24.573966+01:00",
+      "updated_at": "2026-01-21T21:57:34.739548+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -3504,9 +3504,9 @@
       "node_type": "action",
       "title": "Build Layout editor component",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-20T23:42:43.556149+01:00",
-      "updated_at": "2026-01-20T23:42:43.556149+01:00",
+      "updated_at": "2026-01-21T21:57:34.755715+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -3515,9 +3515,9 @@
       "node_type": "outcome",
       "title": "Jam UI foundation complete - sequencer grid, layout editor, transport controls working",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-20T23:50:08.083440+01:00",
-      "updated_at": "2026-01-20T23:50:08.083440+01:00",
+      "updated_at": "2026-01-21T21:56:22.882291+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -3548,9 +3548,9 @@
       "node_type": "outcome",
       "title": "Committed: feat: add jam package with grid-based video sequencer",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-21T00:05:13.446483+01:00",
-      "updated_at": "2026-01-21T00:05:13.446483+01:00",
+      "updated_at": "2026-01-21T21:56:04.587235+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"3270f80\",\"confidence\":95}"
     },
     {
@@ -3581,9 +3581,9 @@
       "node_type": "outcome",
       "title": "Committed: fix: improve clip painting and visual styling",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-21T00:13:56.547289+01:00",
-      "updated_at": "2026-01-21T00:13:56.547289+01:00",
+      "updated_at": "2026-01-21T21:56:04.598178+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"439ee8f\",\"confidence\":95}"
     },
     {
@@ -3603,9 +3603,9 @@
       "node_type": "outcome",
       "title": "Committed: feat: improve jam sequencer UX",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-21T00:30:01.275729+01:00",
-      "updated_at": "2026-01-21T00:30:01.275729+01:00",
+      "updated_at": "2026-01-21T21:56:04.608061+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"77ba666\",\"confidence\":95}"
     },
     {
@@ -3614,9 +3614,9 @@
       "node_type": "outcome",
       "title": "Implemented video pipeline for Preview component using makeVideoCompositor and makeVideoPlayback with UrlSource",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-21T00:45:00.828448+01:00",
-      "updated_at": "2026-01-21T00:45:00.828448+01:00",
+      "updated_at": "2026-01-21T21:56:22.896059+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -3669,9 +3669,9 @@
       "node_type": "outcome",
       "title": "Committed: feat: add video preview with compositor and timeline ruler",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-21T01:05:45.337263+01:00",
-      "updated_at": "2026-01-21T01:05:45.337263+01:00",
+      "updated_at": "2026-01-21T21:56:04.618295+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"38dc428\",\"confidence\":95}"
     },
     {
@@ -3680,9 +3680,9 @@
       "node_type": "action",
       "title": "Colocated jam UI components - sequencer (Cell, ColumnHeader, TrackLabel) into Grid.tsx and layout (LayoutPreview, LayoutSelector, SlotAssigner) into LayoutEditor.tsx",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-21T01:12:50.325468+01:00",
-      "updated_at": "2026-01-21T01:12:50.325468+01:00",
+      "updated_at": "2026-01-21T21:57:34.771143+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -3691,9 +3691,9 @@
       "node_type": "outcome",
       "title": "Committed: refactor: colocate jam UI components",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-21T01:13:48.429075+01:00",
-      "updated_at": "2026-01-21T01:13:48.429075+01:00",
+      "updated_at": "2026-01-21T21:56:04.628053+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"1698efe\",\"confidence\":95}"
     },
     {
@@ -3713,9 +3713,9 @@
       "node_type": "outcome",
       "title": "Committed: feat add duplicate column and improve layout",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-21T01:38:54.801344+01:00",
-      "updated_at": "2026-01-21T01:38:54.801344+01:00",
+      "updated_at": "2026-01-21T21:56:04.638431+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"6849c87\",\"confidence\":95}"
     },
     {
@@ -3724,9 +3724,9 @@
       "node_type": "outcome",
       "title": "Committed: refactor use subgrid for sequencer column backgrounds",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-21T01:59:04.727129+01:00",
-      "updated_at": "2026-01-21T01:59:04.727129+01:00",
+      "updated_at": "2026-01-21T21:56:04.648301+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"5177299\",\"confidence\":95}"
     },
     {
@@ -3735,9 +3735,9 @@
       "node_type": "action",
       "title": "Auto-sync layouts based on clip count",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-21T03:05:40.463487+01:00",
-      "updated_at": "2026-01-21T03:05:40.463487+01:00",
+      "updated_at": "2026-01-21T21:57:34.786154+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"46db7eb\",\"confidence\":95}"
     },
     {
@@ -3746,9 +3746,9 @@
       "node_type": "goal",
       "title": "Replace duration presets with flexible signature input",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-21T03:08:21.282162+01:00",
-      "updated_at": "2026-01-21T03:08:21.282162+01:00",
+      "updated_at": "2026-01-21T12:09:44.114891+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"duration should just become 2 input so you can enter whatever signature\"}"
     },
     {
@@ -3812,9 +3812,9 @@
       "node_type": "goal",
       "title": "Convert layout pane to action bar",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-21T03:19:04.278881+01:00",
-      "updated_at": "2026-01-21T03:19:04.278881+01:00",
+      "updated_at": "2026-01-21T12:07:46.012781+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Turn the current layout editor pane into a more compact action bar interface.\"}"
     },
     {
@@ -3823,9 +3823,9 @@
       "node_type": "goal",
       "title": "Make preview pane a movable overlay",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-21T03:19:06.839776+01:00",
-      "updated_at": "2026-01-21T03:19:06.839776+01:00",
+      "updated_at": "2026-01-21T12:07:46.022949+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Convert the preview pane from a fixed position to a movable/draggable overlay that can be repositioned by the user.\"}"
     },
     {
@@ -3834,9 +3834,9 @@
       "node_type": "action",
       "title": "Converted LayoutEditor sidebar to horizontal ActionBar",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-21T03:24:04.646609+01:00",
-      "updated_at": "2026-01-21T03:24:04.646609+01:00",
+      "updated_at": "2026-01-21T21:57:34.803965+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     },
     {
@@ -3845,9 +3845,9 @@
       "node_type": "outcome",
       "title": "ActionBar replaces sidebar: horizontal layout with duration inputs, layout selector, duplicate/delete buttons",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-21T03:24:14.293706+01:00",
-      "updated_at": "2026-01-21T03:24:14.293706+01:00",
+      "updated_at": "2026-01-21T21:56:22.908145+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -3856,9 +3856,9 @@
       "node_type": "outcome",
       "title": "Committed: refactor layout sidebar to horizontal action bar",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-21T03:25:48.449610+01:00",
-      "updated_at": "2026-01-21T03:25:48.449610+01:00",
+      "updated_at": "2026-01-21T21:56:04.658798+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"7b9f910\",\"confidence\":95}"
     },
     {
@@ -3867,9 +3867,9 @@
       "node_type": "action",
       "title": "Implementing preview pane as movable overlay",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-21T03:26:54.083286+01:00",
-      "updated_at": "2026-01-21T03:26:54.083286+01:00",
+      "updated_at": "2026-01-21T21:57:34.820382+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -3878,9 +3878,9 @@
       "node_type": "outcome",
       "title": "Preview is now a draggable overlay with position state, drag handle, and column info",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-21T03:28:11.030216+01:00",
-      "updated_at": "2026-01-21T03:28:11.030216+01:00",
+      "updated_at": "2026-01-21T21:56:22.920390+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     },
     {
@@ -3889,9 +3889,9 @@
       "node_type": "outcome",
       "title": "Committed: feat: make preview a draggable overlay",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-21T03:52:09.305457+01:00",
-      "updated_at": "2026-01-21T03:52:09.305457+01:00",
+      "updated_at": "2026-01-21T21:56:04.668944+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"c682665\",\"confidence\":95}"
     },
     {
@@ -3900,9 +3900,9 @@
       "node_type": "outcome",
       "title": "Committed: refactor: restructure sequencer with scrollable tracks and fixed ruler",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-21T03:52:15.421074+01:00",
-      "updated_at": "2026-01-21T03:52:15.421074+01:00",
+      "updated_at": "2026-01-21T21:56:04.679585+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"47d655b\",\"confidence\":95}"
     },
     {
@@ -3911,9 +3911,9 @@
       "node_type": "outcome",
       "title": "Committed: refactor: merge column header and timeline into single button",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-21T03:56:00.020213+01:00",
-      "updated_at": "2026-01-21T03:56:00.020213+01:00",
+      "updated_at": "2026-01-21T21:56:04.697463+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"4f2f67c\",\"confidence\":95}"
     },
     {
@@ -3937,6 +3937,105 @@
       "created_at": "2026-01-21T04:03:52.560218+01:00",
       "updated_at": "2026-01-21T04:03:52.560218+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":70,\"prompt\":\"With our new system of only showing grid layouts that fit the column -> we don't want to accidentally remove a bunch of work if we record over a composition that had already selected certain grid stuff -> no answer yet for good solution\"}"
+    },
+    {
+      "id": 359,
+      "change_id": "94c76901-6194-4ca5-a02d-f0ac7c294756",
+      "node_type": "observation",
+      "title": "jam.eddy.dj: fixed time grid with layout painting - instead of variable-length columns, use fixed segments. Timeline column has drawing interaction to paint sections with layouts. Specifics TBD.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T04:07:36.449399+01:00",
+      "updated_at": "2026-01-21T04:07:36.449399+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":70}"
+    },
+    {
+      "id": 360,
+      "change_id": "54fa062a-96f1-43bf-b8c1-b9d0abe22729",
+      "node_type": "goal",
+      "title": "Add cell fill modes: stretch, contain, fill, etc.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T04:09:28.148695+01:00",
+      "updated_at": "2026-01-21T04:09:28.148695+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":80}"
+    },
+    {
+      "id": 361,
+      "change_id": "b14f96b7-4100-4e71-83d2-328bc3de215f",
+      "node_type": "goal",
+      "title": "Audio aspect for jam - mixer pane?",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T04:10:17.698255+01:00",
+      "updated_at": "2026-01-21T04:10:17.698255+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":70}"
+    },
+    {
+      "id": 362,
+      "change_id": "1ad04829-a19a-4cb5-b1df-0e6a18d5a9c5",
+      "node_type": "goal",
+      "title": "Preview pane adjustments: 1. Constrain to window bounds (no overflow) 2. Start at top-right to avoid overlapping composition start 3. Snap to corners",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T12:00:09.786479+01:00",
+      "updated_at": "2026-01-21T12:00:09.786479+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 363,
+      "change_id": "7770e89f-4370-4aa9-8b6d-e86ee566d13b",
+      "node_type": "decision",
+      "title": "Time management approach for jam sequencer columns",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T12:09:34.675337+01:00",
+      "updated_at": "2026-01-21T12:09:34.675337+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":70}"
+    },
+    {
+      "id": 364,
+      "change_id": "869dedef-9aa8-4244-ae8e-648f6abf75a5",
+      "node_type": "observation",
+      "title": "Flexible signature input - duration as 2 inputs so you can enter any signature (e.g., 4/4, 3/4, 7/8)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T12:09:38.730625+01:00",
+      "updated_at": "2026-01-21T12:09:38.730625+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":80}"
+    },
+    {
+      "id": 365,
+      "change_id": "499ca54e-de12-4e67-8bc4-41bf1e29255f",
+      "node_type": "observation",
+      "title": "VP9 all-keyframe not currently used - was tested to solve decoder errors during decoding but didn't have impact. Could reconsider in future. Current impl uses VP9 with 5s keyframe interval for better file size.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T22:02:56.377378+01:00",
+      "updated_at": "2026-01-21T22:02:56.377378+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":80}"
+    },
+    {
+      "id": 366,
+      "change_id": "70831e72-d825-428f-b4e2-a3df3263e2a2",
+      "node_type": "action",
+      "title": "Implementing bidirectional clip painting with shrink on drag-back",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T22:10:32.459284+01:00",
+      "updated_at": "2026-01-21T22:10:32.459284+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 367,
+      "change_id": "a4193830-8966-40a6-9481-85985e92dc7e",
+      "node_type": "outcome",
+      "title": "Bidirectional clip painting implemented - setClipSpan function sets clip to span from anchor to target column, enabling shrink on drag-back",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-01-21T22:13:02.903420+01:00",
+      "updated_at": "2026-01-21T22:18:37.442401+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     }
   ],
   "edges": [
@@ -7360,6 +7459,127 @@
       "weight": 1.0,
       "rationale": "Committed",
       "created_at": "2026-01-21T03:56:04.499919+01:00"
+    },
+    {
+      "id": 312,
+      "from_node_id": 313,
+      "to_node_id": 359,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "94c76901-6194-4ca5-a02d-f0ac7c294756",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Design direction shift",
+      "created_at": "2026-01-21T04:07:40.240322+01:00"
+    },
+    {
+      "id": 313,
+      "from_node_id": 313,
+      "to_node_id": 360,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "54fa062a-96f1-43bf-b8c1-b9d0abe22729",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Feature for jam layouts",
+      "created_at": "2026-01-21T04:09:31.853816+01:00"
+    },
+    {
+      "id": 314,
+      "from_node_id": 313,
+      "to_node_id": 361,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "b14f96b7-4100-4e71-83d2-328bc3de215f",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Audio design consideration",
+      "created_at": "2026-01-21T04:10:20.594536+01:00"
+    },
+    {
+      "id": 315,
+      "from_node_id": 313,
+      "to_node_id": 362,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "1ad04829-a19a-4cb5-b1df-0e6a18d5a9c5",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Preview UX improvements",
+      "created_at": "2026-01-21T12:00:13.784642+01:00"
+    },
+    {
+      "id": 316,
+      "from_node_id": 281,
+      "to_node_id": 313,
+      "from_change_id": "1b219028-ec9f-47ac-a065-3f1ec7ea7370",
+      "to_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Superseded by - duplicate goal",
+      "created_at": "2026-01-21T12:07:41.791982+01:00"
+    },
+    {
+      "id": 317,
+      "from_node_id": 313,
+      "to_node_id": 363,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "7770e89f-4370-4aa9-8b6d-e86ee566d13b",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Time structure design",
+      "created_at": "2026-01-21T12:09:44.083414+01:00"
+    },
+    {
+      "id": 318,
+      "from_node_id": 363,
+      "to_node_id": 364,
+      "from_change_id": "7770e89f-4370-4aa9-8b6d-e86ee566d13b",
+      "to_change_id": "869dedef-9aa8-4244-ae8e-648f6abf75a5",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Option: flexible signature",
+      "created_at": "2026-01-21T12:09:44.096043+01:00"
+    },
+    {
+      "id": 319,
+      "from_node_id": 363,
+      "to_node_id": 359,
+      "from_change_id": "7770e89f-4370-4aa9-8b6d-e86ee566d13b",
+      "to_change_id": "94c76901-6194-4ca5-a02d-f0ac7c294756",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Option: fixed grid with painting",
+      "created_at": "2026-01-21T12:09:44.105528+01:00"
+    },
+    {
+      "id": 320,
+      "from_node_id": 58,
+      "to_node_id": 365,
+      "from_change_id": "530df9da-f70b-4d43-a125-6ad7e3ee042e",
+      "to_change_id": "499ca54e-de12-4e67-8bc4-41bf1e29255f",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation status",
+      "created_at": "2026-01-21T22:03:00.634541+01:00"
+    },
+    {
+      "id": 321,
+      "from_node_id": 342,
+      "to_node_id": 366,
+      "from_change_id": "3ffe965b-4167-42bc-9cd6-8966434a4294",
+      "to_change_id": "70831e72-d825-428f-b4e2-a3df3263e2a2",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-01-21T22:10:36.306002+01:00"
+    },
+    {
+      "id": 322,
+      "from_node_id": 366,
+      "to_node_id": 367,
+      "from_change_id": "70831e72-d825-428f-b4e2-a3df3263e2a2",
+      "to_change_id": "a4193830-8966-40a6-9481-85985e92dc7e",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Result",
+      "created_at": "2026-01-21T22:13:07.548005+01:00"
     }
   ]
 }

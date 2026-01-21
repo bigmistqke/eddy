@@ -1,26 +1,26 @@
 [
   {
-    "hash": "4f2f67ca8ff1ddb41b71f323e3c584dd8d88a6d9",
-    "short_hash": "4f2f67c",
+    "hash": "bf1c540333780755c7abe0ed168a59e12692e918",
+    "short_hash": "bf1c540",
     "author": "bigmistqke",
-    "date": "2026-01-21T03:55:54+01:00",
-    "message": "refactor: merge column header and timeline into single button\n\nClicking a column button now both selects it for editing and seeks\nthe playhead to that position. Removes redundant header row.",
+    "date": "2026-01-21T22:18:24+01:00",
+    "message": "feat: add bidirectional clip painting with shrink on drag-back",
     "files_changed": 2
   },
   {
-    "hash": "4f2f67ca8ff1ddb41b71f323e3c584dd8d88a6d9",
-    "short_hash": "4f2f67c",
+    "hash": "7322e9e4bcf44d36030821c7d32d47f8f80ecef2",
+    "short_hash": "7322e9e",
     "author": "bigmistqke",
-    "date": "2026-01-21T03:55:54+01:00",
-    "message": "refactor: merge column header and timeline into single button\n\nClicking a column button now both selects it for editing and seeks\nthe playhead to that position. Removes redundant header row.",
-    "files_changed": 2
-  },
-  {
-    "hash": "942d2fbb2775adec73076a5197467ba65abee937",
-    "short_hash": "942d2fb",
-    "author": "bigmistqke",
-    "date": "2026-01-21T03:52:33+01:00",
+    "date": "2026-01-21T03:56:14+01:00",
     "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
+    "hash": "4f2f67ca8ff1ddb41b71f323e3c584dd8d88a6d9",
+    "short_hash": "4f2f67c",
+    "author": "bigmistqke",
+    "date": "2026-01-21T03:55:54+01:00",
+    "message": "refactor: merge column header and timeline into single button\n\nClicking a column button now both selects it for editing and seeks\nthe playhead to that position. Removes redundant header row.",
     "files_changed": 2
   },
   {
