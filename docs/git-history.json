@@ -1,5 +1,13 @@
 [
   {
+    "hash": "d3319cc8bc8a78f39cc9057c40a4fb1979b8bbb4",
+    "short_hash": "d3319cc",
+    "author": "bigmistqke",
+    "date": "2026-01-21T23:03:00+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
     "hash": "68bc9096bd0c1de1f6a485ba69c0463367bb2483",
     "short_hash": "68bc909",
     "author": "bigmistqke",
@@ -8,20 +16,12 @@
     "files_changed": 7
   },
   {
-    "hash": "7746ca690292e55b5e82714456a3df0e9a7bba95",
-    "short_hash": "7746ca6",
+    "hash": "68bc9096bd0c1de1f6a485ba69c0463367bb2483",
+    "short_hash": "68bc909",
     "author": "bigmistqke",
-    "date": "2026-01-21T22:39:28+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "7104a5e57ead2336af96422b761b1a4261ec0729",
-    "short_hash": "7104a5e",
-    "author": "bigmistqke",
-    "date": "2026-01-21T22:38:52+01:00",
-    "message": "feat: handle overlapping clips during paint with restore on drag-back",
-    "files_changed": 2
+    "date": "2026-01-21T23:02:04+01:00",
+    "message": "refactor: simplify perf monitor API with unified makeMonitor\n\n- Replace createPerfMonitor/makeCounter with single makeMonitor function\n- Monitor wraps functions with timing: monitor('label', fn)\n- Counters integrated: monitor.count('label', amount)\n- Stats accessible via monitor.getAllStats(), monitor.getCounters()\n- Add typed generics for label constraints\n- Add __ENABLE_PERF__ build flag for tree-shaking in production\n- Remove legacy global perf state in favor of instance-based state",
+    "files_changed": 7
   },
   {
     "hash": "4f2f67ca8ff1ddb41b71f323e3c584dd8d88a6d9",

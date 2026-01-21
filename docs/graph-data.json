@@ -4179,6 +4179,138 @@
       "created_at": "2026-01-21T23:02:26.559083+01:00",
       "updated_at": "2026-01-21T23:02:26.559083+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"68bc909\",\"confidence\":95}"
+    },
+    {
+      "id": 381,
+      "change_id": "19c949c1-0a5b-4f09-9c06-8bd494acc4a6",
+      "node_type": "observation",
+      "title": "Fixed time grid implemented but missing UI to paint/create multi-column layout regions. setLayoutRegion(start, end, layout) exists but no interaction to call it. Options: 1. Paint interaction (click-drag on timeline), 2. Multi-select + layout button, 3. Text input for range",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T23:02:43.145657+01:00",
+      "updated_at": "2026-01-21T23:02:43.145657+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":80}"
+    },
+    {
+      "id": 382,
+      "change_id": "7c03654e-b111-4e28-841a-abce5d076686",
+      "node_type": "observation",
+      "title": "Jam layouts should use project lexicon (groups as clips) instead of jam-specific layoutRegions - groups define spatial arrangement, clips place them in time via clipSource.group",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T23:47:52.764453+01:00",
+      "updated_at": "2026-01-21T23:47:52.764453+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 383,
+      "change_id": "52af6f8d-b446-4d6b-94e1-a81b4ee97cb2",
+      "node_type": "observation",
+      "title": "Grid structure (columns, bars) should be UI-only - jam lexicon should not encode column indices. Timing stored as values that can be reinterpreted when grid resolution changes.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T23:48:00.145186+01:00",
+      "updated_at": "2026-01-21T23:48:00.145186+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 384,
+      "change_id": "f6de5635-7971-4dc0-a00e-5cd52f74130e",
+      "node_type": "observation",
+      "title": "BPM change rounding problem: storing ms and recalculating on BPM change accumulates rounding errors (20000bpm → 1bpm → back gives different values). Musical time must be source of truth for musical apps.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T23:48:00.296282+01:00",
+      "updated_at": "2026-01-21T23:48:00.296282+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 385,
+      "change_id": "49bcaa5a-4b07-41aa-b275-55cba9e7c9dd",
+      "node_type": "decision",
+      "title": "Time domain architecture: how to handle musical time (bars/beats) vs absolute time (ms) in eddy lexicons",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T23:48:05.508253+01:00",
+      "updated_at": "2026-01-21T23:48:05.508253+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 386,
+      "change_id": "7dc0de28-cb03-4ad6-b0a5-5e597cbeb597",
+      "node_type": "option",
+      "title": "Add optional musicalOffset/musicalDuration to clip schema - all consumers must handle it",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T23:48:12.713851+01:00",
+      "updated_at": "2026-01-21T23:48:12.713851+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":60}"
+    },
+    {
+      "id": 387,
+      "change_id": "b641972d-e7be-47d2-815e-d7bd45ef989b",
+      "node_type": "option",
+      "title": "Jam-specific model that compiles to project lexicon - jam is special case, not generic",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T23:48:12.926022+01:00",
+      "updated_at": "2026-01-21T23:48:12.926022+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":70}"
+    },
+    {
+      "id": 388,
+      "change_id": "eca8cfc7-c862-4cd4-9ec5-ca9d178f7422",
+      "node_type": "option",
+      "title": "Split into app.eddy.absolute and app.eddy.musical as peer time domains - shared core, domain-specific clips/projects",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T23:48:13.074429+01:00",
+      "updated_at": "2026-01-21T23:48:13.074429+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 389,
+      "change_id": "214e9692-cc5d-4adf-b295-2c7f0821f04c",
+      "node_type": "observation",
+      "title": "Lexicon factoring: shared app.eddy (group, trackInfo, pipeline, source, canvas, curve) + domain-specific app.eddy.absolute and app.eddy.musical (clip time fields, project metadata only)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T23:48:25.291913+01:00",
+      "updated_at": "2026-01-21T23:48:25.291913+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 390,
+      "change_id": "4f377082-153f-4371-8b4a-6aeba793d9b6",
+      "node_type": "observation",
+      "title": "Use ID references everywhere: track.clipIds[] and group.memberIds[] instead of inline objects. Makes track/group domain-agnostic. Type safety comes from project-level typed clip collections.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T23:48:25.439884+01:00",
+      "updated_at": "2026-01-21T23:48:25.439884+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 391,
+      "change_id": "efb161f9-7f12-4ddf-a37e-f88f48446f63",
+      "node_type": "observation",
+      "title": "ATProto lexicons (JSON Schema-based) cannot express relational constraints like 'this ID must exist in clips[]'. Referential integrity must be runtime validated.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T23:48:25.592372+01:00",
+      "updated_at": "2026-01-21T23:48:25.592372+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 392,
+      "change_id": "6d99c501-76bd-4a84-8302-b8ce0201b369",
+      "node_type": "observation",
+      "title": "Proposed schema structure: app.eddy.absolute.project has clips with offset/duration (ms), app.eddy.musical.project has clips with bar/bars and bpm/timeSignature. Both share track (id, clipIds[], pipelines) and group (id, memberIds[], layout).",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T23:48:38.750659+01:00",
+      "updated_at": "2026-01-21T23:48:38.750659+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     }
   ],
   "edges": [
@@ -7855,6 +7987,138 @@
       "weight": 1.0,
       "rationale": "Result",
       "created_at": "2026-01-21T22:57:50.252062+01:00"
+    },
+    {
+      "id": 335,
+      "from_node_id": 379,
+      "to_node_id": 381,
+      "from_change_id": "230dd155-73b1-45e2-ba5a-06baf5581ca4",
+      "to_change_id": "19c949c1-0a5b-4f09-9c06-8bd494acc4a6",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Follow-up needed",
+      "created_at": "2026-01-21T23:02:47.694427+01:00"
+    },
+    {
+      "id": 336,
+      "from_node_id": 385,
+      "to_node_id": 386,
+      "from_change_id": "49bcaa5a-4b07-41aa-b275-55cba9e7c9dd",
+      "to_change_id": "7dc0de28-cb03-4ad6-b0a5-5e597cbeb597",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Considered approach",
+      "created_at": "2026-01-21T23:48:18.296758+01:00"
+    },
+    {
+      "id": 337,
+      "from_node_id": 385,
+      "to_node_id": 387,
+      "from_change_id": "49bcaa5a-4b07-41aa-b275-55cba9e7c9dd",
+      "to_change_id": "b641972d-e7be-47d2-815e-d7bd45ef989b",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Considered approach",
+      "created_at": "2026-01-21T23:48:18.307360+01:00"
+    },
+    {
+      "id": 338,
+      "from_node_id": 385,
+      "to_node_id": 388,
+      "from_change_id": "49bcaa5a-4b07-41aa-b275-55cba9e7c9dd",
+      "to_change_id": "eca8cfc7-c862-4cd4-9ec5-ca9d178f7422",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Chosen approach",
+      "created_at": "2026-01-21T23:48:18.317765+01:00"
+    },
+    {
+      "id": 339,
+      "from_node_id": 388,
+      "to_node_id": 389,
+      "from_change_id": "eca8cfc7-c862-4cd4-9ec5-ca9d178f7422",
+      "to_change_id": "214e9692-cc5d-4adf-b295-2c7f0821f04c",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Structure of chosen approach",
+      "created_at": "2026-01-21T23:48:32.459734+01:00"
+    },
+    {
+      "id": 340,
+      "from_node_id": 388,
+      "to_node_id": 390,
+      "from_change_id": "eca8cfc7-c862-4cd4-9ec5-ca9d178f7422",
+      "to_change_id": "4f377082-153f-4371-8b4a-6aeba793d9b6",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation pattern",
+      "created_at": "2026-01-21T23:48:32.470657+01:00"
+    },
+    {
+      "id": 341,
+      "from_node_id": 388,
+      "to_node_id": 391,
+      "from_change_id": "eca8cfc7-c862-4cd4-9ec5-ca9d178f7422",
+      "to_change_id": "efb161f9-7f12-4ddf-a37e-f88f48446f63",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Known limitation",
+      "created_at": "2026-01-21T23:48:32.480229+01:00"
+    },
+    {
+      "id": 342,
+      "from_node_id": 313,
+      "to_node_id": 385,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "49bcaa5a-4b07-41aa-b275-55cba9e7c9dd",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Architecture evolution from jam implementation",
+      "created_at": "2026-01-21T23:48:32.621672+01:00"
+    },
+    {
+      "id": 343,
+      "from_node_id": 382,
+      "to_node_id": 385,
+      "from_change_id": "7c03654e-b111-4e28-841a-abce5d076686",
+      "to_change_id": "49bcaa5a-4b07-41aa-b275-55cba9e7c9dd",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Led to time domain architecture",
+      "created_at": "2026-01-21T23:48:32.739368+01:00"
+    },
+    {
+      "id": 344,
+      "from_node_id": 383,
+      "to_node_id": 385,
+      "from_change_id": "52af6f8d-b446-4d6b-94e1-a81b4ee97cb2",
+      "to_change_id": "49bcaa5a-4b07-41aa-b275-55cba9e7c9dd",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Led to time domain architecture",
+      "created_at": "2026-01-21T23:48:32.749048+01:00"
+    },
+    {
+      "id": 345,
+      "from_node_id": 384,
+      "to_node_id": 385,
+      "from_change_id": "f6de5635-7971-4dc0-a00e-5cd52f74130e",
+      "to_change_id": "49bcaa5a-4b07-41aa-b275-55cba9e7c9dd",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Led to time domain architecture",
+      "created_at": "2026-01-21T23:48:32.771085+01:00"
+    },
+    {
+      "id": 346,
+      "from_node_id": 388,
+      "to_node_id": 392,
+      "from_change_id": "eca8cfc7-c862-4cd4-9ec5-ca9d178f7422",
+      "to_change_id": "6d99c501-76bd-4a84-8302-b8ce0201b369",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Summary of proposed schema",
+      "created_at": "2026-01-21T23:48:43.577700+01:00"
     }
   ]
 }
