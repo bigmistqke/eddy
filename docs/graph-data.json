@@ -3944,9 +3944,9 @@
       "node_type": "observation",
       "title": "jam.eddy.dj: fixed time grid with layout painting - instead of variable-length columns, use fixed segments. Timeline column has drawing interaction to paint sections with layouts. Specifics TBD.",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-21T04:07:36.449399+01:00",
-      "updated_at": "2026-01-21T04:07:36.449399+01:00",
+      "updated_at": "2026-01-21T22:57:50.263769+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":70}"
     },
     {
@@ -4146,6 +4146,39 @@
       "created_at": "2026-01-21T22:33:49.944240+01:00",
       "updated_at": "2026-01-21T22:38:56.557236+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 378,
+      "change_id": "00f154f2-8a7a-4992-b739-e36ca968b0bc",
+      "node_type": "action",
+      "title": "Implementing fixed time grid with layout painting - replacing variable-duration columns",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-01-21T22:50:45.376671+01:00",
+      "updated_at": "2026-01-21T22:57:50.276602+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":75}"
+    },
+    {
+      "id": 379,
+      "change_id": "230dd155-73b1-45e2-ba5a-06baf5581ca4",
+      "node_type": "outcome",
+      "title": "Fixed time grid with layout regions implemented - columns now have uniform duration, layoutRegions define spans with layouts",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T22:57:44.532231+01:00",
+      "updated_at": "2026-01-21T22:57:44.532231+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 380,
+      "change_id": "47bb9a8a-77bf-451d-9831-a696c2e783df",
+      "node_type": "outcome",
+      "title": "Refactored perf monitor: unified makeMonitor API with typed labels, integrated counters, tree-shakeable",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T23:02:26.559083+01:00",
+      "updated_at": "2026-01-21T23:02:26.559083+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"68bc909\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -7800,6 +7833,28 @@
       "weight": 1.0,
       "rationale": "Result",
       "created_at": "2026-01-21T22:33:54.234096+01:00"
+    },
+    {
+      "id": 333,
+      "from_node_id": 363,
+      "to_node_id": 378,
+      "from_change_id": "7770e89f-4370-4aa9-8b6d-e86ee566d13b",
+      "to_change_id": "00f154f2-8a7a-4992-b739-e36ca968b0bc",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementing fixed grid approach",
+      "created_at": "2026-01-21T22:50:49.186705+01:00"
+    },
+    {
+      "id": 334,
+      "from_node_id": 378,
+      "to_node_id": 379,
+      "from_change_id": "00f154f2-8a7a-4992-b739-e36ca968b0bc",
+      "to_change_id": "230dd155-73b1-45e2-ba5a-06baf5581ca4",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Result",
+      "created_at": "2026-01-21T22:57:50.252062+01:00"
     }
   ]
 }

@@ -1,18 +1,26 @@
 [
   {
-    "hash": "2286a9051e4e316ad3cc41358b7951c527fae177",
-    "short_hash": "2286a90",
+    "hash": "68bc9096bd0c1de1f6a485ba69c0463367bb2483",
+    "short_hash": "68bc909",
     "author": "bigmistqke",
-    "date": "2026-01-21T22:28:14+01:00",
+    "date": "2026-01-21T23:02:04+01:00",
+    "message": "refactor: simplify perf monitor API with unified makeMonitor\n\n- Replace createPerfMonitor/makeCounter with single makeMonitor function\n- Monitor wraps functions with timing: monitor('label', fn)\n- Counters integrated: monitor.count('label', amount)\n- Stats accessible via monitor.getAllStats(), monitor.getCounters()\n- Add typed generics for label constraints\n- Add __ENABLE_PERF__ build flag for tree-shaking in production\n- Remove legacy global perf state in favor of instance-based state",
+    "files_changed": 7
+  },
+  {
+    "hash": "7746ca690292e55b5e82714456a3df0e9a7bba95",
+    "short_hash": "7746ca6",
+    "author": "bigmistqke",
+    "date": "2026-01-21T22:39:28+01:00",
     "message": "chore: sync deciduous graph",
     "files_changed": 2
   },
   {
-    "hash": "9535fc12de1f947564359068c0e21ff4c9ef61f1",
-    "short_hash": "9535fc1",
+    "hash": "7104a5e57ead2336af96422b761b1a4261ec0729",
+    "short_hash": "7104a5e",
     "author": "bigmistqke",
-    "date": "2026-01-21T22:27:59+01:00",
-    "message": "feat: add track button with test video rotation",
+    "date": "2026-01-21T22:38:52+01:00",
+    "message": "feat: handle overlapping clips during paint with restore on drag-back",
     "files_changed": 2
   },
   {
