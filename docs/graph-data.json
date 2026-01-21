@@ -4311,6 +4311,17 @@
       "created_at": "2026-01-21T23:48:38.750659+01:00",
       "updated_at": "2026-01-21T23:48:38.750659+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 393,
+      "change_id": "3397f82b-dd22-4c39-b694-34cc34c941ab",
+      "node_type": "outcome",
+      "title": "Committed: refactor jam columns to fixed grid with layout regions",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T23:52:11.080421+01:00",
+      "updated_at": "2026-01-21T23:52:11.080421+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"fbac047\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -8119,6 +8130,17 @@
       "weight": 1.0,
       "rationale": "Summary of proposed schema",
       "created_at": "2026-01-21T23:48:43.577700+01:00"
+    },
+    {
+      "id": 347,
+      "from_node_id": 388,
+      "to_node_id": 393,
+      "from_change_id": "eca8cfc7-c862-4cd4-9ec5-ca9d178f7422",
+      "to_change_id": "3397f82b-dd22-4c39-b694-34cc34c941ab",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Partial implementation - fixed grid prep",
+      "created_at": "2026-01-21T23:52:17.238902+01:00"
     }
   ]
 }

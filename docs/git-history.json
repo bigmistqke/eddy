@@ -1,19 +1,27 @@
 [
   {
-    "hash": "d3319cc8bc8a78f39cc9057c40a4fb1979b8bbb4",
-    "short_hash": "d3319cc",
+    "hash": "fbac04756ff84fa1b080de3500975bee6fd7af99",
+    "short_hash": "fbac047",
     "author": "bigmistqke",
-    "date": "2026-01-21T23:03:00+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
+    "date": "2026-01-21T23:52:02+01:00",
+    "message": "refactor: replace jam columns with fixed grid and layout regions\n\nColumns now have uniform duration (columnCount + columnDuration).\nLayouts are defined as regions spanning multiple columns (layoutRegions).\nPrepares for decoupling grid UI from timing data.",
+    "files_changed": 8
   },
   {
-    "hash": "68bc9096bd0c1de1f6a485ba69c0463367bb2483",
-    "short_hash": "68bc909",
+    "hash": "fbac04756ff84fa1b080de3500975bee6fd7af99",
+    "short_hash": "fbac047",
     "author": "bigmistqke",
-    "date": "2026-01-21T23:02:04+01:00",
-    "message": "refactor: simplify perf monitor API with unified makeMonitor\n\n- Replace createPerfMonitor/makeCounter with single makeMonitor function\n- Monitor wraps functions with timing: monitor('label', fn)\n- Counters integrated: monitor.count('label', amount)\n- Stats accessible via monitor.getAllStats(), monitor.getCounters()\n- Add typed generics for label constraints\n- Add __ENABLE_PERF__ build flag for tree-shaking in production\n- Remove legacy global perf state in favor of instance-based state",
-    "files_changed": 7
+    "date": "2026-01-21T23:52:02+01:00",
+    "message": "refactor: replace jam columns with fixed grid and layout regions\n\nColumns now have uniform duration (columnCount + columnDuration).\nLayouts are defined as regions spanning multiple columns (layoutRegions).\nPrepares for decoupling grid UI from timing data.",
+    "files_changed": 8
+  },
+  {
+    "hash": "d7bef4d0f2e400bcb27fe93840e890d873cdc5c3",
+    "short_hash": "d7bef4d",
+    "author": "bigmistqke",
+    "date": "2026-01-21T23:25:50+01:00",
+    "message": "feat: add identity wrapper overload to makeMonitor\n\nAllow `monitor('label')` without a function argument to return\na timing wrapper for inline operations. Also fix decode wrapper\nto not wrap sync results in Promise.resolve().",
+    "files_changed": 3
   },
   {
     "hash": "68bc9096bd0c1de1f6a485ba69c0463367bb2483",
