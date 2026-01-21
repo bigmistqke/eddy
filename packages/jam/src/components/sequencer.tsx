@@ -111,10 +111,19 @@ export function Grid(props: GridProps) {
     jam.toggleClipAtColumn(columnIndex, trackId)
 
     // Start painting mode
+    const mode = hadClip ? 'remove' : 'add'
     setIsPainting(true)
-    setPaintMode(hadClip ? 'remove' : 'add')
+    setPaintMode(mode)
     setPaintAnchorColumn(columnIndex)
     setPaintTrackId(trackId)
+
+    // Start paint session for overlap handling (only for add mode)
+    if (mode === 'add') {
+      const clipInfo = jam.getClipAtColumn(trackId, columnIndex)
+      if (clipInfo) {
+        jam.startPaintSession(trackId, clipInfo.clipId)
+      }
+    }
   }
 
   function handleCellPointerEnter(event: PointerEvent, trackId: string, columnIndex: number) {
@@ -139,6 +148,9 @@ export function Grid(props: GridProps) {
   }
 
   function handlePointerUp() {
+    // End paint session (commits overlap changes)
+    jam.endPaintSession()
+
     setIsPainting(false)
     setPaintMode(null)
     setPaintAnchorColumn(null)

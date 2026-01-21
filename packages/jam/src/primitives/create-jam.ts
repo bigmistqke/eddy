@@ -159,6 +159,13 @@ export function createJam(options: CreateJamOptions) {
 
   // UI state
   const [selectedColumnIndex, setSelectedColumnIndex] = createSignal<number | null>(null)
+
+  // Paint session state - tracks original clip boundaries for overlap handling
+  let paintSession: {
+    trackId: string
+    paintedClipId: string
+    originalClips: Array<{ id: string; offset: number; duration: number }>
+  } | null = null
   const [orientation, setOrientation] = createSignal<'portrait' | 'landscape'>(
     window.innerHeight > window.innerWidth ? 'portrait' : 'landscape'
   )
@@ -359,6 +366,27 @@ export function createJam(options: CreateJamOptions) {
     }
   }
 
+  /** Start a paint session - stores original clip states for overlap handling */
+  function startPaintSession(trackId: string, paintedClipId: string) {
+    const track = project.tracks.find(t => t.id === trackId)
+    if (!track) return
+
+    paintSession = {
+      trackId,
+      paintedClipId,
+      originalClips: track.clips.map(c => ({
+        id: c.id,
+        offset: c.offset,
+        duration: c.duration,
+      })),
+    }
+  }
+
+  /** End paint session - commits current state */
+  function endPaintSession() {
+    paintSession = null
+  }
+
   /** Set a clip to span exactly from anchorColumn to targetColumn (bidirectional) */
   function setClipSpan(trackId: string, anchorColumn: number, targetColumn: number) {
     const clipInfo = getClipAtColumn(trackId, anchorColumn)
@@ -376,6 +404,7 @@ export function createJam(options: CreateJamOptions) {
     const newEnd = boundaries[endColumn + 1]
     if (newStart === undefined || newEnd === undefined) return
 
+    // Update the painted clip
     setProject(
       'tracks',
       t => t.id === trackId,
@@ -386,6 +415,99 @@ export function createJam(options: CreateJamOptions) {
         c.duration = newEnd - newStart
       })
     )
+
+    // Handle overlapping clips if we have a paint session
+    if (paintSession && paintSession.trackId === trackId) {
+      handleOverlappingClips(trackId, clip.id, newStart, newEnd)
+    }
+  }
+
+  /** Shrink overlapping clips, restoring toward original bounds on drag-back */
+  function handleOverlappingClips(
+    trackId: string,
+    paintedClipId: string,
+    paintedStart: number,
+    paintedEnd: number
+  ) {
+    if (!paintSession) return
+
+    const track = project.tracks.find(t => t.id === trackId)
+    if (!track) return
+
+    for (let i = 0; i < track.clips.length; i++) {
+      const clip = track.clips[i]
+      if (clip.id === paintedClipId) continue
+
+      const original = paintSession.originalClips.find(c => c.id === clip.id)
+      if (!original) continue
+
+      const originalStart = original.offset
+      const originalEnd = original.offset + original.duration
+
+      // Check if original clip would overlap with painted area
+      if (originalStart < paintedEnd && originalEnd > paintedStart) {
+        // Clip overlaps - need to shrink it
+        let newClipStart = originalStart
+        let newClipEnd = originalEnd
+
+        // If painted area covers the start of this clip, push start forward
+        if (paintedEnd > originalStart && paintedStart <= originalStart) {
+          newClipStart = paintedEnd
+        }
+
+        // If painted area covers the end of this clip, push end backward
+        if (paintedStart < originalEnd && paintedEnd >= originalEnd) {
+          newClipEnd = paintedStart
+        }
+
+        // If painted area is in the middle, shrink from the appropriate side
+        if (paintedStart > originalStart && paintedEnd < originalEnd) {
+          // Painted area is fully inside this clip - shrink from end (arbitrary choice)
+          newClipEnd = paintedStart
+        }
+
+        // Ensure clip still has positive duration
+        if (newClipEnd <= newClipStart) {
+          // Clip would be eliminated - set to minimum size at boundary
+          newClipStart = paintedEnd
+          newClipEnd = paintedEnd
+        }
+
+        // Apply changes if different from current
+        const currentStart = clip.offset
+        const currentEnd = clip.offset + clip.duration
+
+        if (newClipStart !== currentStart || newClipEnd !== currentEnd) {
+          setProject(
+            'tracks',
+            t => t.id === trackId,
+            'clips',
+            i,
+            produce(c => {
+              c.offset = newClipStart
+              c.duration = Math.max(0, newClipEnd - newClipStart)
+            })
+          )
+        }
+      } else {
+        // No overlap - restore to original if it was changed
+        const currentStart = clip.offset
+        const currentEnd = clip.offset + clip.duration
+
+        if (currentStart !== originalStart || currentEnd !== originalEnd) {
+          setProject(
+            'tracks',
+            t => t.id === trackId,
+            'clips',
+            i,
+            produce(c => {
+              c.offset = originalStart
+              c.duration = original.duration
+            })
+          )
+        }
+      }
+    }
   }
 
   /** Toggle clip at column - create if none, remove if clicking on start/single, extend if adjacent */
@@ -751,11 +873,14 @@ export function createJam(options: CreateJamOptions) {
     // Clip actions
     toggleClipAtColumn,
     getClipPosition,
+    getClipAtColumn,
     hasClipAtColumn,
     createClipAtColumn,
     removeClipAtColumn,
     extendClipToColumn,
     setClipSpan,
+    startPaintSession,
+    endPaintSession,
     getTracksWithClipsInColumn,
     getValidLayoutsForColumn,
 
