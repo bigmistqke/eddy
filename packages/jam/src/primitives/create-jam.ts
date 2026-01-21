@@ -359,6 +359,35 @@ export function createJam(options: CreateJamOptions) {
     }
   }
 
+  /** Set a clip to span exactly from anchorColumn to targetColumn (bidirectional) */
+  function setClipSpan(trackId: string, anchorColumn: number, targetColumn: number) {
+    const clipInfo = getClipAtColumn(trackId, anchorColumn)
+    if (!clipInfo) return
+
+    const boundaries = columnBoundariesMs()
+    const track = project.tracks.find(t => t.id === trackId)
+    const clip = track?.clips[clipInfo.clipIndex]
+    if (!clip) return
+
+    const startColumn = Math.min(anchorColumn, targetColumn)
+    const endColumn = Math.max(anchorColumn, targetColumn)
+
+    const newStart = boundaries[startColumn]
+    const newEnd = boundaries[endColumn + 1]
+    if (newStart === undefined || newEnd === undefined) return
+
+    setProject(
+      'tracks',
+      t => t.id === trackId,
+      'clips',
+      clipInfo.clipIndex,
+      produce(c => {
+        c.offset = newStart
+        c.duration = newEnd - newStart
+      })
+    )
+  }
+
   /** Toggle clip at column - create if none, remove if clicking on start/single, extend if adjacent */
   function toggleClipAtColumn(columnIndex: number, trackId: string) {
     const position = getClipPosition(trackId, columnIndex)
@@ -726,6 +755,7 @@ export function createJam(options: CreateJamOptions) {
     createClipAtColumn,
     removeClipAtColumn,
     extendClipToColumn,
+    setClipSpan,
     getTracksWithClipsInColumn,
     getValidLayoutsForColumn,
 

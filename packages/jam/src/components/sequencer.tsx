@@ -91,7 +91,7 @@ export function Grid(props: GridProps) {
 
   const [isPainting, setIsPainting] = createSignal(false)
   const [paintMode, setPaintMode] = createSignal<'add' | 'remove' | null>(null)
-  const [paintStartColumn, setPaintStartColumn] = createSignal<number | null>(null)
+  const [paintAnchorColumn, setPaintAnchorColumn] = createSignal<number | null>(null)
   const [paintTrackId, setPaintTrackId] = createSignal<string | null>(null)
 
   const columns = () => jam.metadata.columns
@@ -106,7 +106,7 @@ export function Grid(props: GridProps) {
     // Start painting mode
     setIsPainting(true)
     setPaintMode(hadClip ? 'remove' : 'add')
-    setPaintStartColumn(columnIndex)
+    setPaintAnchorColumn(columnIndex)
     setPaintTrackId(trackId)
   }
 
@@ -114,26 +114,27 @@ export function Grid(props: GridProps) {
     if (!isPainting() || !(event.buttons & 1)) return
 
     const mode = paintMode()
-    const startColumn = paintStartColumn()
-    const startTrackId = paintTrackId()
+    const anchorColumn = paintAnchorColumn()
+    const paintTrack = paintTrackId()
 
     // Only allow painting on the same track
-    if (trackId !== startTrackId) return
+    if (trackId !== paintTrack || anchorColumn === null) return
 
-    const hasClip = jam.hasClipAtColumn(trackId, columnIndex)
-
-    if (mode === 'add' && !hasClip && startColumn !== null) {
-      // Extend the clip from the start column to include this column
-      jam.extendClipToColumn(trackId, startColumn, columnIndex)
-    } else if (mode === 'remove' && hasClip) {
-      jam.removeClipAtColumn(trackId, columnIndex)
+    if (mode === 'add') {
+      // Set clip to span from anchor to current column (bidirectional)
+      jam.setClipSpan(trackId, anchorColumn, columnIndex)
+    } else if (mode === 'remove') {
+      const hasClip = jam.hasClipAtColumn(trackId, columnIndex)
+      if (hasClip) {
+        jam.removeClipAtColumn(trackId, columnIndex)
+      }
     }
   }
 
   function handlePointerUp() {
     setIsPainting(false)
     setPaintMode(null)
-    setPaintStartColumn(null)
+    setPaintAnchorColumn(null)
     setPaintTrackId(null)
   }
 
