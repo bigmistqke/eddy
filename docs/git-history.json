@@ -1,11 +1,27 @@
 [
   {
-    "hash": "fbac04756ff84fa1b080de3500975bee6fd7af99",
-    "short_hash": "fbac047",
+    "hash": "a2706b1a076ffba5209d00f9770a626b16e9992f",
+    "short_hash": "a2706b1",
     "author": "bigmistqke",
-    "date": "2026-01-21T23:52:02+01:00",
-    "message": "refactor: replace jam columns with fixed grid and layout regions\n\nColumns now have uniform duration (columnCount + columnDuration).\nLayouts are defined as regions spanning multiple columns (layoutRegions).\nPrepares for decoupling grid UI from timing data.",
-    "files_changed": 8
+    "date": "2026-01-22T00:13:32+01:00",
+    "message": "refactor: remove counter functionality from makeMonitor\n\nSimplifies perf monitor API - counters now handled locally where needed.",
+    "files_changed": 2
+  },
+  {
+    "hash": "e86033c526f4320090dc757f770c961185db2563",
+    "short_hash": "e86033c",
+    "author": "bigmistqke",
+    "date": "2026-01-22T00:13:28+01:00",
+    "message": "refactor: split lexicons into absolute and musical time domains\n\nSeparates time representation to avoid BPM rounding errors:\n- AbsoluteProject/AbsoluteClip: offset/duration in milliseconds\n- MusicalProject/MusicalClip: bar/bars with BPM metadata\n- Tracks now reference clips via clipIds[], clips stored at project level",
+    "files_changed": 10
+  },
+  {
+    "hash": "c25a83cba647787aa8b419489a7a96ebfcff694b",
+    "short_hash": "c25a83c",
+    "author": "bigmistqke",
+    "date": "2026-01-21T23:52:31+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
   },
   {
     "hash": "fbac04756ff84fa1b080de3500975bee6fd7af99",
@@ -14,14 +30,6 @@
     "date": "2026-01-21T23:52:02+01:00",
     "message": "refactor: replace jam columns with fixed grid and layout regions\n\nColumns now have uniform duration (columnCount + columnDuration).\nLayouts are defined as regions spanning multiple columns (layoutRegions).\nPrepares for decoupling grid UI from timing data.",
     "files_changed": 8
-  },
-  {
-    "hash": "d7bef4d0f2e400bcb27fe93840e890d873cdc5c3",
-    "short_hash": "d7bef4d",
-    "author": "bigmistqke",
-    "date": "2026-01-21T23:25:50+01:00",
-    "message": "feat: add identity wrapper overload to makeMonitor\n\nAllow `monitor('label')` without a function argument to return\na timing wrapper for inline operations. Also fix decode wrapper\nto not wrap sync results in Promise.resolve().",
-    "files_changed": 3
   },
   {
     "hash": "68bc9096bd0c1de1f6a485ba69c0463367bb2483",
