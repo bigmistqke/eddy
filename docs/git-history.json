@@ -1,26 +1,34 @@
 [
   {
+    "hash": "52893dd99e99b0be7b690e792e0a62d17ca962bc",
+    "short_hash": "52893dd",
+    "author": "bigmistqke",
+    "date": "2026-01-22T00:39:33+01:00",
+    "message": "chore: extract build:lexicons script",
+    "files_changed": 1
+  },
+  {
+    "hash": "293d38cfa797e0b174930352e4482e2ff5cd135e",
+    "short_hash": "293d38c",
+    "author": "bigmistqke",
+    "date": "2026-01-22T00:39:29+01:00",
+    "message": "refactor: use ticks for musical timing in lexicon\n\nATProto doesn't support floats - use integer ticks instead of fractional bars.\nAdds ppq (pulses per quarter note, default 960) for resolution.",
+    "files_changed": 1
+  },
+  {
+    "hash": "76afd246bd823458f17a7fd71340fb7763b49337",
+    "short_hash": "76afd24",
+    "author": "bigmistqke",
+    "date": "2026-01-22T00:30:37+01:00",
+    "message": "chore: rename lexicons",
+    "files_changed": 37
+  },
+  {
     "hash": "a2706b1a076ffba5209d00f9770a626b16e9992f",
     "short_hash": "a2706b1",
     "author": "bigmistqke",
     "date": "2026-01-22T00:13:32+01:00",
     "message": "refactor: remove counter functionality from makeMonitor\n\nSimplifies perf monitor API - counters now handled locally where needed.",
-    "files_changed": 2
-  },
-  {
-    "hash": "e86033c526f4320090dc757f770c961185db2563",
-    "short_hash": "e86033c",
-    "author": "bigmistqke",
-    "date": "2026-01-22T00:13:28+01:00",
-    "message": "refactor: split lexicons into absolute and musical time domains\n\nSeparates time representation to avoid BPM rounding errors:\n- AbsoluteProject/AbsoluteClip: offset/duration in milliseconds\n- MusicalProject/MusicalClip: bar/bars with BPM metadata\n- Tracks now reference clips via clipIds[], clips stored at project level",
-    "files_changed": 10
-  },
-  {
-    "hash": "c25a83cba647787aa8b419489a7a96ebfcff694b",
-    "short_hash": "c25a83c",
-    "author": "bigmistqke",
-    "date": "2026-01-21T23:52:31+01:00",
-    "message": "chore: sync deciduous graph",
     "files_changed": 2
   },
   {
