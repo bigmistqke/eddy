@@ -1,5 +1,21 @@
 [
   {
+    "hash": "5177299a00ffe4e974f913bc75dcd4eeebecf88c",
+    "short_hash": "5177299",
+    "author": "bigmistqke",
+    "date": "2026-01-21T01:58:58+01:00",
+    "message": "refactor: use subgrid for sequencer column backgrounds\n\n- Add column wrapper with subgrid to inherit row alignment\n- Highlight current column via wrapper background instead of cell styling\n- Increase row gap for better visual separation\n- Fix off-center slot numbers by adding padding to balance margins\n- Remove dimmed styling for clips not in visible slots\n- Clean up unused CSS (timelineRuler, z-index, current variants)",
+    "files_changed": 2
+  },
+  {
+    "hash": "7aae3be96ab26894c4e9efb9b09e80d6fbb56e2d",
+    "short_hash": "7aae3be",
+    "author": "bigmistqke",
+    "date": "2026-01-21T01:39:13+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
     "hash": "6849c87785b52f24ceb88d8866da6247e4d9cec4",
     "short_hash": "6849c87",
     "author": "bigmistqke",
@@ -8,20 +24,12 @@
     "files_changed": 17
   },
   {
-    "hash": "b99806ab1dd363b5addb07b1bf34597983f1bfbd",
-    "short_hash": "b99806a",
+    "hash": "6849c87785b52f24ceb88d8866da6247e4d9cec4",
+    "short_hash": "6849c87",
     "author": "bigmistqke",
-    "date": "2026-01-21T01:38:42+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "1698efe07de92b21f9cc134157627a9bdce8a510",
-    "short_hash": "1698efe",
-    "author": "bigmistqke",
-    "date": "2026-01-21T01:13:42+01:00",
-    "message": "refactor: colocate jam UI components\n\n- Merge Cell, ColumnHeader, TrackLabel, TimelineRuler into Grid.tsx\n- Merge LayoutPreview, LayoutSelector, SlotAssigner into LayoutEditor.tsx\n- Consolidate CSS modules with section headers\n- Simplify index.ts exports",
-    "files_changed": 20
+    "date": "2026-01-21T01:38:45+01:00",
+    "message": "feat: add duplicate column and improve layout",
+    "files_changed": 17
   },
   {
     "hash": "1698efe07de92b21f9cc134157627a9bdce8a510",
