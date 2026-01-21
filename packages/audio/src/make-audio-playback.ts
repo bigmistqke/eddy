@@ -503,7 +503,7 @@ export function makeAudioPlayback({ onAudio, onEnd }: AudioPlaybackConfig = {}):
     })
   }
 
-  const demux = monitor('demux', <T>(operation: () => T): T => operation())
+  const demux = monitor('demux')
   const decode = monitor('decode', (
     packet: EncodedPacket,
     decoder: AudioDecoder,

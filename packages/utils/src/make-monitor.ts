@@ -32,6 +32,8 @@ export interface Monitor<
 > {
   /** Wrap a function with timing */
   <T extends (...args: any[]) => any>(label: TimingLabel, fn: T): T
+  /** Create a timing wrapper for a label (identity function that records timing) */
+  (label: TimingLabel): <T>(operation: () => T) => T
   /** Increment a counter */
   count(label: CounterLabel, amount?: number): void
   /** Get stats for a specific timing label */
@@ -68,9 +70,18 @@ const MAX_SAMPLES = 1000
  * @example
  * ```ts
  * const monitor = makeMonitor<'decode' | 'demux', 'frames-dropped'>()
+ *
+ * // Wrap a function with timing
  * const decode = monitor('decode', (chunk) => decoder.decode(chunk))
+ *
+ * // Or create a timing wrapper for inline operations
+ * const demux = monitor('demux')
+ * await demux(() => videoSink.getPacket(time))
+ *
+ * // Counting
  * monitor.count('frames-dropped', 5)
  *
+ * // Stats access
  * monitor.getAllStats()
  * monitor.getCounters()
  * monitor.reset()
@@ -182,11 +193,25 @@ export function makeMonitor<
   }
 
   // Create the monitor function
-  const monitor = (<T extends (...args: any[]) => any>(label: TimingLabel, fn: T): T => {
+  const monitor = (<T extends (...args: any[]) => any>(label: TimingLabel, fn?: T) => {
     if (typeof __ENABLE_PERF__ !== 'undefined' && !__ENABLE_PERF__) {
-      return fn
+      return fn ?? (<U>(op: () => U) => op())
     }
 
+    // If no fn provided, return a wrapper that times any operation
+    if (!fn) {
+      return <U>(operation: () => U): U => {
+        const start = performance.now()
+        const result = operation()
+        if (result instanceof Promise) {
+          return result.finally(() => record(label, performance.now() - start)) as U
+        }
+        record(label, performance.now() - start)
+        return result
+      }
+    }
+
+    // Wrap the provided function
     return ((...args) => {
       const start = performance.now()
       const result = fn(...args)

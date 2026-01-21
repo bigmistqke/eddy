@@ -6,7 +6,7 @@
  */
 
 import type { DemuxedSample, VideoTrackInfo } from '@eddy/media'
-import { assertedNotNullish, debug, makeMonitor, makeLoop } from '@eddy/utils'
+import { assertedNotNullish, debug, makeLoop, makeMonitor } from '@eddy/utils'
 import {
   ALL_FORMATS,
   EncodedPacketSink,
@@ -349,6 +349,10 @@ export function makeVideoPlayback({
   shouldSkipDeltaFrame,
 }: VideoPlaybackConfig = {}): VideoPlayback {
   const monitor = makeMonitor<'demux' | 'decode' | 'transferFrame'>()
+  const demux = monitor('demux')
+  const decode = monitor('decode', (decoder: VideoDecoderHandle, sample: DemuxedSample) =>
+    decoder.decode(sample),
+  )
 
   let state: PlaybackStateMachine = { type: 'idle' }
 
@@ -356,11 +360,14 @@ export function makeVideoPlayback({
   let isBuffering = false
   let lastSentTimestamp: number | null = null
 
-  const transferFrame = monitor('transferFrame', (frameData: FrameData, callback: FrameCallback) => {
-    const frame = dataToFrame(frameData)
-    lastSentTimestamp = frameData.timestamp
-    callback(frame)
-  })
+  const transferFrame = monitor(
+    'transferFrame',
+    (frameData: FrameData, callback: FrameCallback) => {
+      const frame = dataToFrame(frameData)
+      lastSentTimestamp = frameData.timestamp
+      callback(frame)
+    },
+  )
 
   function sendFrame(time: number): void {
     if (!onFrame || !isLoaded(state)) return
@@ -382,12 +389,6 @@ export function makeVideoPlayback({
 
     transferFrame(frameData, onFrame)
   }
-
-  const demux = monitor('demux', <T>(operation: () => T): T => operation())
-  const decode = monitor('decode', (decoder: VideoDecoderHandle, sample: DemuxedSample) => {
-    const maybeResult = decoder.decode(sample)
-    return maybeResult instanceof Promise ? maybeResult : Promise.resolve(maybeResult)
-  })
 
   async function bufferAhead(fromTime: number): Promise<void> {
     if (!isLoaded(state)) return
