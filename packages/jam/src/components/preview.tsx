@@ -2,10 +2,10 @@
  * Preview
  *
  * Renders video tracks using WebGL compositor.
- * Uses makeVideoCompositor and makeVideoPlayback for real video pipeline.
+ * Draggable overlay that can be repositioned.
  */
 
-import { createEffect, createMemo, on, onCleanup, onMount } from 'solid-js'
+import { createEffect, createMemo, createSignal, on, onCleanup, onMount } from 'solid-js'
 import type { Jam } from '~/primitives/create-jam'
 import {
   makeVideoCompositor,
@@ -27,6 +27,11 @@ export interface PreviewProps {
   jam: Jam
 }
 
+interface Position {
+  x: number
+  y: number
+}
+
 /**********************************************************************************/
 /*                                                                                */
 /*                                    Preview                                     */
@@ -43,6 +48,34 @@ export function Preview(props: PreviewProps) {
 
   const canvasWidth = 640
   const canvasHeight = 360
+
+  // Overlay position state
+  const [position, setPosition] = createSignal<Position>({ x: 16, y: 16 })
+  const [isDragging, setIsDragging] = createSignal(false)
+  let dragOffset: Position = { x: 0, y: 0 }
+
+  function handleDragStart(event: PointerEvent) {
+    event.preventDefault()
+    const _position = position()
+    dragOffset = {
+      x: event.clientX - _position.x,
+      y: event.clientY - _position.y,
+    }
+    setIsDragging(true)
+    ;(event.target as HTMLElement).setPointerCapture(event.pointerId)
+  }
+
+  function handleDragMove(event: PointerEvent) {
+    if (!isDragging()) return
+    setPosition({
+      x: event.clientX - dragOffset.x,
+      y: event.clientY - dragOffset.y,
+    })
+  }
+
+  function handleDragEnd() {
+    setIsDragging(false)
+  }
 
   // Effect registry (empty for now - no effects)
   const effectRegistry = makeEffectRegistry({})
@@ -176,13 +209,33 @@ export function Preview(props: PreviewProps) {
   )
 
   return (
-    <div class={styles.preview}>
-      <canvas
-        ref={canvasRef}
-        class={styles.canvas}
-        width={canvasWidth}
-        height={canvasHeight}
-      />
+    <div
+      class={styles.overlay}
+      style={{
+        left: `${position().x}px`,
+        top: `${position().y}px`,
+      }}
+    >
+      <div
+        class={styles.dragHandle}
+        onPointerDown={handleDragStart}
+        onPointerMove={handleDragMove}
+        onPointerUp={handleDragEnd}
+        onPointerCancel={handleDragEnd}
+      >
+        <span class={styles.dragIcon}>⋮⋮</span>
+        <span class={styles.columnInfo}>
+          Column {jam.currentColumnIndex() + 1} / {jam.metadata.columns.length}
+        </span>
+      </div>
+      <div class={styles.preview}>
+        <canvas
+          ref={canvasRef}
+          class={styles.canvas}
+          width={canvasWidth}
+          height={canvasHeight}
+        />
+      </div>
     </div>
   )
 }

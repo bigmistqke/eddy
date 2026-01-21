@@ -31,13 +31,8 @@ export function App() {
 
   return (
     <div class={styles.app}>
-      {/* Preview area */}
-      <div class={styles.preview}>
-        <Preview jam={jam} />
-        <div class={styles.previewOverlay}>
-          Column {jam.currentColumnIndex() + 1} / {jam.metadata.columns.length}
-        </div>
-      </div>
+      {/* Floating preview overlay */}
+      <Preview jam={jam} />
 
       {/* Sequencer grid */}
       <div class={styles.sequencer}>

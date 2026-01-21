@@ -1,32 +1,11 @@
 .app {
   display: grid;
   height: 100%;
-  grid-template-rows: 1fr auto auto auto;
-}
-
-.preview {
-  position: relative;
-  background: #000;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.previewOverlay {
-  position: absolute;
-  bottom: 8px;
-  left: 8px;
-  padding: 4px 8px;
-  background: rgba(0, 0, 0, 0.6);
-  border-radius: 4px;
-  font-size: 12px;
-  color: #888;
-  pointer-events: none;
+  grid-template-rows: 1fr auto auto;
 }
 
 .sequencer {
-  background: #0a0a0a;
-  border-top: 1px solid #222;
-  overflow-x: auto;
+  min-height: 0;
 }
 
 .transport {
