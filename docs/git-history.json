@@ -1,27 +1,43 @@
 [
   {
+    "hash": "47d655b2802fc8e977630ef4f389078de452ac79",
+    "short_hash": "47d655b",
+    "author": "bigmistqke",
+    "date": "2026-01-21T03:52:03+01:00",
+    "message": "refactor: restructure sequencer with scrollable tracks and fixed ruler\n\n- Split into header row, scrollable tracks container, and ruler row\n- Tracks overflow vertically while ruler stays fixed at bottom\n- Column highlighting extends through all sections\n- Added spacer and filler rows for continuous column backgrounds",
+    "files_changed": 2
+  },
+  {
+    "hash": "c6826651b37ea57c487ebf5ca9472b6bca7a6fa4",
+    "short_hash": "c682665",
+    "author": "bigmistqke",
+    "date": "2026-01-21T03:51:56+01:00",
+    "message": "feat: make preview a draggable overlay\n\nPreview is now a floating overlay that can be repositioned by dragging.\nIncludes drag handle with column info display.",
+    "files_changed": 4
+  },
+  {
+    "hash": "c6826651b37ea57c487ebf5ca9472b6bca7a6fa4",
+    "short_hash": "c682665",
+    "author": "bigmistqke",
+    "date": "2026-01-21T03:51:56+01:00",
+    "message": "feat: make preview a draggable overlay\n\nPreview is now a floating overlay that can be repositioned by dragging.\nIncludes drag handle with column info display.",
+    "files_changed": 4
+  },
+  {
+    "hash": "942f1655b9a8e910867a8855a3e57eca9a85c965",
+    "short_hash": "942f165",
+    "author": "bigmistqke",
+    "date": "2026-01-21T03:26:00+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
     "hash": "7b9f910ba1b1c4cee1e9a8f3a7bcfc83859dd619",
     "short_hash": "7b9f910",
     "author": "bigmistqke",
     "date": "2026-01-21T03:25:44+01:00",
     "message": "refactor: convert layout sidebar to horizontal action bar\n\nReplaces vertical sidebar with compact horizontal bar showing duration\ninputs, layout selector, and column actions. Removes orientation-based\nresponsive layout.",
     "files_changed": 4
-  },
-  {
-    "hash": "ae540670beec1e31314f936376bac42432e69e5f",
-    "short_hash": "ae54067",
-    "author": "bigmistqke",
-    "date": "2026-01-21T03:06:16+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "46db7eb114a1f4bde668291f05b4726f64094280",
-    "short_hash": "46db7eb",
-    "author": "bigmistqke",
-    "date": "2026-01-21T03:05:31+01:00",
-    "message": "feat: auto-sync layouts based on track clip count\n\nLayouts are now determined by how many tracks have clips in a column:\n- 1 track: full\n- 2 tracks: pip, h-split, v-split\n- 3 tracks: 3-up\n- 4 tracks: 2x2\n\nSlots are auto-assigned based on track order. Removes manual slot\nassignment UI and simplifies the layout editor.",
-    "files_changed": 5
   },
   {
     "hash": "46db7eb114a1f4bde668291f05b4726f64094280",

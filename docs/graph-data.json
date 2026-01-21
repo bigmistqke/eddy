@@ -3860,6 +3860,50 @@
       "created_at": "2026-01-21T03:25:48.449610+01:00",
       "updated_at": "2026-01-21T03:25:48.449610+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"7b9f910\",\"confidence\":95}"
+    },
+    {
+      "id": 352,
+      "change_id": "1e7a6835-81b1-4ae1-8b15-879eaf9cc078",
+      "node_type": "action",
+      "title": "Implementing preview pane as movable overlay",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T03:26:54.083286+01:00",
+      "updated_at": "2026-01-21T03:26:54.083286+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 353,
+      "change_id": "19097297-43d1-4bf7-8f2d-01e33487e0fd",
+      "node_type": "outcome",
+      "title": "Preview is now a draggable overlay with position state, drag handle, and column info",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T03:28:11.030216+01:00",
+      "updated_at": "2026-01-21T03:28:11.030216+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 354,
+      "change_id": "f0f03971-b19d-4b7f-b57d-8b28ebf2591f",
+      "node_type": "outcome",
+      "title": "Committed: feat: make preview a draggable overlay",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T03:52:09.305457+01:00",
+      "updated_at": "2026-01-21T03:52:09.305457+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"c682665\",\"confidence\":95}"
+    },
+    {
+      "id": 355,
+      "change_id": "0412d03b-8e7b-4b78-a339-20d445d5f816",
+      "node_type": "outcome",
+      "title": "Committed: refactor: restructure sequencer with scrollable tracks and fixed ruler",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T03:52:15.421074+01:00",
+      "updated_at": "2026-01-21T03:52:15.421074+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"47d655b\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -7228,6 +7272,50 @@
       "weight": 1.0,
       "rationale": "Committed",
       "created_at": "2026-01-21T03:25:51.937225+01:00"
+    },
+    {
+      "id": 307,
+      "from_node_id": 348,
+      "to_node_id": 352,
+      "from_change_id": "951b7c17-ef01-492e-a1be-b45fb5a2c5fe",
+      "to_change_id": "1e7a6835-81b1-4ae1-8b15-879eaf9cc078",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-01-21T03:27:00.157127+01:00"
+    },
+    {
+      "id": 308,
+      "from_node_id": 352,
+      "to_node_id": 353,
+      "from_change_id": "1e7a6835-81b1-4ae1-8b15-879eaf9cc078",
+      "to_change_id": "19097297-43d1-4bf7-8f2d-01e33487e0fd",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Result",
+      "created_at": "2026-01-21T03:28:14.980872+01:00"
+    },
+    {
+      "id": 309,
+      "from_node_id": 352,
+      "to_node_id": 354,
+      "from_change_id": "1e7a6835-81b1-4ae1-8b15-879eaf9cc078",
+      "to_change_id": "f0f03971-b19d-4b7f-b57d-8b28ebf2591f",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-21T03:52:14.790022+01:00"
+    },
+    {
+      "id": 310,
+      "from_node_id": 352,
+      "to_node_id": 355,
+      "from_change_id": "1e7a6835-81b1-4ae1-8b15-879eaf9cc078",
+      "to_change_id": "0412d03b-8e7b-4b78-a339-20d445d5f816",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-21T03:52:21.611854+01:00"
     }
   ]
 }
