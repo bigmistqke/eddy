@@ -3757,9 +3757,9 @@
       "node_type": "goal",
       "title": "Bidirectional clip painting with shrink on drag-back",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-21T03:09:09.457641+01:00",
-      "updated_at": "2026-01-21T03:09:09.457641+01:00",
+      "updated_at": "2026-01-21T22:18:47.290082+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"when drawing a clip on a track, it should overflow when i drag over a column, but it should also become smaller once i drag back from that column\"}"
     },
     {
@@ -4021,9 +4021,9 @@
       "node_type": "action",
       "title": "Implementing bidirectional clip painting with shrink on drag-back",
       "description": null,
-      "status": "pending",
+      "status": "completed",
       "created_at": "2026-01-21T22:10:32.459284+01:00",
-      "updated_at": "2026-01-21T22:10:32.459284+01:00",
+      "updated_at": "2026-01-21T22:18:47.302760+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     },
     {
@@ -4035,6 +4035,72 @@
       "status": "completed",
       "created_at": "2026-01-21T22:13:02.903420+01:00",
       "updated_at": "2026-01-21T22:18:37.442401+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 368,
+      "change_id": "efc1ad1d-ba1f-478e-82d5-9d3be26f9c7d",
+      "node_type": "goal",
+      "title": "Simplified fullscreen view - select clips by clicking on composed output",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T22:21:55.766539+01:00",
+      "updated_at": "2026-01-21T22:21:55.766539+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":75}"
+    },
+    {
+      "id": 369,
+      "change_id": "1e0dae06-fe91-4617-8149-935a0849d58c",
+      "node_type": "decision",
+      "title": "Click detection approach for fullscreen clip selection",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T22:22:00.088182+01:00",
+      "updated_at": "2026-01-21T22:22:00.088182+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":70}"
+    },
+    {
+      "id": 370,
+      "change_id": "6228df8d-3247-4d30-848e-5b6ce8a2db42",
+      "node_type": "option",
+      "title": "Overlay HTML elements over canvas with click events",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T22:22:04.271675+01:00",
+      "updated_at": "2026-01-21T22:22:04.271675+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":70}"
+    },
+    {
+      "id": 371,
+      "change_id": "a5dbff32-b53d-484e-af33-9674a5ef0225",
+      "node_type": "option",
+      "title": "Handle click on canvas and calculate which container was hit",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T22:22:04.303553+01:00",
+      "updated_at": "2026-01-21T22:22:04.303553+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":70}"
+    },
+    {
+      "id": 372,
+      "change_id": "1d2e7fd0-33cd-4ef1-9e18-60301abbb775",
+      "node_type": "action",
+      "title": "Implementing basic add track button with test video",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-01-21T22:24:18.657662+01:00",
+      "updated_at": "2026-01-21T22:28:04.347706+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 373,
+      "change_id": "57ea6491-a57f-49d6-b705-05b02eb505d1",
+      "node_type": "outcome",
+      "title": "Add track button implemented - cycles through test videos",
+      "description": null,
+      "status": "completed",
+      "created_at": "2026-01-21T22:25:39.791967+01:00",
+      "updated_at": "2026-01-21T22:28:04.358952+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     }
   ],
@@ -7580,6 +7646,72 @@
       "weight": 1.0,
       "rationale": "Result",
       "created_at": "2026-01-21T22:13:07.548005+01:00"
+    },
+    {
+      "id": 323,
+      "from_node_id": 313,
+      "to_node_id": 368,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "efc1ad1d-ba1f-478e-82d5-9d3be26f9c7d",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Simplified UX feature",
+      "created_at": "2026-01-21T22:22:09.463895+01:00"
+    },
+    {
+      "id": 324,
+      "from_node_id": 368,
+      "to_node_id": 369,
+      "from_change_id": "efc1ad1d-ba1f-478e-82d5-9d3be26f9c7d",
+      "to_change_id": "1e0dae06-fe91-4617-8149-935a0849d58c",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation approach",
+      "created_at": "2026-01-21T22:22:09.476965+01:00"
+    },
+    {
+      "id": 325,
+      "from_node_id": 369,
+      "to_node_id": 370,
+      "from_change_id": "1e0dae06-fe91-4617-8149-935a0849d58c",
+      "to_change_id": "6228df8d-3247-4d30-848e-5b6ce8a2db42",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Option A",
+      "created_at": "2026-01-21T22:22:09.493419+01:00"
+    },
+    {
+      "id": 326,
+      "from_node_id": 369,
+      "to_node_id": 371,
+      "from_change_id": "1e0dae06-fe91-4617-8149-935a0849d58c",
+      "to_change_id": "a5dbff32-b53d-484e-af33-9674a5ef0225",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Option B",
+      "created_at": "2026-01-21T22:22:09.503453+01:00"
+    },
+    {
+      "id": 327,
+      "from_node_id": 357,
+      "to_node_id": 372,
+      "from_change_id": "2004a891-b550-48c3-9124-4357f9dd328f",
+      "to_change_id": "1d2e7fd0-33cd-4ef1-9e18-60301abbb775",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Partial implementation",
+      "created_at": "2026-01-21T22:24:22.479752+01:00"
+    },
+    {
+      "id": 328,
+      "from_node_id": 372,
+      "to_node_id": 373,
+      "from_change_id": "1d2e7fd0-33cd-4ef1-9e18-60301abbb775",
+      "to_change_id": "57ea6491-a57f-49d6-b705-05b02eb505d1",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Result",
+      "created_at": "2026-01-21T22:25:43.408117+01:00"
     }
   ]
 }

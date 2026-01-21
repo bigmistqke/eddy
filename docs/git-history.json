@@ -1,17 +1,17 @@
 [
   {
-    "hash": "bf1c540333780755c7abe0ed168a59e12692e918",
-    "short_hash": "bf1c540",
+    "hash": "05c5e44bc3976c4b41a7e8fc7994faf8db783058",
+    "short_hash": "05c5e44",
     "author": "bigmistqke",
-    "date": "2026-01-21T22:18:24+01:00",
-    "message": "feat: add bidirectional clip painting with shrink on drag-back",
+    "date": "2026-01-21T22:18:51+01:00",
+    "message": "chore: sync deciduous graph",
     "files_changed": 2
   },
   {
-    "hash": "7322e9e4bcf44d36030821c7d32d47f8f80ecef2",
-    "short_hash": "7322e9e",
+    "hash": "43c62f75273fcd8839d6aa3473747484fcda7bad",
+    "short_hash": "43c62f7",
     "author": "bigmistqke",
-    "date": "2026-01-21T03:56:14+01:00",
+    "date": "2026-01-21T22:18:31+01:00",
     "message": "chore: sync deciduous graph",
     "files_changed": 2
   },
