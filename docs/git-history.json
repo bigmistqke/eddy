@@ -1,5 +1,21 @@
 [
   {
+    "hash": "7b9f910ba1b1c4cee1e9a8f3a7bcfc83859dd619",
+    "short_hash": "7b9f910",
+    "author": "bigmistqke",
+    "date": "2026-01-21T03:25:44+01:00",
+    "message": "refactor: convert layout sidebar to horizontal action bar\n\nReplaces vertical sidebar with compact horizontal bar showing duration\ninputs, layout selector, and column actions. Removes orientation-based\nresponsive layout.",
+    "files_changed": 4
+  },
+  {
+    "hash": "ae540670beec1e31314f936376bac42432e69e5f",
+    "short_hash": "ae54067",
+    "author": "bigmistqke",
+    "date": "2026-01-21T03:06:16+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
     "hash": "46db7eb114a1f4bde668291f05b4726f64094280",
     "short_hash": "46db7eb",
     "author": "bigmistqke",
@@ -8,20 +24,12 @@
     "files_changed": 5
   },
   {
-    "hash": "f401bc34eac08657e9449b63dd11e34db4560afc",
-    "short_hash": "f401bc3",
+    "hash": "46db7eb114a1f4bde668291f05b4726f64094280",
+    "short_hash": "46db7eb",
     "author": "bigmistqke",
-    "date": "2026-01-21T01:59:22+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 3
-  },
-  {
-    "hash": "5177299a00ffe4e974f913bc75dcd4eeebecf88c",
-    "short_hash": "5177299",
-    "author": "bigmistqke",
-    "date": "2026-01-21T01:58:58+01:00",
-    "message": "refactor: use subgrid for sequencer column backgrounds\n\n- Add column wrapper with subgrid to inherit row alignment\n- Highlight current column via wrapper background instead of cell styling\n- Increase row gap for better visual separation\n- Fix off-center slot numbers by adding padding to balance margins\n- Remove dimmed styling for clips not in visible slots\n- Clean up unused CSS (timelineRuler, z-index, current variants)",
-    "files_changed": 2
+    "date": "2026-01-21T03:05:31+01:00",
+    "message": "feat: auto-sync layouts based on track clip count\n\nLayouts are now determined by how many tracks have clips in a column:\n- 1 track: full\n- 2 tracks: pip, h-split, v-split\n- 3 tracks: 3-up\n- 4 tracks: 2x2\n\nSlots are auto-assigned based on track order. Removes manual slot\nassignment UI and simplifies the layout editor.",
+    "files_changed": 5
   },
   {
     "hash": "5177299a00ffe4e974f913bc75dcd4eeebecf88c",

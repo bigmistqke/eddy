@@ -3739,6 +3739,127 @@
       "created_at": "2026-01-21T03:05:40.463487+01:00",
       "updated_at": "2026-01-21T03:05:40.463487+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"46db7eb\",\"confidence\":95}"
+    },
+    {
+      "id": 341,
+      "change_id": "417fc858-0d60-4c19-a715-3ddd205297aa",
+      "node_type": "goal",
+      "title": "Replace duration presets with flexible signature input",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T03:08:21.282162+01:00",
+      "updated_at": "2026-01-21T03:08:21.282162+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"duration should just become 2 input so you can enter whatever signature\"}"
+    },
+    {
+      "id": 342,
+      "change_id": "3ffe965b-4167-42bc-9cd6-8966434a4294",
+      "node_type": "goal",
+      "title": "Bidirectional clip painting with shrink on drag-back",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T03:09:09.457641+01:00",
+      "updated_at": "2026-01-21T03:09:09.457641+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"when drawing a clip on a track, it should overflow when i drag over a column, but it should also become smaller once i drag back from that column\"}"
+    },
+    {
+      "id": 343,
+      "change_id": "c84d94cf-2168-48db-abd1-3f15aed1ae89",
+      "node_type": "goal",
+      "title": "Implement clip repositioning along tracks",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T03:09:29.953346+01:00",
+      "updated_at": "2026-01-21T03:09:29.953346+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"figure out and implement a way of moving clips along the track\"}"
+    },
+    {
+      "id": 344,
+      "change_id": "d35675a8-907c-4d73-9d1f-3e154ce3d4ec",
+      "node_type": "goal",
+      "title": "Research: endless last column for simpler onboarding",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T03:11:33.466462+01:00",
+      "updated_at": "2026-01-21T03:15:42.159959+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":70,\"prompt\":\"Explore columns whose duration is determined by content rather than a fixed time signature:\\n\\n- Column plays as long as any clip within it is playing, then advances\\n- Could be placed anywhere in the sequence, not just at the end\\n- Enables variable-length sections (improvised solos, freeform interludes)\\n\\nOpen questions:\\n- How to visually distinguish from fixed-duration columns?\\n- Behavior when looping - does it re-evaluate duration each loop?\\n- Can users later \\\"lock\\\" a dynamic column to a fixed duration?\\n- Is the concept intuitive within a grid-based UI, or does it break the mental model?\"}"
+    },
+    {
+      "id": 345,
+      "change_id": "fa1578e1-f8a3-4f54-a8be-2a7d9e041533",
+      "node_type": "goal",
+      "title": "Research: simplified performance mode for onboarding",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T03:15:23.991028+01:00",
+      "updated_at": "2026-01-21T03:15:23.991028+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":70,\"prompt\":\"Explore a simpler entry point to jam that defers composition decisions:\\n\\n- Fullscreen preview with just a record button\\n- Play along like a traditional multi-track looper\\n- Layout auto-selects based on active track count\\n- No time signatures or column structure to think about upfront\\n- Capture first, arrange later - switch to sequencer view when ready to compose\\n\\nGoal: lower barrier to entry by separating \\\"performance/capture\\\" from \\\"composition/arrangement\\\"\"}"
+    },
+    {
+      "id": 346,
+      "change_id": "b606dd49-98d4-4583-ac90-e2d44d78bead",
+      "node_type": "goal",
+      "title": "Add slot ordering UI for track positioning in layouts",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T03:19:00.892314+01:00",
+      "updated_at": "2026-01-21T03:19:00.892314+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Auto-sync determines which tracks appear based on clips, but users still need control over WHERE tracks appear within a layout.\\n\\nFor example, in a 2x2 grid: which track goes top-left vs bottom-right?\\n\\nOptions to explore:\\n- Slot assigner for reordering (not visibility toggling)\\n- Drag tracks directly in layout preview\\n- Track order in sequencer grid = slot order\"}"
+    },
+    {
+      "id": 347,
+      "change_id": "c6a5136e-4ed0-49a0-9c82-e4f011a6b8b8",
+      "node_type": "goal",
+      "title": "Convert layout pane to action bar",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T03:19:04.278881+01:00",
+      "updated_at": "2026-01-21T03:19:04.278881+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Turn the current layout editor pane into a more compact action bar interface.\"}"
+    },
+    {
+      "id": 348,
+      "change_id": "951b7c17-ef01-492e-a1be-b45fb5a2c5fe",
+      "node_type": "goal",
+      "title": "Make preview pane a movable overlay",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T03:19:06.839776+01:00",
+      "updated_at": "2026-01-21T03:19:06.839776+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"Convert the preview pane from a fixed position to a movable/draggable overlay that can be repositioned by the user.\"}"
+    },
+    {
+      "id": 349,
+      "change_id": "77595329-8c66-4272-a4b1-397e824c967d",
+      "node_type": "action",
+      "title": "Converted LayoutEditor sidebar to horizontal ActionBar",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T03:24:04.646609+01:00",
+      "updated_at": "2026-01-21T03:24:04.646609+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 350,
+      "change_id": "bf498ee7-9cf9-4da7-8024-64b64039db3d",
+      "node_type": "outcome",
+      "title": "ActionBar replaces sidebar: horizontal layout with duration inputs, layout selector, duplicate/delete buttons",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T03:24:14.293706+01:00",
+      "updated_at": "2026-01-21T03:24:14.293706+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 351,
+      "change_id": "e23fda20-8c42-4a46-9d78-47e6c8ecb686",
+      "node_type": "outcome",
+      "title": "Committed: refactor layout sidebar to horizontal action bar",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T03:25:48.449610+01:00",
+      "updated_at": "2026-01-21T03:25:48.449610+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"7b9f910\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -6986,6 +7107,127 @@
       "weight": 1.0,
       "rationale": "Layout simplification",
       "created_at": "2026-01-21T03:05:53.820495+01:00"
+    },
+    {
+      "id": 296,
+      "from_node_id": 313,
+      "to_node_id": 341,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "417fc858-0d60-4c19-a715-3ddd205297aa",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "UX improvement",
+      "created_at": "2026-01-21T03:08:27.321874+01:00"
+    },
+    {
+      "id": 297,
+      "from_node_id": 313,
+      "to_node_id": 342,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "3ffe965b-4167-42bc-9cd6-8966434a4294",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "UX improvement",
+      "created_at": "2026-01-21T03:09:14.436798+01:00"
+    },
+    {
+      "id": 298,
+      "from_node_id": 313,
+      "to_node_id": 343,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "c84d94cf-2168-48db-abd1-3f15aed1ae89",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "UX improvement",
+      "created_at": "2026-01-21T03:09:34.964777+01:00"
+    },
+    {
+      "id": 299,
+      "from_node_id": 313,
+      "to_node_id": 344,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "d35675a8-907c-4d73-9d1f-3e154ce3d4ec",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Design exploration",
+      "created_at": "2026-01-21T03:11:39.207973+01:00"
+    },
+    {
+      "id": 300,
+      "from_node_id": 313,
+      "to_node_id": 345,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "fa1578e1-f8a3-4f54-a8be-2a7d9e041533",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Design exploration",
+      "created_at": "2026-01-21T03:15:48.352746+01:00"
+    },
+    {
+      "id": 301,
+      "from_node_id": 313,
+      "to_node_id": 346,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "b606dd49-98d4-4583-ac90-e2d44d78bead",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "UX improvement",
+      "created_at": "2026-01-21T03:19:12.834504+01:00"
+    },
+    {
+      "id": 302,
+      "from_node_id": 313,
+      "to_node_id": 347,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "c6a5136e-4ed0-49a0-9c82-e4f011a6b8b8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "UI redesign",
+      "created_at": "2026-01-21T03:19:12.845404+01:00"
+    },
+    {
+      "id": 303,
+      "from_node_id": 313,
+      "to_node_id": 348,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "951b7c17-ef01-492e-a1be-b45fb5a2c5fe",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "UI redesign",
+      "created_at": "2026-01-21T03:19:12.855733+01:00"
+    },
+    {
+      "id": 304,
+      "from_node_id": 347,
+      "to_node_id": 349,
+      "from_change_id": "c6a5136e-4ed0-49a0-9c82-e4f011a6b8b8",
+      "to_change_id": "77595329-8c66-4272-a4b1-397e824c967d",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-01-21T03:24:09.625765+01:00"
+    },
+    {
+      "id": 305,
+      "from_node_id": 349,
+      "to_node_id": 350,
+      "from_change_id": "77595329-8c66-4272-a4b1-397e824c967d",
+      "to_change_id": "bf498ee7-9cf9-4da7-8024-64b64039db3d",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Result",
+      "created_at": "2026-01-21T03:24:17.886089+01:00"
+    },
+    {
+      "id": 306,
+      "from_node_id": 349,
+      "to_node_id": 351,
+      "from_change_id": "77595329-8c66-4272-a4b1-397e824c967d",
+      "to_change_id": "e23fda20-8c42-4a46-9d78-47e6c8ecb686",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-21T03:25:51.937225+01:00"
     }
   ]
 }
