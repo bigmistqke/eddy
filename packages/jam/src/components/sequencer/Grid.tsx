@@ -25,6 +25,34 @@ export interface GridProps {
 
 /**********************************************************************************/
 /*                                                                                */
+/*                                 Timeline Ruler                                 */
+/*                                                                                */
+/**********************************************************************************/
+
+interface TimelineRulerProps {
+  jam: Jam
+}
+
+function TimelineRuler(props: TimelineRulerProps) {
+  const { jam } = props
+
+  return (
+    <div class={styles.timelineRuler}>
+      <For each={jam.metadata.columns}>
+        {(_, index) => (
+          <div
+            class={styles.rulerSegment}
+            classList={{ [styles.current]: jam.currentColumnIndex() === index() }}
+            onClick={() => jam.seekToColumn(index())}
+          />
+        )}
+      </For>
+    </div>
+  )
+}
+
+/**********************************************************************************/
+/*                                                                                */
 /*                                      Grid                                      */
 /*                                                                                */
 /**********************************************************************************/
@@ -124,6 +152,10 @@ export function Grid(props: GridProps) {
           </>
         )}
       </For>
+
+      {/* Timeline ruler row */}
+      <div class={styles.rulerLabel}>Time</div>
+      <TimelineRuler jam={jam} />
     </div>
   )
 }

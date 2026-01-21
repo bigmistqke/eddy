@@ -236,8 +236,10 @@ export function compileJamTimeline(options: JamCompileOptions): CompiledTimeline
       const activeClip = findActiveClip(track, startTime)
       if (!activeClip) continue
 
+      // Use track.id as clipId since jam model is 1 stem per track
+      // This matches the frame keys set by VideoPlayback
       placements.push({
-        clipId: activeClip.clipId,
+        clipId: track.id,
         trackId: track.id,
         viewport: slot.viewport,
         in: activeClip.sourceTime,

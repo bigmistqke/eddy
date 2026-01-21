@@ -3607,6 +3607,61 @@
       "created_at": "2026-01-21T00:30:01.275729+01:00",
       "updated_at": "2026-01-21T00:30:01.275729+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"77ba666\",\"confidence\":95}"
+    },
+    {
+      "id": 329,
+      "change_id": "3981a54a-8011-4e4d-adfd-80adbb5bb05e",
+      "node_type": "outcome",
+      "title": "Implemented video pipeline for Preview component using makeVideoCompositor and makeVideoPlayback with UrlSource",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T00:45:00.828448+01:00",
+      "updated_at": "2026-01-21T00:45:00.828448+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 330,
+      "change_id": "281f9d40-06b0-4750-a6f3-3bafda59daf5",
+      "node_type": "observation",
+      "title": "mediabunny UrlSource could potentially stream directly from PDS blob endpoints, eliminating OPFS storage. Requires PDS to support: 1) Range requests (HTTP 206) for seeking, 2) CORS headers. Would simplify architecture significantly - no upload step, instant playback.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T00:47:01.307264+01:00",
+      "updated_at": "2026-01-21T00:47:01.307264+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 331,
+      "change_id": "fe2b2f2d-203c-4a56-81d6-cb1bb74faa4b",
+      "node_type": "observation",
+      "title": "AT Protocol 'not supported' for direct blob serving is about SECURITY, not technical capability. Core issue: same-origin XSS attacks - if app fetches blobs directly from PDS, malicious user-uploaded content (SVG with scripts, HTML) could execute with access to app's cookies/storage.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T00:56:35.552520+01:00",
+      "updated_at": "2026-01-21T00:56:35.552520+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 332,
+      "change_id": "d84cc697-1d3e-4b0e-93cb-db02470ded4e",
+      "node_type": "observation",
+      "title": "AT Protocol recommended blob architecture: Browser → CDN/Proxy → PDS getBlob. Proxy layer provides: 1) separate origin isolation, 2) CSP headers (default-src 'none'; sandbox), 3) content sanitization, 4) sandboxed media transcoding. OPFS approach sidesteps this by downloading to isolated local storage.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T00:56:40.018032+01:00",
+      "updated_at": "2026-01-21T00:56:40.018032+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 333,
+      "change_id": "fa877535-e380-4ea7-b910-e5520dc6403c",
+      "node_type": "observation",
+      "title": "UrlSource direct-from-PDS tradeoff: technically possible but security risk for untrusted content. For personal/experimental apps with controlled content - acceptable. For production with user-uploaded content - need proxy layer. getBlob doesn't require auth (blobs are public), CORS depends on PDS implementation, Range request support unknown.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T00:56:44.482131+01:00",
+      "updated_at": "2026-01-21T00:56:44.482131+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     }
   ],
   "edges": [
@@ -6733,6 +6788,50 @@
       "weight": 1.0,
       "rationale": "UX improvements committed",
       "created_at": "2026-01-21T00:30:01.298092+01:00"
+    },
+    {
+      "id": 285,
+      "from_node_id": 313,
+      "to_node_id": 329,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "3981a54a-8011-4e4d-adfd-80adbb5bb05e",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Video pipeline implementation for jam",
+      "created_at": "2026-01-21T00:45:08.882799+01:00"
+    },
+    {
+      "id": 286,
+      "from_node_id": 330,
+      "to_node_id": 331,
+      "from_change_id": "281f9d40-06b0-4750-a6f3-3bafda59daf5",
+      "to_change_id": "fe2b2f2d-203c-4a56-81d6-cb1bb74faa4b",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Security context for UrlSource consideration",
+      "created_at": "2026-01-21T00:56:49.424220+01:00"
+    },
+    {
+      "id": 287,
+      "from_node_id": 331,
+      "to_node_id": 332,
+      "from_change_id": "fe2b2f2d-203c-4a56-81d6-cb1bb74faa4b",
+      "to_change_id": "d84cc697-1d3e-4b0e-93cb-db02470ded4e",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Recommended mitigation architecture",
+      "created_at": "2026-01-21T00:56:49.443978+01:00"
+    },
+    {
+      "id": 288,
+      "from_node_id": 332,
+      "to_node_id": 333,
+      "from_change_id": "d84cc697-1d3e-4b0e-93cb-db02470ded4e",
+      "to_change_id": "fa877535-e380-4ea7-b910-e5520dc6403c",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Practical tradeoff summary",
+      "created_at": "2026-01-21T00:56:49.460225+01:00"
     }
   ]
 }

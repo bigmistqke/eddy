@@ -7,3 +7,40 @@
   overflow-x: auto;
   overflow-y: hidden;
 }
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                 Timeline Ruler                                 */
+/*                                                                                */
+/**********************************************************************************/
+
+.rulerLabel {
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.timelineRuler {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 2 / -1;
+  height: 24px;
+}
+
+.rulerSegment {
+  background: #1a1a1a;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.rulerSegment:hover {
+  background: #252525;
+}
+
+.rulerSegment.current {
+  background: #2d5a87;
+}

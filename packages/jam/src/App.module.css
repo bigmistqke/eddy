@@ -13,16 +13,22 @@
 }
 
 .preview {
-  display: grid;
-  place-items: center;
-  background: #111;
+  position: relative;
+  background: #000;
   min-height: 200px;
+  aspect-ratio: 16 / 9;
 }
 
-.preview canvas {
-  max-width: 100%;
-  max-height: 100%;
-  background: #000;
+.previewOverlay {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 4px;
+  font-size: 12px;
+  color: #888;
+  pointer-events: none;
 }
 
 .sidebar {

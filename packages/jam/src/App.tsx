@@ -9,6 +9,7 @@ import clsx from 'clsx'
 import styles from './App.module.css'
 import { Grid } from './components/sequencer'
 import { LayoutEditor } from './components/layout'
+import { Preview } from './components/preview'
 import { createJam } from './primitives/create-jam'
 
 /**********************************************************************************/
@@ -43,11 +44,9 @@ export function App() {
     <div class={styles.app} data-orientation={orientation()}>
       {/* Preview area */}
       <div class={styles.preview}>
-        <div style={{ 'text-align': 'center', color: '#666' }}>
-          <p>Preview</p>
-          <p style={{ 'font-size': '12px', 'margin-top': '8px' }}>
-            Column {jam.currentColumnIndex() + 1} / {jam.metadata.columns.length}
-          </p>
+        <Preview jam={jam} />
+        <div class={styles.previewOverlay}>
+          Column {jam.currentColumnIndex() + 1} / {jam.metadata.columns.length}
         </div>
       </div>
 
