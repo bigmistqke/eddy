@@ -3728,6 +3728,17 @@
       "created_at": "2026-01-21T01:59:04.727129+01:00",
       "updated_at": "2026-01-21T01:59:04.727129+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"5177299\",\"confidence\":95}"
+    },
+    {
+      "id": 340,
+      "change_id": "6358e665-a8b9-4d46-84f4-d8f08ed8d48c",
+      "node_type": "action",
+      "title": "Auto-sync layouts based on clip count",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T03:05:40.463487+01:00",
+      "updated_at": "2026-01-21T03:05:40.463487+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"46db7eb\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -6964,6 +6975,17 @@
       "weight": 1.0,
       "rationale": "Grid improvements",
       "created_at": "2026-01-21T01:59:10.232799+01:00"
+    },
+    {
+      "id": 295,
+      "from_node_id": 313,
+      "to_node_id": 340,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "6358e665-a8b9-4d46-84f4-d8f08ed8d48c",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Layout simplification",
+      "created_at": "2026-01-21T03:05:53.820495+01:00"
     }
   ]
 }
