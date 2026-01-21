@@ -39,29 +39,6 @@ const LAYOUT_ICONS: Record<JamLayoutType, string> = {
 
 /**********************************************************************************/
 /*                                                                                */
-/*                                 Column Header                                  */
-/*                                                                                */
-/**********************************************************************************/
-
-interface ColumnHeaderProps {
-  index: number
-  duration: JamColumnDuration
-  layout: JamLayoutType
-  isSelected: boolean
-  onSelect: () => void
-}
-
-function ColumnHeader(props: ColumnHeaderProps) {
-  return (
-    <div class={clsx(styles.header, props.isSelected && styles.selected)} onClick={props.onSelect}>
-      <span>{props.duration}</span>
-      <span class={styles.headerIcon}>{LAYOUT_ICONS[props.layout]}</span>
-    </div>
-  )
-}
-
-/**********************************************************************************/
-/*                                                                                */
 /*                                  Track Label                                   */
 /*                                                                                */
 /**********************************************************************************/
@@ -169,37 +146,13 @@ export function Grid(props: GridProps) {
       onPointerLeave={handlePointerUp}
       onPointerCancel={handlePointerUp}
     >
-      {/* Header row */}
-      <div class={styles.headerRow} style={{ 'grid-template-columns': gridTemplateColumns() }}>
-        <div />
-        <For each={columns()}>
-          {(column, columnIndex) => (
-            <div
-              class={clsx(
-                styles.headerCell,
-                currentColumnIndex() === columnIndex() && styles.current,
-              )}
-            >
-              <ColumnHeader
-                index={columnIndex()}
-                duration={column.duration}
-                layout={column.layout}
-                isSelected={selectedColumnIndex() === columnIndex()}
-                onSelect={() => jam.selectColumn(columnIndex())}
-              />
-            </div>
-          )}
-        </For>
-        <div />
-      </div>
-
       {/* Tracks container (scrollable) */}
       <div class={styles.tracksContainer}>
         <div
           class={styles.tracksGrid}
           style={{
             'grid-template-columns': gridTemplateColumns(),
-            'grid-template-rows': `0px repeat(${tracks().length}, 48px) 1fr`,
+            'grid-template-rows': `8px repeat(${tracks().length}, 48px) 1fr`,
           }}
         >
           {/* Spacer row */}
@@ -260,18 +213,30 @@ export function Grid(props: GridProps) {
         </div>
       </div>
 
-      {/* Ruler row */}
-      <div class={styles.rulerRow} style={{ 'grid-template-columns': gridTemplateColumns() }}>
-        <div class={styles.rulerLabel}>Time</div>
+      {/* Timeline row */}
+      <div class={styles.timelineRow} style={{ 'grid-template-columns': gridTemplateColumns() }}>
+        <div />
         <For each={columns()}>
           {(column, columnIndex) => (
             <div
               class={clsx(
-                styles.rulerCell,
+                styles.timelineCell,
                 currentColumnIndex() === columnIndex() && styles.current,
               )}
             >
-              <div class={styles.rulerSegment} onClick={() => jam.seekToColumn(columnIndex())} />
+              <button
+                class={clsx(
+                  styles.timelineButton,
+                  selectedColumnIndex() === columnIndex() && styles.selected,
+                )}
+                onClick={() => {
+                  jam.selectColumn(columnIndex())
+                  jam.seekToColumn(columnIndex())
+                }}
+              >
+                <span class={styles.timelineDuration}>{column.duration}</span>
+                <span class={styles.timelineIcon}>{LAYOUT_ICONS[column.layout]}</span>
+              </button>
             </div>
           )}
         </For>
