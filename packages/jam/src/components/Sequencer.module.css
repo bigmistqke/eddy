@@ -185,7 +185,7 @@
 .timelineRuler {
   display: grid;
   grid-template-columns: subgrid;
-  grid-column: 2 / -1;
+  grid-column: 2 / -2;
   height: 24px;
 }
 
@@ -202,4 +202,28 @@
 
 .rulerSegment.current {
   background: #2d5a87;
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                               Add Column Button                                */
+/*                                                                                */
+/**********************************************************************************/
+
+.addColumnButton {
+  display: grid;
+  place-items: center;
+  background: #1a1a1a;
+  border: 1px dashed #333;
+  border-radius: 4px;
+  color: #666;
+  font-size: 24px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+
+.addColumnButton:hover {
+  background: #252525;
+  color: #888;
+  border-color: #444;
 }

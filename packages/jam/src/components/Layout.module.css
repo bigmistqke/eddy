@@ -42,7 +42,7 @@
   color: #fff;
 }
 
-.addButton {
+.actionButton {
   flex: 1;
   padding: 8px;
   background: #1a1a1a;
@@ -50,6 +50,10 @@
   border-radius: 4px;
   color: #888;
   cursor: pointer;
+}
+
+.actionButton:hover {
+  background: #252525;
 }
 
 .deleteButton {

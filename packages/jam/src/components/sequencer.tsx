@@ -10,7 +10,7 @@ import type { JamColumnDuration, JamLayoutType } from '@eddy/lexicons'
 import clsx from 'clsx'
 import { createSignal, For, Show } from 'solid-js'
 import type { ClipPosition, Jam } from '~/primitives/create-jam'
-import styles from './Grid.module.css'
+import styles from './Sequencer.module.css'
 
 /**********************************************************************************/
 /*                                                                                */
@@ -58,7 +58,7 @@ function ColumnHeader(props: ColumnHeaderProps) {
       class={clsx(
         styles.header,
         props.isSelected && styles.selected,
-        props.isCurrent && styles.current
+        props.isCurrent && styles.current,
       )}
       onClick={props.onSelect}
     >
@@ -206,10 +206,15 @@ export function Grid(props: GridProps) {
     setPaintTrackId(null)
   }
 
+  const trackCount = () => tracks().length
+
   return (
     <div
       class={styles.grid}
-      style={{ 'grid-template-columns': `80px repeat(${columns().length}, minmax(48px, 1fr))` }}
+      style={{
+        'grid-template-columns': `80px repeat(${columns().length}, 60px) 48px`,
+        'grid-template-rows': `auto repeat(${trackCount()}, 48px) auto`,
+      }}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
       onPointerCancel={handlePointerUp}
@@ -228,6 +233,18 @@ export function Grid(props: GridProps) {
           />
         )}
       </For>
+
+      {/* Add column button - last column, spans all rows */}
+      <button
+        class={styles.addColumnButton}
+        style={{
+          'grid-column': columns().length + 2,
+          'grid-row': `1 / span ${trackCount() + 2}`,
+        }}
+        onClick={() => jam.addColumn()}
+      >
+        +
+      </button>
 
       {/* Track rows */}
       <For each={tracks()}>

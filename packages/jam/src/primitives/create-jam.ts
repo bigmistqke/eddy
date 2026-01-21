@@ -111,6 +111,10 @@ function makeDefaultMetadata(): JamMetadata {
       { id: 'col-1', duration: '1', layout: '2x2', slots: ['track-0', 'track-1', 'track-2', 'track-3'] },
       { id: 'col-2', duration: '1/2', layout: 'h-split', slots: ['track-0', 'track-1'] },
       { id: 'col-3', duration: '1/2', layout: 'v-split', slots: ['track-2', 'track-3'] },
+      { id: 'col-4', duration: '1', layout: 'pip', slots: ['track-0', 'track-1'] },
+      { id: 'col-5', duration: '1/4', layout: 'full', slots: ['track-2'] },
+      { id: 'col-6', duration: '1/4', layout: 'full', slots: ['track-3'] },
+      { id: 'col-7', duration: '1/2', layout: '3-up', slots: ['track-0', 'track-1', 'track-2'] },
     ],
   }
 }
@@ -434,6 +438,24 @@ export function createJam(options: CreateJamOptions) {
     return newColumn.id
   }
 
+  function duplicateColumn(index: number) {
+    const source = metadata.columns[index]
+    if (!source) return
+
+    const newColumn: JamColumn = {
+      id: `col-${generateId()}`,
+      duration: source.duration,
+      layout: source.layout,
+      slots: [...(source.slots ?? [])],
+    }
+
+    setMetadata('columns', columns => {
+      return [...columns.slice(0, index + 1), newColumn, ...columns.slice(index + 1)]
+    })
+
+    return newColumn.id
+  }
+
   function removeColumn(index: number) {
     if (metadata.columns.length <= 1) return // Keep at least one column
 
@@ -641,6 +663,7 @@ export function createJam(options: CreateJamOptions) {
 
     // Column actions
     addColumn,
+    duplicateColumn,
     removeColumn,
     setColumnDuration,
     setColumnLayout,

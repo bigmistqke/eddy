@@ -9,7 +9,7 @@ import clsx from 'clsx'
 import { createMemo, For, Index, Show } from 'solid-js'
 import { getSlotCount } from '~/primitives/compile-jam-timeline'
 import type { Jam } from '~/primitives/create-jam'
-import styles from './LayoutEditor.module.css'
+import styles from './Layout.module.css'
 
 /**********************************************************************************/
 /*                                                                                */
@@ -112,7 +112,7 @@ function SlotAssigner(props: SlotAssignerProps) {
   function handleSlotClick(slotIndex: number) {
     const currentTrackId = slots()[slotIndex] || null
     const availableTracks = props.tracks.filter(
-      track => !slots().includes(track.id) || slots()[slotIndex] === track.id
+      track => !slots().includes(track.id) || slots()[slotIndex] === track.id,
     )
 
     if (availableTracks.length === 0) {
@@ -202,7 +202,10 @@ export function LayoutEditor(props: LayoutEditorProps) {
                 <For each={DURATIONS}>
                   {duration => (
                     <button
-                      class={clsx(styles.durationButton, column().duration === duration && styles.selected)}
+                      class={clsx(
+                        styles.durationButton,
+                        column().duration === duration && styles.selected,
+                      )}
                       onClick={() => handleDurationChange(duration)}
                     >
                       {duration}
@@ -231,10 +234,15 @@ export function LayoutEditor(props: LayoutEditorProps) {
             {/* Column actions */}
             <div class={styles.buttonRow}>
               <button
-                class={styles.addButton}
-                onClick={() => jam.addColumn(selectedIndex() ?? undefined)}
+                class={styles.actionButton}
+                onClick={() => {
+                  const index = selectedIndex()
+                  if (index !== null) {
+                    jam.duplicateColumn(index)
+                  }
+                }}
               >
-                + Add After
+                Duplicate
               </button>
               <button
                 class={styles.deleteButton}
