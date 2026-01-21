@@ -34,16 +34,10 @@ export interface Monitor<
   <T extends (...args: any[]) => any>(label: TimingLabel, fn: T): T
   /** Create a timing wrapper for a label (identity function that records timing) */
   (label: TimingLabel): <T>(operation: () => T) => T
-  /** Increment a counter */
-  count(label: CounterLabel, amount?: number): void
   /** Get stats for a specific timing label */
   getStats(label: TimingLabel): Stats | null
   /** Get all timing stats */
   getAllStats(): Record<string, Stats>
-  /** Get a counter value */
-  getCounter(label: CounterLabel): number
-  /** Get all counters */
-  getCounters(): Record<string, number>
   /** Reset all stats and counters */
   reset(): void
   /** Log a summary to console */
@@ -92,7 +86,6 @@ export function makeMonitor<
   CounterLabel extends string = string,
 >(): Monitor<TimingLabel, CounterLabel> {
   const timings = new Map<string, Timing>()
-  const counters = new Map<string, number>()
 
   function getOrCreateTiming(label: string): Timing {
     let timing = timings.get(label)
@@ -139,24 +132,8 @@ export function makeMonitor<
     return result
   }
 
-  function count(label: string, amount = 1): void {
-    if (typeof __ENABLE_PERF__ !== 'undefined' && !__ENABLE_PERF__) {
-      return
-    }
-    counters.set(label, (counters.get(label) ?? 0) + amount)
-  }
-
-  function getCounter(label: string): number {
-    return counters.get(label) ?? 0
-  }
-
-  function getCounters(): Record<string, number> {
-    return Object.fromEntries(counters)
-  }
-
   function reset(): void {
     timings.clear()
-    counters.clear()
   }
 
   function log(): void {
@@ -183,10 +160,6 @@ export function makeMonitor<
           {} as Record<string, any>,
         ),
       )
-    }
-
-    if (counters.size > 0) {
-      console.log('Counters:', Object.fromEntries(counters))
     }
 
     console.groupEnd()
@@ -224,11 +197,8 @@ export function makeMonitor<
   }) as Monitor<TimingLabel, CounterLabel>
 
   // Attach methods
-  monitor.count = count as Monitor<TimingLabel, CounterLabel>['count']
   monitor.getStats = getStats as Monitor<TimingLabel, CounterLabel>['getStats']
   monitor.getAllStats = getAllStats
-  monitor.getCounter = getCounter as Monitor<TimingLabel, CounterLabel>['getCounter']
-  monitor.getCounters = getCounters
   monitor.reset = reset
   monitor.log = log
 

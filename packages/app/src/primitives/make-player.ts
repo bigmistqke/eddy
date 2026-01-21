@@ -3,7 +3,7 @@ import { makeAudioBus, type AudioBus, type AudioBusOutput } from '@eddy/audio'
 import type { AudioPipeline, Group, Project, StaticValue } from '@eddy/lexicons'
 import { createClock, type Clock } from '@eddy/solid'
 import { compileLayoutTimeline, type CompiledTimeline } from '@eddy/timeline'
-import { debug, makeMonitor, makeLoop } from '@eddy/utils'
+import { debug, makeLoop, makeMonitor } from '@eddy/utils'
 import { createEffect, createMemo, createSignal, on, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import { PREVIEW_CLIP_ID } from '~/constants'
@@ -28,6 +28,12 @@ const monitor = makeMonitor<
   'renderLoop',
   'frames-expected' | 'frames-rendered' | 'frames-dropped' | 'frames-stale'
 >()
+const counters: Array<{
+  'frames-expected': number
+  'frames-rendered': number
+  'frames-dropped': number
+  'frames-stale': number
+}> = []
 
 // Expose perf stats globally for console debugging
 if (typeof window !== 'undefined') {
@@ -129,8 +135,8 @@ export interface Player extends PlayerState, PlayerActions {
   /** Get group audio pipeline by groupId */
   getGroupAudioPipeline: (groupId: string) => AudioBus | undefined
   /** Performance logging */
-  logPerf: () => void
-  resetPerf: () => void
+  logMonitor: () => void
+  resetMonitor: () => void
   /** Get all perf stats (main thread + workers) */
   getAllPerf: () => Promise<{
     main: Record<string, any>
@@ -692,10 +698,12 @@ export async function makePlayer(options: CreatePlayerOptions): Promise<Player> 
       compositor.render(time).then(stats => {
         // Track dropped frames (only when playing and expecting frames)
         if (playing && stats.expected > 0) {
-          monitor.count('frames-expected', stats.expected)
-          monitor.count('frames-rendered', stats.rendered)
-          monitor.count('frames-dropped', stats.dropped)
-          monitor.count('frames-stale', stats.stale)
+          counters.push({
+            'frames-expected': stats.expected,
+            'frames-rendered': stats.rendered,
+            'frames-dropped': stats.dropped,
+            'frames-stale': stats.stale,
+          })
         }
       })
     }),
@@ -994,9 +1002,10 @@ export async function makePlayer(options: CreatePlayerOptions): Promise<Player> 
     // Utilities
     getAudioPipeline: (trackId: string) => tracks[trackId]?.audioPipeline,
     getGroupAudioPipeline: (groupId: string) => groups[groupId]?.audioPipeline,
-    logPerf: monitor.log,
-    resetPerf: () => {
+    logMonitor: monitor.log,
+    resetMonitor() {
       monitor.reset()
+      counters.length = 0
       // Reset playback perf too
       for (const clip of Object.values(clips)) {
         clip.playback.resetPerf()
@@ -1017,7 +1026,7 @@ export async function makePlayer(options: CreatePlayerOptions): Promise<Player> 
       )
 
       return {
-        main: { ...monitor.getAllStats(), counters: monitor.getCounters() },
+        main: { ...monitor.getAllStats(), counters },
         workers: workerStats,
       }
     },
