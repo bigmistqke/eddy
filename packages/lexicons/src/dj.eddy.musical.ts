@@ -1,20 +1,20 @@
 /**
- * Absolute Time Domain
+ * Musical Time Domain
  *
- * Clips and projects with absolute timing (milliseconds).
- * For video editors and other apps that don't need musical time.
+ * Clips and projects with musical timing (bars/beats).
+ * For DAWs, jam, and other music-centric apps.
  */
 
 import type { LexiconDoc } from '@atproto/lexicon'
 
 export default {
   lexicon: 1,
-  id: 'app.eddy.absolute',
+  id: 'dj.eddy.musical',
   defs: {
     clip: {
       type: 'object',
-      description: 'A clip with absolute timing (milliseconds)',
-      required: ['id', 'offset', 'duration'],
+      description: 'A clip with musical timing (bars)',
+      required: ['id', 'bar', 'bars'],
       properties: {
         id: {
           type: 'string',
@@ -22,43 +22,43 @@ export default {
         },
         source: {
           type: 'union',
-          refs: ['app.eddy.clip#clipSource.stem', 'app.eddy.clip#clipSource.group'],
+          refs: ['dj.eddy.clip#clipSource.stem', 'dj.eddy.clip#clipSource.group'],
           description: 'Source media: a stem reference or a nested group',
         },
-        offset: {
-          type: 'integer',
-          description: 'Position on timeline in milliseconds',
+        bar: {
+          type: 'number',
+          description: 'Position on timeline in bars (can be fractional)',
           minimum: 0,
         },
-        duration: {
-          type: 'integer',
-          description: 'Duration in milliseconds',
+        bars: {
+          type: 'number',
+          description: 'Duration in bars (can be fractional)',
           minimum: 0,
         },
-        sourceOffset: {
-          type: 'integer',
-          description: 'Start position within source stem in milliseconds (for trimming)',
+        sourceBar: {
+          type: 'number',
+          description: 'Start position within source in bars (for trimming)',
           minimum: 0,
           default: 0,
         },
         speed: {
           type: 'union',
-          refs: ['app.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#staticValue'],
           description: 'Playback speed multiplier (0.1-10)',
         },
         reverse: {
           type: 'union',
-          refs: ['app.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#staticValue'],
           description: 'Play clip in reverse',
         },
         audioPipeline: {
           type: 'ref',
-          ref: 'app.eddy.pipeline#audioPipeline',
+          ref: 'dj.eddy.pipeline#audioPipeline',
           description: 'Clip-level audio effect chain',
         },
-        videoPipeline: {
+        visualPipeline: {
           type: 'ref',
-          ref: 'app.eddy.pipeline#videoPipeline',
+          ref: 'dj.eddy.pipeline#visualPipeline',
           description: 'Clip-level video effect chain',
         },
       },
@@ -66,11 +66,11 @@ export default {
 
     project: {
       type: 'record',
-      description: 'A project with absolute timing (milliseconds)',
+      description: 'A project with musical timing (bars/beats)',
       key: 'tid',
       record: {
         type: 'object',
-        required: ['title', 'canvas', 'tracks', 'clips', 'groups', 'createdAt'],
+        required: ['title', 'canvas', 'tracks', 'clips', 'groups', 'bpm', 'createdAt'],
         properties: {
           schemaVersion: {
             type: 'integer',
@@ -85,23 +85,34 @@ export default {
             type: 'string',
             maxLength: 2048,
           },
-          duration: {
+          bpm: {
             type: 'integer',
-            description: 'Total project duration in milliseconds',
+            description: 'Beats per minute (scaled by 100, e.g., 12000 = 120 BPM)',
+            minimum: 2000,
+            maximum: 40000,
+          },
+          timeSignature: {
+            type: 'ref',
+            ref: '#timeSignature',
+            description: 'Time signature (defaults to 4/4)',
+          },
+          durationBars: {
+            type: 'number',
+            description: 'Total project duration in bars',
             minimum: 0,
           },
           canvas: {
             type: 'ref',
-            ref: 'app.eddy.project#canvas',
+            ref: 'dj.eddy.project#canvas',
           },
           curves: {
             type: 'array',
             items: {
               type: 'union',
               refs: [
-                'app.eddy.value.curve#keyframe',
-                'app.eddy.value.curve#envelope',
-                'app.eddy.value.curve#lfo',
+                'dj.eddy.value.curve#keyframe',
+                'dj.eddy.value.curve#envelope',
+                'dj.eddy.value.curve#lfo',
               ],
             },
             maxLength: 256,
@@ -109,7 +120,7 @@ export default {
           },
           tracks: {
             type: 'array',
-            items: { type: 'ref', ref: 'app.eddy.track#track' },
+            items: { type: 'ref', ref: 'dj.eddy.track#track' },
             maxLength: 32,
             description: 'Tracks (reference clips by ID)',
           },
@@ -117,11 +128,11 @@ export default {
             type: 'array',
             items: { type: 'ref', ref: '#clip' },
             maxLength: 1024,
-            description: 'All clips in absolute time',
+            description: 'All clips in musical time',
           },
           groups: {
             type: 'array',
-            items: { type: 'ref', ref: 'app.eddy.group#group' },
+            items: { type: 'ref', ref: 'dj.eddy.group#group' },
             maxLength: 64,
             description: 'Groups for spatial composition',
           },
@@ -143,6 +154,25 @@ export default {
             type: 'string',
             format: 'datetime',
           },
+        },
+      },
+    },
+
+    timeSignature: {
+      type: 'object',
+      description: 'Musical time signature',
+      required: ['numerator', 'denominator'],
+      properties: {
+        numerator: {
+          type: 'integer',
+          description: 'Beats per bar (e.g., 4 in 4/4)',
+          minimum: 1,
+          maximum: 32,
+        },
+        denominator: {
+          type: 'integer',
+          description: 'Beat unit (e.g., 4 in 4/4 means quarter note)',
+          enum: [1, 2, 4, 8, 16, 32],
         },
       },
     },

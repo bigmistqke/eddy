@@ -9,7 +9,7 @@ import type { LexiconDoc } from '@atproto/lexicon'
 
 export default {
   lexicon: 1,
-  id: 'app.eddy.track',
+  id: 'dj.eddy.track',
   defs: {
     track: {
       type: 'object',
@@ -32,22 +32,22 @@ export default {
         },
         audioPipeline: {
           type: 'ref',
-          ref: 'app.eddy.pipeline#audioPipeline',
+          ref: 'dj.eddy.pipeline#audioPipeline',
           description: 'Track-level audio effect chain',
         },
-        videoPipeline: {
+        visualPipeline: {
           type: 'ref',
-          ref: 'app.eddy.pipeline#videoPipeline',
+          ref: 'dj.eddy.pipeline#visualPipeline',
           description: 'Track-level video effect chain',
         },
         muted: {
           type: 'union',
-          refs: ['app.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#staticValue'],
           description: 'Mute track',
         },
         solo: {
           type: 'union',
-          refs: ['app.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#staticValue'],
           description: 'Solo track',
         },
       },

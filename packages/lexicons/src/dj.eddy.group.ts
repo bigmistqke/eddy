@@ -2,7 +2,7 @@ import type { LexiconDoc } from '@atproto/lexicon'
 
 export default {
   lexicon: 1,
-  id: 'app.eddy.group',
+  id: 'dj.eddy.group',
   defs: {
     group: {
       type: 'object',
@@ -32,12 +32,12 @@ export default {
         },
         audioPipeline: {
           type: 'ref',
-          ref: 'app.eddy.pipeline#audioPipeline',
+          ref: 'dj.eddy.pipeline#audioPipeline',
           description: 'Group-level audio effect chain with weighted outputs',
         },
-        videoPipeline: {
+        visualPipeline: {
           type: 'ref',
-          ref: 'app.eddy.pipeline#videoPipeline',
+          ref: 'dj.eddy.pipeline#visualPipeline',
           description: 'Video effect chain applied to composited group with weighted outputs',
         },
       },
@@ -83,12 +83,12 @@ export default {
         },
         gap: {
           type: 'union',
-          refs: ['app.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#staticValue'],
           description: 'Gap between cells (0-1 relative to group size)',
         },
         padding: {
           type: 'union',
-          refs: ['app.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#staticValue'],
           description: 'Padding around grid (0-1 relative to group size)',
         },
       },

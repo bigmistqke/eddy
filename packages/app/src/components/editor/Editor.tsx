@@ -236,7 +236,7 @@ export const Editor: Component<EditorProps> = props => {
               isLoading={editor.previewPending() && editor.isSelectedTrack(track().id)}
               volume={getTrackVolume(track().id)}
               pan={getTrackPan(track().id)}
-              videoPipeline={editor.getVideoPipeline(track().id)}
+              visualPipeline={editor.getVisualPipeline(track().id)}
               onSelect={() => editor.selectTrack(track().id)}
               onVolumeChange={value => editor.setTrackVolume(track().id, value)}
               onPanChange={value => editor.setTrackPan(track().id, value)}

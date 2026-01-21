@@ -2,7 +2,7 @@ import type { LexiconDoc } from '@atproto/lexicon'
 
 export default {
   lexicon: 1,
-  id: 'app.eddy.value.curve',
+  id: 'dj.eddy.value.curve',
   defs: {
     keyframe: {
       type: 'object',

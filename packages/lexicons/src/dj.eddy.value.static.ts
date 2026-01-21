@@ -2,7 +2,7 @@ import type { LexiconDoc } from '@atproto/lexicon'
 
 export default {
   lexicon: 1,
-  id: 'app.eddy.value.static',
+  id: 'dj.eddy.value.static',
   defs: {
     staticValue: {
       type: 'object',

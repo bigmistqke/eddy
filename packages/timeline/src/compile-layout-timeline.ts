@@ -19,6 +19,7 @@
 
 import type { AbsoluteClip, AbsoluteProject, Group, Track, Value } from '@eddy/lexicons'
 import type {
+  ActivePlacement,
   CanvasSize,
   CompiledTimeline,
   EffectParamRef,
@@ -26,7 +27,6 @@ import type {
   LayoutSegment,
   Placement,
   Viewport,
-  ActivePlacement,
 } from './types'
 
 /**********************************************************************************/
@@ -226,7 +226,7 @@ function collectCascadedEffects(
   const refs: EffectRef[] = []
 
   // 1. Clip effects
-  const clipEffects = clip.videoPipeline?.effects
+  const clipEffects = clip.visualPipeline?.effects
   if (clipEffects) {
     for (let index = 0; index < clipEffects.length; index++) {
       const effect = clipEffects[index]
@@ -240,7 +240,7 @@ function collectCascadedEffects(
   }
 
   // 2. Track effects
-  const trackEffects = track.videoPipeline?.effects
+  const trackEffects = track.visualPipeline?.effects
   if (trackEffects) {
     for (let index = 0; index < trackEffects.length; index++) {
       const effect = trackEffects[index]
@@ -258,7 +258,7 @@ function collectCascadedEffects(
   let parentGroup = ctx.parentMap.get(currentId)
 
   while (parentGroup) {
-    const groupEffects = parentGroup.videoPipeline?.effects
+    const groupEffects = parentGroup.visualPipeline?.effects
     if (groupEffects) {
       for (let index = 0; index < groupEffects.length; index++) {
         const effect = groupEffects[index]
@@ -325,11 +325,25 @@ function processGroup(
 
     if (track) {
       // Process track's clips
-      const trackClipInfos = processTrack(track, memberViewport, timeOffset, timeScale, ctx, timeWindow)
+      const trackClipInfos = processTrack(
+        track,
+        memberViewport,
+        timeOffset,
+        timeScale,
+        ctx,
+        timeWindow,
+      )
       clipInfos.push(...trackClipInfos)
     } else if (nestedGroup) {
       // Recursively process nested group
-      const nestedClipInfos = processGroup(nestedGroup, memberViewport, timeOffset, timeScale, ctx, timeWindow)
+      const nestedClipInfos = processGroup(
+        nestedGroup,
+        memberViewport,
+        timeOffset,
+        timeScale,
+        ctx,
+        timeWindow,
+      )
       clipInfos.push(...nestedClipInfos)
     }
 
@@ -558,7 +572,10 @@ export function getActivePlacements(timeline: CompiledTimeline, time: number): A
  * Compile a Project into a LayoutTimeline.
  * Handles nested groups for layout transitions.
  */
-export function compileLayoutTimeline(project: AbsoluteProject, canvasSize: CanvasSize): CompiledTimeline {
+export function compileLayoutTimeline(
+  project: AbsoluteProject,
+  canvasSize: CanvasSize,
+): CompiledTimeline {
   const rootGroup = getRootGroup(project)
   if (!rootGroup) {
     return { duration: 0, segments: [] }

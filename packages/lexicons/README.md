@@ -4,14 +4,14 @@ AT Protocol lexicon definitions for Eddy.
 
 ## Records
 
-### `app.eddy.project`
+### `dj.eddy.project`
 
 The main project record containing groups, tracks, curves, and effect pipelines.
 
 - **Key**: `tid` (timestamp-based ID)
 - **Stored on**: User's PDS
 
-### `app.eddy.stem`
+### `dj.eddy.stem`
 
 A media stem (audio or video file) that can be used across multiple projects.
 
@@ -32,11 +32,11 @@ project
 ├── tracks[]                  # Media tracks
 │   ├── clips[]               # Timeline regions
 │   │   ├── audioPipeline[]   # Clip-level audio effects
-│   │   └── videoPipeline[]   # Clip-level video effects
+│   │   └── visualPipeline[]   # Clip-level video effects
 │   ├── audioPipeline[]       # Track-level audio effects
-│   └── videoPipeline[]       # Track-level video effects
+│   └── visualPipeline[]       # Track-level video effects
 ├── masterAudioPipeline[]     # Master audio bus
-└── masterVideoPipeline[]     # Master video output
+└── masterVisualPipeline[]     # Master video output
 ```
 
 ## Curves (Animation System)
@@ -252,13 +252,13 @@ The `x`/`y` on grid members is relative to the cell (0-1), allowing fine-tuning 
 ```
 Clip Processing:
   clip audio -> clip.audioPipeline -> track.audioPipeline -> master
-  clip video -> clip.videoPipeline -> track.videoPipeline -> group.pipeline -> master
+  clip video -> clip.visualPipeline -> track.visualPipeline -> group.pipeline -> master
 
 Group Processing:
   layout positions members -> group.pipeline (visual effects)
 
 Master Processing:
-  all groups composited -> masterVideoPipeline -> output
+  all groups composited -> masterVisualPipeline -> output
   all audio mixed -> masterAudioPipeline -> output
 ```
 
@@ -284,13 +284,13 @@ Master Processing:
   "tracks": [
     {
       "id": "t1",
-      "stem": { "uri": "at://did:plc:.../app.eddy.stem/...", "cid": "..." },
+      "stem": { "uri": "at://did:plc:.../dj.eddy.stem/...", "cid": "..." },
       "clips": [{ "id": "c1", "offset": 0, "duration": 60000 }],
       "audioPipeline": [
         { "type": "audio.gain", "value": { "value": 1.0 } },
         { "type": "audio.pan", "value": { "value": 0.5 } }
       ],
-      "videoPipeline": []
+      "visualPipeline": []
     }
   ],
   "createdAt": "2024-01-01T00:00:00Z"
@@ -319,7 +319,7 @@ Master Processing:
           "id": "c1",
           "offset": 0,
           "duration": 5000,
-          "videoPipeline": [
+          "visualPipeline": [
             {
               "type": "visual.opacity",
               "value": { "curve": "fade-in" }
@@ -394,14 +394,14 @@ Master Processing:
 
 ```typescript
 import { Lexicons } from '@atproto/lexicon'
-import projectLexicon from './app.eddy.project.json'
-import stemLexicon from './app.eddy.stem.json'
+import projectLexicon from './dj.eddy.project.json'
+import stemLexicon from './dj.eddy.stem.json'
 
 const lexicons = new Lexicons()
 lexicons.add(projectLexicon)
 lexicons.add(stemLexicon)
 
-lexicons.assertValidRecord('app.eddy.project', projectData)
+lexicons.assertValidRecord('dj.eddy.project', projectData)
 ```
 
 ### Runtime Validation

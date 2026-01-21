@@ -2,14 +2,14 @@
  * Clip Sources
  *
  * Shared source types for clips. The actual clip definitions
- * (with timing) are in app.eddy.absolute and app.eddy.musical.
+ * (with timing) are in dj.eddy.absolute and dj.eddy.musical.
  */
 
 import type { LexiconDoc } from '@atproto/lexicon'
 
 export default {
   lexicon: 1,
-  id: 'app.eddy.clip',
+  id: 'dj.eddy.clip',
   defs: {
     'clipSource.stem': {
       type: 'object',
@@ -20,7 +20,7 @@ export default {
         ref: {
           type: 'ref',
           ref: 'com.atproto.repo.strongRef',
-          description: 'Reference to app.eddy.stem record',
+          description: 'Reference to dj.eddy.stem record',
         },
       },
     },

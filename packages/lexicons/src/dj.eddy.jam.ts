@@ -2,7 +2,7 @@ import type { LexiconDoc } from '@atproto/lexicon'
 
 export default {
   lexicon: 1,
-  id: 'app.eddy.jam',
+  id: 'dj.eddy.jam',
   defs: {
     metadata: {
       type: 'object',

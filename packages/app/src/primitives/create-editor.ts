@@ -10,18 +10,18 @@ import {
 } from '@eddy/audio'
 import type { AudioEffect, Clip, ClipSource, ClipSourceStem, Project, Track } from '@eddy/lexicons'
 import { makeMuxer } from '@eddy/media'
+import { action, createResourceMap, deepResource, defer, hold, resource } from '@eddy/solid'
+import { getActivePlacements } from '@eddy/timeline'
 import { assertedNotNullish, debug } from '@eddy/utils'
 import type { EffectValue } from '@eddy/video'
 import { createEffect, createSelector, createSignal, mapArray, type Accessor } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
-import { action, createResourceMap, deepResource, defer, hold, resource } from '@eddy/solid'
-import { getActivePlacements } from '@eddy/timeline'
 import { createWritableStream, readClipBlob, writeBlob } from '~/opfs'
 import { makeDebugInfo as initDebugInfo } from '~/primitives/make-debug-info'
 import { SCHEDULER_BUFFER } from '~/primitives/make-scheduler'
-import type { CaptureMethods, CaptureWorkerMethods } from '~/workers/capture.worker'
+import type { CaptureWorkerMethods } from '~/workers/capture.worker'
 import CaptureWorker from '~/workers/capture.worker?worker'
-import type { MuxerMethods, MuxerWorkerMethods } from '~/workers/muxer.worker'
+import type { MuxerWorkerMethods } from '~/workers/muxer.worker'
 import MuxerWorker from '~/workers/muxer.worker?worker'
 import { makePlayer } from './make-player'
 
@@ -72,7 +72,7 @@ function makeDefaultProject(): Project {
             { type: 'audio.pan', params: { value: { value: 50 } } },
           ],
         },
-        videoPipeline: {
+        visualPipeline: {
           effects: [
             { type: 'visual.brightness', params: { value: { value: 50 } } },
             {
@@ -92,7 +92,7 @@ function makeDefaultProject(): Project {
             { type: 'audio.pan', params: { value: { value: 50 } } },
           ],
         },
-        videoPipeline: {
+        visualPipeline: {
           effects: [
             { type: 'visual.brightness', params: { value: { value: 0 } } },
             {
@@ -112,7 +112,9 @@ function makeDefaultProject(): Project {
             { type: 'audio.pan', params: { value: { value: 50 } } },
           ],
         },
-        videoPipeline: { effects: [{ type: 'visual.brightness', params: { value: { value: 0 } } }] },
+        visualPipeline: {
+          effects: [{ type: 'visual.brightness', params: { value: { value: 0 } } }],
+        },
       },
       {
         id: 'track-3',
@@ -124,7 +126,9 @@ function makeDefaultProject(): Project {
             { type: 'audio.pan', params: { value: { value: 50 } } },
           ],
         },
-        videoPipeline: { effects: [{ type: 'visual.brightness', params: { value: { value: 0 } } }] },
+        visualPipeline: {
+          effects: [{ type: 'visual.brightness', params: { value: { value: 0 } } }],
+        },
       },
     ],
     createdAt: new Date().toISOString(),
@@ -312,7 +316,7 @@ export function createEditor(options: CreateEditorOptions) {
     setProject(
       'tracks',
       t => t.id === trackId,
-      'videoPipeline',
+      'visualPipeline',
       'effects',
       effectIndex,
       effect => {
@@ -339,7 +343,7 @@ export function createEditor(options: CreateEditorOptions) {
 
   function getVideoEffectValue(trackId: string, effectIndex: number): number {
     const track = project().tracks.find(t => t.id === trackId)
-    const effect = track?.videoPipeline?.effects?.[effectIndex]
+    const effect = track?.visualPipeline?.effects?.[effectIndex]
     if (
       effect &&
       'params' in effect &&
@@ -364,7 +368,7 @@ export function createEditor(options: CreateEditorOptions) {
     setProject(
       'tracks',
       t => t.id === trackId,
-      'videoPipeline',
+      'visualPipeline',
       'effects',
       effectIndex,
       effect => {
@@ -382,9 +386,9 @@ export function createEditor(options: CreateEditorOptions) {
     player()?.compositor.setEffectValue('track', trackId, effectIndex, paramKey, value)
   }
 
-  function getVideoPipeline(trackId: string) {
+  function getVisualPipeline(trackId: string) {
     const track = project().tracks.find(t => t.id === trackId)
-    return track?.videoPipeline?.effects ?? []
+    return track?.visualPipeline?.effects ?? []
   }
 
   function addRecording(trackId: string, clipId: string, duration: number, offset: number) {
@@ -697,7 +701,7 @@ export function createEditor(options: CreateEditorOptions) {
 
           // Effect for video pipeline - send values to compositor
           createEffect(() => {
-            const pipeline = getVideoPipeline(trackId)
+            const pipeline = getVisualPipeline(trackId)
 
             // Send each effect param's value to compositor
             for (let effectIndex = 0; effectIndex < pipeline.length; effectIndex++) {
@@ -894,7 +898,7 @@ export function createEditor(options: CreateEditorOptions) {
     getEffectValue,
     getTrackPipeline,
     getVideoEffectValue,
-    getVideoPipeline,
+    getVisualPipeline,
     hasAnyRecording,
     isPlayerLoading: () => player.loading,
     isProjectLoading: () => project.loading || stemClips.loading(),

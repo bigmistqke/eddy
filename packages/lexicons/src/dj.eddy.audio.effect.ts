@@ -2,7 +2,7 @@ import type { LexiconDoc } from '@atproto/lexicon'
 
 export default {
   lexicon: 1,
-  id: 'app.eddy.audioEffect',
+  id: 'dj.eddy.audio.effect',
   defs: {
     'gain.params': {
       type: 'object',
@@ -10,7 +10,7 @@ export default {
       properties: {
         value: {
           type: 'union',
-          refs: ['app.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#staticValue'],
           description: 'Volume (0-100, where 100 = unity gain)',
         },
       },
@@ -22,7 +22,7 @@ export default {
       properties: {
         value: {
           type: 'union',
-          refs: ['app.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#staticValue'],
           description: 'Stereo position (0 = left, 50 = center, 100 = right)',
         },
       },
@@ -33,17 +33,17 @@ export default {
       properties: {
         mix: {
           type: 'union',
-          refs: ['app.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#staticValue'],
           description: 'Wet/dry mix (0 = dry, 100 = wet)',
         },
         decay: {
           type: 'union',
-          refs: ['app.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#staticValue'],
           description: 'Decay time scaled by 100 (e.g., 200 = 2 seconds)',
         },
         preDelay: {
           type: 'union',
-          refs: ['app.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#staticValue'],
           description: 'Pre-delay in milliseconds (0-100)',
         },
       },
@@ -56,7 +56,7 @@ export default {
         type: { type: 'string', const: 'audio.gain' },
         enabled: {
           type: 'union',
-          refs: ['app.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#staticValue'],
         },
         params: { type: 'ref', ref: '#gain.params' },
       },
@@ -69,7 +69,7 @@ export default {
         type: { type: 'string', const: 'audio.pan' },
         enabled: {
           type: 'union',
-          refs: ['app.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#staticValue'],
         },
         params: { type: 'ref', ref: '#pan.params' },
       },
@@ -86,7 +86,7 @@ export default {
         },
         enabled: {
           type: 'union',
-          refs: ['app.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#staticValue'],
         },
       },
     },
@@ -99,7 +99,7 @@ export default {
         type: { type: 'string', const: 'audio.reverb' },
         enabled: {
           type: 'union',
-          refs: ['app.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#staticValue'],
         },
         params: { type: 'ref', ref: '#reverb.params' },
       },

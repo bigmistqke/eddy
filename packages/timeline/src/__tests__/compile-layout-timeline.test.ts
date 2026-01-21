@@ -33,19 +33,19 @@ function createTestProject(overrides: Partial<AbsoluteProject> = {}): AbsolutePr
     clips: [
       {
         id: 'clip-0',
-        source: { type: 'stem', ref: { uri: 'at://did/app.eddy.stem/0', cid: 'cid0' } },
+        source: { type: 'stem', ref: { uri: 'at://did/dj.eddy.stem/0', cid: 'cid0' } },
         offset: 0,
         duration: 10000, // 10 seconds
       },
       {
         id: 'clip-1',
-        source: { type: 'stem', ref: { uri: 'at://did/app.eddy.stem/1', cid: 'cid1' } },
+        source: { type: 'stem', ref: { uri: 'at://did/dj.eddy.stem/1', cid: 'cid1' } },
         offset: 0,
         duration: 15000, // 15 seconds
       },
       {
         id: 'clip-2',
-        source: { type: 'stem', ref: { uri: 'at://did/app.eddy.stem/2', cid: 'cid2' } },
+        source: { type: 'stem', ref: { uri: 'at://did/dj.eddy.stem/2', cid: 'cid2' } },
         offset: 5000, // starts at 5 seconds
         duration: 10000, // 10 seconds
       },
@@ -597,13 +597,13 @@ describe('multiple clips per track', () => {
       clips: [
         {
           id: 'clip-0a',
-          source: { type: 'stem', ref: { uri: 'at://did/app.eddy.stem/0a', cid: 'cid0a' } },
+          source: { type: 'stem', ref: { uri: 'at://did/dj.eddy.stem/0a', cid: 'cid0a' } },
           offset: 0,
           duration: 5000,
         },
         {
           id: 'clip-0b',
-          source: { type: 'stem', ref: { uri: 'at://did/app.eddy.stem/0b', cid: 'cid0b' } },
+          source: { type: 'stem', ref: { uri: 'at://did/dj.eddy.stem/0b', cid: 'cid0b' } },
           offset: 5000,
           duration: 5000,
         },

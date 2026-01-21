@@ -4,14 +4,14 @@
  * ATProto lexicon definitions for Eddy projects.
  *
  * Time domains:
- * - app.eddy.absolute: Clips/projects with ms timing (video editors)
- * - app.eddy.musical: Clips/projects with bar timing (DAWs, jam)
+ * - dj.eddy.absolute: Clips/projects with ms timing (video editors)
+ * - dj.eddy.musical: Clips/projects with bar timing (DAWs, jam)
  *
  * Shared:
- * - app.eddy.track: Track with clipIds[] (domain-agnostic)
- * - app.eddy.group: Group with members[] (domain-agnostic)
- * - app.eddy.clip: Source types only (stem, group refs)
- * - app.eddy.project: Canvas definition
+ * - dj.eddy.track: Track with clipIds[] (domain-agnostic)
+ * - dj.eddy.group: Group with members[] (domain-agnostic)
+ * - dj.eddy.clip: Source types only (stem, group refs)
+ * - dj.eddy.project: Canvas definition
  */
 
 import {
@@ -23,19 +23,19 @@ import strongRefLexicon from '@bigmistqke/typed-lexicons/com/atproto/repo/strong
 import type * as v from 'valibot'
 
 // Lexicon imports
-import absoluteLexicon from './app.eddy.absolute'
-import audioEffectLexicon from './app.eddy.audioEffect'
-import clipLexicon from './app.eddy.clip'
-import groupLexicon from './app.eddy.group'
-import jamLexicon from './app.eddy.jam'
-import musicalLexicon from './app.eddy.musical'
-import pipelineLexicon from './app.eddy.pipeline'
-import projectLexicon from './app.eddy.project'
-import stemLexicon from './app.eddy.stem'
-import trackLexicon from './app.eddy.track'
-import curveLexicon from './app.eddy.value.curve'
-import staticValueLexicon from './app.eddy.value.static'
-import visualEffectLexicon from './app.eddy.visualEffect'
+import absoluteLexicon from './dj.eddy.absolute'
+import audioEffectLexicon from './dj.eddy.audio.effect'
+import clipLexicon from './dj.eddy.clip'
+import groupLexicon from './dj.eddy.group'
+import jamLexicon from './dj.eddy.jam'
+import musicalLexicon from './dj.eddy.musical'
+import pipelineLexicon from './dj.eddy.pipeline'
+import projectLexicon from './dj.eddy.project'
+import stemLexicon from './dj.eddy.stem'
+import trackLexicon from './dj.eddy.track'
+import curveLexicon from './dj.eddy.value.curve'
+import staticValueLexicon from './dj.eddy.value.static'
+import visualEffectLexicon from './dj.eddy.visual.effect'
 
 const lookup = createLookup(
   absoluteLexicon,
@@ -54,6 +54,9 @@ const lookup = createLookup(
   visualEffectLexicon,
 )
 
+const sdkConfig = { lookup, format: 'sdk' } as const
+const wireConfig = { lookup, format: 'wire' } as const
+
 /**********************************************************************************/
 /*                                                                                */
 /*                                   Validators                                   */
@@ -61,42 +64,36 @@ const lookup = createLookup(
 /**********************************************************************************/
 
 // Time domain validators (SDK format)
-export const absoluteValidators = lexiconToValibot(absoluteLexicon, { lookup, format: 'sdk' })
-export const musicalValidators = lexiconToValibot(musicalLexicon, { lookup, format: 'sdk' })
+export const absoluteValidators = lexiconToValibot(absoluteLexicon, sdkConfig)
+export const musicalValidators = lexiconToValibot(musicalLexicon, sdkConfig)
 
 // Shared validators (SDK format)
-export const projectValidators = lexiconToValibot(projectLexicon, { lookup, format: 'sdk' })
-export const stemValidators = lexiconToValibot(stemLexicon, { lookup, format: 'sdk' })
-export const audioEffectValidators = lexiconToValibot(audioEffectLexicon, { lookup, format: 'sdk' })
+export const projectValidators = lexiconToValibot(projectLexicon, sdkConfig)
+export const stemValidators = lexiconToValibot(stemLexicon, sdkConfig)
+export const audioEffectValidators = lexiconToValibot(audioEffectLexicon, sdkConfig)
 export const visualEffectValidators = lexiconToValibot(visualEffectLexicon, {
   lookup,
   format: 'sdk',
 })
-export const valuesValidators = lexiconToValibot(staticValueLexicon, { lookup, format: 'sdk' })
-export const curveValidators = lexiconToValibot(curveLexicon, { lookup, format: 'sdk' })
-export const trackValidators = lexiconToValibot(trackLexicon, { lookup, format: 'sdk' })
-export const clipValidators = lexiconToValibot(clipLexicon, { lookup, format: 'sdk' })
-export const groupValidators = lexiconToValibot(groupLexicon, { lookup, format: 'sdk' })
-export const jamValidators = lexiconToValibot(jamLexicon, { lookup, format: 'sdk' })
-export const pipelineValidators = lexiconToValibot(pipelineLexicon, { lookup, format: 'sdk' })
+export const valuesValidators = lexiconToValibot(staticValueLexicon, sdkConfig)
+export const curveValidators = lexiconToValibot(curveLexicon, sdkConfig)
+export const trackValidators = lexiconToValibot(trackLexicon, sdkConfig)
+export const clipValidators = lexiconToValibot(clipLexicon, sdkConfig)
+export const groupValidators = lexiconToValibot(groupLexicon, sdkConfig)
+export const jamValidators = lexiconToValibot(jamLexicon, sdkConfig)
+export const pipelineValidators = lexiconToValibot(pipelineLexicon, sdkConfig)
 
 // Wire format validators
-export const absoluteWireValidators = lexiconToValibot(absoluteLexicon, { lookup, format: 'wire' })
-export const musicalWireValidators = lexiconToValibot(musicalLexicon, { lookup, format: 'wire' })
-export const projectWireValidators = lexiconToValibot(projectLexicon, { lookup, format: 'wire' })
-export const stemWireValidators = lexiconToValibot(stemLexicon, { lookup, format: 'wire' })
-export const audioEffectWireValidators = lexiconToValibot(audioEffectLexicon, {
-  lookup,
-  format: 'wire',
-})
-export const visualEffectWireValidators = lexiconToValibot(visualEffectLexicon, {
-  lookup,
-  format: 'wire',
-})
-export const valuesWireValidators = lexiconToValibot(staticValueLexicon, { lookup, format: 'wire' })
-export const curveWireValidators = lexiconToValibot(curveLexicon, { lookup, format: 'wire' })
-export const jamWireValidators = lexiconToValibot(jamLexicon, { lookup, format: 'wire' })
-export const pipelineWireValidators = lexiconToValibot(pipelineLexicon, { lookup, format: 'wire' })
+export const absoluteWireValidators = lexiconToValibot(absoluteLexicon, wireConfig)
+export const musicalWireValidators = lexiconToValibot(musicalLexicon, wireConfig)
+export const projectWireValidators = lexiconToValibot(projectLexicon, wireConfig)
+export const stemWireValidators = lexiconToValibot(stemLexicon, wireConfig)
+export const audioEffectWireValidators = lexiconToValibot(audioEffectLexicon, wireConfig)
+export const visualEffectWireValidators = lexiconToValibot(visualEffectLexicon, wireConfig)
+export const valuesWireValidators = lexiconToValibot(staticValueLexicon, wireConfig)
+export const curveWireValidators = lexiconToValibot(curveLexicon, wireConfig)
+export const jamWireValidators = lexiconToValibot(jamLexicon, wireConfig)
+export const pipelineWireValidators = lexiconToValibot(pipelineLexicon, wireConfig)
 
 /**********************************************************************************/
 /*                                                                                */
@@ -152,7 +149,7 @@ export type Value = StaticValue
 // Pipeline types
 export type PipelineOutput = v.InferOutput<typeof pipelineValidators.output>
 export type AudioPipeline = v.InferOutput<typeof pipelineValidators.audioPipeline>
-export type VideoPipeline = v.InferOutput<typeof pipelineValidators.videoPipeline>
+export type VisualPipeline = v.InferOutput<typeof pipelineValidators.visualPipeline>
 
 // Stem types
 export type Stem = v.InferOutput<typeof stemValidators.main>

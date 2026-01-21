@@ -2,7 +2,7 @@ import type { LexiconDoc } from '@atproto/lexicon'
 
 export default {
   lexicon: 1,
-  id: 'app.eddy.pipeline',
+  id: 'dj.eddy.pipeline',
   defs: {
     output: {
       type: 'object',
@@ -16,7 +16,7 @@ export default {
         },
         amount: {
           type: 'ref',
-          ref: 'app.eddy.value.static#staticValue',
+          ref: 'dj.eddy.value.static#staticValue',
           description: 'Output amount (0-100)',
         },
       },
@@ -31,10 +31,10 @@ export default {
           items: {
             type: 'union',
             refs: [
-              'app.eddy.audioEffect#pan',
-              'app.eddy.audioEffect#gain',
-              'app.eddy.audioEffect#reverb',
-              'app.eddy.audioEffect#custom',
+              'dj.eddy.audio.effect#pan',
+              'dj.eddy.audio.effect#gain',
+              'dj.eddy.audio.effect#reverb',
+              'dj.eddy.audio.effect#custom',
             ],
           },
           maxLength: 16,
@@ -49,7 +49,7 @@ export default {
       },
     },
 
-    videoPipeline: {
+    visualPipeline: {
       type: 'object',
       description: 'Video effect chain with weighted outputs for parallel routing',
       properties: {
@@ -58,13 +58,13 @@ export default {
           items: {
             type: 'union',
             refs: [
-              'app.eddy.visualEffect#transform',
-              'app.eddy.visualEffect#opacity',
-              'app.eddy.visualEffect#brightness',
-              'app.eddy.visualEffect#contrast',
-              'app.eddy.visualEffect#saturation',
-              'app.eddy.visualEffect#colorize',
-              'app.eddy.visualEffect#custom',
+              'dj.eddy.visual.effect#transform',
+              'dj.eddy.visual.effect#opacity',
+              'dj.eddy.visual.effect#brightness',
+              'dj.eddy.visual.effect#contrast',
+              'dj.eddy.visual.effect#saturation',
+              'dj.eddy.visual.effect#colorize',
+              'dj.eddy.visual.effect#custom',
             ],
           },
           maxLength: 16,

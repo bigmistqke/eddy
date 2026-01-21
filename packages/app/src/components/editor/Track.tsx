@@ -82,7 +82,7 @@ interface TrackProps {
   onVolumeChange: (value: number) => void
   onPanChange: (value: number) => void
   // Video pipeline
-  videoPipeline: VisualEffect[]
+  visualPipeline: VisualEffect[]
   onVideoEffectParamChange: (effectIndex: number, paramKey: string, value: EffectValue) => void
   // Actions
   onSelect: () => void
@@ -146,7 +146,7 @@ export const Track: Component<TrackProps> = props => {
             />
           </label>
           {/* Video controls - generated from pipeline */}
-          <For each={props.videoPipeline}>
+          <For each={props.visualPipeline}>
             {(effect, effectIndex) => {
               const effectMeta = VIDEO_EFFECT_META[effect.type]
               if (!effectMeta) return null
@@ -203,7 +203,11 @@ export const Track: Component<TrackProps> = props => {
                                   onInput={e => {
                                     const newValues = [...values()] as [number, number, number]
                                     newValues[componentIndex()] = parseFloat(e.target.value)
-                                    props.onVideoEffectParamChange(effectIndex(), paramKey, newValues)
+                                    props.onVideoEffectParamChange(
+                                      effectIndex(),
+                                      paramKey,
+                                      newValues,
+                                    )
                                   }}
                                   onClick={e => e.stopPropagation()}
                                 />
