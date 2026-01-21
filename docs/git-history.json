@@ -1,5 +1,21 @@
 [
   {
+    "hash": "1698efe07de92b21f9cc134157627a9bdce8a510",
+    "short_hash": "1698efe",
+    "author": "bigmistqke",
+    "date": "2026-01-21T01:13:42+01:00",
+    "message": "refactor: colocate jam UI components\n\n- Merge Cell, ColumnHeader, TrackLabel, TimelineRuler into Grid.tsx\n- Merge LayoutPreview, LayoutSelector, SlotAssigner into LayoutEditor.tsx\n- Consolidate CSS modules with section headers\n- Simplify index.ts exports",
+    "files_changed": 20
+  },
+  {
+    "hash": "38dc4284a223552061aa0155a8d4acbaab5ebcb6",
+    "short_hash": "38dc428",
+    "author": "bigmistqke",
+    "date": "2026-01-21T01:05:38+01:00",
+    "message": "feat: add video preview with compositor and timeline ruler\n\n- Add Preview component using makeVideoCompositor and makeVideoPlayback\n- Load test videos via UrlSource from mediabunny\n- Use track.id as clipId for 1-stem-per-track model\n- Add timeline ruler row for column-based seeking",
+    "files_changed": 12
+  },
+  {
     "hash": "38dc4284a223552061aa0155a8d4acbaab5ebcb6",
     "short_hash": "38dc428",
     "author": "bigmistqke",
@@ -14,14 +30,6 @@
     "date": "2026-01-21T00:30:11+01:00",
     "message": "chore: sync deciduous graph",
     "files_changed": 2
-  },
-  {
-    "hash": "77ba666d214ae92b2f5c29e74cb554690c1aeef2",
-    "short_hash": "77ba666",
-    "author": "bigmistqke",
-    "date": "2026-01-21T00:29:56+01:00",
-    "message": "feat: improve jam sequencer UX\n\n- Increased column gap for clearer clip boundaries\n- Added trackVideos store with 4 test video URLs\n- Dimmed styling for clips not in visible slots\n- Slot number indicator on visible clips",
-    "files_changed": 4
   },
   {
     "hash": "77ba666d214ae92b2f5c29e74cb554690c1aeef2",

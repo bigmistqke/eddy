@@ -3673,6 +3673,39 @@
       "created_at": "2026-01-21T01:05:45.337263+01:00",
       "updated_at": "2026-01-21T01:05:45.337263+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"38dc428\",\"confidence\":95}"
+    },
+    {
+      "id": 335,
+      "change_id": "fcc5a179-fd88-4b6e-99db-86cbf57b8732",
+      "node_type": "action",
+      "title": "Colocated jam UI components - sequencer (Cell, ColumnHeader, TrackLabel) into Grid.tsx and layout (LayoutPreview, LayoutSelector, SlotAssigner) into LayoutEditor.tsx",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T01:12:50.325468+01:00",
+      "updated_at": "2026-01-21T01:12:50.325468+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 336,
+      "change_id": "121e48b3-4aba-4b89-9ca5-6a9bc00fb4a6",
+      "node_type": "outcome",
+      "title": "Committed: refactor: colocate jam UI components",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T01:13:48.429075+01:00",
+      "updated_at": "2026-01-21T01:13:48.429075+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"1698efe\",\"confidence\":95}"
+    },
+    {
+      "id": 337,
+      "change_id": "73f69fb1-bc79-42b8-95c6-a3f45163c004",
+      "node_type": "observation",
+      "title": "Jam architecture validation: video logic is minimal (~50 lines in Preview.tsx). Package is mostly state management (JamColumn/JamMetadata) + UI. Video complexity abstracted into @eddy/video, @eddy/timeline, mediabunny. Clean separation of concerns.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-21T01:18:14.041699+01:00",
+      "updated_at": "2026-01-21T01:18:14.041699+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -6854,6 +6887,39 @@
       "weight": 1.0,
       "rationale": "Commit includes video pipeline",
       "created_at": "2026-01-21T01:05:45.351729+01:00"
+    },
+    {
+      "id": 290,
+      "from_node_id": 325,
+      "to_node_id": 335,
+      "from_change_id": "7030ffe6-8797-4bad-8c7e-fd3ef2c4bed6",
+      "to_change_id": "fcc5a179-fd88-4b6e-99db-86cbf57b8732",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implemented colocation TODO",
+      "created_at": "2026-01-21T01:12:50.338958+01:00"
+    },
+    {
+      "id": 291,
+      "from_node_id": 335,
+      "to_node_id": 336,
+      "from_change_id": "fcc5a179-fd88-4b6e-99db-86cbf57b8732",
+      "to_change_id": "121e48b3-4aba-4b89-9ca5-6a9bc00fb4a6",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed refactor",
+      "created_at": "2026-01-21T01:13:48.442124+01:00"
+    },
+    {
+      "id": 292,
+      "from_node_id": 313,
+      "to_node_id": 337,
+      "from_change_id": "1cb0cc30-4402-4cdb-9eda-3c5cdb2d5e8e",
+      "to_change_id": "73f69fb1-bc79-42b8-95c6-a3f45163c004",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Architecture validation",
+      "created_at": "2026-01-21T01:18:19.133072+01:00"
     }
   ]
 }
