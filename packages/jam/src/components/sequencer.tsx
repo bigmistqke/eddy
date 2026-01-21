@@ -37,6 +37,13 @@ const LAYOUT_ICONS: Record<JamLayoutType, string> = {
   'v-split': '\u2551',
 }
 
+const TEST_VIDEOS = [
+  '/videos/big-buck-bunny.webm',
+  '/videos/sample-5s.webm',
+  '/videos/sample-10s.webm',
+  '/videos/sample-15s.webm',
+]
+
 /**********************************************************************************/
 /*                                                                                */
 /*                                  Track Label                                   */
@@ -138,6 +145,13 @@ export function Grid(props: GridProps) {
     setPaintTrackId(null)
   }
 
+  function handleAddTrack() {
+    const trackCount = tracks().length
+    const videoUrl = TEST_VIDEOS[trackCount % TEST_VIDEOS.length]
+    const trackId = jam.addTrack()
+    jam.setTrackVideoUrl(trackId, videoUrl)
+  }
+
   const gridTemplateColumns = () => `80px repeat(${columns().length}, 60px) 48px`
 
   return (
@@ -153,7 +167,7 @@ export function Grid(props: GridProps) {
           class={styles.tracksGrid}
           style={{
             'grid-template-columns': gridTemplateColumns(),
-            'grid-template-rows': `8px repeat(${tracks().length}, 48px) 1fr`,
+            'grid-template-rows': `8px repeat(${tracks().length}, 48px) auto 1fr`,
           }}
         >
           {/* Spacer row */}
@@ -198,8 +212,10 @@ export function Grid(props: GridProps) {
               </>
             )}
           </For>
-          {/* Filler row to extend column backgrounds */}
-          <div />
+          {/* Add track button row */}
+          <button class={styles.addTrackButton} onClick={handleAddTrack}>
+            + Track
+          </button>
           <For each={columns()}>
             {(column, columnIndex) => (
               <div

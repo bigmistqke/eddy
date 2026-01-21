@@ -255,3 +255,30 @@
   color: #888;
   border-color: #444;
 }
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                Add Track Button                                */
+/*                                                                                */
+/**********************************************************************************/
+
+.addTrackButton {
+  display: grid;
+  place-items: center;
+  min-width: 80px;
+  height: 32px;
+  padding: 0 8px;
+  background: #1a1a1a;
+  border: 1px dashed #333;
+  border-radius: 4px;
+  color: #666;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+
+.addTrackButton:hover {
+  background: #252525;
+  color: #888;
+  border-color: #444;
+}
