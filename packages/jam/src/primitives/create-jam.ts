@@ -259,6 +259,26 @@ export function createJam(options: CreateJamOptions) {
     return getClipAtColumn(trackId, columnIndex) !== null
   }
 
+  /** Get all tracks that have clips in a column */
+  function getTracksWithClipsInColumn(columnIndex: number): string[] {
+    return project.tracks
+      .filter(track => hasClipAtColumn(track.id, columnIndex))
+      .map(track => track.id)
+  }
+
+  /** Get valid layouts for a column based on how many tracks have clips */
+  function getValidLayoutsForColumn(columnIndex: number): JamLayoutType[] {
+    const trackCount = getTracksWithClipsInColumn(columnIndex).length
+    const layoutsBySlotCount: Record<number, JamLayoutType[]> = {
+      0: ['full'],
+      1: ['full'],
+      2: ['pip', 'h-split', 'v-split'],
+      3: ['3-up'],
+      4: ['2x2'],
+    }
+    return layoutsBySlotCount[trackCount] ?? ['full']
+  }
+
   /** Create a new clip at a column */
   function createClipAtColumn(trackId: string, columnIndex: number): string {
     const boundaries = columnBoundariesMs()
@@ -413,6 +433,28 @@ export function createJam(options: CreateJamOptions) {
   onCleanup(() => {
     if (animationFrame !== null) {
       cancelAnimationFrame(animationFrame)
+    }
+  })
+
+  // Auto-sync slots and layout when clips change
+  createEffect(() => {
+    // Track dependencies: project.tracks clips and metadata.columns
+    const _tracks = project.tracks.map(t => t.clips)
+    const _columns = metadata.columns
+
+    // Update each column's slots and layout based on clips
+    for (let columnIndex = 0; columnIndex < _columns.length; columnIndex++) {
+      const tracksWithClips = getTracksWithClipsInColumn(columnIndex)
+      const validLayouts = getValidLayoutsForColumn(columnIndex)
+      const currentLayout = _columns[columnIndex].layout
+
+      // Update slots to match tracks with clips
+      setMetadata('columns', columnIndex, 'slots', tracksWithClips)
+
+      // Update layout if current layout is no longer valid
+      if (!validLayouts.includes(currentLayout)) {
+        setMetadata('columns', columnIndex, 'layout', validLayouts[0])
+      }
     }
   })
 
@@ -684,6 +726,8 @@ export function createJam(options: CreateJamOptions) {
     createClipAtColumn,
     removeClipAtColumn,
     extendClipToColumn,
+    getTracksWithClipsInColumn,
+    getValidLayoutsForColumn,
 
     // Track actions
     addTrack,

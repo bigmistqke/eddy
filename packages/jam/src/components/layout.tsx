@@ -4,7 +4,7 @@
  * Edit layout and slot assignments for a selected column.
  */
 
-import type { JamColumn, JamColumnDuration, JamLayoutType, Track } from '@eddy/lexicons'
+import type { JamColumnDuration, JamLayoutType } from '@eddy/lexicons'
 import clsx from 'clsx'
 import { createMemo, For, Index, Show } from 'solid-js'
 import { getSlotCount } from '~/primitives/compile-jam-timeline'
@@ -28,7 +28,6 @@ export interface LayoutEditorProps {
 /**********************************************************************************/
 
 const DURATIONS: JamColumnDuration[] = ['1', '1/2', '1/4', '1/8', '1/16']
-const LAYOUT_TYPES: JamLayoutType[] = ['full', 'pip', 'h-split', 'v-split', '2x2', '3-up']
 
 /**********************************************************************************/
 /*                                                                                */
@@ -73,13 +72,14 @@ function LayoutPreview(props: LayoutPreviewProps) {
 
 interface LayoutSelectorProps {
   value: JamLayoutType
+  availableLayouts: JamLayoutType[]
   onChange: (layout: JamLayoutType) => void
 }
 
 function LayoutSelector(props: LayoutSelectorProps) {
   return (
     <div class={styles.selector}>
-      <For each={LAYOUT_TYPES}>
+      <For each={props.availableLayouts}>
         {layout => (
           <button
             class={clsx(styles.selectorButton, props.value === layout && styles.selected)}
@@ -95,67 +95,6 @@ function LayoutSelector(props: LayoutSelectorProps) {
 
 /**********************************************************************************/
 /*                                                                                */
-/*                                Slot Assigner                                   */
-/*                                                                                */
-/**********************************************************************************/
-
-interface SlotAssignerProps {
-  column: JamColumn
-  tracks: Track[]
-  onAssignSlot: (slotIndex: number, trackId: string | null) => void
-}
-
-function SlotAssigner(props: SlotAssignerProps) {
-  const slotCount = () => getSlotCount(props.column.layout)
-  const slots = () => props.column.slots ?? []
-
-  function handleSlotClick(slotIndex: number) {
-    const currentTrackId = slots()[slotIndex] || null
-    const availableTracks = props.tracks.filter(
-      track => !slots().includes(track.id) || slots()[slotIndex] === track.id,
-    )
-
-    if (availableTracks.length === 0) {
-      props.onAssignSlot(slotIndex, null)
-      return
-    }
-
-    if (currentTrackId === null) {
-      props.onAssignSlot(slotIndex, availableTracks[0].id)
-    } else {
-      const currentIndex = availableTracks.findIndex(t => t.id === currentTrackId)
-      const nextIndex = currentIndex + 1
-      if (nextIndex >= availableTracks.length) {
-        props.onAssignSlot(slotIndex, null)
-      } else {
-        props.onAssignSlot(slotIndex, availableTracks[nextIndex].id)
-      }
-    }
-  }
-
-  return (
-    <div class={styles.assigner} data-layout={props.column.layout}>
-      <Index each={Array(slotCount())}>
-        {(_, index) => {
-          const trackId = () => slots()[index] || null
-          const track = () => (trackId() ? props.tracks.find(t => t.id === trackId()) : null)
-
-          return (
-            <div
-              class={clsx(styles.assignerSlot, track() && styles.hasTrack)}
-              onClick={() => handleSlotClick(index)}
-            >
-              {track()?.name ?? `Slot ${index + 1}`}
-            </div>
-          )
-        }}
-      </Index>
-    </div>
-  )
-}
-
-/**********************************************************************************/
-/*                                                                                */
 /*                                Layout Editor                                   */
 /*                                                                                */
 /**********************************************************************************/
@@ -165,6 +104,10 @@ export function LayoutEditor(props: LayoutEditorProps) {
 
   const selectedColumn = createMemo(() => jam.selectedColumn())
   const selectedIndex = createMemo(() => jam.selectedColumnIndex())
+  const availableLayouts = createMemo(() => {
+    const index = selectedIndex()
+    return index !== null ? jam.getValidLayoutsForColumn(index) : []
+  })
 
   function handleLayoutChange(layout: JamLayoutType) {
     const index = selectedIndex()
@@ -177,13 +120,6 @@ export function LayoutEditor(props: LayoutEditorProps) {
     const index = selectedIndex()
     if (index !== null) {
       jam.setColumnDuration(index, duration)
-    }
-  }
-
-  function handleSlotAssign(slotIndex: number, trackId: string | null) {
-    const index = selectedIndex()
-    if (index !== null) {
-      jam.assignSlot(index, slotIndex, trackId)
     }
   }
 
@@ -218,16 +154,10 @@ export function LayoutEditor(props: LayoutEditorProps) {
             {/* Layout selector */}
             <div class={styles.section}>
               <span class={styles.label}>Layout</span>
-              <LayoutSelector value={column().layout} onChange={handleLayoutChange} />
-            </div>
-
-            {/* Slot assigner */}
-            <div class={styles.section}>
-              <span class={styles.label}>Slots</span>
-              <SlotAssigner
-                column={column()}
-                tracks={jam.project.tracks}
-                onAssignSlot={handleSlotAssign}
+              <LayoutSelector
+                value={column().layout}
+                availableLayouts={availableLayouts()}
+                onChange={handleLayoutChange}
               />
             </div>
 

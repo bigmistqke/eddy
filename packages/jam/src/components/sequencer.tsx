@@ -8,7 +8,7 @@
 
 import type { JamColumnDuration, JamLayoutType } from '@eddy/lexicons'
 import clsx from 'clsx'
-import { createSignal, For, Show } from 'solid-js'
+import { createSignal, For } from 'solid-js'
 import type { ClipPosition, Jam } from '~/primitives/create-jam'
 import styles from './Sequencer.module.css'
 
@@ -85,30 +85,21 @@ interface CellProps {
   trackId: string
   columnIndex: number
   clipPosition: ClipPosition
-  slotIndex: number | null
   onToggle: () => void
   onPointerEnter: (event: PointerEvent) => void
 }
 
 function Cell(props: CellProps) {
-  const isVisible = () => props.slotIndex !== null
-  const hasClip = () => props.clipPosition !== 'none'
-
   return (
     <div
       class={styles.cell}
       data-clip={props.clipPosition}
-      data-visible={hasClip() && isVisible()}
       onPointerDown={event => {
         event.preventDefault()
         props.onToggle()
       }}
       onPointerEnter={event => props.onPointerEnter(event)}
-    >
-      <Show when={props.slotIndex !== null && props.slotIndex + 1}>
-        {slotNumber => <span class={styles.slotIndicator}>{slotNumber()}</span>}
-      </Show>
-    </div>
+    />
   )
 }
 
@@ -208,7 +199,6 @@ export function Grid(props: GridProps) {
                   trackId={track.id}
                   columnIndex={columnIndex()}
                   clipPosition={jam.getClipPosition(track.id, columnIndex())}
-                  slotIndex={jam.getTrackSlotIndex(columnIndex(), track.id)}
                   onToggle={() => handleCellToggle(track.id, columnIndex())}
                   onPointerEnter={event => handleCellPointerEnter(event, track.id, columnIndex())}
                 />
