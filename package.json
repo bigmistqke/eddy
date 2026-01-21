@@ -8,7 +8,8 @@
   },
   "scripts": {
     "dev": "pnpm --filter @eddy/lexicons build && pnpm --filter @eddy/app dev",
-    "build": "pnpm --filter @eddy/lexicons build && pnpm --filter @eddy/app build",
+    "build": "pnpm build:lexicons && pnpm --filter @eddy/app build",
+    "build:lexicons": "pnpm --filter @eddy/lexicons build",
     "preview": "pnpm --filter @eddy/app preview",
     "test": "pnpm -r test",
     "test:run": "pnpm -r test:run",
