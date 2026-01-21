@@ -66,3 +66,178 @@
   text-align: center;
   padding: 32px;
 }
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                Layout Preview                                  */
+/*                                                                                */
+/**********************************************************************************/
+
+.preview {
+  position: relative;
+  background: #0a0a0a;
+  border-radius: 4px;
+  overflow: hidden;
+  display: grid;
+  gap: 2px;
+}
+
+/* Preview layout variants */
+.preview[data-layout="full"] {
+  grid-template: 1fr / 1fr;
+}
+
+.preview[data-layout="pip"] {
+  grid-template: 1fr / 1fr;
+}
+
+.preview[data-layout="h-split"] {
+  grid-template: 1fr / 1fr 1fr;
+}
+
+.preview[data-layout="v-split"] {
+  grid-template: 1fr 1fr / 1fr;
+}
+
+.preview[data-layout="2x2"] {
+  grid-template: 1fr 1fr / 1fr 1fr;
+}
+
+.preview[data-layout="3-up"] {
+  grid-template: 1fr 1fr / 2fr 1fr;
+}
+
+.previewSlot {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 2px;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  color: #666;
+}
+
+.previewSlot.hasTrack {
+  background: #2d5a87;
+}
+
+/* Special slot positioning for complex layouts */
+.preview[data-layout="pip"] .previewSlot:first-child {
+  grid-area: 1 / 1 / 2 / 2;
+}
+
+.preview[data-layout="pip"] .previewSlot:nth-child(2) {
+  position: absolute;
+  bottom: 5%;
+  right: 5%;
+  width: 30%;
+  height: 30%;
+}
+
+.preview[data-layout="3-up"] .previewSlot:first-child {
+  grid-row: 1 / 3;
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                               Layout Selector                                  */
+/*                                                                                */
+/**********************************************************************************/
+
+.selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 8px;
+}
+
+.selectorButton {
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  background: #1a1a1a;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.selectorButton.selected {
+  background: #2d5a87;
+  border-color: #4a9eff;
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                Slot Assigner                                   */
+/*                                                                                */
+/**********************************************************************************/
+
+.assigner {
+  position: relative;
+  width: 200px;
+  height: 150px;
+  background: #0a0a0a;
+  border-radius: 8px;
+  overflow: hidden;
+  display: grid;
+  gap: 4px;
+}
+
+/* Assigner layout variants */
+.assigner[data-layout="full"] {
+  grid-template: 1fr / 1fr;
+}
+
+.assigner[data-layout="pip"] {
+  grid-template: 1fr / 1fr;
+}
+
+.assigner[data-layout="h-split"] {
+  grid-template: 1fr / 1fr 1fr;
+}
+
+.assigner[data-layout="v-split"] {
+  grid-template: 1fr 1fr / 1fr;
+}
+
+.assigner[data-layout="2x2"] {
+  grid-template: 1fr 1fr / 1fr 1fr;
+}
+
+.assigner[data-layout="3-up"] {
+  grid-template: 1fr 1fr / 2fr 1fr;
+}
+
+.assignerSlot {
+  background: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 4px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-size: 12px;
+  color: #666;
+  user-select: none;
+}
+
+.assignerSlot.hasTrack {
+  background: #2d5a87;
+  color: #fff;
+}
+
+/* Special slot positioning for complex layouts */
+.assigner[data-layout="pip"] .assignerSlot:first-child {
+  grid-area: 1 / 1 / 2 / 2;
+}
+
+.assigner[data-layout="pip"] .assignerSlot:nth-child(2) {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 30%;
+  height: 30%;
+}
+
+.assigner[data-layout="3-up"] .assignerSlot:first-child {
+  grid-row: 1 / 3;
+}

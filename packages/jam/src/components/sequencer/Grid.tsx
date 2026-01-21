@@ -6,12 +6,11 @@
  * Shows clips with connected styling for multi-column spans.
  */
 
-import { createSignal, For } from 'solid-js'
-import type { Jam } from '~/primitives/create-jam'
-import { Cell } from './Cell'
-import { ColumnHeader } from './ColumnHeader'
+import type { JamColumnDuration, JamLayoutType } from '@eddy/lexicons'
+import clsx from 'clsx'
+import { createSignal, For, Show } from 'solid-js'
+import type { ClipPosition, Jam } from '~/primitives/create-jam'
 import styles from './Grid.module.css'
-import { TrackLabel } from './TrackLabel'
 
 /**********************************************************************************/
 /*                                                                                */
@@ -21,6 +20,105 @@ import { TrackLabel } from './TrackLabel'
 
 export interface GridProps {
   jam: Jam
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                   Constants                                    */
+/*                                                                                */
+/**********************************************************************************/
+
+const LAYOUT_ICONS: Record<JamLayoutType, string> = {
+  full: '\u2588',
+  pip: '\u25a3',
+  '2x2': '\u25a6',
+  '3-up': '\u25a7',
+  'h-split': '\u2550',
+  'v-split': '\u2551',
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                 Column Header                                  */
+/*                                                                                */
+/**********************************************************************************/
+
+interface ColumnHeaderProps {
+  index: number
+  duration: JamColumnDuration
+  layout: JamLayoutType
+  isSelected: boolean
+  isCurrent: boolean
+  onSelect: () => void
+}
+
+function ColumnHeader(props: ColumnHeaderProps) {
+  return (
+    <div
+      class={clsx(
+        styles.header,
+        props.isSelected && styles.selected,
+        props.isCurrent && styles.current
+      )}
+      onClick={props.onSelect}
+    >
+      <span>{props.duration}</span>
+      <span class={styles.headerIcon}>{LAYOUT_ICONS[props.layout]}</span>
+    </div>
+  )
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                  Track Label                                   */
+/*                                                                                */
+/**********************************************************************************/
+
+interface TrackLabelProps {
+  name: string
+  trackId: string
+}
+
+function TrackLabel(props: TrackLabelProps) {
+  return <div class={styles.label}>{props.name}</div>
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                      Cell                                      */
+/*                                                                                */
+/**********************************************************************************/
+
+interface CellProps {
+  trackId: string
+  columnIndex: number
+  clipPosition: ClipPosition
+  slotIndex: number | null
+  isCurrent: boolean
+  onToggle: () => void
+  onPointerEnter: (event: PointerEvent) => void
+}
+
+function Cell(props: CellProps) {
+  const isVisible = () => props.slotIndex !== null
+  const hasClip = () => props.clipPosition !== 'none'
+
+  return (
+    <div
+      class={clsx(styles.cell, props.isCurrent && styles.current)}
+      data-clip={props.clipPosition}
+      data-visible={hasClip() && isVisible()}
+      onPointerDown={event => {
+        event.preventDefault()
+        props.onToggle()
+      }}
+      onPointerEnter={event => props.onPointerEnter(event)}
+    >
+      <Show when={props.slotIndex !== null && props.slotIndex + 1}>
+        {slotNumber => <span class={styles.slotIndicator}>{slotNumber()}</span>}
+      </Show>
+    </div>
+  )
 }
 
 /**********************************************************************************/
