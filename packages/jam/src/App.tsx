@@ -4,11 +4,10 @@
  * Grid-based video sequencer where clips flow through changing layouts.
  */
 
-import { createSignal, onCleanup, Show } from 'solid-js'
 import clsx from 'clsx'
 import styles from './App.module.css'
 import { Grid } from './components/sequencer'
-import { LayoutEditor } from './components/layout'
+import { ActionBar } from './components/layout'
 import { Preview } from './components/preview'
 import { createJam } from './primitives/create-jam'
 
@@ -19,16 +18,6 @@ import { createJam } from './primitives/create-jam'
 /**********************************************************************************/
 
 export function App() {
-  const [orientation, setOrientation] = createSignal<'portrait' | 'landscape'>(
-    window.innerHeight > window.innerWidth ? 'portrait' : 'landscape'
-  )
-
-  const handleResize = () => {
-    setOrientation(window.innerHeight > window.innerWidth ? 'portrait' : 'landscape')
-  }
-  window.addEventListener('resize', handleResize)
-  onCleanup(() => window.removeEventListener('resize', handleResize))
-
   const jam = createJam({
     canvasSize: { width: 640, height: 360 },
   })
@@ -41,7 +30,7 @@ export function App() {
   }
 
   return (
-    <div class={styles.app} data-orientation={orientation()}>
+    <div class={styles.app}>
       {/* Preview area */}
       <div class={styles.preview}>
         <Preview jam={jam} />
@@ -50,17 +39,13 @@ export function App() {
         </div>
       </div>
 
-      {/* Sidebar (layout editor) */}
-      <Show when={orientation() === 'landscape'}>
-        <div class={styles.sidebar}>
-          <LayoutEditor jam={jam} />
-        </div>
-      </Show>
-
       {/* Sequencer grid */}
       <div class={styles.sequencer}>
         <Grid jam={jam} />
       </div>
+
+      {/* Action bar for column editing */}
+      <ActionBar jam={jam} />
 
       {/* Transport controls */}
       <div class={styles.transport}>
@@ -91,13 +76,6 @@ export function App() {
         />
         <span class={styles.bpmLabel}>BPM</span>
       </div>
-
-      {/* Layout editor for portrait mode */}
-      <Show when={orientation() === 'portrait' && jam.selectedColumnIndex() !== null}>
-        <div class={styles.sidebar}>
-          <LayoutEditor jam={jam} />
-        </div>
-      </Show>
     </div>
   )
 }

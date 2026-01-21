@@ -1,10 +1,10 @@
 /**
- * Layout Editor
+ * Action Bar
  *
- * Edit layout and slot assignments for a selected column.
+ * Compact horizontal bar for editing selected column properties.
  */
 
-import type { JamColumnDuration, JamLayoutType } from '@eddy/lexicons'
+import type { JamLayoutType } from '@eddy/lexicons'
 import clsx from 'clsx'
 import { createMemo, For, Index, Show } from 'solid-js'
 import { getSlotCount } from '~/primitives/compile-jam-timeline'
@@ -17,17 +17,9 @@ import styles from './Layout.module.css'
 /*                                                                                */
 /**********************************************************************************/
 
-export interface LayoutEditorProps {
+export interface ActionBarProps {
   jam: Jam
 }
-
-/**********************************************************************************/
-/*                                                                                */
-/*                                   Constants                                    */
-/*                                                                                */
-/**********************************************************************************/
-
-const DURATIONS: JamColumnDuration[] = ['1', '1/2', '1/4', '1/8', '1/16']
 
 /**********************************************************************************/
 /*                                                                                */
@@ -37,14 +29,11 @@ const DURATIONS: JamColumnDuration[] = ['1', '1/2', '1/4', '1/8', '1/16']
 
 interface LayoutPreviewProps {
   layout: JamLayoutType
-  slots?: string[]
   size?: number
-  showSlotNumbers?: boolean
 }
 
 function LayoutPreview(props: LayoutPreviewProps) {
-  const size = () => props.size ?? 64
-  const slots = () => props.slots ?? []
+  const size = () => props.size ?? 24
   const slotCount = () => getSlotCount(props.layout)
 
   return (
@@ -54,11 +43,7 @@ function LayoutPreview(props: LayoutPreviewProps) {
       style={{ width: `${size()}px`, height: `${size()}px` }}
     >
       <Index each={Array(slotCount())}>
-        {(_, index) => (
-          <div class={clsx(styles.previewSlot, slots()[index] && styles.hasTrack)}>
-            {props.showSlotNumbers ? index + 1 : ''}
-          </div>
-        )}
+        {() => <div class={styles.previewSlot} />}
       </Index>
     </div>
   )
@@ -66,40 +51,11 @@ function LayoutPreview(props: LayoutPreviewProps) {
 
 /**********************************************************************************/
 /*                                                                                */
-/*                               Layout Selector                                  */
+/*                                  Action Bar                                    */
 /*                                                                                */
 /**********************************************************************************/
 
-interface LayoutSelectorProps {
-  value: JamLayoutType
-  availableLayouts: JamLayoutType[]
-  onChange: (layout: JamLayoutType) => void
-}
-
-function LayoutSelector(props: LayoutSelectorProps) {
-  return (
-    <div class={styles.selector}>
-      <For each={props.availableLayouts}>
-        {layout => (
-          <button
-            class={clsx(styles.selectorButton, props.value === layout && styles.selected)}
-            onClick={() => props.onChange(layout)}
-          >
-            <LayoutPreview layout={layout} size={48} showSlotNumbers />
-          </button>
-        )}
-      </For>
-    </div>
-  )
-}
-
-/**********************************************************************************/
-/*                                                                                */
-/*                                Layout Editor                                   */
-/*                                                                                */
-/**********************************************************************************/
-
-export function LayoutEditor(props: LayoutEditorProps) {
+export function ActionBar(props: ActionBarProps) {
   const { jam } = props
 
   const selectedColumn = createMemo(() => jam.selectedColumn())
@@ -116,53 +72,78 @@ export function LayoutEditor(props: LayoutEditorProps) {
     }
   }
 
-  function handleDurationChange(duration: JamColumnDuration) {
-    const index = selectedIndex()
-    if (index !== null) {
-      jam.setColumnDuration(index, duration)
+  function parseDuration(value: string): { numerator: number; denominator: number } {
+    if (value.includes('/')) {
+      const [num, denom] = value.split('/')
+      return { numerator: parseInt(num) || 1, denominator: parseInt(denom) || 1 }
     }
+    return { numerator: parseInt(value) || 1, denominator: 1 }
+  }
+
+  function formatDuration(numerator: number, denominator: number): string {
+    return denominator === 1 ? `${numerator}` : `${numerator}/${denominator}`
   }
 
   return (
-    <div class={styles.container}>
+    <div class={styles.actionBar}>
       <Show
         when={selectedColumn()}
-        fallback={<div class={styles.placeholder}>Select a column to edit</div>}
+        fallback={<span class={styles.hint}>Select a column</span>}
       >
-        {column => (
-          <>
-            {/* Duration selector */}
-            <div class={styles.section}>
-              <span class={styles.label}>Duration</span>
-              <div class={styles.buttonRow}>
-                <For each={DURATIONS}>
-                  {duration => (
+        {column => {
+          const duration = () => parseDuration(column().duration)
+
+          return (
+            <>
+              {/* Duration inputs */}
+              <div class={styles.durationGroup}>
+                <input
+                  type="number"
+                  class={styles.durationInput}
+                  value={duration().numerator}
+                  min={1}
+                  onInput={event => {
+                    const num = parseInt(event.currentTarget.value) || 1
+                    const index = selectedIndex()
+                    if (index !== null) {
+                      jam.setColumnDuration(index, formatDuration(num, duration().denominator))
+                    }
+                  }}
+                />
+                <span class={styles.durationSeparator}>/</span>
+                <input
+                  type="number"
+                  class={styles.durationInput}
+                  value={duration().denominator}
+                  min={1}
+                  onInput={event => {
+                    const denom = parseInt(event.currentTarget.value) || 1
+                    const index = selectedIndex()
+                    if (index !== null) {
+                      jam.setColumnDuration(index, formatDuration(duration().numerator, denom))
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Layout selector */}
+              <div class={styles.layoutGroup}>
+                <For each={availableLayouts()}>
+                  {layout => (
                     <button
-                      class={clsx(
-                        styles.durationButton,
-                        column().duration === duration && styles.selected,
-                      )}
-                      onClick={() => handleDurationChange(duration)}
+                      class={clsx(styles.layoutButton, column().layout === layout && styles.selected)}
+                      onClick={() => handleLayoutChange(layout)}
                     >
-                      {duration}
+                      <LayoutPreview layout={layout} size={24} />
                     </button>
                   )}
                 </For>
               </div>
-            </div>
 
-            {/* Layout selector */}
-            <div class={styles.section}>
-              <span class={styles.label}>Layout</span>
-              <LayoutSelector
-                value={column().layout}
-                availableLayouts={availableLayouts()}
-                onChange={handleLayoutChange}
-              />
-            </div>
+              {/* Spacer */}
+              <div style={{ flex: 1 }} />
 
-            {/* Column actions */}
-            <div class={styles.buttonRow}>
+              {/* Column actions */}
               <button
                 class={styles.actionButton}
                 onClick={() => {
@@ -185,9 +166,9 @@ export function LayoutEditor(props: LayoutEditorProps) {
               >
                 Delete
               </button>
-            </div>
-          </>
-        )}
+            </>
+          )
+        }}
       </Show>
     </div>
   )
