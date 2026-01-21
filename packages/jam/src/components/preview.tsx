@@ -225,7 +225,7 @@ export function Preview(props: PreviewProps) {
       >
         <span class={styles.dragIcon}>⋮⋮</span>
         <span class={styles.columnInfo}>
-          Column {jam.currentColumnIndex() + 1} / {jam.metadata.columns.length}
+          Column {jam.currentColumnIndex() + 1} / {jam.metadata.columnCount}
         </span>
       </div>
       <div class={styles.preview}>

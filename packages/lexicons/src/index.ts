@@ -132,6 +132,6 @@ export type Curve = CurveKeyframe | CurveEnvelope | CurveLfo
 
 // Jam types
 export type JamMetadata = v.InferOutput<typeof jamValidators.metadata>
-export type JamColumn = v.InferOutput<typeof jamValidators.column>
+export type JamLayoutRegion = v.InferOutput<typeof jamValidators.layoutRegion>
 export type JamColumnDuration = v.InferOutput<typeof jamValidators.columnDuration>
 export type JamLayoutType = v.InferOutput<typeof jamValidators.layoutType>

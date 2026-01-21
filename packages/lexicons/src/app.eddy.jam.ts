@@ -7,7 +7,7 @@ export default {
     metadata: {
       type: 'object',
       description: 'Jam-specific project metadata for grid-based video sequencing',
-      required: ['columns', 'bpm'],
+      required: ['bpm', 'columnCount', 'columnDuration', 'layoutRegions'],
       properties: {
         bpm: {
           type: 'integer',
@@ -16,28 +16,45 @@ export default {
           maximum: 300,
           default: 120,
         },
-        columns: {
+        columnCount: {
+          type: 'integer',
+          description: 'Number of columns in the grid',
+          minimum: 1,
+          maximum: 256,
+          default: 8,
+        },
+        columnDuration: {
+          type: 'ref',
+          ref: '#columnDuration',
+          description: 'Duration per column in bars (same for all columns)',
+        },
+        layoutRegions: {
           type: 'array',
-          items: { type: 'ref', ref: '#column' },
+          items: { type: 'ref', ref: '#layoutRegion' },
           maxLength: 256,
-          description: 'Column definitions (time segments with layouts)',
+          description: 'Layout regions spanning multiple columns',
         },
       },
     },
 
-    column: {
+    layoutRegion: {
       type: 'object',
-      description: 'A time segment with layout configuration',
-      required: ['id', 'duration', 'layout'],
+      description: 'A layout region spanning one or more columns',
+      required: ['id', 'startColumn', 'endColumn', 'layout'],
       properties: {
         id: {
           type: 'string',
           maxLength: 64,
         },
-        duration: {
-          type: 'ref',
-          ref: '#columnDuration',
-          description: 'Duration in bars',
+        startColumn: {
+          type: 'integer',
+          description: 'Start column index (inclusive)',
+          minimum: 0,
+        },
+        endColumn: {
+          type: 'integer',
+          description: 'End column index (exclusive)',
+          minimum: 1,
         },
         layout: {
           type: 'ref',

@@ -1,11 +1,11 @@
 /**
  * Compile Jam Timeline
  *
- * Converts Jam columns + Project data into a CompiledTimeline.
- * Columns define time segments and layouts, tracks fill slots.
+ * Converts Jam metadata + Project data into a CompiledTimeline.
+ * Layout regions define time spans with specific layouts, tracks fill slots.
  */
 
-import type { Project, Track, JamColumn, JamColumnDuration, JamLayoutType } from '@eddy/lexicons'
+import type { Project, Track, JamColumnDuration, JamLayoutType, JamMetadata } from '@eddy/lexicons'
 import type {
   CanvasSize,
   CompiledTimeline,
@@ -22,8 +22,7 @@ import type {
 
 export interface JamCompileOptions {
   project: Project
-  columns: JamColumn[]
-  bpm: number
+  metadata: JamMetadata
   canvasSize: CanvasSize
 }
 
@@ -199,30 +198,33 @@ function findActiveClip(
 }
 
 /**
- * Compile jam columns into a layout timeline.
+ * Compile jam metadata into a layout timeline.
  */
 export function compileJamTimeline(options: JamCompileOptions): CompiledTimeline {
-  const { project, columns, bpm, canvasSize } = options
+  const { project, metadata, canvasSize } = options
+  const { bpm, columnCount, columnDuration, layoutRegions } = metadata
 
-  if (columns.length === 0) {
+  if (columnCount === 0) {
     return { duration: 0, segments: [] }
   }
 
   const trackMap = buildTrackMap(project)
   const segments: LayoutSegment[] = []
-  let currentTime = 0
+  const columnDurationSec = durationToSeconds(columnDuration, bpm)
+  const totalDuration = columnCount * columnDurationSec
 
-  for (const column of columns) {
-    const columnDuration = durationToSeconds(column.duration, bpm)
-    const startTime = currentTime
-    const endTime = currentTime + columnDuration
+  // Process each layout region
+  for (const region of layoutRegions) {
+    const startTime = region.startColumn * columnDurationSec
+    const endTime = region.endColumn * columnDurationSec
+    const regionDuration = endTime - startTime
 
-    // Calculate layout slots for this column
-    const layoutSlots = calculateLayoutSlots(column.layout, canvasSize)
+    // Calculate layout slots for this region
+    const layoutSlots = calculateLayoutSlots(region.layout, canvasSize)
     const placements: Placement[] = []
 
     // Assign tracks to slots
-    const slots = column.slots ?? []
+    const slots = region.slots ?? []
     for (let slotIndex = 0; slotIndex < slots.length && slotIndex < layoutSlots.length; slotIndex++) {
       const trackId = slots[slotIndex]
       if (!trackId) continue
@@ -243,7 +245,7 @@ export function compileJamTimeline(options: JamCompileOptions): CompiledTimeline
         trackId: track.id,
         viewport: slot.viewport,
         in: activeClip.sourceTime,
-        out: activeClip.sourceTime + columnDuration * activeClip.speed,
+        out: activeClip.sourceTime + regionDuration * activeClip.speed,
         speed: activeClip.speed,
         effectId: '',
         effectKeys: [],
@@ -255,12 +257,10 @@ export function compileJamTimeline(options: JamCompileOptions): CompiledTimeline
     if (placements.length > 0) {
       segments.push({ startTime, endTime, placements })
     }
-
-    currentTime = endTime
   }
 
   return {
-    duration: currentTime,
+    duration: totalDuration,
     segments,
   }
 }
@@ -273,31 +273,3 @@ export function compileJamTimeline(options: JamCompileOptions): CompiledTimeline
 
 /** Get the slot count for a layout type (useful for UI) */
 export { getSlotCount }
-
-/** Calculate column time boundaries (useful for snapping) */
-export function calculateColumnBoundaries(columns: JamColumn[], bpm: number): number[] {
-  const boundaries: number[] = [0]
-  let currentTime = 0
-
-  for (const column of columns) {
-    currentTime += durationToSeconds(column.duration, bpm)
-    boundaries.push(currentTime)
-  }
-
-  return boundaries
-}
-
-/** Find column index at a given time */
-export function findColumnAtTime(columns: JamColumn[], bpm: number, time: number): number {
-  let currentTime = 0
-
-  for (let index = 0; index < columns.length; index++) {
-    const columnDuration = durationToSeconds(columns[index].duration, bpm)
-    if (time >= currentTime && time < currentTime + columnDuration) {
-      return index
-    }
-    currentTime += columnDuration
-  }
-
-  return columns.length - 1
-}

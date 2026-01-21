@@ -9,20 +9,15 @@ import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, onCleanup } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
 import type {
-  JamColumn,
   JamColumnDuration,
+  JamLayoutRegion,
   JamLayoutType,
   JamMetadata,
   Project,
   Track,
 } from '@eddy/lexicons'
 import type { CompiledTimeline } from '@eddy/timeline'
-import {
-  compileJamTimeline,
-  findColumnAtTime,
-  getSlotCount,
-  calculateColumnBoundaries,
-} from './compile-jam-timeline'
+import { compileJamTimeline, getSlotCount } from './compile-jam-timeline'
 
 /**********************************************************************************/
 /*                                                                                */
@@ -106,15 +101,14 @@ function makeDefaultProject(): Project {
 function makeDefaultMetadata(): JamMetadata {
   return {
     bpm: 120,
-    columns: [
-      { id: 'col-0', duration: '1', layout: 'full', slots: ['track-0'] },
-      { id: 'col-1', duration: '1', layout: '2x2', slots: ['track-0', 'track-1', 'track-2', 'track-3'] },
-      { id: 'col-2', duration: '1/2', layout: 'h-split', slots: ['track-0', 'track-1'] },
-      { id: 'col-3', duration: '1/2', layout: 'v-split', slots: ['track-2', 'track-3'] },
-      { id: 'col-4', duration: '1', layout: 'pip', slots: ['track-0', 'track-1'] },
-      { id: 'col-5', duration: '1/4', layout: 'full', slots: ['track-2'] },
-      { id: 'col-6', duration: '1/4', layout: 'full', slots: ['track-3'] },
-      { id: 'col-7', duration: '1/2', layout: '3-up', slots: ['track-0', 'track-1', 'track-2'] },
+    columnCount: 8,
+    columnDuration: '1',
+    layoutRegions: [
+      { id: 'region-0', startColumn: 0, endColumn: 1, layout: 'full', slots: ['track-0'] },
+      { id: 'region-1', startColumn: 1, endColumn: 2, layout: '2x2', slots: ['track-0', 'track-1', 'track-2', 'track-3'] },
+      { id: 'region-2', startColumn: 2, endColumn: 4, layout: 'h-split', slots: ['track-0', 'track-1'] },
+      { id: 'region-3', startColumn: 4, endColumn: 6, layout: 'pip', slots: ['track-0', 'track-1'] },
+      { id: 'region-4', startColumn: 6, endColumn: 8, layout: '3-up', slots: ['track-0', 'track-1', 'track-2'] },
     ],
   }
 }
@@ -181,31 +175,60 @@ export function createJam(options: CreateJamOptions) {
   const timeline: Accessor<CompiledTimeline> = createMemo(() =>
     compileJamTimeline({
       project,
-      columns: metadata.columns,
-      bpm: metadata.bpm,
+      metadata,
       canvasSize,
     })
   )
 
   const duration = createMemo(() => timeline().duration)
 
-  const columnBoundaries = createMemo(() =>
-    calculateColumnBoundaries(metadata.columns, metadata.bpm)
-  )
+  /** Get duration of a single column in milliseconds */
+  const columnDurationMs = createMemo(() => {
+    const barMs = (60 / metadata.bpm) * 4 * 1000 // 4 beats per bar
+    return parseDuration(metadata.columnDuration) * barMs
+  })
 
-  const currentColumnIndex = createMemo(() =>
-    findColumnAtTime(metadata.columns, metadata.bpm, currentTime())
-  )
+  /** Get column boundaries in seconds */
+  const columnBoundaries = createMemo(() => {
+    const boundaries: number[] = []
+    const colDurationSec = columnDurationMs() / 1000
+    for (let i = 0; i <= metadata.columnCount; i++) {
+      boundaries.push(i * colDurationSec)
+    }
+    return boundaries
+  })
 
-  const selectedColumn = createMemo(() => {
+  const currentColumnIndex = createMemo(() => {
+    const time = currentTime()
+    const colDuration = columnDurationMs() / 1000
+    return Math.min(Math.floor(time / colDuration), metadata.columnCount - 1)
+  })
+
+  /** Get the layout region for a given column */
+  const getLayoutRegionForColumn = (columnIndex: number): JamLayoutRegion | null => {
+    return metadata.layoutRegions.find(
+      region => columnIndex >= region.startColumn && columnIndex < region.endColumn
+    ) ?? null
+  }
+
+  const selectedLayoutRegion = createMemo(() => {
     const index = selectedColumnIndex()
-    return index !== null ? metadata.columns[index] : null
+    return index !== null ? getLayoutRegionForColumn(index) : null
   })
 
   // Column boundaries in milliseconds (for clip comparison)
   const columnBoundariesMs = createMemo(() =>
     columnBoundaries().map(sec => sec * 1000)
   )
+
+  /** Parse duration string to bars (e.g., '1/2' -> 0.5) */
+  function parseDuration(duration: JamColumnDuration): number {
+    if (duration.includes('/')) {
+      const [num, denom] = duration.split('/').map(Number)
+      return num / denom
+    }
+    return Number(duration)
+  }
 
   /**********************************************************************************/
   /*                                                                                */
@@ -517,7 +540,7 @@ export function createJam(options: CreateJamOptions) {
     if (position === 'none') {
       // Check if adjacent column has a clip we can extend
       const prevPosition = columnIndex > 0 ? getClipPosition(trackId, columnIndex - 1) : 'none'
-      const nextPosition = columnIndex < metadata.columns.length - 1 ? getClipPosition(trackId, columnIndex + 1) : 'none'
+      const nextPosition = columnIndex < metadata.columnCount - 1 ? getClipPosition(trackId, columnIndex + 1) : 'none'
 
       if (prevPosition !== 'none' && prevPosition !== 'end' && prevPosition !== 'single') {
         // Extend previous clip forward
@@ -587,170 +610,135 @@ export function createJam(options: CreateJamOptions) {
     }
   })
 
-  // Auto-sync slots and layout when clips change
-  createEffect(() => {
-    // Track dependencies: project.tracks clips and metadata.columns
-    const _tracks = project.tracks.map(t => t.clips)
-    const _columns = metadata.columns
-
-    // Update each column's slots and layout based on clips
-    for (let columnIndex = 0; columnIndex < _columns.length; columnIndex++) {
-      const tracksWithClips = getTracksWithClipsInColumn(columnIndex)
-      const validLayouts = getValidLayoutsForColumn(columnIndex)
-      const currentLayout = _columns[columnIndex].layout
-
-      // Update slots to match tracks with clips
-      setMetadata('columns', columnIndex, 'slots', tracksWithClips)
-
-      // Update layout if current layout is no longer valid
-      if (!validLayouts.includes(currentLayout)) {
-        setMetadata('columns', columnIndex, 'layout', validLayouts[0])
-      }
-    }
-  })
-
   /**********************************************************************************/
   /*                                                                                */
   /*                                Column Actions                                  */
   /*                                                                                */
   /**********************************************************************************/
 
-  function addColumn(afterIndex?: number) {
-    const newColumn: JamColumn = {
-      id: `col-${generateId()}`,
-      duration: '1',
-      layout: 'full',
+  function addColumn() {
+    setMetadata('columnCount', count => count + 1)
+  }
+
+  function removeColumn() {
+    if (metadata.columnCount <= 1) return // Keep at least one column
+
+    const lastColumn = metadata.columnCount - 1
+
+    // Shrink any layout regions that extend past the new column count
+    setMetadata('layoutRegions', regions =>
+      regions
+        .map(region => {
+          if (region.endColumn > lastColumn) {
+            return { ...region, endColumn: lastColumn }
+          }
+          return region
+        })
+        .filter(region => region.startColumn < lastColumn)
+    )
+
+    setMetadata('columnCount', count => count - 1)
+
+    // Adjust selection if needed
+    if (selectedColumnIndex() !== null && selectedColumnIndex()! >= metadata.columnCount - 1) {
+      setSelectedColumnIndex(metadata.columnCount - 2)
+    }
+  }
+
+  function setColumnDuration(duration: JamColumnDuration) {
+    setMetadata('columnDuration', duration)
+  }
+
+  /**********************************************************************************/
+  /*                                                                                */
+  /*                              Layout Region Actions                             */
+  /*                                                                                */
+  /**********************************************************************************/
+
+  /** Find the index of the layout region containing a column */
+  function findLayoutRegionIndex(columnIndex: number): number {
+    return metadata.layoutRegions.findIndex(
+      region => columnIndex >= region.startColumn && columnIndex < region.endColumn
+    )
+  }
+
+  /** Create or update a layout region for a range of columns */
+  function setLayoutRegion(startColumn: number, endColumn: number, layout: JamLayoutType) {
+    // Remove any existing regions that overlap with this range
+    const newRegions = metadata.layoutRegions.filter(
+      region => region.endColumn <= startColumn || region.startColumn >= endColumn
+    )
+
+    // Add the new region
+    const newRegion: JamLayoutRegion = {
+      id: `region-${generateId()}`,
+      startColumn,
+      endColumn,
+      layout,
       slots: [],
     }
 
-    setMetadata('columns', columns => {
-      const index = afterIndex !== undefined ? afterIndex + 1 : columns.length
-      return [...columns.slice(0, index), newColumn, ...columns.slice(index)]
-    })
-
-    return newColumn.id
-  }
-
-  function duplicateColumn(index: number) {
-    const source = metadata.columns[index]
-    if (!source) return
-
-    const newColumn: JamColumn = {
-      id: `col-${generateId()}`,
-      duration: source.duration,
-      layout: source.layout,
-      slots: [...(source.slots ?? [])],
+    // Insert in sorted order by startColumn
+    const insertIndex = newRegions.findIndex(r => r.startColumn > startColumn)
+    if (insertIndex === -1) {
+      newRegions.push(newRegion)
+    } else {
+      newRegions.splice(insertIndex, 0, newRegion)
     }
 
-    setMetadata('columns', columns => {
-      return [...columns.slice(0, index + 1), newColumn, ...columns.slice(index + 1)]
-    })
-
-    return newColumn.id
+    setMetadata('layoutRegions', newRegions)
   }
 
-  function removeColumn(index: number) {
-    if (metadata.columns.length <= 1) return // Keep at least one column
+  /** Remove layout region at column (merges with adjacent or creates gap) */
+  function removeLayoutRegion(columnIndex: number) {
+    const regionIndex = findLayoutRegionIndex(columnIndex)
+    if (regionIndex === -1) return
 
-    setMetadata('columns', columns => columns.filter((_, i) => i !== index))
-
-    // Adjust selection if needed
-    if (selectedColumnIndex() === index) {
-      setSelectedColumnIndex(null)
-    } else if (selectedColumnIndex() !== null && selectedColumnIndex()! > index) {
-      setSelectedColumnIndex(i => i! - 1)
-    }
+    setMetadata('layoutRegions', regions => regions.filter((_, i) => i !== regionIndex))
   }
 
-  function setColumnDuration(index: number, duration: JamColumnDuration) {
-    setMetadata('columns', index, 'duration', duration)
-  }
+  /** Assign a slot in a layout region */
+  function assignSlotInRegion(regionIndex: number, slotIndex: number, trackId: string | null) {
+    if (regionIndex < 0 || regionIndex >= metadata.layoutRegions.length) return
 
-  function setColumnLayout(index: number, layout: JamLayoutType) {
-    // Keep all slots - excess slots beyond layout's slot count become inactive
-    // but are preserved in case user switches to a larger layout
-    setMetadata('columns', index, 'layout', layout)
-  }
-
-  /**********************************************************************************/
-  /*                                                                                */
-  /*                                 Slot Actions                                   */
-  /*                                                                                */
-  /**********************************************************************************/
-
-  function assignSlot(columnIndex: number, slotIndex: number, trackId: string | null) {
-    setMetadata('columns', columnIndex, produce((column: JamColumn) => {
-      if (!column.slots) {
-        column.slots = []
+    setMetadata('layoutRegions', regionIndex, produce((region: JamLayoutRegion) => {
+      if (!region.slots) {
+        region.slots = []
       }
 
       // Ensure array is large enough
-      while (column.slots.length <= slotIndex) {
-        column.slots.push('')
+      while (region.slots.length <= slotIndex) {
+        region.slots.push('')
       }
 
-      // Remove trackId from any other slot in this column first
+      // Remove trackId from any other slot in this region first
       if (trackId) {
-        column.slots = column.slots.map(id => (id === trackId ? '' : id))
+        region.slots = region.slots.map(id => (id === trackId ? '' : id))
       }
 
       // Assign to target slot
-      column.slots[slotIndex] = trackId ?? ''
+      region.slots[slotIndex] = trackId ?? ''
     }))
   }
 
-  function clearSlot(columnIndex: number, slotIndex: number) {
-    assignSlot(columnIndex, slotIndex, null)
-  }
-
-  /** Toggle a track's presence in a column (for grid painting) */
-  function toggleTrackInColumn(columnIndex: number, trackId: string) {
-    const column = metadata.columns[columnIndex]
-    if (!column) return
-
-    const slots = column.slots ?? []
-    const existingSlotIndex = slots.indexOf(trackId)
-
-    if (existingSlotIndex >= 0) {
-      // Track is in column - remove it
-      clearSlot(columnIndex, existingSlotIndex)
-    } else {
-      // Track not in column - add to first empty slot
-      const maxSlots = getSlotCount(column.layout)
-      const emptySlotIndex = slots.findIndex((id, i) => i < maxSlots && !id)
-
-      if (emptySlotIndex >= 0) {
-        assignSlot(columnIndex, emptySlotIndex, trackId)
-      } else if (slots.length < maxSlots) {
-        assignSlot(columnIndex, slots.length, trackId)
-      }
-      // If no empty slots, do nothing
-    }
-  }
-
-  /** Check if a track is active in a column */
+  /** Check if a track is in the layout region containing a column */
   function isTrackInColumn(columnIndex: number, trackId: string): boolean {
-    const column = metadata.columns[columnIndex]
-    return column?.slots?.includes(trackId) ?? false
+    const region = getLayoutRegionForColumn(columnIndex)
+    return region?.slots?.includes(trackId) ?? false
   }
 
-  /** Check if a track continues from the previous column */
-  function trackContinuesFromPrevious(columnIndex: number, trackId: string): boolean {
-    if (columnIndex <= 0) return false
-    return isTrackInColumn(columnIndex - 1, trackId) && isTrackInColumn(columnIndex, trackId)
-  }
-
-  /** Check if a track continues to the next column */
-  function trackContinuesToNext(columnIndex: number, trackId: string): boolean {
-    if (columnIndex >= metadata.columns.length - 1) return false
-    return isTrackInColumn(columnIndex, trackId) && isTrackInColumn(columnIndex + 1, trackId)
-  }
-
-  /** Get slot index for a track in a column (or null if not present) */
+  /** Get slot index for a track in the region containing a column */
   function getTrackSlotIndex(columnIndex: number, trackId: string): number | null {
-    const column = metadata.columns[columnIndex]
-    const index = column?.slots?.indexOf(trackId) ?? -1
+    const region = getLayoutRegionForColumn(columnIndex)
+    const index = region?.slots?.indexOf(trackId) ?? -1
     return index >= 0 ? index : null
+  }
+
+  /** Set the layout type for a region containing a column */
+  function setRegionLayout(columnIndex: number, layout: JamLayoutType) {
+    const regionIndex = findLayoutRegionIndex(columnIndex)
+    if (regionIndex === -1) return
+    setMetadata('layoutRegions', regionIndex, 'layout', layout)
   }
 
   /**********************************************************************************/
@@ -774,11 +762,11 @@ export function createJam(options: CreateJamOptions) {
     // Remove from project
     setProject('tracks', tracks => tracks.filter(t => t.id !== trackId))
 
-    // Remove from all column slots
-    setMetadata('columns', produce((columns: JamColumn[]) => {
-      for (const column of columns) {
-        if (column.slots) {
-          column.slots = column.slots.map(id => (id === trackId ? '' : id))
+    // Remove from all layout region slots
+    setMetadata('layoutRegions', produce((regions: JamLayoutRegion[]) => {
+      for (const region of regions) {
+        if (region.slots) {
+          region.slots = region.slots.map(id => (id === trackId ? '' : id))
         }
       }
     }))
@@ -850,22 +838,24 @@ export function createJam(options: CreateJamOptions) {
     loop,
     orientation,
     selectedColumnIndex,
-    selectedColumn,
+    selectedLayoutRegion,
     currentColumnIndex,
     columnBoundaries,
+    columnDurationMs,
 
     // Column actions
     addColumn,
-    duplicateColumn,
     removeColumn,
     setColumnDuration,
-    setColumnLayout,
     selectColumn: setSelectedColumnIndex,
 
-    // Slot actions
-    assignSlot,
-    clearSlot,
-    toggleTrackInColumn,
+    // Layout region actions
+    getLayoutRegionForColumn,
+    findLayoutRegionIndex,
+    setLayoutRegion,
+    removeLayoutRegion,
+    setRegionLayout,
+    assignSlotInRegion,
     isTrackInColumn,
     getTrackSlotIndex,
     getSlotCount: (layout: JamLayoutType) => getSlotCount(layout),

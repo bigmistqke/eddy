@@ -12,10 +12,4 @@ export {
   type ClipSpan,
   type Jam,
 } from './create-jam'
-export {
-  compileJamTimeline,
-  calculateColumnBoundaries,
-  findColumnAtTime,
-  getSlotCount,
-  type JamCompileOptions,
-} from './compile-jam-timeline'
+export { compileJamTimeline, getSlotCount, type JamCompileOptions } from './compile-jam-timeline'
