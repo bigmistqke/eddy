@@ -1,11 +1,12 @@
 /**
  * Compile Jam Timeline
  *
- * Converts Jam metadata + Project data into a CompiledTimeline.
+ * Converts Jam metadata + MusicalProject data into a CompiledTimeline.
  * Layout regions define time spans with specific layouts, tracks fill slots.
+ * Uses musical time (bars) internally, converts to seconds for output.
  */
 
-import type { Project, Track, JamColumnDuration, JamLayoutType, JamMetadata } from '@eddy/lexicons'
+import type { MusicalProject, MusicalClip, Track, JamColumnDuration, JamLayoutType, JamMetadata } from '@eddy/lexicons'
 import type {
   CanvasSize,
   CompiledTimeline,
@@ -21,7 +22,7 @@ import type {
 /**********************************************************************************/
 
 export interface JamCompileOptions {
-  project: Project
+  project: MusicalProject
   metadata: JamMetadata
   canvasSize: CanvasSize
 }
@@ -60,13 +61,29 @@ function durationToSeconds(duration: JamColumnDuration, bpm: number): number {
   return secondsPerBar * DURATION_MULTIPLIERS[duration]
 }
 
+/** Convert bars to seconds */
+function barsToSeconds(bars: number, bpm: number): number {
+  const beatsPerBar = 4
+  const secondsPerBeat = 60 / bpm
+  return bars * beatsPerBar * secondsPerBeat
+}
+
 /** Build track lookup map */
-function buildTrackMap(project: Project): Map<string, Track> {
+function buildTrackMap(project: MusicalProject): Map<string, Track> {
   const trackMap = new Map<string, Track>()
   for (const track of project.tracks) {
     trackMap.set(track.id, track)
   }
   return trackMap
+}
+
+/** Build clip lookup map */
+function buildClipMap(project: MusicalProject): Map<string, MusicalClip> {
+  const clipMap = new Map<string, MusicalClip>()
+  for (const clip of project.clips) {
+    clipMap.set(clip.id, clip)
+  }
+  return clipMap
 }
 
 /**********************************************************************************/
@@ -172,21 +189,26 @@ function getSlotCount(layoutType: JamLayoutType): number {
 /**********************************************************************************/
 
 /**
- * Find the active clip in a track at a given timeline time.
+ * Find the active clip in a track at a given timeline time (in seconds).
  * Returns the clip and its source time, or null if no clip is active.
  */
 function findActiveClip(
   track: Track,
-  timelineTime: number,
+  clipMap: Map<string, MusicalClip>,
+  timelineTimeSec: number,
+  bpm: number,
 ): { clipId: string; sourceTime: number; speed: number } | null {
-  for (const clip of track.clips) {
-    const clipStart = clip.offset / 1000 // ms to seconds
-    const clipEnd = (clip.offset + clip.duration) / 1000
+  for (const clipId of track.clipIds) {
+    const clip = clipMap.get(clipId)
+    if (!clip) continue
 
-    if (timelineTime >= clipStart && timelineTime < clipEnd) {
-      const sourceOffset = (clip.sourceOffset ?? 0) / 1000
+    const clipStartSec = barsToSeconds(clip.bar, bpm)
+    const clipEndSec = barsToSeconds(clip.bar + clip.bars, bpm)
+
+    if (timelineTimeSec >= clipStartSec && timelineTimeSec < clipEndSec) {
+      const sourceOffset = clip.sourceBar ? barsToSeconds(clip.sourceBar, bpm) : 0
       const speed = clip.speed?.value ? clip.speed.value / 100 : 1
-      const timeInClip = (timelineTime - clipStart) * speed
+      const timeInClip = (timelineTimeSec - clipStartSec) * speed
       return {
         clipId: clip.id,
         sourceTime: sourceOffset + timeInClip,
@@ -209,6 +231,7 @@ export function compileJamTimeline(options: JamCompileOptions): CompiledTimeline
   }
 
   const trackMap = buildTrackMap(project)
+  const clipMap = buildClipMap(project)
   const segments: LayoutSegment[] = []
   const columnDurationSec = durationToSeconds(columnDuration, bpm)
   const totalDuration = columnCount * columnDurationSec
@@ -235,7 +258,7 @@ export function compileJamTimeline(options: JamCompileOptions): CompiledTimeline
       const slot = layoutSlots[slotIndex]
 
       // Find active clip at segment start
-      const activeClip = findActiveClip(track, startTime)
+      const activeClip = findActiveClip(track, clipMap, startTime, bpm)
       if (!activeClip) continue
 
       // Use track.id as clipId since jam model is 1 stem per track

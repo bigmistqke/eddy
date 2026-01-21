@@ -1,4 +1,4 @@
-import type { Project } from '@eddy/lexicons'
+import type { AbsoluteProject } from '@eddy/lexicons'
 import { describe, expect, it } from 'vitest'
 import {
   compileLayoutTimeline,
@@ -13,7 +13,7 @@ import {
 /**********************************************************************************/
 
 /** Create a minimal valid project for testing */
-function createTestProject(overrides: Partial<Project> = {}): Project {
+function createTestProject(overrides: Partial<AbsoluteProject> = {}): AbsoluteProject {
   return {
     title: 'Test Project',
     canvas: { width: 640, height: 360 },
@@ -25,42 +25,29 @@ function createTestProject(overrides: Partial<Project> = {}): Project {
       },
     ],
     tracks: [
+      { id: 'track-0', clipIds: ['clip-0'] },
+      { id: 'track-1', clipIds: ['clip-1'] },
+      { id: 'track-2', clipIds: ['clip-2'] },
+      { id: 'track-3', clipIds: [] },
+    ],
+    clips: [
       {
-        id: 'track-0',
-        clips: [
-          {
-            id: 'clip-0',
-            source: { type: 'stem', ref: { uri: 'at://did/app.eddy.stem/0', cid: 'cid0' } },
-            offset: 0,
-            duration: 10000, // 10 seconds
-          },
-        ],
+        id: 'clip-0',
+        source: { type: 'stem', ref: { uri: 'at://did/app.eddy.stem/0', cid: 'cid0' } },
+        offset: 0,
+        duration: 10000, // 10 seconds
       },
       {
-        id: 'track-1',
-        clips: [
-          {
-            id: 'clip-1',
-            source: { type: 'stem', ref: { uri: 'at://did/app.eddy.stem/1', cid: 'cid1' } },
-            offset: 0,
-            duration: 15000, // 15 seconds
-          },
-        ],
+        id: 'clip-1',
+        source: { type: 'stem', ref: { uri: 'at://did/app.eddy.stem/1', cid: 'cid1' } },
+        offset: 0,
+        duration: 15000, // 15 seconds
       },
       {
-        id: 'track-2',
-        clips: [
-          {
-            id: 'clip-2',
-            source: { type: 'stem', ref: { uri: 'at://did/app.eddy.stem/2', cid: 'cid2' } },
-            offset: 5000, // starts at 5 seconds
-            duration: 10000, // 10 seconds
-          },
-        ],
-      },
-      {
-        id: 'track-3',
-        clips: [],
+        id: 'clip-2',
+        source: { type: 'stem', ref: { uri: 'at://did/app.eddy.stem/2', cid: 'cid2' } },
+        offset: 5000, // starts at 5 seconds
+        duration: 10000, // 10 seconds
       },
     ],
     createdAt: new Date().toISOString(),
@@ -200,7 +187,7 @@ describe('compileLayoutTimeline', () => {
 
 describe('nested groups', () => {
   it('compiles clip with group source', () => {
-    const project: Project = {
+    const project: AbsoluteProject = {
       title: 'Nested Test',
       canvas: { width: 640, height: 360 },
       groups: [
@@ -215,38 +202,28 @@ describe('nested groups', () => {
         },
       ],
       tracks: [
+        { id: 'main-track', clipIds: ['group-clip'] },
+        { id: 'inner-track-a', clipIds: ['stem-a'] },
+        { id: 'inner-track-b', clipIds: ['stem-b'] },
+      ],
+      clips: [
         {
-          id: 'main-track',
-          clips: [
-            {
-              id: 'group-clip',
-              source: { type: 'group', id: 'nested-group' },
-              offset: 0,
-              duration: 10000, // 10 seconds
-            },
-          ],
+          id: 'group-clip',
+          source: { type: 'group', id: 'nested-group' },
+          offset: 0,
+          duration: 10000, // 10 seconds
         },
         {
-          id: 'inner-track-a',
-          clips: [
-            {
-              id: 'stem-a',
-              source: { type: 'stem', ref: { uri: 'at://did/stem-a', cid: 'cid-a' } },
-              offset: 0,
-              duration: 10000,
-            },
-          ],
+          id: 'stem-a',
+          source: { type: 'stem', ref: { uri: 'at://did/stem-a', cid: 'cid-a' } },
+          offset: 0,
+          duration: 10000,
         },
         {
-          id: 'inner-track-b',
-          clips: [
-            {
-              id: 'stem-b',
-              source: { type: 'stem', ref: { uri: 'at://did/stem-b', cid: 'cid-b' } },
-              offset: 0,
-              duration: 10000,
-            },
-          ],
+          id: 'stem-b',
+          source: { type: 'stem', ref: { uri: 'at://did/stem-b', cid: 'cid-b' } },
+          offset: 0,
+          duration: 10000,
         },
       ],
       createdAt: new Date().toISOString(),
@@ -272,7 +249,7 @@ describe('nested groups', () => {
     // This is the jam.eddy.dj use case:
     // First 5 seconds: vertical split (1 col, 2 rows)
     // Next 5 seconds: horizontal split (2 cols, 1 row)
-    const project: Project = {
+    const project: AbsoluteProject = {
       title: 'Layout Transition Test',
       canvas: { width: 640, height: 360 },
       groups: [
@@ -292,44 +269,34 @@ describe('nested groups', () => {
         },
       ],
       tracks: [
+        { id: 'sequencer-track', clipIds: ['segment-1', 'segment-2'] },
+        { id: 'track-a', clipIds: ['clip-a'] },
+        { id: 'track-b', clipIds: ['clip-b'] },
+      ],
+      clips: [
         {
-          id: 'sequencer-track',
-          clips: [
-            {
-              id: 'segment-1',
-              source: { type: 'group', id: 'layout-vertical' },
-              offset: 0,
-              duration: 5000,
-            },
-            {
-              id: 'segment-2',
-              source: { type: 'group', id: 'layout-horizontal' },
-              offset: 5000,
-              duration: 5000,
-            },
-          ],
+          id: 'segment-1',
+          source: { type: 'group', id: 'layout-vertical' },
+          offset: 0,
+          duration: 5000,
         },
         {
-          id: 'track-a',
-          clips: [
-            {
-              id: 'clip-a',
-              source: { type: 'stem', ref: { uri: 'at://did/stem-a', cid: 'cid-a' } },
-              offset: 0,
-              duration: 10000,
-            },
-          ],
+          id: 'segment-2',
+          source: { type: 'group', id: 'layout-horizontal' },
+          offset: 5000,
+          duration: 5000,
         },
         {
-          id: 'track-b',
-          clips: [
-            {
-              id: 'clip-b',
-              source: { type: 'stem', ref: { uri: 'at://did/stem-b', cid: 'cid-b' } },
-              offset: 0,
-              duration: 10000,
-            },
-          ],
+          id: 'clip-a',
+          source: { type: 'stem', ref: { uri: 'at://did/stem-a', cid: 'cid-a' } },
+          offset: 0,
+          duration: 10000,
+        },
+        {
+          id: 'clip-b',
+          source: { type: 'stem', ref: { uri: 'at://did/stem-b', cid: 'cid-b' } },
+          offset: 0,
+          duration: 10000,
         },
       ],
       createdAt: new Date().toISOString(),
@@ -369,7 +336,7 @@ describe('nested groups', () => {
     // Group clip starts at 2 seconds on main timeline
     // Inner clip starts at 1 second relative to group
     // So inner clip should appear at 3 seconds on main timeline
-    const project: Project = {
+    const project: AbsoluteProject = {
       title: 'Time Offset Test',
       canvas: { width: 640, height: 360 },
       groups: [
@@ -377,27 +344,21 @@ describe('nested groups', () => {
         { id: 'inner-group', members: [{ id: 'inner-track' }] },
       ],
       tracks: [
+        { id: 'main-track', clipIds: ['group-clip'] },
+        { id: 'inner-track', clipIds: ['inner-stem'] },
+      ],
+      clips: [
         {
-          id: 'main-track',
-          clips: [
-            {
-              id: 'group-clip',
-              source: { type: 'group', id: 'inner-group' },
-              offset: 2000, // Starts at 2s
-              duration: 8000,
-            },
-          ],
+          id: 'group-clip',
+          source: { type: 'group', id: 'inner-group' },
+          offset: 2000, // Starts at 2s
+          duration: 8000,
         },
         {
-          id: 'inner-track',
-          clips: [
-            {
-              id: 'inner-stem',
-              source: { type: 'stem', ref: { uri: 'at://did/stem', cid: 'cid' } },
-              offset: 1000, // 1s relative to group
-              duration: 5000,
-            },
-          ],
+          id: 'inner-stem',
+          source: { type: 'stem', ref: { uri: 'at://did/stem', cid: 'cid' } },
+          offset: 1000, // 1s relative to group
+          duration: 5000,
         },
       ],
       createdAt: new Date().toISOString(),
@@ -419,7 +380,7 @@ describe('nested groups', () => {
 
   it('handles deeply nested groups', () => {
     // root -> group-a -> group-b -> track with stem
-    const project: Project = {
+    const project: AbsoluteProject = {
       title: 'Deep Nesting Test',
       canvas: { width: 640, height: 360 },
       groups: [
@@ -436,38 +397,28 @@ describe('nested groups', () => {
         },
       ],
       tracks: [
+        { id: 'track-level-1', clipIds: ['clip-1'] },
+        { id: 'track-level-2', clipIds: ['clip-2'] },
+        { id: 'track-level-3', clipIds: ['deep-stem'] },
+      ],
+      clips: [
         {
-          id: 'track-level-1',
-          clips: [
-            {
-              id: 'clip-1',
-              source: { type: 'group', id: 'group-level-1' },
-              offset: 0,
-              duration: 10000,
-            },
-          ],
+          id: 'clip-1',
+          source: { type: 'group', id: 'group-level-1' },
+          offset: 0,
+          duration: 10000,
         },
         {
-          id: 'track-level-2',
-          clips: [
-            {
-              id: 'clip-2',
-              source: { type: 'group', id: 'group-level-2' },
-              offset: 0,
-              duration: 10000,
-            },
-          ],
+          id: 'clip-2',
+          source: { type: 'group', id: 'group-level-2' },
+          offset: 0,
+          duration: 10000,
         },
         {
-          id: 'track-level-3',
-          clips: [
-            {
-              id: 'deep-stem',
-              source: { type: 'stem', ref: { uri: 'at://did/stem', cid: 'cid' } },
-              offset: 0,
-              duration: 10000,
-            },
-          ],
+          id: 'deep-stem',
+          source: { type: 'stem', ref: { uri: 'at://did/stem', cid: 'cid' } },
+          offset: 0,
+          duration: 10000,
         },
       ],
       createdAt: new Date().toISOString(),
@@ -487,7 +438,7 @@ describe('nested groups', () => {
     // Root group has 2x1 layout (left/right halves)
     // Left half contains a group with 1x2 layout (top/bottom)
     // So we get: left-top, left-bottom, and right-full
-    const project: Project = {
+    const project: AbsoluteProject = {
       title: 'Nested Viewport Test',
       canvas: { width: 640, height: 360 },
       groups: [
@@ -503,49 +454,35 @@ describe('nested groups', () => {
         },
       ],
       tracks: [
+        { id: 'track-left', clipIds: ['left-group-clip'] },
+        { id: 'track-right', clipIds: ['right-stem'] },
+        { id: 'track-top', clipIds: ['top-stem'] },
+        { id: 'track-bottom', clipIds: ['bottom-stem'] },
+      ],
+      clips: [
         {
-          id: 'track-left',
-          clips: [
-            {
-              id: 'left-group-clip',
-              source: { type: 'group', id: 'group-left-split' },
-              offset: 0,
-              duration: 10000,
-            },
-          ],
+          id: 'left-group-clip',
+          source: { type: 'group', id: 'group-left-split' },
+          offset: 0,
+          duration: 10000,
         },
         {
-          id: 'track-right',
-          clips: [
-            {
-              id: 'right-stem',
-              source: { type: 'stem', ref: { uri: 'at://did/right', cid: 'cid-r' } },
-              offset: 0,
-              duration: 10000,
-            },
-          ],
+          id: 'right-stem',
+          source: { type: 'stem', ref: { uri: 'at://did/right', cid: 'cid-r' } },
+          offset: 0,
+          duration: 10000,
         },
         {
-          id: 'track-top',
-          clips: [
-            {
-              id: 'top-stem',
-              source: { type: 'stem', ref: { uri: 'at://did/top', cid: 'cid-t' } },
-              offset: 0,
-              duration: 10000,
-            },
-          ],
+          id: 'top-stem',
+          source: { type: 'stem', ref: { uri: 'at://did/top', cid: 'cid-t' } },
+          offset: 0,
+          duration: 10000,
         },
         {
-          id: 'track-bottom',
-          clips: [
-            {
-              id: 'bottom-stem',
-              source: { type: 'stem', ref: { uri: 'at://did/bottom', cid: 'cid-b' } },
-              offset: 0,
-              duration: 10000,
-            },
-          ],
+          id: 'bottom-stem',
+          source: { type: 'stem', ref: { uri: 'at://did/bottom', cid: 'cid-b' } },
+          offset: 0,
+          duration: 10000,
         },
       ],
       createdAt: new Date().toISOString(),
@@ -656,23 +593,19 @@ describe('getActivePlacements', () => {
 describe('multiple clips per track', () => {
   it('handles multiple sequential clips', () => {
     const project = createTestProject({
-      tracks: [
+      tracks: [{ id: 'track-0', clipIds: ['clip-0a', 'clip-0b'] }],
+      clips: [
         {
-          id: 'track-0',
-          clips: [
-            {
-              id: 'clip-0a',
-              source: { type: 'stem', ref: { uri: 'at://did/app.eddy.stem/0a', cid: 'cid0a' } },
-              offset: 0,
-              duration: 5000,
-            },
-            {
-              id: 'clip-0b',
-              source: { type: 'stem', ref: { uri: 'at://did/app.eddy.stem/0b', cid: 'cid0b' } },
-              offset: 5000,
-              duration: 5000,
-            },
-          ],
+          id: 'clip-0a',
+          source: { type: 'stem', ref: { uri: 'at://did/app.eddy.stem/0a', cid: 'cid0a' } },
+          offset: 0,
+          duration: 5000,
+        },
+        {
+          id: 'clip-0b',
+          source: { type: 'stem', ref: { uri: 'at://did/app.eddy.stem/0b', cid: 'cid0b' } },
+          offset: 5000,
+          duration: 5000,
         },
       ],
       groups: [

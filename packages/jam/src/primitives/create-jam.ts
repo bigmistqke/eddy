@@ -2,7 +2,8 @@
  * Create Jam
  *
  * State management for the Jam app.
- * Manages project + columns, edit actions, and playback coordination.
+ * Uses musical time domain (bars) for clips.
+ * Tracks reference clips by ID; clips stored at project level.
  */
 
 import type { Accessor } from 'solid-js'
@@ -13,7 +14,8 @@ import type {
   JamLayoutRegion,
   JamLayoutType,
   JamMetadata,
-  Project,
+  MusicalClip,
+  MusicalProject,
   Track,
 } from '@eddy/lexicons'
 import type { CompiledTimeline } from '@eddy/timeline'
@@ -26,8 +28,8 @@ import { compileJamTimeline, getSlotCount } from './compile-jam-timeline'
 /**********************************************************************************/
 
 export interface CreateJamOptions {
-  /** Initial project data */
-  initialProject?: Project
+  /** Initial project data (musical time domain) */
+  initialProject?: MusicalProject
   /** Initial jam metadata */
   initialMetadata?: JamMetadata
   /** Initial track video URL mapping */
@@ -61,38 +63,24 @@ export interface ClipSpan {
 /*                                                                                */
 /**********************************************************************************/
 
-function makeDefaultProject(): Project {
-  // At 120 BPM, 1 bar = 2 seconds = 2000ms
-  const barMs = 2000
+function makeDefaultProject(): MusicalProject {
   return {
     schemaVersion: 1,
     title: 'Jam Session',
     canvas: { width: 640, height: 360 },
+    bpm: 12000, // 120 BPM (scaled by 100)
     groups: [],
     tracks: [
-      {
-        id: 'track-0',
-        name: 'Track 1',
-        clips: [
-          { id: 'clip-0-a', offset: 0, duration: barMs * 3 }, // Spans 3 columns
-        ],
-      },
-      {
-        id: 'track-1',
-        name: 'Track 2',
-        clips: [
-          { id: 'clip-1-a', offset: barMs, duration: barMs }, // Single column
-          { id: 'clip-1-b', offset: barMs * 2.5, duration: barMs }, // Single column (half bar offset)
-        ],
-      },
-      {
-        id: 'track-2',
-        name: 'Track 3',
-        clips: [
-          { id: 'clip-2-a', offset: barMs * 2, duration: barMs * 2 }, // Spans 2 columns
-        ],
-      },
-      { id: 'track-3', name: 'Track 4', clips: [] },
+      { id: 'track-0', name: 'Track 1', clipIds: ['clip-0-a'] },
+      { id: 'track-1', name: 'Track 2', clipIds: ['clip-1-a', 'clip-1-b'] },
+      { id: 'track-2', name: 'Track 3', clipIds: ['clip-2-a'] },
+      { id: 'track-3', name: 'Track 4', clipIds: [] },
+    ],
+    clips: [
+      { id: 'clip-0-a', bar: 0, bars: 3 },     // Spans 3 columns
+      { id: 'clip-1-a', bar: 1, bars: 1 },     // Single column
+      { id: 'clip-1-b', bar: 2.5, bars: 1 },   // Single column (half bar offset)
+      { id: 'clip-2-a', bar: 2, bars: 2 },     // Spans 2 columns
     ],
     createdAt: new Date().toISOString(),
   }
@@ -136,7 +124,7 @@ export function createJam(options: CreateJamOptions) {
   const { canvasSize } = options
 
   // Core state
-  const [project, setProject] = createStore<Project>(
+  const [project, setProject] = createStore<MusicalProject>(
     options.initialProject ?? makeDefaultProject()
   )
   const [metadata, setMetadata] = createStore<JamMetadata>(
@@ -158,7 +146,7 @@ export function createJam(options: CreateJamOptions) {
   let paintSession: {
     trackId: string
     paintedClipId: string
-    originalClips: Array<{ id: string; offset: number; duration: number }>
+    originalClips: Array<{ id: string; bar: number; bars: number }>
   } | null = null
   const [orientation, setOrientation] = createSignal<'portrait' | 'landscape'>(
     window.innerHeight > window.innerWidth ? 'portrait' : 'landscape'
@@ -182,27 +170,41 @@ export function createJam(options: CreateJamOptions) {
 
   const duration = createMemo(() => timeline().duration)
 
+  /** Get duration of a single column in bars */
+  const columnDurationBars = createMemo(() => parseDuration(metadata.columnDuration))
+
   /** Get duration of a single column in milliseconds */
   const columnDurationMs = createMemo(() => {
     const barMs = (60 / metadata.bpm) * 4 * 1000 // 4 beats per bar
-    return parseDuration(metadata.columnDuration) * barMs
+    return columnDurationBars() * barMs
   })
 
-  /** Get column boundaries in seconds */
-  const columnBoundaries = createMemo(() => {
+  /** Get column boundaries in bars (for clip comparison) */
+  const columnBoundariesBars = createMemo(() => {
     const boundaries: number[] = []
-    const colDurationSec = columnDurationMs() / 1000
+    const colDuration = columnDurationBars()
     for (let i = 0; i <= metadata.columnCount; i++) {
-      boundaries.push(i * colDurationSec)
+      boundaries.push(i * colDuration)
     }
     return boundaries
   })
+
+  /** Get column boundaries in seconds (for playback) */
+  const columnBoundaries = createMemo(() =>
+    columnBoundariesBars().map(bars => barsToSeconds(bars))
+  )
 
   const currentColumnIndex = createMemo(() => {
     const time = currentTime()
     const colDuration = columnDurationMs() / 1000
     return Math.min(Math.floor(time / colDuration), metadata.columnCount - 1)
   })
+
+  /** Convert bars to seconds */
+  function barsToSeconds(bars: number): number {
+    const barSec = (60 / metadata.bpm) * 4 // 4 beats per bar
+    return bars * barSec
+  }
 
   /** Get the layout region for a given column */
   const getLayoutRegionForColumn = (columnIndex: number): JamLayoutRegion | null => {
@@ -216,11 +218,6 @@ export function createJam(options: CreateJamOptions) {
     return index !== null ? getLayoutRegionForColumn(index) : null
   })
 
-  // Column boundaries in milliseconds (for clip comparison)
-  const columnBoundariesMs = createMemo(() =>
-    columnBoundaries().map(sec => sec * 1000)
-  )
-
   /** Parse duration string to bars (e.g., '1/2' -> 0.5) */
   function parseDuration(duration: JamColumnDuration): number {
     if (duration.includes('/')) {
@@ -228,6 +225,25 @@ export function createJam(options: CreateJamOptions) {
       return num / denom
     }
     return Number(duration)
+  }
+
+  /** Get clips for a track by looking up clipIds */
+  function getClipsForTrack(trackId: string): MusicalClip[] {
+    const track = project.tracks.find(t => t.id === trackId)
+    if (!track) return []
+    return track.clipIds
+      .map(id => project.clips.find(c => c.id === id))
+      .filter((c): c is MusicalClip => c !== undefined)
+  }
+
+  /** Find clip by ID in project */
+  function getClipById(clipId: string): MusicalClip | undefined {
+    return project.clips.find(c => c.id === clipId)
+  }
+
+  /** Find clip index in project.clips */
+  function getClipIndex(clipId: string): number {
+    return project.clips.findIndex(c => c.id === clipId)
   }
 
   /**********************************************************************************/
@@ -241,19 +257,22 @@ export function createJam(options: CreateJamOptions) {
     const track = project.tracks.find(t => t.id === trackId)
     if (!track) return null
 
-    const boundaries = columnBoundariesMs()
-    const columnStartMs = boundaries[columnIndex]
-    const columnEndMs = boundaries[columnIndex + 1]
-    if (columnStartMs === undefined || columnEndMs === undefined) return null
+    const boundaries = columnBoundariesBars()
+    const columnStartBar = boundaries[columnIndex]
+    const columnEndBar = boundaries[columnIndex + 1]
+    if (columnStartBar === undefined || columnEndBar === undefined) return null
 
-    for (let i = 0; i < track.clips.length; i++) {
-      const clip = track.clips[i]
-      const clipStart = clip.offset
-      const clipEnd = clip.offset + clip.duration
+    for (const clipId of track.clipIds) {
+      const clip = getClipById(clipId)
+      if (!clip) continue
+
+      const clipStart = clip.bar
+      const clipEnd = clip.bar + clip.bars
 
       // Check if clip overlaps this column
-      if (clipStart < columnEndMs && clipEnd > columnStartMs) {
-        return { clipId: clip.id, clipIndex: i }
+      if (clipStart < columnEndBar && clipEnd > columnStartBar) {
+        const clipIndex = getClipIndex(clipId)
+        return { clipId, clipIndex }
       }
     }
     return null
@@ -264,19 +283,18 @@ export function createJam(options: CreateJamOptions) {
     const clipInfo = getClipAtColumn(trackId, columnIndex)
     if (!clipInfo) return 'none'
 
-    const track = project.tracks.find(t => t.id === trackId)
-    const clip = track?.clips[clipInfo.clipIndex]
+    const clip = getClipById(clipInfo.clipId)
     if (!clip) return 'none'
 
-    const boundaries = columnBoundariesMs()
-    const columnStartMs = boundaries[columnIndex]
-    const columnEndMs = boundaries[columnIndex + 1]
+    const boundaries = columnBoundariesBars()
+    const columnStartBar = boundaries[columnIndex]
+    const columnEndBar = boundaries[columnIndex + 1]
 
-    const clipStart = clip.offset
-    const clipEnd = clip.offset + clip.duration
+    const clipStart = clip.bar
+    const clipEnd = clip.bar + clip.bars
 
-    const startsInColumn = clipStart >= columnStartMs && clipStart < columnEndMs
-    const endsInColumn = clipEnd > columnStartMs && clipEnd <= columnEndMs
+    const startsInColumn = clipStart >= columnStartBar && clipStart < columnEndBar
+    const endsInColumn = clipEnd > columnStartBar && clipEnd <= columnEndBar
 
     if (startsInColumn && endsInColumn) return 'single'
     if (startsInColumn) return 'start'
@@ -311,23 +329,27 @@ export function createJam(options: CreateJamOptions) {
 
   /** Create a new clip at a column */
   function createClipAtColumn(trackId: string, columnIndex: number): string {
-    const boundaries = columnBoundariesMs()
-    const columnStartMs = boundaries[columnIndex]
-    const columnEndMs = boundaries[columnIndex + 1]
-    if (columnStartMs === undefined || columnEndMs === undefined) return ''
+    const boundaries = columnBoundariesBars()
+    const columnStartBar = boundaries[columnIndex]
+    const columnEndBar = boundaries[columnIndex + 1]
+    if (columnStartBar === undefined || columnEndBar === undefined) return ''
 
     const clipId = `clip-${generateId()}`
-    const newClip = {
+    const newClip: MusicalClip = {
       id: clipId,
-      offset: columnStartMs,
-      duration: columnEndMs - columnStartMs,
+      bar: columnStartBar,
+      bars: columnEndBar - columnStartBar,
     }
 
+    // Add clip to project.clips
+    setProject('clips', clips => [...clips, newClip])
+
+    // Add clipId to track
     setProject(
       'tracks',
       track => track.id === trackId,
-      'clips',
-      clips => [...clips, newClip]
+      'clipIds',
+      clipIds => [...clipIds, clipId]
     )
 
     return clipId
@@ -338,12 +360,16 @@ export function createJam(options: CreateJamOptions) {
     const clipInfo = getClipAtColumn(trackId, columnIndex)
     if (!clipInfo) return
 
+    // Remove clipId from track
     setProject(
       'tracks',
       track => track.id === trackId,
-      'clips',
-      clips => clips.filter(c => c.id !== clipInfo.clipId)
+      'clipIds',
+      clipIds => clipIds.filter(id => id !== clipInfo.clipId)
     )
+
+    // Remove clip from project.clips
+    setProject('clips', clips => clips.filter(c => c.id !== clipInfo.clipId))
   }
 
   /** Extend a clip to include an additional column */
@@ -351,39 +377,34 @@ export function createJam(options: CreateJamOptions) {
     const clipInfo = getClipAtColumn(trackId, fromColumnIndex)
     if (!clipInfo) return
 
-    const boundaries = columnBoundariesMs()
-    const track = project.tracks.find(t => t.id === trackId)
-    const clip = track?.clips[clipInfo.clipIndex]
+    const boundaries = columnBoundariesBars()
+    const clip = getClipById(clipInfo.clipId)
     if (!clip) return
 
-    const targetColumnEnd = boundaries[toColumnIndex + 1]
-    const targetColumnStart = boundaries[toColumnIndex]
-    if (targetColumnEnd === undefined || targetColumnStart === undefined) return
+    const targetColumnEndBar = boundaries[toColumnIndex + 1]
+    const targetColumnStartBar = boundaries[toColumnIndex]
+    if (targetColumnEndBar === undefined || targetColumnStartBar === undefined) return
 
     // Extend clip end or start depending on direction
     if (toColumnIndex > fromColumnIndex) {
       // Extending forward
-      const newEnd = targetColumnEnd
+      const newEnd = targetColumnEndBar
       setProject(
-        'tracks',
-        t => t.id === trackId,
         'clips',
         clipInfo.clipIndex,
-        'duration',
-        newEnd - clip.offset
+        'bars',
+        newEnd - clip.bar
       )
     } else {
       // Extending backward
-      const newStart = targetColumnStart
-      const newDuration = (clip.offset + clip.duration) - newStart
+      const newStart = targetColumnStartBar
+      const newDuration = (clip.bar + clip.bars) - newStart
       setProject(
-        'tracks',
-        t => t.id === trackId,
         'clips',
         clipInfo.clipIndex,
         produce(c => {
-          c.offset = newStart
-          c.duration = newDuration
+          c.bar = newStart
+          c.bars = newDuration
         })
       )
     }
@@ -391,16 +412,15 @@ export function createJam(options: CreateJamOptions) {
 
   /** Start a paint session - stores original clip states for overlap handling */
   function startPaintSession(trackId: string, paintedClipId: string) {
-    const track = project.tracks.find(t => t.id === trackId)
-    if (!track) return
+    const clips = getClipsForTrack(trackId)
 
     paintSession = {
       trackId,
       paintedClipId,
-      originalClips: track.clips.map(c => ({
+      originalClips: clips.map(c => ({
         id: c.id,
-        offset: c.offset,
-        duration: c.duration,
+        bar: c.bar,
+        bars: c.bars,
       })),
     }
   }
@@ -415,9 +435,8 @@ export function createJam(options: CreateJamOptions) {
     const clipInfo = getClipAtColumn(trackId, anchorColumn)
     if (!clipInfo) return
 
-    const boundaries = columnBoundariesMs()
-    const track = project.tracks.find(t => t.id === trackId)
-    const clip = track?.clips[clipInfo.clipIndex]
+    const boundaries = columnBoundariesBars()
+    const clip = getClipById(clipInfo.clipId)
     if (!clip) return
 
     const startColumn = Math.min(anchorColumn, targetColumn)
@@ -429,13 +448,11 @@ export function createJam(options: CreateJamOptions) {
 
     // Update the painted clip
     setProject(
-      'tracks',
-      t => t.id === trackId,
       'clips',
       clipInfo.clipIndex,
       produce(c => {
-        c.offset = newStart
-        c.duration = newEnd - newStart
+        c.bar = newStart
+        c.bars = newEnd - newStart
       })
     )
 
@@ -457,15 +474,20 @@ export function createJam(options: CreateJamOptions) {
     const track = project.tracks.find(t => t.id === trackId)
     if (!track) return
 
-    for (let i = 0; i < track.clips.length; i++) {
-      const clip = track.clips[i]
-      if (clip.id === paintedClipId) continue
+    for (const clipId of track.clipIds) {
+      if (clipId === paintedClipId) continue
 
-      const original = paintSession.originalClips.find(c => c.id === clip.id)
+      const clip = getClipById(clipId)
+      if (!clip) continue
+
+      const clipIndex = getClipIndex(clipId)
+      if (clipIndex === -1) continue
+
+      const original = paintSession.originalClips.find(c => c.id === clipId)
       if (!original) continue
 
-      const originalStart = original.offset
-      const originalEnd = original.offset + original.duration
+      const originalStart = original.bar
+      const originalEnd = original.bar + original.bars
 
       // Check if original clip would overlap with painted area
       if (originalStart < paintedEnd && originalEnd > paintedStart) {
@@ -497,35 +519,31 @@ export function createJam(options: CreateJamOptions) {
         }
 
         // Apply changes if different from current
-        const currentStart = clip.offset
-        const currentEnd = clip.offset + clip.duration
+        const currentStart = clip.bar
+        const currentEnd = clip.bar + clip.bars
 
         if (newClipStart !== currentStart || newClipEnd !== currentEnd) {
           setProject(
-            'tracks',
-            t => t.id === trackId,
             'clips',
-            i,
+            clipIndex,
             produce(c => {
-              c.offset = newClipStart
-              c.duration = Math.max(0, newClipEnd - newClipStart)
+              c.bar = newClipStart
+              c.bars = Math.max(0, newClipEnd - newClipStart)
             })
           )
         }
       } else {
         // No overlap - restore to original if it was changed
-        const currentStart = clip.offset
-        const currentEnd = clip.offset + clip.duration
+        const currentStart = clip.bar
+        const currentEnd = clip.bar + clip.bars
 
         if (currentStart !== originalStart || currentEnd !== originalEnd) {
           setProject(
-            'tracks',
-            t => t.id === trackId,
             'clips',
-            i,
+            clipIndex,
             produce(c => {
-              c.offset = originalStart
-              c.duration = original.duration
+              c.bar = originalStart
+              c.bars = original.bars
             })
           )
         }
@@ -752,14 +770,22 @@ export function createJam(options: CreateJamOptions) {
     const track: Track = {
       id,
       name: name ?? `Track ${project.tracks.length + 1}`,
-      clips: [],
+      clipIds: [],
     }
     setProject('tracks', tracks => [...tracks, track])
     return id
   }
 
   function removeTrack(trackId: string) {
-    // Remove from project
+    const track = project.tracks.find(t => t.id === trackId)
+
+    // Remove track's clips from project.clips
+    if (track) {
+      const clipIdsToRemove = new Set(track.clipIds)
+      setProject('clips', clips => clips.filter(c => !clipIdsToRemove.has(c.id)))
+    }
+
+    // Remove from project.tracks
     setProject('tracks', tracks => tracks.filter(t => t.id !== trackId))
 
     // Remove from all layout region slots

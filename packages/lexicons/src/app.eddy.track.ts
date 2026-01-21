@@ -1,3 +1,10 @@
+/**
+ * Track
+ *
+ * A track references clips by ID. The clips themselves are stored
+ * at the project level (in either absolute or musical time domain).
+ */
+
 import type { LexiconDoc } from '@atproto/lexicon'
 
 export default {
@@ -6,8 +13,8 @@ export default {
   defs: {
     track: {
       type: 'object',
-      description: 'A track containing media clips and effect pipelines',
-      required: ['id', 'clips'],
+      description: 'A track referencing clips by ID',
+      required: ['id', 'clipIds'],
       properties: {
         id: {
           type: 'string',
@@ -17,20 +24,21 @@ export default {
           type: 'string',
           maxLength: 128,
         },
-        clips: {
+        clipIds: {
           type: 'array',
-          items: { type: 'ref', ref: 'app.eddy.clip#clip' },
+          items: { type: 'string', maxLength: 64 },
           maxLength: 256,
+          description: 'IDs of clips belonging to this track',
         },
         audioPipeline: {
           type: 'ref',
           ref: 'app.eddy.pipeline#audioPipeline',
-          description: 'Track-level audio effect chain with weighted outputs',
+          description: 'Track-level audio effect chain',
         },
         videoPipeline: {
           type: 'ref',
           ref: 'app.eddy.pipeline#videoPipeline',
-          description: 'Track-level video effect chain with weighted outputs',
+          description: 'Track-level video effect chain',
         },
         muted: {
           type: 'union',

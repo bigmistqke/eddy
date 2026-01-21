@@ -17,7 +17,7 @@
  * - Same tracks can appear in multiple groups (layout transitions)
  */
 
-import type { Clip, Group, Project, Track, Value } from '@eddy/lexicons'
+import type { AbsoluteClip, AbsoluteProject, Group, Track, Value } from '@eddy/lexicons'
 import type {
   CanvasSize,
   CompiledTimeline,
@@ -53,10 +53,11 @@ interface ClipInfo {
 
 /** Context passed down during recursive compilation */
 interface CompileContext {
-  project: Project
+  project: AbsoluteProject
   trackMap: Map<string, Track>
   groupMap: Map<string, Group>
   parentMap: Map<string, Group>
+  clipMap: Map<string, AbsoluteClip>
   canvasSize: CanvasSize
 }
 
@@ -86,7 +87,7 @@ function isVoidMember(member: { id?: string; type?: string }): boolean {
 }
 
 /** Get the root group from project */
-function getRootGroup(project: Project): Group | undefined {
+function getRootGroup(project: AbsoluteProject): Group | undefined {
   if (project.rootGroup) {
     return project.groups.find(g => g.id === project.rootGroup)
   }
@@ -94,7 +95,7 @@ function getRootGroup(project: Project): Group | undefined {
 }
 
 /** Build a map from track ID to Track */
-function buildTrackMap(project: Project): Map<string, Track> {
+function buildTrackMap(project: AbsoluteProject): Map<string, Track> {
   const trackMap = new Map<string, Track>()
   for (const track of project.tracks) {
     trackMap.set(track.id, track)
@@ -103,7 +104,7 @@ function buildTrackMap(project: Project): Map<string, Track> {
 }
 
 /** Build a map from group ID to Group */
-function buildGroupMap(project: Project): Map<string, Group> {
+function buildGroupMap(project: AbsoluteProject): Map<string, Group> {
   const groupMap = new Map<string, Group>()
   for (const group of project.groups) {
     groupMap.set(group.id, group)
@@ -111,8 +112,17 @@ function buildGroupMap(project: Project): Map<string, Group> {
   return groupMap
 }
 
+/** Build a map from clip ID to Clip */
+function buildClipMap(project: AbsoluteProject): Map<string, AbsoluteClip> {
+  const clipMap = new Map<string, AbsoluteClip>()
+  for (const clip of project.clips) {
+    clipMap.set(clip.id, clip)
+  }
+  return clipMap
+}
+
 /** Build a map from member ID (track or group) to parent group */
-function buildParentMap(project: Project): Map<string, Group> {
+function buildParentMap(project: AbsoluteProject): Map<string, Group> {
   const parentMap = new Map<string, Group>()
   for (const group of project.groups) {
     for (const member of group.members) {
@@ -209,7 +219,7 @@ function calculateStackViewport(parentViewport: Viewport): Viewport {
  * Walks up the hierarchy: clip → track → group → parent groups... → root group
  */
 function collectCascadedEffects(
-  clip: Clip,
+  clip: AbsoluteClip,
   track: Track,
   ctx: CompileContext,
 ): EffectRef[] {
@@ -345,7 +355,12 @@ function processTrack(
 ): ClipInfo[] {
   const clipInfos: ClipInfo[] = []
 
-  for (const clip of track.clips) {
+  for (const clipId of track.clipIds) {
+    const clip = ctx.clipMap.get(clipId)
+    if (!clip) {
+      throw new Error(`Clip not found: ${clipId} (referenced by track ${track.id})`)
+    }
+
     const speed = resolveValue(clip.speed, 1) * timeScale
     let clipStart = timeOffset + clip.offset / 1000 // ms to seconds
     let clipEnd = timeOffset + (clip.offset + clip.duration) / 1000
@@ -543,7 +558,7 @@ export function getActivePlacements(timeline: CompiledTimeline, time: number): A
  * Compile a Project into a LayoutTimeline.
  * Handles nested groups for layout transitions.
  */
-export function compileLayoutTimeline(project: Project, canvasSize: CanvasSize): CompiledTimeline {
+export function compileLayoutTimeline(project: AbsoluteProject, canvasSize: CanvasSize): CompiledTimeline {
   const rootGroup = getRootGroup(project)
   if (!rootGroup) {
     return { duration: 0, segments: [] }
@@ -555,6 +570,7 @@ export function compileLayoutTimeline(project: Project, canvasSize: CanvasSize):
     trackMap: buildTrackMap(project),
     groupMap: buildGroupMap(project),
     parentMap: buildParentMap(project),
+    clipMap: buildClipMap(project),
     canvasSize,
   }
 
