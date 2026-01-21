@@ -48,20 +48,12 @@ interface ColumnHeaderProps {
   duration: JamColumnDuration
   layout: JamLayoutType
   isSelected: boolean
-  isCurrent: boolean
   onSelect: () => void
 }
 
 function ColumnHeader(props: ColumnHeaderProps) {
   return (
-    <div
-      class={clsx(
-        styles.header,
-        props.isSelected && styles.selected,
-        props.isCurrent && styles.current,
-      )}
-      onClick={props.onSelect}
-    >
+    <div class={clsx(styles.header, props.isSelected && styles.selected)} onClick={props.onSelect}>
       <span>{props.duration}</span>
       <span class={styles.headerIcon}>{LAYOUT_ICONS[props.layout]}</span>
     </div>
@@ -94,7 +86,6 @@ interface CellProps {
   columnIndex: number
   clipPosition: ClipPosition
   slotIndex: number | null
-  isCurrent: boolean
   onToggle: () => void
   onPointerEnter: (event: PointerEvent) => void
 }
@@ -105,7 +96,7 @@ function Cell(props: CellProps) {
 
   return (
     <div
-      class={clsx(styles.cell, props.isCurrent && styles.current)}
+      class={styles.cell}
       data-clip={props.clipPosition}
       data-visible={hasClip() && isVisible()}
       onPointerDown={event => {
@@ -117,34 +108,6 @@ function Cell(props: CellProps) {
       <Show when={props.slotIndex !== null && props.slotIndex + 1}>
         {slotNumber => <span class={styles.slotIndicator}>{slotNumber()}</span>}
       </Show>
-    </div>
-  )
-}
-
-/**********************************************************************************/
-/*                                                                                */
-/*                                 Timeline Ruler                                 */
-/*                                                                                */
-/**********************************************************************************/
-
-interface TimelineRulerProps {
-  jam: Jam
-}
-
-function TimelineRuler(props: TimelineRulerProps) {
-  const { jam } = props
-
-  return (
-    <div class={styles.timelineRuler}>
-      <For each={jam.metadata.columns}>
-        {(_, index) => (
-          <div
-            class={styles.rulerSegment}
-            classList={{ [styles.current]: jam.currentColumnIndex() === index() }}
-            onClick={() => jam.seekToColumn(index())}
-          />
-        )}
-      </For>
     </div>
   )
 }
@@ -219,58 +182,53 @@ export function Grid(props: GridProps) {
       onPointerLeave={handlePointerUp}
       onPointerCancel={handlePointerUp}
     >
-      {/* Header row */}
-      <div />
+      {/* Labels column */}
+      <div class={styles.column}>
+        <div />
+        <For each={tracks()}>
+          {track => <TrackLabel name={track.name ?? track.id} trackId={track.id} />}
+        </For>
+        <div class={styles.rulerLabel}>Time</div>
+      </div>
+
+      {/* Data columns */}
       <For each={columns()}>
-        {(column, index) => (
-          <ColumnHeader
-            index={index()}
-            duration={column.duration}
-            layout={column.layout}
-            isSelected={selectedColumnIndex() === index()}
-            isCurrent={currentColumnIndex() === index()}
-            onSelect={() => jam.selectColumn(index())}
-          />
-        )}
-      </For>
-
-      {/* Add column button - last column, spans all rows */}
-      <button
-        class={styles.addColumnButton}
-        style={{
-          'grid-column': columns().length + 2,
-          'grid-row': `1 / span ${trackCount() + 2}`,
-        }}
-        onClick={() => jam.addColumn()}
-      >
-        +
-      </button>
-
-      {/* Track rows */}
-      <For each={tracks()}>
-        {track => (
-          <>
-            <TrackLabel name={track.name ?? track.id} trackId={track.id} />
-            <For each={columns()}>
-              {(_, columnIndex) => (
+        {(column, columnIndex) => (
+          <div class={clsx(styles.column, currentColumnIndex() === columnIndex() && styles.current)}>
+            <ColumnHeader
+              index={columnIndex()}
+              duration={column.duration}
+              layout={column.layout}
+              isSelected={selectedColumnIndex() === columnIndex()}
+              onSelect={() => jam.selectColumn(columnIndex())}
+            />
+            <For each={tracks()}>
+              {track => (
                 <Cell
                   trackId={track.id}
                   columnIndex={columnIndex()}
                   clipPosition={jam.getClipPosition(track.id, columnIndex())}
                   slotIndex={jam.getTrackSlotIndex(columnIndex(), track.id)}
-                  isCurrent={currentColumnIndex() === columnIndex()}
                   onToggle={() => handleCellToggle(track.id, columnIndex())}
                   onPointerEnter={event => handleCellPointerEnter(event, track.id, columnIndex())}
                 />
               )}
             </For>
-          </>
+            <div
+              class={styles.rulerSegment}
+              classList={{ [styles.current]: currentColumnIndex() === columnIndex() }}
+              onClick={() => jam.seekToColumn(columnIndex())}
+            />
+          </div>
         )}
       </For>
 
-      {/* Timeline ruler row */}
-      <div class={styles.rulerLabel}>Time</div>
-      <TimelineRuler jam={jam} />
+      {/* Add column button */}
+      <div class={styles.column}>
+        <button class={styles.addColumnButton} onClick={() => jam.addColumn()}>
+          +
+        </button>
+      </div>
     </div>
   )
 }

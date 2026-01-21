@@ -1,11 +1,31 @@
 .grid {
   display: grid;
-  row-gap: 2px;
+  row-gap: 8px;
   column-gap: 8px;
   padding: 8px;
   background: #0a0a0a;
   overflow-x: auto;
   overflow-y: hidden;
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                    Column                                      */
+/*                                                                                */
+/**********************************************************************************/
+
+.column {
+  display: grid;
+  grid-template-rows: subgrid;
+  grid-row: 1 / -1;
+  row-gap: 8px;
+  padding: 4px;
+  margin: -4px;
+  border-radius: 4px;
+}
+
+.column.current {
+  background: rgba(45, 90, 135, 0.4);
 }
 
 /**********************************************************************************/
@@ -31,11 +51,6 @@
 
 .header.selected {
   background: #4a9eff;
-  color: #fff;
-}
-
-.header.current {
-  background: #333;
   color: #fff;
 }
 
@@ -87,10 +102,6 @@
   color: #666;
 }
 
-.cell.current {
-  background: #252525;
-}
-
 /* Clip position variants */
 .cell[data-clip="single"] {
   background: #2d5a87;
@@ -106,6 +117,7 @@
   border-color: #2d5a87;
   border-right: none;
   margin-right: -8px;
+  padding-right: 8px;
   position: relative;
   z-index: 1;
 }
@@ -119,6 +131,8 @@
   border-right: none;
   margin-left: -8px;
   margin-right: -8px;
+  padding-left: 8px;
+  padding-right: 8px;
   position: relative;
   z-index: 1;
 }
@@ -130,35 +144,9 @@
   border-color: #2d5a87;
   border-left: none;
   margin-left: -8px;
+  padding-left: 8px;
   position: relative;
   z-index: 1;
-}
-
-/* Current column highlight for clips */
-.cell[data-clip="single"].current,
-.cell[data-clip="start"].current,
-.cell[data-clip="middle"].current,
-.cell[data-clip="end"].current {
-  background: #4a9eff;
-  border-color: #4a9eff;
-}
-
-/* Clips not assigned to a visible slot - dimmed appearance */
-.cell[data-clip="single"][data-visible="false"],
-.cell[data-clip="start"][data-visible="false"],
-.cell[data-clip="middle"][data-visible="false"],
-.cell[data-clip="end"][data-visible="false"] {
-  background: #1e3a52;
-  border-color: #1e3a52;
-  opacity: 0.6;
-}
-
-.cell[data-clip="single"][data-visible="false"].current,
-.cell[data-clip="start"][data-visible="false"].current,
-.cell[data-clip="middle"][data-visible="false"].current,
-.cell[data-clip="end"][data-visible="false"].current {
-  background: #2a5a80;
-  border-color: #2a5a80;
 }
 
 /* Slot indicator */
@@ -180,13 +168,6 @@
   color: #666;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-}
-
-.timelineRuler {
-  display: grid;
-  grid-template-columns: subgrid;
-  grid-column: 2 / -2;
-  height: 24px;
 }
 
 .rulerSegment {
