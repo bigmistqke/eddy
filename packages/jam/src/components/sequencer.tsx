@@ -160,61 +160,121 @@ export function Grid(props: GridProps) {
     setPaintTrackId(null)
   }
 
-  const trackCount = () => tracks().length
+  const gridTemplateColumns = () => `80px repeat(${columns().length}, 60px) 48px`
 
   return (
     <div
-      class={styles.grid}
-      style={{
-        'grid-template-columns': `80px repeat(${columns().length}, 60px) 48px`,
-        'grid-template-rows': `auto repeat(${trackCount()}, 48px) auto`,
-      }}
+      class={styles.sequencer}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerUp}
       onPointerCancel={handlePointerUp}
     >
-      {/* Labels column */}
-      <div class={styles.column}>
+      {/* Header row */}
+      <div class={styles.headerRow} style={{ 'grid-template-columns': gridTemplateColumns() }}>
         <div />
-        <For each={tracks()}>
-          {track => <TrackLabel name={track.name ?? track.id} trackId={track.id} />}
+        <For each={columns()}>
+          {(column, columnIndex) => (
+            <div
+              class={clsx(
+                styles.headerCell,
+                currentColumnIndex() === columnIndex() && styles.current,
+              )}
+            >
+              <ColumnHeader
+                index={columnIndex()}
+                duration={column.duration}
+                layout={column.layout}
+                isSelected={selectedColumnIndex() === columnIndex()}
+                onSelect={() => jam.selectColumn(columnIndex())}
+              />
+            </div>
+          )}
         </For>
-        <div class={styles.rulerLabel}>Time</div>
+        <div />
       </div>
 
-      {/* Data columns */}
-      <For each={columns()}>
-        {(column, columnIndex) => (
-          <div class={clsx(styles.column, currentColumnIndex() === columnIndex() && styles.current)}>
-            <ColumnHeader
-              index={columnIndex()}
-              duration={column.duration}
-              layout={column.layout}
-              isSelected={selectedColumnIndex() === columnIndex()}
-              onSelect={() => jam.selectColumn(columnIndex())}
-            />
-            <For each={tracks()}>
-              {track => (
-                <Cell
-                  trackId={track.id}
-                  columnIndex={columnIndex()}
-                  clipPosition={jam.getClipPosition(track.id, columnIndex())}
-                  onToggle={() => handleCellToggle(track.id, columnIndex())}
-                  onPointerEnter={event => handleCellPointerEnter(event, track.id, columnIndex())}
-                />
-              )}
-            </For>
-            <div
-              class={styles.rulerSegment}
-              classList={{ [styles.current]: currentColumnIndex() === columnIndex() }}
-              onClick={() => jam.seekToColumn(columnIndex())}
-            />
-          </div>
-        )}
-      </For>
+      {/* Tracks container (scrollable) */}
+      <div class={styles.tracksContainer}>
+        <div
+          class={styles.tracksGrid}
+          style={{
+            'grid-template-columns': gridTemplateColumns(),
+            'grid-template-rows': `0px repeat(${tracks().length}, 48px) 1fr`,
+          }}
+        >
+          {/* Spacer row */}
+          <div />
+          <For each={columns()}>
+            {(column, columnIndex) => (
+              <div
+                class={clsx(
+                  styles.spacer,
+                  currentColumnIndex() === columnIndex() && styles.current,
+                )}
+              />
+            )}
+          </For>
+          <div />
 
-      {/* Add column button */}
-      <div class={styles.column}>
+          <For each={tracks()}>
+            {track => (
+              <>
+                <TrackLabel name={track.name ?? track.id} trackId={track.id} />
+                <For each={columns()}>
+                  {(column, columnIndex) => (
+                    <div
+                      class={clsx(
+                        styles.cellWrapper,
+                        currentColumnIndex() === columnIndex() && styles.current,
+                      )}
+                    >
+                      <Cell
+                        trackId={track.id}
+                        columnIndex={columnIndex()}
+                        clipPosition={jam.getClipPosition(track.id, columnIndex())}
+                        onToggle={() => handleCellToggle(track.id, columnIndex())}
+                        onPointerEnter={event =>
+                          handleCellPointerEnter(event, track.id, columnIndex())
+                        }
+                      />
+                    </div>
+                  )}
+                </For>
+                <div />
+              </>
+            )}
+          </For>
+          {/* Filler row to extend column backgrounds */}
+          <div />
+          <For each={columns()}>
+            {(column, columnIndex) => (
+              <div
+                class={clsx(
+                  styles.filler,
+                  currentColumnIndex() === columnIndex() && styles.current,
+                )}
+              />
+            )}
+          </For>
+          <div />
+        </div>
+      </div>
+
+      {/* Ruler row */}
+      <div class={styles.rulerRow} style={{ 'grid-template-columns': gridTemplateColumns() }}>
+        <div class={styles.rulerLabel}>Time</div>
+        <For each={columns()}>
+          {(column, columnIndex) => (
+            <div
+              class={clsx(
+                styles.rulerCell,
+                currentColumnIndex() === columnIndex() && styles.current,
+              )}
+            >
+              <div class={styles.rulerSegment} onClick={() => jam.seekToColumn(columnIndex())} />
+            </div>
+          )}
+        </For>
         <button class={styles.addColumnButton} onClick={() => jam.addColumn()}>
           +
         </button>
