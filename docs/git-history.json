@@ -1,5 +1,29 @@
 [
   {
+    "hash": "6849c87785b52f24ceb88d8866da6247e4d9cec4",
+    "short_hash": "6849c87",
+    "author": "bigmistqke",
+    "date": "2026-01-21T01:38:45+01:00",
+    "message": "feat: add duplicate column and improve layout",
+    "files_changed": 17
+  },
+  {
+    "hash": "b99806ab1dd363b5addb07b1bf34597983f1bfbd",
+    "short_hash": "b99806a",
+    "author": "bigmistqke",
+    "date": "2026-01-21T01:38:42+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
+    "hash": "1698efe07de92b21f9cc134157627a9bdce8a510",
+    "short_hash": "1698efe",
+    "author": "bigmistqke",
+    "date": "2026-01-21T01:13:42+01:00",
+    "message": "refactor: colocate jam UI components\n\n- Merge Cell, ColumnHeader, TrackLabel, TimelineRuler into Grid.tsx\n- Merge LayoutPreview, LayoutSelector, SlotAssigner into LayoutEditor.tsx\n- Consolidate CSS modules with section headers\n- Simplify index.ts exports",
+    "files_changed": 20
+  },
+  {
     "hash": "1698efe07de92b21f9cc134157627a9bdce8a510",
     "short_hash": "1698efe",
     "author": "bigmistqke",
@@ -14,22 +38,6 @@
     "date": "2026-01-21T01:05:38+01:00",
     "message": "feat: add video preview with compositor and timeline ruler\n\n- Add Preview component using makeVideoCompositor and makeVideoPlayback\n- Load test videos via UrlSource from mediabunny\n- Use track.id as clipId for 1-stem-per-track model\n- Add timeline ruler row for column-based seeking",
     "files_changed": 12
-  },
-  {
-    "hash": "38dc4284a223552061aa0155a8d4acbaab5ebcb6",
-    "short_hash": "38dc428",
-    "author": "bigmistqke",
-    "date": "2026-01-21T01:05:38+01:00",
-    "message": "feat: add video preview with compositor and timeline ruler\n\n- Add Preview component using makeVideoCompositor and makeVideoPlayback\n- Load test videos via UrlSource from mediabunny\n- Use track.id as clipId for 1-stem-per-track model\n- Add timeline ruler row for column-based seeking",
-    "files_changed": 12
-  },
-  {
-    "hash": "58ddf14f3cf9965bc2da5b4f01f56c85b0fca454",
-    "short_hash": "58ddf14",
-    "author": "bigmistqke",
-    "date": "2026-01-21T00:30:11+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
   },
   {
     "hash": "77ba666d214ae92b2f5c29e74cb554690c1aeef2",
