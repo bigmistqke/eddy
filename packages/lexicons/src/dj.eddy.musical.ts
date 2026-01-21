@@ -14,7 +14,7 @@ export default {
     clip: {
       type: 'object',
       description: 'A clip with musical timing (bars)',
-      required: ['id', 'bar', 'bars'],
+      required: ['id', 'tick', 'ticks'],
       properties: {
         id: {
           type: 'string',
@@ -25,19 +25,19 @@ export default {
           refs: ['dj.eddy.clip#clipSource.stem', 'dj.eddy.clip#clipSource.group'],
           description: 'Source media: a stem reference or a nested group',
         },
-        bar: {
-          type: 'number',
-          description: 'Position on timeline in bars (can be fractional)',
+        tick: {
+          type: 'integer',
+          description: 'Position on timeline in ticks',
           minimum: 0,
         },
-        bars: {
-          type: 'number',
-          description: 'Duration in bars (can be fractional)',
+        ticks: {
+          type: 'integer',
+          description: 'Duration in ticks',
           minimum: 0,
         },
-        sourceBar: {
-          type: 'number',
-          description: 'Start position within source in bars (for trimming)',
+        sourceTick: {
+          type: 'integer',
+          description: 'Start position within source in ticks (for trimming)',
           minimum: 0,
           default: 0,
         },
@@ -96,9 +96,16 @@ export default {
             ref: '#timeSignature',
             description: 'Time signature (defaults to 4/4)',
           },
-          durationBars: {
-            type: 'number',
-            description: 'Total project duration in bars',
+          ppq: {
+            type: 'integer',
+            description: 'Pulses (ticks) per quarter note - defines resolution (default 960)',
+            minimum: 24,
+            maximum: 9600,
+            default: 960,
+          },
+          durationTicks: {
+            type: 'integer',
+            description: 'Total project duration in ticks',
             minimum: 0,
           },
           canvas: {
