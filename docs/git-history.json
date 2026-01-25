@@ -1,34 +1,58 @@
 [
   {
+    "hash": "54f2823b03052bd2232fe5156f907091a57ed9a6",
+    "short_hash": "54f2823",
+    "author": "bigmistqke",
+    "date": "2026-01-25T23:26:16+01:00",
+    "message": "refactor: rename clip.offset→start, add offset field for time shift\n\n- Renamed `offset`→`start` (position on timeline in ms/ticks)\n- Renamed `ticks`→`duration` for consistency\n- Added new `offset` field for time shift into content:\n  - For stem/url clips: source in-point\n  - For group clips: shifts nested content time reference\n- Updated timeline compilers to use new fields\n- Updated create-editor.ts to use clipIds model (track.clipIds + project.clips)\n- Layout clips now use offset: -start to make content flow through time",
+    "files_changed": 10
+  },
+  {
+    "hash": "3f5c8dd63b659d5df7d059bc5ced3e13ff6991d7",
+    "short_hash": "3f5c8dd",
+    "author": "bigmistqke",
+    "date": "2026-01-25T21:56:06+01:00",
+    "message": "feat: add source.url clip type for URL-based media\n\n- Add source.url to clip lexicon for direct URL references\n- Update jam to use URL sources on clips instead of trackVideos\n- Preview loads videos from clip sources by clipId\n- addTrack accepts optional URL to create clip with source",
+    "files_changed": 9
+  },
+  {
+    "hash": "3f5c8dd63b659d5df7d059bc5ced3e13ff6991d7",
+    "short_hash": "3f5c8dd",
+    "author": "bigmistqke",
+    "date": "2026-01-25T21:56:06+01:00",
+    "message": "feat: add source.url clip type for URL-based media\n\n- Add source.url to clip lexicon for direct URL references\n- Update jam to use URL sources on clips instead of trackVideos\n- Preview loads videos from clip sources by clipId\n- addTrack accepts optional URL to create clip with source",
+    "files_changed": 9
+  },
+  {
+    "hash": "a2aa327809d8d673e3725b46152ee41087f2ff1f",
+    "short_hash": "a2aa327",
+    "author": "bigmistqke",
+    "date": "2026-01-25T21:45:10+01:00",
+    "message": "refactor: use ticks for jam timing and unify timeline compilation\n\n- Rename compileLayoutTimeline to compileAbsoluteTimeline\n- Add compileMusicalTimeline wrapper (ticks → ms conversion)\n- Replace rootGroup with root (can be track or group)\n- Derive jam layout regions from layout track clips\n- Remove compile-jam-timeline.ts (use @eddy/timeline instead)\n- Update jam components to use contentTracks accessor\n- Make JamMetadata.layoutRegions optional",
+    "files_changed": 18
+  },
+  {
+    "hash": "a2aa327809d8d673e3725b46152ee41087f2ff1f",
+    "short_hash": "a2aa327",
+    "author": "bigmistqke",
+    "date": "2026-01-25T21:45:10+01:00",
+    "message": "refactor: use ticks for jam timing and unify timeline compilation\n\n- Rename compileLayoutTimeline to compileAbsoluteTimeline\n- Add compileMusicalTimeline wrapper (ticks → ms conversion)\n- Replace rootGroup with root (can be track or group)\n- Derive jam layout regions from layout track clips\n- Remove compile-jam-timeline.ts (use @eddy/timeline instead)\n- Update jam components to use contentTracks accessor\n- Make JamMetadata.layoutRegions optional",
+    "files_changed": 18
+  },
+  {
+    "hash": "2f8729b125f2301c8ef9d639145c5d6f5e2c32be",
+    "short_hash": "2f8729b",
+    "author": "bigmistqke",
+    "date": "2026-01-25T20:59:30+01:00",
+    "message": "feat: concatenate layout region timeline buttons",
+    "files_changed": 3
+  },
+  {
     "hash": "271e702c74e075c7a4c92f19cb671a934a5c66d6",
     "short_hash": "271e702",
     "author": "bigmistqke",
     "date": "2026-01-25T20:49:58+01:00",
     "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "2d25f907f1e37947470340597d0b4a3be5e8f1fe",
-    "short_hash": "2d25f90",
-    "author": "bigmistqke",
-    "date": "2026-01-25T20:49:43+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "7acd2b5791ab068853f6e2e45c07936e3b79f65d",
-    "short_hash": "7acd2b5",
-    "author": "bigmistqke",
-    "date": "2026-01-25T20:49:39+01:00",
-    "message": "refactor: update atproto crud for lexicon changes",
-    "files_changed": 1
-  },
-  {
-    "hash": "09b52f83f1e6b7b56914608b070845eab3b4711f",
-    "short_hash": "09b52f8",
-    "author": "bigmistqke",
-    "date": "2026-01-25T20:49:36+01:00",
-    "message": "chore: add dev:jam script and @solid-primitives/range dep\n\nSplit dev scripts: dev:app for main app, dev:jam for jam sequencer",
     "files_changed": 2
   },
   {
