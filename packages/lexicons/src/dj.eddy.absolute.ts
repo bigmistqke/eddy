@@ -125,9 +125,9 @@ export default {
             maxLength: 64,
             description: 'Groups for spatial composition',
           },
-          rootGroup: {
+          root: {
             type: 'string',
-            description: 'ID of the root group for timeline',
+            description: 'ID of the root entry point (can be a track or group)',
             maxLength: 64,
           },
           parent: {

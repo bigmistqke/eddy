@@ -1,10 +1,10 @@
 import type { AbsoluteProject } from '@eddy/lexicons'
 import { describe, expect, it } from 'vitest'
 import {
-  compileLayoutTimeline,
+  compileAbsoluteTimeline,
   findSegmentAtTime,
   getActivePlacements,
-} from '../compile-layout-timeline'
+} from '../compile-absolute-timeline'
 
 /**********************************************************************************/
 /*                                                                                */
@@ -64,7 +64,7 @@ function createTestProject(overrides: Partial<AbsoluteProject> = {}): AbsolutePr
 describe('compileLayoutTimeline', () => {
   it('compiles a simple 2x2 grid project', () => {
     const project = createTestProject()
-    const timeline = compileLayoutTimeline(project, { width: 640, height: 360 })
+    const timeline = compileAbsoluteTimeline(project, { width: 640, height: 360 })
 
     expect(timeline.duration).toBe(15) // max of all clips
     expect(timeline.segments.length).toBeGreaterThan(0)
@@ -72,7 +72,7 @@ describe('compileLayoutTimeline', () => {
 
   it('calculates correct viewports for 2x2 grid', () => {
     const project = createTestProject()
-    const timeline = compileLayoutTimeline(project, { width: 640, height: 360 })
+    const timeline = compileAbsoluteTimeline(project, { width: 640, height: 360 })
 
     const segment = findSegmentAtTime(timeline, 0)
     expect(segment).not.toBeNull()
@@ -98,7 +98,7 @@ describe('compileLayoutTimeline', () => {
 
   it('creates segments at transition points', () => {
     const project = createTestProject()
-    const timeline = compileLayoutTimeline(project, { width: 640, height: 360 })
+    const timeline = compileAbsoluteTimeline(project, { width: 640, height: 360 })
 
     // Segments: [0-5] [5-10] [10-15]
     expect(timeline.segments[0].startTime).toBe(0)
@@ -116,7 +116,7 @@ describe('compileLayoutTimeline', () => {
 
   it('handles empty project', () => {
     const project = createTestProject({ groups: [], tracks: [] })
-    const timeline = compileLayoutTimeline(project, { width: 640, height: 360 })
+    const timeline = compileAbsoluteTimeline(project, { width: 640, height: 360 })
 
     expect(timeline.duration).toBe(0)
     expect(timeline.segments).toHaveLength(0)
@@ -137,7 +137,7 @@ describe('compileLayoutTimeline', () => {
         },
       ],
     })
-    const timeline = compileLayoutTimeline(project, { width: 640, height: 360 })
+    const timeline = compileAbsoluteTimeline(project, { width: 640, height: 360 })
 
     const segment = findSegmentAtTime(timeline, 7)
     expect(segment).not.toBeNull()
@@ -162,7 +162,7 @@ describe('compileLayoutTimeline', () => {
         },
       ],
     })
-    const timeline = compileLayoutTimeline(project, { width: 640, height: 360 })
+    const timeline = compileAbsoluteTimeline(project, { width: 640, height: 360 })
 
     const segment = findSegmentAtTime(timeline, 0)
     expect(segment).not.toBeNull()
@@ -229,7 +229,7 @@ describe('nested groups', () => {
       createdAt: new Date().toISOString(),
     }
 
-    const timeline = compileLayoutTimeline(project, { width: 640, height: 360 })
+    const timeline = compileAbsoluteTimeline(project, { width: 640, height: 360 })
 
     expect(timeline.duration).toBe(10)
     expect(timeline.segments).toHaveLength(1)
@@ -302,7 +302,7 @@ describe('nested groups', () => {
       createdAt: new Date().toISOString(),
     }
 
-    const timeline = compileLayoutTimeline(project, { width: 640, height: 360 })
+    const timeline = compileAbsoluteTimeline(project, { width: 640, height: 360 })
 
     expect(timeline.duration).toBe(10)
     expect(timeline.segments).toHaveLength(2)
@@ -364,7 +364,7 @@ describe('nested groups', () => {
       createdAt: new Date().toISOString(),
     }
 
-    const timeline = compileLayoutTimeline(project, { width: 640, height: 360 })
+    const timeline = compileAbsoluteTimeline(project, { width: 640, height: 360 })
 
     // Inner clip should be at 2s + 1s = 3s to 2s + 1s + 5s = 8s
     const segment = findSegmentAtTime(timeline, 4)
@@ -424,7 +424,7 @@ describe('nested groups', () => {
       createdAt: new Date().toISOString(),
     }
 
-    const timeline = compileLayoutTimeline(project, { width: 640, height: 360 })
+    const timeline = compileAbsoluteTimeline(project, { width: 640, height: 360 })
 
     expect(timeline.duration).toBe(10)
     expect(timeline.segments).toHaveLength(1)
@@ -488,7 +488,7 @@ describe('nested groups', () => {
       createdAt: new Date().toISOString(),
     }
 
-    const timeline = compileLayoutTimeline(project, { width: 640, height: 360 })
+    const timeline = compileAbsoluteTimeline(project, { width: 640, height: 360 })
     const segment = timeline.segments[0]
 
     // Right track: right half of canvas (320-640, 0-360)
@@ -514,7 +514,7 @@ describe('nested groups', () => {
 describe('findSegmentAtTime (binary search)', () => {
   it('finds correct segment at various times', () => {
     const project = createTestProject()
-    const timeline = compileLayoutTimeline(project, { width: 640, height: 360 })
+    const timeline = compileAbsoluteTimeline(project, { width: 640, height: 360 })
 
     const seg0 = findSegmentAtTime(timeline, 2)
     expect(seg0?.startTime).toBe(0)
@@ -531,7 +531,7 @@ describe('findSegmentAtTime (binary search)', () => {
 
   it('returns null for time outside segments', () => {
     const project = createTestProject()
-    const timeline = compileLayoutTimeline(project, { width: 640, height: 360 })
+    const timeline = compileAbsoluteTimeline(project, { width: 640, height: 360 })
 
     expect(findSegmentAtTime(timeline, 20)).toBeNull()
     expect(findSegmentAtTime(timeline, -1)).toBeNull()
@@ -547,7 +547,7 @@ describe('findSegmentAtTime (binary search)', () => {
 describe('getActivePlacements', () => {
   it('returns placements active at time 0', () => {
     const project = createTestProject()
-    const timeline = compileLayoutTimeline(project, { width: 640, height: 360 })
+    const timeline = compileAbsoluteTimeline(project, { width: 640, height: 360 })
 
     const active = getActivePlacements(timeline, 0)
 
@@ -557,7 +557,7 @@ describe('getActivePlacements', () => {
 
   it('returns placements active at time 7', () => {
     const project = createTestProject()
-    const timeline = compileLayoutTimeline(project, { width: 640, height: 360 })
+    const timeline = compileAbsoluteTimeline(project, { width: 640, height: 360 })
 
     const active = getActivePlacements(timeline, 7)
 
@@ -566,7 +566,7 @@ describe('getActivePlacements', () => {
 
   it('calculates correct localTime', () => {
     const project = createTestProject()
-    const timeline = compileLayoutTimeline(project, { width: 640, height: 360 })
+    const timeline = compileAbsoluteTimeline(project, { width: 640, height: 360 })
 
     const active = getActivePlacements(timeline, 7)
 
@@ -576,7 +576,7 @@ describe('getActivePlacements', () => {
 
   it('returns empty after all clips end', () => {
     const project = createTestProject()
-    const timeline = compileLayoutTimeline(project, { width: 640, height: 360 })
+    const timeline = compileAbsoluteTimeline(project, { width: 640, height: 360 })
 
     const active = getActivePlacements(timeline, 20)
 
@@ -617,7 +617,7 @@ describe('multiple clips per track', () => {
       ],
     })
 
-    const timeline = compileLayoutTimeline(project, { width: 640, height: 360 })
+    const timeline = compileAbsoluteTimeline(project, { width: 640, height: 360 })
 
     expect(timeline.segments).toHaveLength(2)
     expect(timeline.segments[0].placements[0].clipId).toBe('clip-0a')

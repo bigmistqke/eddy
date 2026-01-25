@@ -5,16 +5,16 @@
  * Draggable overlay that can be repositioned.
  */
 
-import { createEffect, createMemo, createSignal, on, onCleanup, onMount } from 'solid-js'
-import type { Jam } from '~/primitives/create-jam'
 import {
+  makeEffectRegistry,
   makeVideoCompositor,
   makeVideoPlayback,
-  makeEffectRegistry,
   type VideoCompositor,
   type VideoPlayback,
 } from '@eddy/video'
 import { UrlSource } from 'mediabunny'
+import { createEffect, createMemo, createSignal, on, onCleanup, onMount } from 'solid-js'
+import type { Jam } from '~/primitives/create-jam'
 import styles from './Preview.module.css'
 
 /**********************************************************************************/
@@ -39,8 +39,6 @@ interface Position {
 /**********************************************************************************/
 
 export function Preview(props: PreviewProps) {
-  const { jam } = props
-
   let canvasRef: HTMLCanvasElement | undefined
   let compositor: VideoCompositor | undefined
   let playbacks: Map<string, VideoPlayback> = new Map()
@@ -81,7 +79,7 @@ export function Preview(props: PreviewProps) {
   const effectRegistry = makeEffectRegistry({})
 
   // Get compiled timeline
-  const timeline = createMemo(() => jam.timeline())
+  const timeline = createMemo(() => props.jam.timeline())
 
   onMount(() => {
     if (!canvasRef) return
@@ -124,10 +122,10 @@ export function Preview(props: PreviewProps) {
   })
 
   async function loadVideos() {
-    const tracks = jam.project.tracks
+    const tracks = props.jam.contentTracks()
 
     for (const track of tracks) {
-      const videoUrl = jam.trackVideos[track.id]
+      const videoUrl = props.jam.trackVideos[track.id]
       if (!videoUrl) continue
 
       try {
@@ -145,7 +143,7 @@ export function Preview(props: PreviewProps) {
         await playback.load(source)
 
         // Seek to current time to show initial frame
-        await playback.seek(jam.currentTime())
+        await playback.seek(props.jam.currentTime())
 
         playbacks.set(track.id, playback)
         console.log(`Loaded video for track ${track.id}: ${videoUrl}`)
@@ -166,7 +164,7 @@ export function Preview(props: PreviewProps) {
       compositor.setTimeline(timeline())
 
       // Render at current time
-      const time = jam.currentTime()
+      const time = props.jam.currentTime()
       compositor.render(time)
 
       animationFrameId = requestAnimationFrame(renderFrame)
@@ -178,9 +176,9 @@ export function Preview(props: PreviewProps) {
   // Sync playback state with jam
   createEffect(
     on(
-      () => jam.isPlaying(),
+      () => props.jam.isPlaying(),
       isPlaying => {
-        const time = jam.currentTime()
+        const time = props.jam.currentTime()
 
         for (const [trackId, playback] of playbacks) {
           if (isPlaying) {
@@ -196,10 +194,10 @@ export function Preview(props: PreviewProps) {
   // Handle seeking
   createEffect(
     on(
-      () => jam.currentTime(),
+      () => props.jam.currentTime(),
       time => {
         // Only seek if not playing (playing handles its own time sync)
-        if (jam.isPlaying()) return
+        if (props.jam.isPlaying()) return
 
         for (const playback of playbacks.values()) {
           playback.seek(time)
@@ -225,16 +223,11 @@ export function Preview(props: PreviewProps) {
       >
         <span class={styles.dragIcon}>⋮⋮</span>
         <span class={styles.columnInfo}>
-          Column {jam.currentColumnIndex() + 1} / {jam.metadata.columnCount}
+          Column {props.jam.currentColumnIndex() + 1} / {props.jam.metadata.columnCount}
         </span>
       </div>
       <div class={styles.preview}>
-        <canvas
-          ref={canvasRef}
-          class={styles.canvas}
-          width={canvasWidth}
-          height={canvasHeight}
-        />
+        <canvas ref={canvasRef} class={styles.canvas} width={canvasWidth} height={canvasHeight} />
       </div>
     </div>
   )

@@ -7,7 +7,7 @@ export default {
     metadata: {
       type: 'object',
       description: 'Jam-specific project metadata for grid-based video sequencing',
-      required: ['bpm', 'columnCount', 'columnDuration', 'layoutRegions'],
+      required: ['bpm', 'columnCount', 'columnDuration'],
       properties: {
         bpm: {
           type: 'integer',

@@ -86,12 +86,20 @@ function isVoidMember(member: { id?: string; type?: string }): boolean {
   return 'type' in member && member.type === 'void'
 }
 
-/** Get the root group from project */
-function getRootGroup(project: AbsoluteProject): Group | undefined {
-  if (project.rootGroup) {
-    return project.groups.find(g => g.id === project.rootGroup)
+/** Get the root entry point - can be a track or group */
+function getRoot(project: AbsoluteProject, trackMap: Map<string, Track>, groupMap: Map<string, Group>): { type: 'track'; track: Track } | { type: 'group'; group: Group } | undefined {
+  if (project.root) {
+    const track = trackMap.get(project.root)
+    if (track) return { type: 'track', track }
+    const group = groupMap.get(project.root)
+    if (group) return { type: 'group', group }
   }
-  return project.groups[0]
+
+  // Default to first group
+  const firstGroup = project.groups[0]
+  if (firstGroup) return { type: 'group', group: firstGroup }
+
+  return undefined
 }
 
 /** Build a map from track ID to Track */
@@ -571,21 +579,25 @@ export function getActivePlacements(timeline: CompiledTimeline, time: number): A
 /**
  * Compile a Project into a LayoutTimeline.
  * Handles nested groups for layout transitions.
+ * Root can be a track (for layout-driven composition) or a group.
  */
-export function compileLayoutTimeline(
+export function compileAbsoluteTimeline(
   project: AbsoluteProject,
   canvasSize: CanvasSize,
 ): CompiledTimeline {
-  const rootGroup = getRootGroup(project)
-  if (!rootGroup) {
+  // Build lookup maps first (needed for getRoot)
+  const trackMap = buildTrackMap(project)
+  const groupMap = buildGroupMap(project)
+
+  const root = getRoot(project, trackMap, groupMap)
+  if (!root) {
     return { duration: 0, segments: [] }
   }
 
-  // Build lookup maps
   const ctx: CompileContext = {
     project,
-    trackMap: buildTrackMap(project),
-    groupMap: buildGroupMap(project),
+    trackMap,
+    groupMap,
     parentMap: buildParentMap(project),
     clipMap: buildClipMap(project),
     canvasSize,
@@ -599,8 +611,10 @@ export function compileLayoutTimeline(
     height: canvasSize.height,
   }
 
-  // Process root group
-  const clipInfos = processGroup(rootGroup, rootViewport, 0, 1, ctx)
+  // Process root - can be a track or a group
+  const clipInfos = root.type === 'track'
+    ? processTrack(root.track, rootViewport, 0, 1, ctx)
+    : processGroup(root.group, rootViewport, 0, 1, ctx)
 
   // Build segments from transitions
   const segments = buildSegments(clipInfos)

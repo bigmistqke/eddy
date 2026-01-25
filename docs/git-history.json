@@ -1,5 +1,21 @@
 [
   {
+    "hash": "271e702c74e075c7a4c92f19cb671a934a5c66d6",
+    "short_hash": "271e702",
+    "author": "bigmistqke",
+    "date": "2026-01-25T20:49:58+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
+    "hash": "2d25f907f1e37947470340597d0b4a3be5e8f1fe",
+    "short_hash": "2d25f90",
+    "author": "bigmistqke",
+    "date": "2026-01-25T20:49:43+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
     "hash": "7acd2b5791ab068853f6e2e45c07936e3b79f65d",
     "short_hash": "7acd2b5",
     "author": "bigmistqke",
@@ -14,22 +30,6 @@
     "date": "2026-01-25T20:49:36+01:00",
     "message": "chore: add dev:jam script and @solid-primitives/range dep\n\nSplit dev scripts: dev:app for main app, dev:jam for jam sequencer",
     "files_changed": 2
-  },
-  {
-    "hash": "e4a3815cfb19fc0ec0fa82d6c20ef2f28effb862",
-    "short_hash": "e4a3815",
-    "author": "bigmistqke",
-    "date": "2026-01-25T20:49:32+01:00",
-    "message": "refactor: simplify sequencer component and styling",
-    "files_changed": 2
-  },
-  {
-    "hash": "5feda7f9f4301968a7a55e62c5d08440debe93f0",
-    "short_hash": "5feda7f",
-    "author": "bigmistqke",
-    "date": "2026-01-25T20:49:27+01:00",
-    "message": "refactor: extract canvas to separate lexicon, rename static→fixed\n\n- Extract dj.eddy.canvas from dj.eddy.project (deleted)\n- Rename dj.eddy.value.static to dj.eddy.value.fixed (clearer naming)\n- Update all lexicon refs",
-    "files_changed": 13
   },
   {
     "hash": "52893dd99e99b0be7b690e792e0a62d17ca962bc",

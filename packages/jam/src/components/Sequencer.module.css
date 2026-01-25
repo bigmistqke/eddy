@@ -211,12 +211,6 @@
   border: none;
 }
 
-.timelineCell:not(.current):hover {
-  & .timelineButton {
-    background: #252525;
-  }
-}
-
 .timelineCell.current {
   background: rgb(25 42 61);
 }

@@ -4421,6 +4421,39 @@
       "created_at": "2026-01-25T20:49:49.096197+01:00",
       "updated_at": "2026-01-25T20:49:49.096197+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"HEAD~1\",\"confidence\":95}"
+    },
+    {
+      "id": 403,
+      "change_id": "c2d49c83-e627-4b9d-911b-9f75323d3749",
+      "node_type": "action",
+      "title": "Refactoring jam to use ticks and layout track/groups instead of layoutRegions",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-25T21:21:30.053253+01:00",
+      "updated_at": "2026-01-25T21:21:30.053253+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":70}"
+    },
+    {
+      "id": 404,
+      "change_id": "0860c476-9ea3-4865-ba43-d9604dfc6fd1",
+      "node_type": "observation",
+      "title": "Layout regions now derived from layout track clips - each clip has group source that defines composition (which tracks, grid layout). Removes need for separate layoutRegions metadata.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-25T21:21:37.321404+01:00",
+      "updated_at": "2026-01-25T21:21:37.321404+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 405,
+      "change_id": "55d8b1af-eb22-44e2-911f-a5fd79fef0dd",
+      "node_type": "observation",
+      "title": "All timing now uses ticks (integers) instead of bars (floats). PPQ=960 default, TICKS_PER_BAR=3840 in 4/4. No more rounding errors.",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-25T21:21:37.458030+01:00",
+      "updated_at": "2026-01-25T21:21:37.458030+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     }
   ],
   "edges": [
@@ -8273,6 +8306,28 @@
       "weight": 1.0,
       "rationale": "Refined timing representation",
       "created_at": "2026-01-22T00:39:48.477864+01:00"
+    },
+    {
+      "id": 351,
+      "from_node_id": 403,
+      "to_node_id": 404,
+      "from_change_id": "c2d49c83-e627-4b9d-911b-9f75323d3749",
+      "to_change_id": "0860c476-9ea3-4865-ba43-d9604dfc6fd1",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Architecture change",
+      "created_at": "2026-01-25T21:21:42.753538+01:00"
+    },
+    {
+      "id": 352,
+      "from_node_id": 403,
+      "to_node_id": 405,
+      "from_change_id": "c2d49c83-e627-4b9d-911b-9f75323d3749",
+      "to_change_id": "55d8b1af-eb22-44e2-911f-a5fd79fef0dd",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Timing change",
+      "created_at": "2026-01-25T21:21:42.764821+01:00"
     }
   ]
 }

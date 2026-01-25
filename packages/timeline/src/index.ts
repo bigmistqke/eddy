@@ -6,10 +6,15 @@
  */
 
 export {
-  compileLayoutTimeline,
+  compileAbsoluteTimeline,
   findSegmentAtTime,
-  getActivePlacements,
-} from './compile-layout-timeline'
+  getActivePlacements
+} from './compile-absolute-timeline'
+
+export {
+  compileMusicalTimeline,
+  musicalToAbsolute
+} from './compile-musical-timeline'
 
 export type {
   ActivePlacement,
@@ -20,5 +25,6 @@ export type {
   LayoutSegment,
   Placement,
   TransitionInfo,
-  Viewport,
+  Viewport
 } from './types'
+

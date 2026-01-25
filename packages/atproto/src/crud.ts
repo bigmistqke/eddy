@@ -1,10 +1,10 @@
 import type { Agent } from '@atproto/api'
 import {
+  absoluteValidators,
+  absoluteWireValidators,
   type ClipSource,
   type ClipSourceStem,
   type Project,
-  projectValidators,
-  projectWireValidators,
   type Stem,
   type StemRef,
   stemValidators,
@@ -63,7 +63,7 @@ export async function getProject(agent: Agent, uri: string): Promise<ProjectReco
   return {
     uri: response.data.uri,
     cid: response.data.cid ?? '',
-    value: v.parse(projectValidators.main, response.data.value),
+    value: v.parse(absoluteValidators.project, response.data.value),
   }
 }
 
@@ -192,7 +192,7 @@ export async function listProjects(agent: Agent): Promise<ProjectListItem[]> {
   })
 
   return response.data.records.map(record => {
-    const project = v.parse(projectValidators.main, record.value)
+    const project = v.parse(absoluteValidators.project, record.value)
     const { rkey } = parseAtUri(record.uri)
     return {
       uri: record.uri,
@@ -321,7 +321,7 @@ export async function publishProject(
   }))
 
   // Build and validate project record
-  const record = v.parse(projectWireValidators.main, {
+  const record = v.parse(absoluteWireValidators.main, {
     $type: 'dj.eddy.absolute',
     schemaVersion: 1,
     title: project.title,

@@ -9,7 +9,7 @@
 import type { JamLayoutType } from '@eddy/lexicons'
 import { Repeat } from '@solid-primitives/range'
 import clsx from 'clsx'
-import { createSignal, For } from 'solid-js'
+import { createSignal, For, Show } from 'solid-js'
 import type { ClipPosition, Jam } from '~/primitives/create-jam'
 import styles from './Sequencer.module.css'
 
@@ -44,6 +44,16 @@ const TEST_VIDEOS = [
   '/videos/sample-10s.webm',
   '/videos/sample-15s.webm',
 ]
+
+/** Convert grid layout to JamLayoutType for icon display */
+function gridToLayoutType(layout: { type: 'grid'; columns: number; rows: number }): JamLayoutType {
+  const { columns, rows } = layout
+  if (columns === 1 && rows === 1) return 'full'
+  if (columns === 2 && rows === 1) return 'h-split'
+  if (columns === 1 && rows === 2) return 'v-split'
+  if (columns === 2 && rows === 2) return '2x2'
+  return 'full'
+}
 
 /**********************************************************************************/
 /*                                                                                */
@@ -99,24 +109,19 @@ function Cell(props: CellProps) {
 /**********************************************************************************/
 
 export function Grid(props: GridProps) {
-  const { jam } = props
-
   const [isPainting, setIsPainting] = createSignal(false)
   const [paintMode, setPaintMode] = createSignal<'add' | 'remove' | null>(null)
   const [paintAnchorColumn, setPaintAnchorColumn] = createSignal<number | null>(null)
   const [paintTrackId, setPaintTrackId] = createSignal<string | null>(null)
 
-  const columnCount = () => jam.metadata.columnCount
-  const tracks = () => jam.project.tracks
-  const currentColumnIndex = () => jam.currentColumnIndex()
-  const selectedColumnIndex = () => jam.selectedColumnIndex()
-
-  // Create array of column indices for iteration
-  // const columnIndices = createMemo(() => Array.from({ length: columnCount() }, (_, i) => i))
+  const columnCount = () => props.jam.metadata.columnCount
+  const tracks = () => props.jam.contentTracks()
+  const currentColumnIndex = () => props.jam.currentColumnIndex()
+  const selectedColumnIndex = () => props.jam.selectedColumnIndex()
 
   function handleCellToggle(trackId: string, columnIndex: number) {
-    const hadClip = jam.hasClipAtColumn(trackId, columnIndex)
-    jam.toggleClipAtColumn(columnIndex, trackId)
+    const hadClip = props.jam.hasClipAtColumn(trackId, columnIndex)
+    props.jam.toggleClipAtColumn(columnIndex, trackId)
 
     // Start painting mode
     const mode = hadClip ? 'remove' : 'add'
@@ -127,9 +132,9 @@ export function Grid(props: GridProps) {
 
     // Start paint session for overlap handling (only for add mode)
     if (mode === 'add') {
-      const clipInfo = jam.getClipAtColumn(trackId, columnIndex)
+      const clipInfo = props.jam.getClipAtColumn(trackId, columnIndex)
       if (clipInfo) {
-        jam.startPaintSession(trackId, clipInfo.clipId)
+        props.jam.startPaintSession(trackId, clipInfo.clipId)
       }
     }
   }
@@ -146,18 +151,18 @@ export function Grid(props: GridProps) {
 
     if (mode === 'add') {
       // Set clip to span from anchor to current column (bidirectional)
-      jam.setClipSpan(trackId, anchorColumn, columnIndex)
+      props.jam.setClipSpan(trackId, anchorColumn, columnIndex)
     } else if (mode === 'remove') {
-      const hasClip = jam.hasClipAtColumn(trackId, columnIndex)
+      const hasClip = props.jam.hasClipAtColumn(trackId, columnIndex)
       if (hasClip) {
-        jam.removeClipAtColumn(trackId, columnIndex)
+        props.jam.removeClipAtColumn(trackId, columnIndex)
       }
     }
   }
 
   function handlePointerUp() {
     // End paint session (commits overlap changes)
-    jam.endPaintSession()
+    props.jam.endPaintSession()
 
     setIsPainting(false)
     setPaintMode(null)
@@ -168,8 +173,8 @@ export function Grid(props: GridProps) {
   function handleAddTrack() {
     const trackCount = tracks().length
     const videoUrl = TEST_VIDEOS[trackCount % TEST_VIDEOS.length]
-    const trackId = jam.addTrack()
-    jam.setTrackVideoUrl(trackId, videoUrl)
+    const trackId = props.jam.addTrack()
+    props.jam.setTrackVideoUrl(trackId, videoUrl)
   }
 
   const gridTemplateColumns = () => `80px repeat(${columnCount()}, 60px) 48px`
@@ -205,7 +210,7 @@ export function Grid(props: GridProps) {
                       <Cell
                         trackId={track.id}
                         columnIndex={colIndex}
-                        clipPosition={jam.getClipPosition(track.id, colIndex)}
+                        clipPosition={props.jam.getClipPosition(track.id, colIndex)}
                         onToggle={() => handleCellToggle(track.id, colIndex)}
                         onPointerEnter={event => handleCellPointerEnter(event, track.id, colIndex)}
                       />
@@ -224,36 +229,47 @@ export function Grid(props: GridProps) {
           </div>
           <Repeat times={columnCount()}>
             {colIndex => {
-              const region = () => jam.getLayoutRegionForColumn(colIndex)
+              const region = () => props.jam.getLayoutRegionForColumn(colIndex)
+              const regionPosition = () => props.jam.getRegionPosition(colIndex)
+              const isRegionSelected = () => {
+                const selectedIdx = selectedColumnIndex()
+                if (selectedIdx === null) return false
+                const selectedRegion = props.jam.getLayoutRegionForColumn(selectedIdx)
+                const currentRegion = region()
+                return selectedRegion?.clipId === currentRegion?.clipId
+              }
+              const showContent = () => {
+                const pos = regionPosition()
+                return pos === 'single' || pos === 'start' || pos === 'none'
+              }
               return (
                 <button
                   class={clsx(
                     styles.timelineCell,
                     currentColumnIndex() === colIndex && styles.current,
                   )}
-                  data-region={jam.getRegionPosition(colIndex)}
+                  data-region={regionPosition()}
                   onClick={() => {
-                    jam.selectColumn(colIndex)
-                    jam.seekToColumn(colIndex)
+                    props.jam.selectColumn(colIndex)
+                    props.jam.seekToColumn(colIndex)
                   }}
                 >
-                  <div
-                    class={clsx(
-                      styles.timelineButton,
-                      selectedColumnIndex() === colIndex && styles.selected,
-                    )}
-                  >
-                    <span class={styles.timelineDuration}>{jam.metadata.columnDuration}</span>
-                    <span class={styles.timelineIcon}>
-                      {region() ? LAYOUT_ICONS[region()!.layout] : '·'}
-                    </span>
+                  <div class={clsx(styles.timelineButton, isRegionSelected() && styles.selected)}>
+                    <Show when={showContent()}>
+                      <span class={styles.timelineDuration}>
+                        {props.jam.metadata.columnDuration}
+                      </span>
+                      <span class={styles.timelineIcon}>
+                        {region() ? LAYOUT_ICONS[gridToLayoutType(region()!.layout)] : '·'}
+                      </span>
+                    </Show>
                   </div>
                 </button>
               )
             }}
           </Repeat>
           <div class={styles.addColumnButtonContainer}>
-            <button class={styles.addColumnButton} onClick={() => jam.addColumn()}>
+            <button class={styles.addColumnButton} onClick={() => props.jam.addColumn()}>
               +
             </button>
           </div>
