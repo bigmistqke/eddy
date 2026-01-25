@@ -4366,6 +4366,17 @@
       "created_at": "2026-01-22T00:39:37.979915+01:00",
       "updated_at": "2026-01-22T00:39:37.979915+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"52893dd\",\"confidence\":95}"
+    },
+    {
+      "id": 398,
+      "change_id": "2577c348-4317-4c71-b898-6da9244a3ce4",
+      "node_type": "goal",
+      "title": "lexiconToValibot: type check external refs exist in lookup",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-22T00:44:25.773367+01:00",
+      "updated_at": "2026-01-22T00:44:25.773367+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":80,\"prompt\":\"add goal for lexiconToValibot: get type checking if there are any external types that aren't in the lookup\"}"
     }
   ],
   "edges": [
@@ -8207,6 +8218,17 @@
       "weight": 1.0,
       "rationale": "Further simplified",
       "created_at": "2026-01-22T00:13:56.515208+01:00"
+    },
+    {
+      "id": 350,
+      "from_node_id": 385,
+      "to_node_id": 396,
+      "from_change_id": "49bcaa5a-4b07-41aa-b275-55cba9e7c9dd",
+      "to_change_id": "0a95a7ad-764b-4d9a-afbe-6fcd680cd970",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Refined timing representation",
+      "created_at": "2026-01-22T00:39:48.477864+01:00"
     }
   ]
 }

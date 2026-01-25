@@ -8,20 +8,20 @@
     "files_changed": 1
   },
   {
+    "hash": "52893dd99e99b0be7b690e792e0a62d17ca962bc",
+    "short_hash": "52893dd",
+    "author": "bigmistqke",
+    "date": "2026-01-22T00:39:33+01:00",
+    "message": "chore: extract build:lexicons script",
+    "files_changed": 1
+  },
+  {
     "hash": "293d38cfa797e0b174930352e4482e2ff5cd135e",
     "short_hash": "293d38c",
     "author": "bigmistqke",
     "date": "2026-01-22T00:39:29+01:00",
     "message": "refactor: use ticks for musical timing in lexicon\n\nATProto doesn't support floats - use integer ticks instead of fractional bars.\nAdds ppq (pulses per quarter note, default 960) for resolution.",
     "files_changed": 1
-  },
-  {
-    "hash": "76afd246bd823458f17a7fd71340fb7763b49337",
-    "short_hash": "76afd24",
-    "author": "bigmistqke",
-    "date": "2026-01-22T00:30:37+01:00",
-    "message": "chore: rename lexicons",
-    "files_changed": 37
   },
   {
     "hash": "a2706b1a076ffba5209d00f9770a626b16e9992f",
