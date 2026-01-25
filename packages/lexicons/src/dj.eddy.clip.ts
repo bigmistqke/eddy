@@ -11,7 +11,7 @@ export default {
   lexicon: 1,
   id: 'dj.eddy.clip',
   defs: {
-    'clipSource.stem': {
+    'source.stem': {
       type: 'object',
       description: 'Reference to an external stem record',
       required: ['type', 'ref'],
@@ -25,7 +25,7 @@ export default {
       },
     },
 
-    'clipSource.group': {
+    'source.group': {
       type: 'object',
       description: 'Reference to a group within this project (for nested compositions)',
       required: ['type', 'id'],

@@ -22,7 +22,7 @@ export default {
         },
         source: {
           type: 'union',
-          refs: ['dj.eddy.clip#clipSource.stem', 'dj.eddy.clip#clipSource.group'],
+          refs: ['dj.eddy.clip#source.stem', 'dj.eddy.clip#source.group'],
           description: 'Source media: a stem reference or a nested group',
         },
         tick: {
@@ -43,12 +43,12 @@ export default {
         },
         speed: {
           type: 'union',
-          refs: ['dj.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#fixed'],
           description: 'Playback speed multiplier (0.1-10)',
         },
         reverse: {
           type: 'union',
-          refs: ['dj.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#fixed'],
           description: 'Play clip in reverse',
         },
         audioPipeline: {
@@ -110,7 +110,7 @@ export default {
           },
           canvas: {
             type: 'ref',
-            ref: 'dj.eddy.project#canvas',
+            ref: 'dj.eddy.canvas',
           },
           curves: {
             type: 'array',

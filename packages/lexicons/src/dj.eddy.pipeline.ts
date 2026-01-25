@@ -16,7 +16,7 @@ export default {
         },
         amount: {
           type: 'ref',
-          ref: 'dj.eddy.value.static#staticValue',
+          ref: 'dj.eddy.value.static#fixed',
           description: 'Output amount (0-100)',
         },
       },

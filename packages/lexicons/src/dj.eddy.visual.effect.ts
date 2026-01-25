@@ -9,32 +9,32 @@ export default {
       properties: {
         x: {
           type: 'union',
-          refs: ['dj.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#fixed'],
           description: 'X offset (0-1 relative to canvas)',
         },
         y: {
           type: 'union',
-          refs: ['dj.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#fixed'],
           description: 'Y offset (0-1 relative to canvas)',
         },
         scale: {
           type: 'union',
-          refs: ['dj.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#fixed'],
           description: 'Uniform scale (0-1, where 1 = 100%)',
         },
         rotation: {
           type: 'union',
-          refs: ['dj.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#fixed'],
           description: 'Rotation (0-1, where 1 = 360 degrees)',
         },
         anchorX: {
           type: 'union',
-          refs: ['dj.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#fixed'],
           description: 'Transform anchor X (0-1)',
         },
         anchorY: {
           type: 'union',
-          refs: ['dj.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#fixed'],
           description: 'Transform anchor Y (0-1)',
         },
       },
@@ -47,7 +47,7 @@ export default {
         type: { type: 'string', const: 'visual.transform' },
         enabled: {
           type: 'union',
-          refs: ['dj.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#fixed'],
         },
         params: { type: 'ref', ref: '#transform.params' },
       },
@@ -59,12 +59,12 @@ export default {
       properties: {
         value: {
           type: 'union',
-          refs: ['dj.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#fixed'],
           description: 'Opacity (0-100)',
         },
         blendMode: {
           type: 'ref',
-          ref: 'dj.eddy.value.static#staticBlendMode',
+          ref: 'dj.eddy.value.static#blendMode',
         },
       },
     },
@@ -75,7 +75,7 @@ export default {
       properties: {
         value: {
           type: 'union',
-          refs: ['dj.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#fixed'],
           description: 'Brightness adjustment (-100 to 100, 0 = no change)',
         },
       },
@@ -87,7 +87,7 @@ export default {
       properties: {
         value: {
           type: 'union',
-          refs: ['dj.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#fixed'],
           description: 'Contrast multiplier (0-200, 100 = no change)',
         },
       },
@@ -99,7 +99,7 @@ export default {
       properties: {
         value: {
           type: 'union',
-          refs: ['dj.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#fixed'],
           description: 'Saturation multiplier (0-200, 100 = no change, 0 = grayscale)',
         },
       },
@@ -111,12 +111,12 @@ export default {
       properties: {
         color: {
           type: 'union',
-          refs: ['dj.eddy.value.static#staticVec3'],
+          refs: ['dj.eddy.value.static#vec3'],
           description: 'Tint color as RGB, each component 0-100 (e.g., [100, 0, 0] = red)',
         },
         intensity: {
           type: 'union',
-          refs: ['dj.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#fixed'],
           description: 'Colorize intensity (0 = original, 100 = full tint)',
         },
       },
@@ -129,7 +129,7 @@ export default {
         type: { type: 'string', const: 'visual.opacity' },
         enabled: {
           type: 'union',
-          refs: ['dj.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#fixed'],
         },
         params: { type: 'ref', ref: '#opacity.params' },
       },
@@ -143,7 +143,7 @@ export default {
         type: { type: 'string', const: 'visual.brightness' },
         enabled: {
           type: 'union',
-          refs: ['dj.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#fixed'],
         },
         params: { type: 'ref', ref: '#brightness.params' },
       },
@@ -157,7 +157,7 @@ export default {
         type: { type: 'string', const: 'visual.contrast' },
         enabled: {
           type: 'union',
-          refs: ['dj.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#fixed'],
         },
         params: { type: 'ref', ref: '#contrast.params' },
       },
@@ -171,7 +171,7 @@ export default {
         type: { type: 'string', const: 'visual.saturation' },
         enabled: {
           type: 'union',
-          refs: ['dj.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#fixed'],
         },
         params: { type: 'ref', ref: '#saturation.params' },
       },
@@ -185,7 +185,7 @@ export default {
         type: { type: 'string', const: 'visual.colorize' },
         enabled: {
           type: 'union',
-          refs: ['dj.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#fixed'],
         },
         params: { type: 'ref', ref: '#colorize.params' },
       },
@@ -202,7 +202,7 @@ export default {
         },
         enabled: {
           type: 'union',
-          refs: ['dj.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#fixed'],
         },
         params: {
           type: 'ref',

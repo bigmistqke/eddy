@@ -83,12 +83,12 @@ export default {
         },
         gap: {
           type: 'union',
-          refs: ['dj.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#fixed'],
           description: 'Gap between cells (0-1 relative to group size)',
         },
         padding: {
           type: 'union',
-          refs: ['dj.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#fixed'],
           description: 'Padding around grid (0-1 relative to group size)',
         },
       },

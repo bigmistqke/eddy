@@ -11,7 +11,7 @@
  * - dj.eddy.track: Track with clipIds[] (domain-agnostic)
  * - dj.eddy.group: Group with members[] (domain-agnostic)
  * - dj.eddy.clip: Source types only (stem, group refs)
- * - dj.eddy.project: Canvas definition
+ * - dj.eddy.absolute: Canvas definition
  */
 
 import {
@@ -25,16 +25,16 @@ import type * as v from 'valibot'
 // Lexicon imports
 import absoluteLexicon from './dj.eddy.absolute'
 import audioEffectLexicon from './dj.eddy.audio.effect'
+import canvasLexicon from './dj.eddy.canvas'
 import clipLexicon from './dj.eddy.clip'
 import groupLexicon from './dj.eddy.group'
 import jamLexicon from './dj.eddy.jam'
 import musicalLexicon from './dj.eddy.musical'
 import pipelineLexicon from './dj.eddy.pipeline'
-import projectLexicon from './dj.eddy.project'
 import stemLexicon from './dj.eddy.stem'
 import trackLexicon from './dj.eddy.track'
 import curveLexicon from './dj.eddy.value.curve'
-import staticValueLexicon from './dj.eddy.value.static'
+import fixedLexicon from './dj.eddy.value.static'
 import visualEffectLexicon from './dj.eddy.visual.effect'
 
 const lookup = createLookup(
@@ -46,11 +46,11 @@ const lookup = createLookup(
   jamLexicon,
   musicalLexicon,
   pipelineLexicon,
-  projectLexicon,
+  absoluteLexicon,
   stemLexicon,
   strongRefLexicon,
   trackLexicon,
-  staticValueLexicon,
+  fixedLexicon,
   visualEffectLexicon,
 )
 
@@ -68,14 +68,11 @@ export const absoluteValidators = lexiconToValibot(absoluteLexicon, sdkConfig)
 export const musicalValidators = lexiconToValibot(musicalLexicon, sdkConfig)
 
 // Shared validators (SDK format)
-export const projectValidators = lexiconToValibot(projectLexicon, sdkConfig)
+export const canvasValidators = lexiconToValibot(canvasLexicon, sdkConfig)
 export const stemValidators = lexiconToValibot(stemLexicon, sdkConfig)
 export const audioEffectValidators = lexiconToValibot(audioEffectLexicon, sdkConfig)
-export const visualEffectValidators = lexiconToValibot(visualEffectLexicon, {
-  lookup,
-  format: 'sdk',
-})
-export const valuesValidators = lexiconToValibot(staticValueLexicon, sdkConfig)
+export const visualEffectValidators = lexiconToValibot(visualEffectLexicon, sdkConfig)
+export const valuesValidators = lexiconToValibot(fixedLexicon, sdkConfig)
 export const curveValidators = lexiconToValibot(curveLexicon, sdkConfig)
 export const trackValidators = lexiconToValibot(trackLexicon, sdkConfig)
 export const clipValidators = lexiconToValibot(clipLexicon, sdkConfig)
@@ -86,11 +83,10 @@ export const pipelineValidators = lexiconToValibot(pipelineLexicon, sdkConfig)
 // Wire format validators
 export const absoluteWireValidators = lexiconToValibot(absoluteLexicon, wireConfig)
 export const musicalWireValidators = lexiconToValibot(musicalLexicon, wireConfig)
-export const projectWireValidators = lexiconToValibot(projectLexicon, wireConfig)
 export const stemWireValidators = lexiconToValibot(stemLexicon, wireConfig)
 export const audioEffectWireValidators = lexiconToValibot(audioEffectLexicon, wireConfig)
 export const visualEffectWireValidators = lexiconToValibot(visualEffectLexicon, wireConfig)
-export const valuesWireValidators = lexiconToValibot(staticValueLexicon, wireConfig)
+export const valuesWireValidators = lexiconToValibot(fixedLexicon, wireConfig)
 export const curveWireValidators = lexiconToValibot(curveLexicon, wireConfig)
 export const jamWireValidators = lexiconToValibot(jamLexicon, wireConfig)
 export const pipelineWireValidators = lexiconToValibot(pipelineLexicon, wireConfig)
@@ -121,14 +117,14 @@ export type Clip = AbsoluteClip | MusicalClip
 /**********************************************************************************/
 
 // Canvas
-export type Canvas = v.InferOutput<typeof projectValidators.canvas>
+export type Canvas = v.InferOutput<typeof canvasValidators.canvas>
 
 // Track (domain-agnostic, uses clipIds)
 export type Track = v.InferOutput<typeof trackValidators.track>
 
 // Clip sources (shared)
-export type ClipSourceStem = v.InferOutput<(typeof clipValidators)['clipSource.stem']>
-export type ClipSourceGroup = v.InferOutput<(typeof clipValidators)['clipSource.group']>
+export type ClipSourceStem = v.InferOutput<(typeof clipValidators)['source.stem']>
+export type ClipSourceGroup = v.InferOutput<(typeof clipValidators)['source.group']>
 export type ClipSource = ClipSourceStem | ClipSourceGroup
 
 // Group types
@@ -138,11 +134,11 @@ export type MemberVoid = v.InferOutput<(typeof groupValidators)['member.void']>
 export type LayoutGrid = v.InferOutput<(typeof groupValidators)['layout.grid']>
 
 // Value types
-export type StaticValue = v.InferOutput<typeof valuesValidators.staticValue>
-export type StaticVec2 = v.InferOutput<typeof valuesValidators.staticVec2>
-export type StaticVec3 = v.InferOutput<typeof valuesValidators.staticVec3>
-export type StaticVec4 = v.InferOutput<typeof valuesValidators.staticVec4>
-export type StaticBlendMode = v.InferOutput<typeof valuesValidators.staticBlendMode>
+export type StaticValue = v.InferOutput<typeof valuesValidators.fixed>
+export type StaticVec2 = v.InferOutput<typeof valuesValidators.vec2>
+export type StaticVec3 = v.InferOutput<typeof valuesValidators.vec3>
+export type StaticVec4 = v.InferOutput<typeof valuesValidators.vec4>
+export type StaticBlendMode = v.InferOutput<typeof valuesValidators.blendMode>
 export type CustomParams = v.InferOutput<typeof valuesValidators.customParams>
 export type Value = StaticValue
 

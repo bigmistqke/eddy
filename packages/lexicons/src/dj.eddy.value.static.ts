@@ -4,7 +4,7 @@ export default {
   lexicon: 1,
   id: 'dj.eddy.value.static',
   defs: {
-    staticValue: {
+    fixed: {
       type: 'object',
       description:
         "A static numeric value. Values are integers scaled by 100 (e.g., 50 = 0.5, 100 = 1.0). This avoids floats which AT Protocol doesn't support.",
@@ -31,7 +31,7 @@ export default {
       },
     },
 
-    staticVec2: {
+    vec2: {
       type: 'object',
       description:
         'A static 2D vector. Each component is an integer scaled by 100 (e.g., [50, 100] = [0.5, 1.0]).',
@@ -47,7 +47,7 @@ export default {
       },
     },
 
-    staticVec3: {
+    vec3: {
       type: 'object',
       description:
         'A static 3D vector. Each component is an integer scaled by 100 (e.g., [100, 50, 0] = [1.0, 0.5, 0.0]).',
@@ -63,7 +63,7 @@ export default {
       },
     },
 
-    staticVec4: {
+    vec4: {
       type: 'object',
       description:
         'A static 4D vector. Each component is an integer scaled by 100 (e.g., [100, 50, 0, 100] = [1.0, 0.5, 0.0, 1.0]).',
@@ -79,7 +79,7 @@ export default {
       },
     },
 
-    staticBlendMode: {
+    blendMode: {
       type: 'object',
       description: 'A static blend mode value.',
       required: ['value'],
@@ -98,7 +98,5 @@ export default {
       description: 'Extensible parameters for custom effects.',
       properties: {},
     },
-
-    /* TODO: Add matrix types when needed (staticMat2, staticMat3, staticMat4) */
   },
 } as const satisfies LexiconDoc

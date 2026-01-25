@@ -42,12 +42,12 @@ export default {
         },
         muted: {
           type: 'union',
-          refs: ['dj.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#fixed'],
           description: 'Mute track',
         },
         solo: {
           type: 'union',
-          refs: ['dj.eddy.value.static#staticValue'],
+          refs: ['dj.eddy.value.static#fixed'],
           description: 'Solo track',
         },
       },

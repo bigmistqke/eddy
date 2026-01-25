@@ -1,15 +1,8 @@
-/**
- * Project Shared Types
- *
- * Shared definitions used by both absolute and musical projects.
- * The project records themselves are in dj.eddy.absolute and dj.eddy.musical.
- */
-
 import type { LexiconDoc } from '@atproto/lexicon'
 
 export default {
   lexicon: 1,
-  id: 'dj.eddy.project',
+  id: 'dj.eddy.canvas',
   defs: {
     canvas: {
       type: 'object',

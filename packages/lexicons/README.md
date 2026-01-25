@@ -4,7 +4,7 @@ AT Protocol lexicon definitions for Eddy.
 
 ## Records
 
-### `dj.eddy.project`
+### `dj.eddy.absolute`
 
 The main project record containing groups, tracks, curves, and effect pipelines.
 
@@ -394,14 +394,14 @@ Master Processing:
 
 ```typescript
 import { Lexicons } from '@atproto/lexicon'
-import projectLexicon from './dj.eddy.project.json'
+import projectLexicon from './dj.eddy.absolute.json'
 import stemLexicon from './dj.eddy.stem.json'
 
 const lexicons = new Lexicons()
 lexicons.add(projectLexicon)
 lexicons.add(stemLexicon)
 
-lexicons.assertValidRecord('dj.eddy.project', projectData)
+lexicons.assertValidRecord('dj.eddy.absolute', projectData)
 ```
 
 ### Runtime Validation
