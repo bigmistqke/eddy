@@ -7,7 +7,8 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev": "pnpm --filter @eddy/lexicons build && pnpm --filter @eddy/app dev",
+    "dev:app": "pnpm --filter @eddy/lexicons build && pnpm --filter @eddy/app dev",
+    "dev:jam": "pnpm --filter @eddy/lexicons build && pnpm --filter @eddy/jam dev",
     "build": "pnpm build:lexicons && pnpm --filter @eddy/app build",
     "build:lexicons": "pnpm --filter @eddy/lexicons build",
     "preview": "pnpm --filter @eddy/app preview",
@@ -26,6 +27,7 @@
     "typescript": "^5.7.0"
   },
   "dependencies": {
-    "@atproto/api": "^0.13.35"
+    "@atproto/api": "^0.13.35",
+    "@solid-primitives/range": "^0.2.3"
   }
 }

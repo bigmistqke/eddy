@@ -14,6 +14,9 @@ importers:
       '@atproto/api':
         specifier: ^0.13.35
         version: 0.13.35
+      '@solid-primitives/range':
+        specifier: ^0.2.3
+        version: 0.2.3(solid-js@1.9.10)
     devDependencies:
       diagonjs:
         specifier: ^1.6.1
@@ -1095,6 +1098,16 @@ packages:
 
   '@rushstack/ts-command-line@5.1.5':
     resolution: {integrity: sha512-YmrFTFUdHXblYSa+Xc9OO9FsL/XFcckZy0ycQ6q7VSBsVs5P0uD9vcges5Q9vctGlVdu27w+Ct6IuJ458V0cTQ==}
+
+  '@solid-primitives/range@0.2.3':
+    resolution: {integrity: sha512-3mROlQvne5JkKT8MYQ3BHOQopeFFS4vr/KoNupe+zGwQZjDHlaswejKCDXWqVnNq0UHCQbrSARZ+KklJSKAmbw==}
+    peerDependencies:
+      solid-js: ^1.6.12
+
+  '@solid-primitives/utils@6.3.2':
+    resolution: {integrity: sha512-hZ/M/qr25QOCcwDPOHtGjxTD8w2mNyVAYvcfgwzBHq2RwNqHNdDNsMZYap20+ruRwW4A3Cdkczyoz0TSxLCAPQ==}
+    peerDependencies:
+      solid-js: ^1.6.12
 
   '@solidjs/router@0.15.4':
     resolution: {integrity: sha512-WOpgg9a9T638cR+5FGbFi/IV4l2FpmBs1GpIMSPa0Ce9vyJN7Wts+X2PqMf9IYn0zUj2MlSJtm1gp7/HI/n5TQ==}
@@ -3018,6 +3031,15 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
     optional: true
+
+  '@solid-primitives/range@0.2.3(solid-js@1.9.10)':
+    dependencies:
+      '@solid-primitives/utils': 6.3.2(solid-js@1.9.10)
+      solid-js: 1.9.10
+
+  '@solid-primitives/utils@6.3.2(solid-js@1.9.10)':
+    dependencies:
+      solid-js: 1.9.10
 
   '@solidjs/router@0.15.4(solid-js@1.9.10)':
     dependencies:
