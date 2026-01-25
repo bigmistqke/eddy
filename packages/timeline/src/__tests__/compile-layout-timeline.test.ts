@@ -34,19 +34,19 @@ function createTestProject(overrides: Partial<AbsoluteProject> = {}): AbsolutePr
       {
         id: 'clip-0',
         source: { type: 'stem', ref: { uri: 'at://did/dj.eddy.stem/0', cid: 'cid0' } },
-        offset: 0,
+        start: 0,
         duration: 10000, // 10 seconds
       },
       {
         id: 'clip-1',
         source: { type: 'stem', ref: { uri: 'at://did/dj.eddy.stem/1', cid: 'cid1' } },
-        offset: 0,
+        start: 0,
         duration: 15000, // 15 seconds
       },
       {
         id: 'clip-2',
         source: { type: 'stem', ref: { uri: 'at://did/dj.eddy.stem/2', cid: 'cid2' } },
-        offset: 5000, // starts at 5 seconds
+        start: 5000, // starts at 5 seconds
         duration: 10000, // 10 seconds
       },
     ],
@@ -210,19 +210,19 @@ describe('nested groups', () => {
         {
           id: 'group-clip',
           source: { type: 'group', id: 'nested-group' },
-          offset: 0,
+          start: 0,
           duration: 10000, // 10 seconds
         },
         {
           id: 'stem-a',
           source: { type: 'stem', ref: { uri: 'at://did/stem-a', cid: 'cid-a' } },
-          offset: 0,
+          start: 0,
           duration: 10000,
         },
         {
           id: 'stem-b',
           source: { type: 'stem', ref: { uri: 'at://did/stem-b', cid: 'cid-b' } },
-          offset: 0,
+          start: 0,
           duration: 10000,
         },
       ],
@@ -277,25 +277,25 @@ describe('nested groups', () => {
         {
           id: 'segment-1',
           source: { type: 'group', id: 'layout-vertical' },
-          offset: 0,
+          start: 0,
           duration: 5000,
         },
         {
           id: 'segment-2',
           source: { type: 'group', id: 'layout-horizontal' },
-          offset: 5000,
+          start: 5000,
           duration: 5000,
         },
         {
           id: 'clip-a',
           source: { type: 'stem', ref: { uri: 'at://did/stem-a', cid: 'cid-a' } },
-          offset: 0,
+          start: 0,
           duration: 10000,
         },
         {
           id: 'clip-b',
           source: { type: 'stem', ref: { uri: 'at://did/stem-b', cid: 'cid-b' } },
-          offset: 0,
+          start: 0,
           duration: 10000,
         },
       ],
@@ -351,13 +351,13 @@ describe('nested groups', () => {
         {
           id: 'group-clip',
           source: { type: 'group', id: 'inner-group' },
-          offset: 2000, // Starts at 2s
+          start: 2000, // Starts at 2s
           duration: 8000,
         },
         {
           id: 'inner-stem',
           source: { type: 'stem', ref: { uri: 'at://did/stem', cid: 'cid' } },
-          offset: 1000, // 1s relative to group
+          start: 1000, // 1s relative to group
           duration: 5000,
         },
       ],
@@ -405,19 +405,19 @@ describe('nested groups', () => {
         {
           id: 'clip-1',
           source: { type: 'group', id: 'group-level-1' },
-          offset: 0,
+          start: 0,
           duration: 10000,
         },
         {
           id: 'clip-2',
           source: { type: 'group', id: 'group-level-2' },
-          offset: 0,
+          start: 0,
           duration: 10000,
         },
         {
           id: 'deep-stem',
           source: { type: 'stem', ref: { uri: 'at://did/stem', cid: 'cid' } },
-          offset: 0,
+          start: 0,
           duration: 10000,
         },
       ],
@@ -463,25 +463,25 @@ describe('nested groups', () => {
         {
           id: 'left-group-clip',
           source: { type: 'group', id: 'group-left-split' },
-          offset: 0,
+          start: 0,
           duration: 10000,
         },
         {
           id: 'right-stem',
           source: { type: 'stem', ref: { uri: 'at://did/right', cid: 'cid-r' } },
-          offset: 0,
+          start: 0,
           duration: 10000,
         },
         {
           id: 'top-stem',
           source: { type: 'stem', ref: { uri: 'at://did/top', cid: 'cid-t' } },
-          offset: 0,
+          start: 0,
           duration: 10000,
         },
         {
           id: 'bottom-stem',
           source: { type: 'stem', ref: { uri: 'at://did/bottom', cid: 'cid-b' } },
-          offset: 0,
+          start: 0,
           duration: 10000,
         },
       ],
@@ -598,13 +598,13 @@ describe('multiple clips per track', () => {
         {
           id: 'clip-0a',
           source: { type: 'stem', ref: { uri: 'at://did/dj.eddy.stem/0a', cid: 'cid0a' } },
-          offset: 0,
+          start: 0,
           duration: 5000,
         },
         {
           id: 'clip-0b',
           source: { type: 'stem', ref: { uri: 'at://did/dj.eddy.stem/0b', cid: 'cid0b' } },
-          offset: 5000,
+          start: 5000,
           duration: 5000,
         },
       ],

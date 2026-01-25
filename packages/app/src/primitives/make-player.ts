@@ -2,7 +2,7 @@ import { rpc, transfer, type RPC } from '@bigmistqke/rpc/messenger'
 import { makeAudioBus, type AudioBus, type AudioBusOutput } from '@eddy/audio'
 import type { AudioPipeline, Group, Project, StaticValue } from '@eddy/lexicons'
 import { createClock, type Clock } from '@eddy/solid'
-import { compileLayoutTimeline, type CompiledTimeline } from '@eddy/timeline'
+import { compileAbsoluteTimeline, type CompiledTimeline } from '@eddy/timeline'
 import { debug, makeLoop, makeMonitor } from '@eddy/utils'
 import { createEffect, createMemo, createSignal, on, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
@@ -297,7 +297,7 @@ export async function makePlayer(options: CreatePlayerOptions): Promise<Player> 
   const timeline = createMemo(() => {
     const _previewTracks = previewTracks()
     const projectWithPreviews = injectPreviewClips(project(), _previewTracks)
-    return compileLayoutTimeline(projectWithPreviews, { width, height })
+    return compileAbsoluteTimeline(projectWithPreviews, { width, height })
   })
 
   // Worker pools for video and audio playback
@@ -338,8 +338,8 @@ export async function makePlayer(options: CreatePlayerOptions): Promise<Player> 
   /** Get the root group from project */
   function getRootGroup(): Group | undefined {
     const proj = project()
-    if (proj.rootGroup) {
-      return proj.groups.find(g => g.id === proj.rootGroup)
+    if (proj.root) {
+      return proj.groups.find(g => g.id === proj.root)
     }
     return proj.groups[0]
   }

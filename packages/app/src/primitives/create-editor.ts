@@ -8,14 +8,20 @@ import {
   makeOfflineAudioMixer,
   resumeAudioContext,
 } from '@eddy/audio'
-import type { AudioEffect, Clip, ClipSource, ClipSourceStem, Project, Track } from '@eddy/lexicons'
+import type {
+  AbsoluteClip,
+  AbsoluteProject,
+  AudioEffect,
+  ClipSource,
+  ClipSourceStem
+} from '@eddy/lexicons'
 import { makeMuxer } from '@eddy/media'
 import { action, createResourceMap, deepResource, defer, hold, resource } from '@eddy/solid'
 import { getActivePlacements } from '@eddy/timeline'
 import { assertedNotNullish, debug } from '@eddy/utils'
 import type { EffectValue } from '@eddy/video'
 import { createEffect, createSelector, createSignal, mapArray, type Accessor } from 'solid-js'
-import { createStore, produce } from 'solid-js/store'
+import { createStore } from 'solid-js/store'
 import { createWritableStream, readClipBlob, writeBlob } from '~/opfs'
 import { makeDebugInfo as initDebugInfo } from '~/primitives/make-debug-info'
 import { SCHEDULER_BUFFER } from '~/primitives/make-scheduler'
@@ -41,7 +47,7 @@ interface LocalClipState {
   duration?: number
 }
 
-function makeDefaultProject(): Project {
+function makeDefaultProject(): AbsoluteProject {
   return {
     schemaVersion: 1,
     title: 'Untitled Project',
@@ -65,7 +71,7 @@ function makeDefaultProject(): Project {
       {
         id: 'track-0',
         name: 'Track 1',
-        clips: [],
+        clipIds: [],
         audioPipeline: {
           effects: [
             { type: 'audio.gain', params: { value: { value: 100 } } },
@@ -85,7 +91,7 @@ function makeDefaultProject(): Project {
       {
         id: 'track-1',
         name: 'Track 2',
-        clips: [],
+        clipIds: [],
         audioPipeline: {
           effects: [
             { type: 'audio.gain', params: { value: { value: 100 } } },
@@ -105,7 +111,7 @@ function makeDefaultProject(): Project {
       {
         id: 'track-2',
         name: 'Track 3',
-        clips: [],
+        clipIds: [],
         audioPipeline: {
           effects: [
             { type: 'audio.gain', params: { value: { value: 100 } } },
@@ -119,7 +125,7 @@ function makeDefaultProject(): Project {
       {
         id: 'track-3',
         name: 'Track 4',
-        clips: [],
+        clipIds: [],
         audioPipeline: {
           effects: [
             { type: 'audio.gain', params: { value: { value: 100 } } },
@@ -131,6 +137,7 @@ function makeDefaultProject(): Project {
         },
       },
     ],
+    clips: [],
     createdAt: new Date().toISOString(),
   }
 }
@@ -229,8 +236,7 @@ export function createEditor(options: CreateEditorOptions) {
     // Derive clips that have stem sources from project store
     () =>
       project()
-        .tracks.flatMap(track => track.clips)
-        .filter((clip): clip is typeof clip & { source: ClipSourceStem } =>
+        .clips.filter((clip): clip is typeof clip & { source: ClipSourceStem } =>
           isStemSource(clip.source),
         )
         .map(clip => [clip.id, clip] as const),
@@ -391,23 +397,26 @@ export function createEditor(options: CreateEditorOptions) {
     return track?.visualPipeline?.effects ?? []
   }
 
-  function addRecording(trackId: string, clipId: string, duration: number, offset: number) {
+  function addRecording(trackId: string, clipId: string, duration: number, startMs: number) {
     // Track that this clip exists locally (blob is stored in OPFS)
     setLocalClips(clipId, { duration })
 
-    // Append new clip to existing clips (later clips have higher priority for punch-through)
+    // Create the clip at project level
+    const newClip: AbsoluteClip = {
+      id: clipId,
+      start: Math.round(startMs),
+      duration: Math.round(duration),
+    }
+
+    // Add clip to project.clips
+    setProject('clips', clips => [...clips, newClip])
+
+    // Add clipId to track.clipIds
     setProject(
       'tracks',
       track => track.id === trackId,
-      'clips',
-      clips => [
-        ...clips,
-        {
-          id: clipId,
-          offset: Math.round(offset),
-          duration: Math.round(duration),
-        },
-      ],
+      'clipIds',
+      clipIds => [...clipIds, clipId],
     )
 
     setProject('updatedAt', new Date().toISOString())
@@ -417,29 +426,37 @@ export function createEditor(options: CreateEditorOptions) {
     const track = project().tracks.find(t => t.id === trackId)
 
     if (track) {
-      for (const clip of track.clips) {
-        setLocalClips(clip.id, undefined!)
+      // Clear local state for each clip
+      for (const clipId of track.clipIds) {
+        setLocalClips(clipId, undefined!)
       }
+
+      // Remove clips from project.clips
+      const clipIdsToRemove = new Set(track.clipIds)
+      setProject('clips', clips => clips.filter(clip => !clipIdsToRemove.has(clip.id)))
     }
 
+    // Clear clipIds on the track
     setProject(
       'tracks',
       t => t.id === trackId,
-      produce((track: Track) => {
-        track.clips = []
-      }),
+      'clipIds',
+      [],
     )
 
     setProject('updatedAt', new Date().toISOString())
   }
 
   /** Find the clip at a given time (in seconds) on a track */
-  function getClipAtTime(trackId: string, timeSeconds: number): Clip | undefined {
+  function getClipAtTime(trackId: string, timeSeconds: number): AbsoluteClip | undefined {
     const track = project().tracks.find(t => t.id === trackId)
     if (!track) return undefined
 
     const timeMs = timeSeconds * 1000 // Convert to ms (clips use ms)
-    return track.clips.find(clip => clip.offset <= timeMs && timeMs < clip.offset + clip.duration)
+    const clipIds = new Set(track.clipIds)
+    return project().clips.find(
+      clip => clipIds.has(clip.id) && clip.start <= timeMs && timeMs < clip.start + clip.duration,
+    )
   }
 
   /** Remove a single clip from a track */
@@ -447,13 +464,16 @@ export function createEditor(options: CreateEditorOptions) {
     // Clean up local blob reference
     setLocalClips(clipId, undefined!)
 
+    // Remove clipId from track.clipIds
     setProject(
       'tracks',
       t => t.id === trackId,
-      produce((track: Track) => {
-        track.clips = track.clips.filter(clip => clip.id !== clipId)
-      }),
+      'clipIds',
+      clipIds => clipIds.filter(id => id !== clipId),
     )
+
+    // Remove clip from project.clips
+    setProject('clips', clips => clips.filter(clip => clip.id !== clipId))
 
     setProject('updatedAt', new Date().toISOString())
   }
@@ -616,31 +636,29 @@ export function createEditor(options: CreateEditorOptions) {
       throw new Error('Please sign in to publish')
     }
 
+    const _project = project()
     const clipBlobs = new Map<string, { blob: Blob; duration: number }>()
-    for (const track of project().tracks) {
-      for (const clip of track.clips) {
-        // Skip clips that already have a stem source - they don't need to be re-uploaded
-        if (clip.source?.type === 'stem') continue
 
-        const blob = await getClipBlob(clip.id)
-        const duration = clip.duration
-        if (blob && duration) {
-          clipBlobs.set(clip.id, { blob, duration })
-        }
+    for (const clip of _project.clips) {
+      // Skip clips that already have a stem source - they don't need to be re-uploaded
+      if (clip.source?.type === 'stem') continue
+
+      const blob = await getClipBlob(clip.id)
+      const duration = clip.duration
+      if (blob && duration) {
+        clipBlobs.set(clip.id, { blob, duration })
       }
     }
 
     // Check if there's anything to publish (either new recordings or existing stems)
     const hasNewRecordings = clipBlobs.size > 0
-    const hasExistingStems = project().tracks.some(track =>
-      track.clips.some(clip => clip.source?.type === 'stem'),
-    )
+    const hasExistingStems = _project.clips.some(clip => clip.source?.type === 'stem')
 
     if (!hasNewRecordings && !hasExistingStems) {
       throw new Error('No recordings to publish')
     }
 
-    const result = await publishProject(currentAgent, project(), clipBlobs)
+    const result = await publishProject(currentAgent, _project, clipBlobs)
     return result.uri.split('/').pop()
   })
 
@@ -655,9 +673,13 @@ export function createEditor(options: CreateEditorOptions) {
 
           // Effect for loading/clearing clips
           createEffect(() => {
-            // Access track by ID
-            const track = project().tracks.find(t => t.id === trackId)
-            const clip = track?.clips[0]
+            // Access track by ID and get first clip
+            const _project = project()
+            const track = _project.tracks.find(t => t.id === trackId)
+            const firstClipId = track?.clipIds[0]
+            const clip = firstClipId
+              ? _project.clips.find(c => c.id === firstClipId)
+              : undefined
             const newClipId = clip?.id ?? null
 
             // Clip changed - clear old one first
@@ -770,19 +792,25 @@ export function createEditor(options: CreateEditorOptions) {
       const audioMixer = makeOfflineAudioMixer(timeline.duration, sampleRate)
       let hasAudio = false
       let clipIndex = 0
-      const totalClips = _project.tracks.reduce((sum, t) => sum + t.clips.length, 0)
+      const totalClips = _project.tracks.reduce((sum, t) => sum + t.clipIds.length, 0)
+
+      // Build a map of clips for quick lookup
+      const clipsById = new Map(_project.clips.map(c => [c.id, c]))
 
       // Decode and mix audio from all clips
       for (const track of _project.tracks) {
         const effects = track.audioPipeline?.effects ?? []
 
-        for (const clip of track.clips) {
+        for (const clipId of track.clipIds) {
+          const clip = clipsById.get(clipId)
+          if (!clip) continue
+
           const buffer = await getClipBuffer(clip.id)
           if (buffer) {
             const audioBuffer = await decodeClipAudio(buffer, sampleRate)
             if (audioBuffer) {
               hasAudio = true
-              const startTime = (clip.offset ?? 0) / 1000
+              const startTime = clip.start / 1000
               audioMixer.addTrack({ buffer: audioBuffer, effects, startTime })
             }
           }

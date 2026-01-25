@@ -40,17 +40,17 @@ import visualEffectLexicon from './dj.eddy.visual.effect'
 const lookup = createLookup(
   absoluteLexicon,
   audioEffectLexicon,
+  canvasLexicon,
   clipLexicon,
   curveLexicon,
+  fixedLexicon,
   groupLexicon,
   jamLexicon,
   musicalLexicon,
   pipelineLexicon,
-  absoluteLexicon,
   stemLexicon,
   strongRefLexicon,
   trackLexicon,
-  fixedLexicon,
   visualEffectLexicon,
 )
 

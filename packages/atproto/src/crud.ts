@@ -2,9 +2,10 @@ import type { Agent } from '@atproto/api'
 import {
   absoluteValidators,
   absoluteWireValidators,
+  type AbsoluteProject,
+  type Canvas,
   type ClipSource,
   type ClipSourceStem,
-  type Project,
   type Stem,
   type StemRef,
   stemValidators,
@@ -28,7 +29,7 @@ export interface RecordRef {
 export interface ProjectRecord {
   uri: string
   cid: string
-  value: Project
+  value: AbsoluteProject
 }
 
 export interface StemRecord {
@@ -262,16 +263,14 @@ async function cloneStem(agent: Agent, stemUri: string): Promise<StemRef> {
 
 export async function publishProject(
   agent: Agent,
-  project: Project,
+  project: AbsoluteProject,
   clipBlobs: Map<string, { blob: Blob; duration: number }>,
 ): Promise<RecordRef> {
   const myDid = agent.assertDid
   const stemRefs = new Map<string, StemRef>()
 
   // Collect all clips that need stem processing
-  const allClips = project.tracks.flatMap(track =>
-    track.clips.map(clip => ({ trackId: track.id, clip })),
-  )
+  const allClips = project.clips.map(clip => ({ clip }))
 
   // Process stems in parallel
   await Promise.all(
@@ -300,34 +299,36 @@ export async function publishProject(
   )
 
   // Verify all clips have stem refs
-  for (const track of project.tracks) {
-    for (const clip of track.clips) {
-      if (!stemRefs.has(clip.id)) {
-        throw new Error(`Clip ${clip.id} has no local blob and no remote source`)
-      }
+  for (const clip of project.clips) {
+    if (!stemRefs.has(clip.id)) {
+      throw new Error(`Clip ${clip.id} has no local blob and no remote source`)
     }
   }
+
+  // Build clips with stem refs
+  const clips = project.clips.map(clip => ({
+    id: clip.id,
+    source: { type: 'stem' as const, ref: stemRefs.get(clip.id)! },
+    start: clip.start,
+    duration: clip.duration,
+  }))
 
   // Build tracks - preserve all tracks
   const tracks = project.tracks.map(track => ({
     id: track.id,
-    clips: track.clips.map(clip => ({
-      id: clip.id,
-      source: { type: 'stem' as const, ref: stemRefs.get(clip.id)! },
-      offset: clip.offset,
-      duration: clip.duration,
-    })),
+    clipIds: track.clipIds,
     audioPipeline: track.audioPipeline,
   }))
 
   // Build and validate project record
-  const record = v.parse(absoluteWireValidators.main, {
+  const canvas = project.canvas as Canvas
+  const record = v.parse(absoluteWireValidators.project, {
     $type: 'dj.eddy.absolute',
     schemaVersion: 1,
     title: project.title,
     canvas: {
-      width: project.canvas.width,
-      height: project.canvas.height,
+      width: canvas.width,
+      height: canvas.height,
     },
     groups: project.groups.map(group => ({
       id: group.id,
@@ -335,6 +336,7 @@ export async function publishProject(
       ...(group.layout && { layout: group.layout }),
     })),
     tracks,
+    clips,
     createdAt: project.createdAt,
   })
 
@@ -390,11 +392,9 @@ export async function deleteOrphanedStems(agent: Agent): Promise<string[]> {
   for (const projectItem of projects) {
     try {
       const project = await getProject(agent, projectItem.uri)
-      for (const track of project.value.tracks) {
-        for (const clip of track.clips) {
-          if (isStemSource(clip.source)) {
-            referencedStems.add(clip.source.ref.uri)
-          }
+      for (const clip of project.value.clips) {
+        if (isStemSource(clip.source)) {
+          referencedStems.add(clip.source.ref.uri)
         }
       }
     } catch {

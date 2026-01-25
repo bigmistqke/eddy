@@ -14,7 +14,7 @@ export default {
     clip: {
       type: 'object',
       description: 'A clip with absolute timing (milliseconds)',
-      required: ['id', 'offset', 'duration'],
+      required: ['id', 'start', 'duration'],
       properties: {
         id: {
           type: 'string',
@@ -25,7 +25,7 @@ export default {
           refs: ['dj.eddy.clip#source.stem', 'dj.eddy.clip#source.group', 'dj.eddy.clip#source.url'],
           description: 'Source media: a stem reference, nested group, or URL',
         },
-        offset: {
+        start: {
           type: 'integer',
           description: 'Position on timeline in milliseconds',
           minimum: 0,
@@ -35,11 +35,9 @@ export default {
           description: 'Duration in milliseconds',
           minimum: 0,
         },
-        sourceOffset: {
+        offset: {
           type: 'integer',
-          description: 'Start position within source stem in milliseconds (for trimming)',
-          minimum: 0,
-          default: 0,
+          description: 'Time shift into content in milliseconds. For stem/url clips: source in-point. For group clips: shifts nested content time reference.',
         },
         speed: {
           type: 'union',
@@ -92,7 +90,7 @@ export default {
           },
           canvas: {
             type: 'ref',
-            ref: 'dj.eddy.canvas',
+            ref: 'dj.eddy.canvas#canvas',
           },
           curves: {
             type: 'array',

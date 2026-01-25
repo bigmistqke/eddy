@@ -6,9 +6,6 @@
  * Layout regions are clips on a layout track that reference layout groups.
  */
 
-import type { Accessor } from 'solid-js'
-import { createEffect, createMemo, createSignal, on, onCleanup } from 'solid-js'
-import { createStore, produce } from 'solid-js/store'
 import type {
   Group,
   JamColumnDuration,
@@ -20,6 +17,9 @@ import type {
 } from '@eddy/lexicons'
 import type { CompiledTimeline } from '@eddy/timeline'
 import { compileMusicalTimeline } from '@eddy/timeline'
+import type { Accessor } from 'solid-js'
+import { createEffect, createMemo, createSignal, on, onCleanup } from 'solid-js'
+import { createStore, produce } from 'solid-js/store'
 
 /**********************************************************************************/
 /*                                                                                */
@@ -97,16 +97,16 @@ function makeDefaultProject(): MusicalProject {
     ],
     clips: [
       // Content clips (timing on content tracks, with URL sources)
-      { id: 'clip-0', tick: 0, ticks: TICKS_PER_BAR * 3, source: { type: 'url', url: '/videos/big-buck-bunny.webm' } },
-      { id: 'clip-1a', tick: TICKS_PER_BAR, ticks: TICKS_PER_BAR, source: { type: 'url', url: '/videos/sample-5s.webm' } },
-      { id: 'clip-1b', tick: TICKS_PER_BAR * 2 + TICKS_PER_BAR / 2, ticks: TICKS_PER_BAR, source: { type: 'url', url: '/videos/sample-5s.webm' } },
-      { id: 'clip-2', tick: TICKS_PER_BAR * 2, ticks: TICKS_PER_BAR * 2, source: { type: 'url', url: '/videos/sample-10s.webm' } },
-      // Layout clips (reference layout groups)
-      { id: 'layout-0', tick: 0, ticks: TICKS_PER_BAR, source: { type: 'group', id: 'layout-group-0' } },
-      { id: 'layout-1', tick: TICKS_PER_BAR, ticks: TICKS_PER_BAR, source: { type: 'group', id: 'layout-group-1' } },
-      { id: 'layout-2', tick: TICKS_PER_BAR * 2, ticks: TICKS_PER_BAR * 2, source: { type: 'group', id: 'layout-group-2' } },
-      { id: 'layout-3', tick: TICKS_PER_BAR * 4, ticks: TICKS_PER_BAR * 2, source: { type: 'group', id: 'layout-group-3' } },
-      { id: 'layout-4', tick: TICKS_PER_BAR * 6, ticks: TICKS_PER_BAR * 2, source: { type: 'group', id: 'layout-group-4' } },
+      { id: 'clip-0', start: 0, duration: TICKS_PER_BAR * 3, source: { type: 'url', url: '/videos/big-buck-bunny.webm' } },
+      { id: 'clip-1a', start: TICKS_PER_BAR, duration: TICKS_PER_BAR, source: { type: 'url', url: '/videos/sample-5s.webm' } },
+      { id: 'clip-1b', start: TICKS_PER_BAR * 2 + TICKS_PER_BAR / 2, duration: TICKS_PER_BAR, source: { type: 'url', url: '/videos/sample-5s.webm' } },
+      { id: 'clip-2', start: TICKS_PER_BAR * 2, duration: TICKS_PER_BAR * 2, source: { type: 'url', url: '/videos/sample-10s.webm' } },
+      // Layout clips (reference layout groups, offset makes content flow through time)
+      { id: 'layout-0', start: 0, duration: TICKS_PER_BAR, offset: 0, source: { type: 'group', id: 'layout-group-0' } },
+      { id: 'layout-1', start: TICKS_PER_BAR, duration: TICKS_PER_BAR, offset: -TICKS_PER_BAR, source: { type: 'group', id: 'layout-group-1' } },
+      { id: 'layout-2', start: TICKS_PER_BAR * 2, duration: TICKS_PER_BAR * 1, offset: -TICKS_PER_BAR * 2, source: { type: 'group', id: 'layout-group-2' } },
+      { id: 'layout-3', start: TICKS_PER_BAR * 3, duration: TICKS_PER_BAR * 1, offset: -TICKS_PER_BAR * 3, source: { type: 'group', id: 'layout-group-3' } },
+      { id: 'layout-4', start: TICKS_PER_BAR * 4, duration: TICKS_PER_BAR * 1, offset: -TICKS_PER_BAR * 4, source: { type: 'group', id: 'layout-group-4' } },
     ],
     createdAt: new Date().toISOString(),
   }
@@ -171,7 +171,7 @@ export function createJam(options: CreateJamOptions) {
   let paintSession: {
     trackId: string
     paintedClipId: string
-    originalClips: Array<{ id: string; tick: number; ticks: number }>
+    originalClips: Array<{ id: string; start: number; duration: number }>
   } | null = null
   const [orientation, setOrientation] = createSignal<'portrait' | 'landscape'>(
     window.innerHeight > window.innerWidth ? 'portrait' : 'landscape'
@@ -263,8 +263,8 @@ export function createJam(options: CreateJamOptions) {
       const group = project.groups.find(g => g.id === groupSource.id)
       if (!group) continue
 
-      const startTick = clip.tick
-      const endTick = clip.tick + clip.ticks
+      const startTick = clip.start
+      const endTick = clip.start + clip.duration
 
       // Find column boundaries
       let startColumn = 0
@@ -375,8 +375,8 @@ export function createJam(options: CreateJamOptions) {
       const clip = getClipById(clipId)
       if (!clip) continue
 
-      const clipStart = clip.tick
-      const clipEnd = clip.tick + clip.ticks
+      const clipStart = clip.start
+      const clipEnd = clip.start + clip.duration
 
       // Check if clip overlaps this column
       if (clipStart < columnEndTick && clipEnd > columnStartTick) {
@@ -399,8 +399,8 @@ export function createJam(options: CreateJamOptions) {
     const columnStartTick = boundaries[columnIndex]
     const columnEndTick = boundaries[columnIndex + 1]
 
-    const clipStart = clip.tick
-    const clipEnd = clip.tick + clip.ticks
+    const clipStart = clip.start
+    const clipEnd = clip.start + clip.duration
 
     const startsInColumn = clipStart >= columnStartTick && clipStart < columnEndTick
     const endsInColumn = clipEnd > columnStartTick && clipEnd <= columnEndTick
@@ -446,8 +446,8 @@ export function createJam(options: CreateJamOptions) {
     const clipId = `clip-${generateId()}`
     const newClip: MusicalClip = {
       id: clipId,
-      tick: columnStartTick,
-      ticks: columnEndTick - columnStartTick,
+      start: columnStartTick,
+      duration: columnEndTick - columnStartTick,
     }
 
     // Add clip to project.clips
@@ -501,19 +501,19 @@ export function createJam(options: CreateJamOptions) {
       setProject(
         'clips',
         clipInfo.clipIndex,
-        'ticks',
-        newEnd - clip.tick
+        'duration',
+        newEnd - clip.start
       )
     } else {
       // Extending backward
       const newStart = targetColumnStartTick
-      const newDuration = (clip.tick + clip.ticks) - newStart
+      const newDuration = (clip.start + clip.duration) - newStart
       setProject(
         'clips',
         clipInfo.clipIndex,
         produce(c => {
-          c.tick = newStart
-          c.ticks = newDuration
+          c.start = newStart
+          c.duration = newDuration
         })
       )
     }
@@ -528,8 +528,8 @@ export function createJam(options: CreateJamOptions) {
       paintedClipId,
       originalClips: clips.map(c => ({
         id: c.id,
-        tick: c.tick,
-        ticks: c.ticks,
+        start: c.start,
+        duration: c.duration,
       })),
     }
   }
@@ -560,8 +560,8 @@ export function createJam(options: CreateJamOptions) {
       'clips',
       clipInfo.clipIndex,
       produce(c => {
-        c.tick = newStart
-        c.ticks = newEnd - newStart
+        c.start = newStart
+        c.duration = newEnd - newStart
       })
     )
 
@@ -595,8 +595,8 @@ export function createJam(options: CreateJamOptions) {
       const original = paintSession.originalClips.find(c => c.id === clipId)
       if (!original) continue
 
-      const originalStart = original.tick
-      const originalEnd = original.tick + original.ticks
+      const originalStart = original.start
+      const originalEnd = original.start + original.duration
 
       // Check if original clip would overlap with painted area
       if (originalStart < paintedEnd && originalEnd > paintedStart) {
@@ -628,31 +628,31 @@ export function createJam(options: CreateJamOptions) {
         }
 
         // Apply changes if different from current
-        const currentStart = clip.tick
-        const currentEnd = clip.tick + clip.ticks
+        const currentStart = clip.start
+        const currentEnd = clip.start + clip.duration
 
         if (newClipStart !== currentStart || newClipEnd !== currentEnd) {
           setProject(
             'clips',
             clipIndex,
             produce(c => {
-              c.tick = newClipStart
-              c.ticks = Math.max(0, newClipEnd - newClipStart)
+              c.start = newClipStart
+              c.duration = Math.max(0, newClipEnd - newClipStart)
             })
           )
         }
       } else {
         // No overlap - restore to original if it was changed
-        const currentStart = clip.tick
-        const currentEnd = clip.tick + clip.ticks
+        const currentStart = clip.start
+        const currentEnd = clip.start + clip.duration
 
         if (currentStart !== originalStart || currentEnd !== originalEnd) {
           setProject(
             'clips',
             clipIndex,
             produce(c => {
-              c.tick = originalStart
-              c.ticks = original.ticks
+              c.start = originalStart
+              c.duration = original.duration
             })
           )
         }
@@ -761,9 +761,9 @@ export function createJam(options: CreateJamOptions) {
         const clip = getClipById(clipId)
         if (!clip || clipIndex === -1) continue
 
-        const clipEnd = clip.tick + clip.ticks
+        const clipEnd = clip.start + clip.duration
         if (clipEnd > lastColumnEndTick) {
-          if (clip.tick >= lastColumnEndTick) {
+          if (clip.start >= lastColumnEndTick) {
             // Clip starts after new end - remove it
             setProject(
               'tracks',
@@ -774,7 +774,7 @@ export function createJam(options: CreateJamOptions) {
             setProject('clips', clips => clips.filter(c => c.id !== clipId))
           } else {
             // Shrink clip to fit
-            setProject('clips', clipIndex, 'ticks', lastColumnEndTick - clip.tick)
+            setProject('clips', clipIndex, 'duration', lastColumnEndTick - clip.start)
           }
         }
       }
@@ -842,9 +842,9 @@ export function createJam(options: CreateJamOptions) {
       for (const clipId of track.clipIds) {
         const clip = getClipById(clipId)
         if (!clip) continue
-        const clipEnd = clip.tick + clip.ticks
+        const clipEnd = clip.start + clip.duration
         // Check overlap
-        if (clip.tick < endTick && clipEnd > startTick) {
+        if (clip.start < endTick && clipEnd > startTick) {
           clipsToRemove.push(clipId)
         }
       }
@@ -870,11 +870,13 @@ export function createJam(options: CreateJamOptions) {
     setProject('groups', groups => [...groups, newGroup])
 
     // Create new layout clip
+    // offset: -startTick makes nested content flow through time (content at tick 0 = project tick 0)
     const clipId = `layout-${generateId()}`
     const newClip: MusicalClip = {
       id: clipId,
-      tick: startTick,
-      ticks: endTick - startTick,
+      start: startTick,
+      duration: endTick - startTick,
+      offset: -startTick,
       source: { type: 'group', id: groupId },
     }
     setProject('clips', clips => [...clips, newClip])
@@ -973,8 +975,8 @@ export function createJam(options: CreateJamOptions) {
       const totalTicks = metadata.columnCount * columnDurationTicks()
       const clip: MusicalClip = {
         id: clipId,
-        tick: 0,
-        ticks: totalTicks,
+        start: 0,
+        duration: totalTicks,
         source: { type: 'url', url: videoUrl },
       }
       setProject('clips', clips => [...clips, clip])

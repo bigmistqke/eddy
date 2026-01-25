@@ -13,8 +13,8 @@ export default {
   defs: {
     clip: {
       type: 'object',
-      description: 'A clip with musical timing (bars)',
-      required: ['id', 'tick', 'ticks'],
+      description: 'A clip with musical timing (ticks)',
+      required: ['id', 'start', 'duration'],
       properties: {
         id: {
           type: 'string',
@@ -25,21 +25,19 @@ export default {
           refs: ['dj.eddy.clip#source.stem', 'dj.eddy.clip#source.group', 'dj.eddy.clip#source.url'],
           description: 'Source media: a stem reference, nested group, or URL',
         },
-        tick: {
+        start: {
           type: 'integer',
           description: 'Position on timeline in ticks',
           minimum: 0,
         },
-        ticks: {
+        duration: {
           type: 'integer',
           description: 'Duration in ticks',
           minimum: 0,
         },
-        sourceTick: {
+        offset: {
           type: 'integer',
-          description: 'Start position within source in ticks (for trimming)',
-          minimum: 0,
-          default: 0,
+          description: 'Time shift into content in ticks. For stem/url clips: source in-point. For group clips: shifts nested content time reference.',
         },
         speed: {
           type: 'union',
@@ -110,7 +108,7 @@ export default {
           },
           canvas: {
             type: 'ref',
-            ref: 'dj.eddy.canvas',
+            ref: 'dj.eddy.canvas#canvas',
           },
           curves: {
             type: 'array',

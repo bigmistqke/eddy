@@ -44,9 +44,9 @@ function convertClip(clip: MusicalClip, bpm: number, ppq: number): AbsoluteClip 
   return {
     id: clip.id,
     source: clip.source,
-    offset: ticksToMs(clip.tick, bpm, ppq),
-    duration: ticksToMs(clip.ticks, bpm, ppq),
-    sourceOffset: clip.sourceTick ? ticksToMs(clip.sourceTick, bpm, ppq) : undefined,
+    start: ticksToMs(clip.start, bpm, ppq),
+    duration: ticksToMs(clip.duration, bpm, ppq),
+    offset: clip.offset ? ticksToMs(clip.offset, bpm, ppq) : undefined,
     speed: clip.speed,
     reverse: clip.reverse,
     audioPipeline: clip.audioPipeline,

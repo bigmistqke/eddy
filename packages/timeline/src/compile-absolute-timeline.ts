@@ -384,8 +384,10 @@ function processTrack(
     }
 
     const speed = resolveValue(clip.speed, 1) * timeScale
-    let clipStart = timeOffset + clip.offset / 1000 // ms to seconds
-    let clipEnd = timeOffset + (clip.offset + clip.duration) / 1000
+
+    // Clip timing is relative to parent (timeOffset)
+    let clipStart = timeOffset + clip.start / 1000 // ms to seconds
+    let clipEnd = timeOffset + (clip.start + clip.duration) / 1000
 
     // Apply time window constraint if present
     if (timeWindow) {
@@ -407,10 +409,17 @@ function processTrack(
         // The group's content plays within this clip's time window
         // Create a new time window constraint for nested content
         const nestedWindow: TimeWindow = { start: clipStart, end: clipEnd }
+
+        // Apply offset to shift the time reference for nested content
+        // offset < 0 means nested content's time 0 maps to earlier in project time
+        // This allows content to "flow through" across multiple layout regions
+        const clipOffset = (clip.offset ?? 0) / 1000
+        const nestedTimeOffset = clipStart + clipOffset
+
         const nestedClipInfos = processGroup(
           group,
           trackViewport,
-          clipStart,
+          nestedTimeOffset,
           speed,
           ctx,
           nestedWindow,
@@ -418,11 +427,11 @@ function processTrack(
         clipInfos.push(...nestedClipInfos)
       }
     } else {
-      // Clip references a stem - create ClipInfo
-      // Adjust source timing if we're constrained by a time window
-      const originalClipStart = timeOffset + clip.offset / 1000
-      const sourceOffset = (clipStart - originalClipStart) * speed
-      const sourceIn = (clip.sourceOffset ?? 0) / 1000 + sourceOffset
+      // Clip references a stem/url - create ClipInfo
+      // offset is the source in-point (where to start in the source media)
+      const originalClipStart = timeOffset + clip.start / 1000
+      const timeWindowOffset = (clipStart - originalClipStart) * speed
+      const sourceIn = (clip.offset ?? 0) / 1000 + timeWindowOffset
       const sourceOut = sourceIn + (clipEnd - clipStart) * speed
 
       // Collect cascaded effects
