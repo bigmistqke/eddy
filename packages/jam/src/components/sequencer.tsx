@@ -7,8 +7,9 @@
  */
 
 import type { JamLayoutType } from '@eddy/lexicons'
+import { Repeat } from '@solid-primitives/range'
 import clsx from 'clsx'
-import { createMemo, createSignal, For } from 'solid-js'
+import { createSignal, For } from 'solid-js'
 import type { ClipPosition, Jam } from '~/primitives/create-jam'
 import styles from './Sequencer.module.css'
 
@@ -56,7 +57,11 @@ interface TrackLabelProps {
 }
 
 function TrackLabel(props: TrackLabelProps) {
-  return <div class={styles.label}>{props.name}</div>
+  return (
+    <div class={styles.labelContainer}>
+      <div class={styles.label}>{props.name}</div>
+    </div>
+  )
 }
 
 /**********************************************************************************/
@@ -107,7 +112,7 @@ export function Grid(props: GridProps) {
   const selectedColumnIndex = () => jam.selectedColumnIndex()
 
   // Create array of column indices for iteration
-  const columnIndices = createMemo(() => Array.from({ length: columnCount() }, (_, i) => i))
+  // const columnIndices = createMemo(() => Array.from({ length: columnCount() }, (_, i) => i))
 
   function handleCellToggle(trackId: string, columnIndex: number) {
     const hadClip = jam.hasClipAtColumn(trackId, columnIndex)
@@ -182,28 +187,14 @@ export function Grid(props: GridProps) {
           class={styles.tracksGrid}
           style={{
             'grid-template-columns': gridTemplateColumns(),
-            'grid-template-rows': `8px repeat(${tracks().length}, 48px) auto 1fr`,
+            'grid-template-rows': `repeat(${tracks().length}, 48px) 1fr`,
           }}
         >
-          {/* Spacer row */}
-          <div />
-          <For each={columnIndices()}>
-            {colIndex => (
-              <div
-                class={clsx(
-                  styles.spacer,
-                  currentColumnIndex() === colIndex && styles.current,
-                )}
-              />
-            )}
-          </For>
-          <div />
-
           <For each={tracks()}>
             {track => (
               <>
                 <TrackLabel name={track.name ?? track.id} trackId={track.id} />
-                <For each={columnIndices()}>
+                <Repeat times={columnCount()}>
                   {colIndex => (
                     <div
                       class={clsx(
@@ -216,68 +207,57 @@ export function Grid(props: GridProps) {
                         columnIndex={colIndex}
                         clipPosition={jam.getClipPosition(track.id, colIndex)}
                         onToggle={() => handleCellToggle(track.id, colIndex)}
-                        onPointerEnter={event =>
-                          handleCellPointerEnter(event, track.id, colIndex)
-                        }
+                        onPointerEnter={event => handleCellPointerEnter(event, track.id, colIndex)}
                       />
                     </div>
                   )}
-                </For>
+                </Repeat>
                 <div />
               </>
             )}
           </For>
           {/* Add track button row */}
-          <button class={styles.addTrackButton} onClick={handleAddTrack}>
-            + Track
-          </button>
-          <For each={columnIndices()}>
-            {colIndex => (
-              <div
-                class={clsx(
-                  styles.filler,
-                  currentColumnIndex() === colIndex && styles.current,
-                )}
-              />
-            )}
-          </For>
-          <div />
-        </div>
-      </div>
-
-      {/* Timeline row */}
-      <div class={styles.timelineRow} style={{ 'grid-template-columns': gridTemplateColumns() }}>
-        <div />
-        <For each={columnIndices()}>
-          {colIndex => {
-            const region = () => jam.getLayoutRegionForColumn(colIndex)
-            return (
-              <div
-                class={clsx(
-                  styles.timelineCell,
-                  currentColumnIndex() === colIndex && styles.current,
-                )}
-              >
+          <div class={clsx(styles.lastRow, styles.addTrackButtonContainer)}>
+            <button class={styles.addTrackButton} onClick={handleAddTrack}>
+              + Track
+            </button>
+          </div>
+          <Repeat times={columnCount()}>
+            {colIndex => {
+              const region = () => jam.getLayoutRegionForColumn(colIndex)
+              return (
                 <button
                   class={clsx(
-                    styles.timelineButton,
-                    selectedColumnIndex() === colIndex && styles.selected,
+                    styles.timelineCell,
+                    currentColumnIndex() === colIndex && styles.current,
                   )}
                   onClick={() => {
                     jam.selectColumn(colIndex)
                     jam.seekToColumn(colIndex)
                   }}
                 >
-                  <span class={styles.timelineDuration}>{jam.metadata.columnDuration}</span>
-                  <span class={styles.timelineIcon}>{region() ? LAYOUT_ICONS[region()!.layout] : '·'}</span>
+                  <div
+                    class={clsx(
+                      styles.timelineButton,
+                      selectedColumnIndex() === colIndex && styles.selected,
+                    )}
+                  >
+                    <span class={styles.timelineDuration}>{jam.metadata.columnDuration}</span>
+                    <span class={styles.timelineIcon}>
+                      {region() ? LAYOUT_ICONS[region()!.layout] : '·'}
+                    </span>
+                  </div>
                 </button>
-              </div>
-            )
-          }}
-        </For>
-        <button class={styles.addColumnButton} onClick={() => jam.addColumn()}>
-          +
-        </button>
+              )
+            }}
+          </Repeat>
+          <div class={styles.addColumnButtonContainer}>
+            <button class={styles.addColumnButton} onClick={() => jam.addColumn()}>
+              +
+            </button>
+          </div>
+          <div />
+        </div>
       </div>
     </div>
   )

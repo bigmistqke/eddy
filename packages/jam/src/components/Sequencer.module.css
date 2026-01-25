@@ -5,11 +5,14 @@
 /**********************************************************************************/
 
 .sequencer {
+  --margin: 4px;
+  --color-bg: #0a0a0a;
+  --color-cell: #1a1a1a;
   display: grid;
   grid-template-rows: 1fr auto;
   height: 100%;
-  background: #0a0a0a;
   overflow: hidden;
+  background: var(--color-bg);
 }
 
 /**********************************************************************************/
@@ -22,12 +25,15 @@
   overflow-x: auto;
   overflow-y: auto;
   min-height: 0;
+  overflow: auto;
+  scrollbar-color: var(--color-cell) transparent;
+  scrollbar-width: thin;
 }
 
 .tracksGrid {
   display: grid;
-  gap: 8px;
-  padding: 0 8px;
+  /* gap: var(--margin); */
+  /* padding: 0 var(--margin); */
   min-height: 100%;
 }
 
@@ -38,7 +44,7 @@
 /**********************************************************************************/
 
 .spacer {
-  padding: 4px;
+  padding: var(--margin);
   margin: -4px;
 }
 
@@ -52,9 +58,19 @@
 /*                                                                                */
 /**********************************************************************************/
 
+.lastRow {
+  position: sticky;
+  bottom: 0px;
+  background-color: var(--color-bg);
+}
+
 .filler {
-  padding: 4px;
+  padding: var(--margin);
   margin: -4px;
+  margin-block-end: 0px;
+  background: none;
+  border: none;
+  cursor: normal;
 }
 
 .filler.current {
@@ -67,13 +83,24 @@
 /*                                                                                */
 /**********************************************************************************/
 
+.labelContainer {
+  padding: var(--margin);
+  padding-left: calc(var(--margin) * 2);
+  position: sticky;
+  left: 0px;
+  min-width: 80px;
+  background-color: var(--color-bg);
+  height: 48px;
+  z-index: 2;
+  display: grid;
+  box-shadow: 0px 0px var(--margin) black;
+}
+
 .label {
   display: grid;
   place-items: center start;
-  min-width: 80px;
-  padding: 0 8px;
-  height: 48px;
-  background: #1a1a1a;
+  padding: 0 var(--margin);
+  background: var(--color-cell);
   border: 1px solid #333;
   border-radius: 4px 0 0 4px;
   font-size: 12px;
@@ -81,6 +108,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  z-index: 2;
 }
 
 /**********************************************************************************/
@@ -90,8 +118,10 @@
 /**********************************************************************************/
 
 .cellWrapper {
-  padding: 4px;
-  margin: -4px;
+  display: grid;
+  padding: var(--margin);
+  min-width: calc(48px + var(--margin));
+  min-height: 48px;
 }
 
 .cellWrapper.current {
@@ -107,8 +137,6 @@
 .cell {
   display: grid;
   place-items: center;
-  min-width: 48px;
-  min-height: 48px;
   background: #1a1a1a;
   border: 1px solid #333;
   border-radius: 4px;
@@ -121,48 +149,48 @@
 }
 
 /* Clip position variants */
-.cell[data-clip="single"] {
+.cell[data-clip='single'] {
   background: #2d5a87;
   color: #fff;
-  border-radius: 8px;
+  border-radius: var(--margin);
   border-color: #2d5a87;
 }
 
-.cell[data-clip="start"] {
+.cell[data-clip='start'] {
   background: #2d5a87;
   color: #fff;
-  border-radius: 8px 0 0 8px;
+  border-radius: var(--margin) 0 0 var(--margin);
   border-color: #2d5a87;
   border-right: none;
-  margin-right: -8px;
-  padding-right: 8px;
+  margin-right: calc(var(--margin) * -1);
+  padding-right: var(--margin);
   position: relative;
   z-index: 1;
 }
 
-.cell[data-clip="middle"] {
+.cell[data-clip='middle'] {
   background: #2d5a87;
   color: #fff;
   border-radius: 0;
   border-color: #2d5a87;
   border-left: none;
   border-right: none;
-  margin-left: -8px;
-  margin-right: -8px;
-  padding-left: 8px;
-  padding-right: 8px;
+  margin-left: calc(var(--margin) * -1);
+  margin-right: calc(var(--margin) * -1);
+  padding-left: var(--margin);
+  padding-right: var(--margin);
   position: relative;
   z-index: 1;
 }
 
-.cell[data-clip="end"] {
+.cell[data-clip='end'] {
   background: #2d5a87;
   color: #fff;
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 var(--margin) var(--margin) 0;
   border-color: #2d5a87;
   border-left: none;
-  margin-left: -8px;
-  padding-left: 8px;
+  margin-left: calc(var(--margin) * -1);
+  padding-left: var(--margin);
   position: relative;
   z-index: 1;
 }
@@ -173,21 +201,24 @@
 /*                                                                                */
 /**********************************************************************************/
 
-.timelineRow {
+.timelineCell {
   display: grid;
-  gap: 8px;
-  padding: 0 8px 8px 8px;
-  overflow-x: auto;
-  overflow-y: hidden;
+  align-items: end;
+  padding: var(--margin);
+  position: sticky;
+  bottom: 0px;
+  background: var(--color-bg);
+  border: none;
 }
 
-.timelineCell {
-  padding: 4px;
-  margin: -4px;
+.timelineCell:not(.current):hover {
+  & .timelineButton {
+    background: #252525;
+  }
 }
 
 .timelineCell.current {
-  background: rgba(45, 90, 135, 0.4);
+  background: rgb(25 42 61);
 }
 
 .timelineButton {
@@ -197,17 +228,13 @@
   gap: 4px;
   width: 100%;
   height: 32px;
-  padding: 0 8px;
+  padding: 0 var(--margin);
   background: #1a1a1a;
   border: 1px solid #333;
   border-radius: 4px;
   cursor: pointer;
   user-select: none;
   transition: background 0.1s;
-}
-
-.timelineButton:hover {
-  background: #252525;
 }
 
 .timelineButton.selected {
@@ -237,17 +264,26 @@
 /*                                                                                */
 /**********************************************************************************/
 
+.addColumnButtonContainer {
+  display: grid;
+  width: calc(52px + var(--margin));
+  padding: var(--margin);
+  align-items: end;
+}
+
 .addColumnButton {
   display: grid;
-  place-items: center;
   height: 32px;
+  place-items: center;
   background: #1a1a1a;
   border: 1px dashed #333;
   border-radius: 4px;
   color: #666;
   font-size: 14px;
   cursor: pointer;
-  transition: background 0.1s, color 0.1s;
+  transition:
+    background 0.1s,
+    color 0.1s;
 }
 
 .addColumnButton:hover {
@@ -262,19 +298,33 @@
 /*                                                                                */
 /**********************************************************************************/
 
+.addTrackButtonContainer {
+  display: grid;
+  position: sticky;
+  bottom: 0px;
+  left: 0px;
+  padding: var(--margin);
+  padding-left: calc(var(--margin) * 2);
+  min-width: 80px;
+  z-index: 2;
+  box-shadow: 0px 0px var(--margin) black;
+}
+
 .addTrackButton {
   display: grid;
   place-items: center;
-  min-width: 80px;
   height: 32px;
-  padding: 0 8px;
+  padding: 0 var(--margin);
   background: #1a1a1a;
   border: 1px dashed #333;
   border-radius: 4px;
   color: #666;
   font-size: 12px;
   cursor: pointer;
-  transition: background 0.1s, color 0.1s;
+  z-index: 2;
+  transition:
+    background 0.1s,
+    color 0.1s;
 }
 
 .addTrackButton:hover {
