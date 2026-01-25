@@ -87,7 +87,7 @@ export async function getProjectByRkey(
     did = agent.assertDid
   }
 
-  const uri = `at://${did}/dj.eddy.project/${rkey}`
+  const uri = `at://${did}/dj.eddy.absolute/${rkey}`
   return getProject(agent, uri)
 }
 
@@ -187,7 +187,7 @@ export async function streamStemToOPFS(
 export async function listProjects(agent: Agent): Promise<ProjectListItem[]> {
   const response = await agent.com.atproto.repo.listRecords({
     repo: agent.assertDid,
-    collection: 'dj.eddy.project',
+    collection: 'dj.eddy.absolute',
     limit: 50,
   })
 
@@ -322,7 +322,7 @@ export async function publishProject(
 
   // Build and validate project record
   const record = v.parse(projectWireValidators.main, {
-    $type: 'dj.eddy.project',
+    $type: 'dj.eddy.absolute',
     schemaVersion: 1,
     title: project.title,
     canvas: {
@@ -342,7 +342,7 @@ export async function publishProject(
 
   const response = await agent.com.atproto.repo.createRecord({
     repo: agent.assertDid,
-    collection: 'dj.eddy.project',
+    collection: 'dj.eddy.absolute',
     record,
   })
 
@@ -358,7 +358,7 @@ export async function deleteProject(agent: Agent, uri: string): Promise<void> {
   // Use deleteOrphanedStems() for cleanup
   await agent.com.atproto.repo.deleteRecord({
     repo,
-    collection: 'dj.eddy.project',
+    collection: 'dj.eddy.absolute',
     rkey,
   })
 }
