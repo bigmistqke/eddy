@@ -1,11 +1,35 @@
 [
   {
-    "hash": "52893dd99e99b0be7b690e792e0a62d17ca962bc",
-    "short_hash": "52893dd",
+    "hash": "7acd2b5791ab068853f6e2e45c07936e3b79f65d",
+    "short_hash": "7acd2b5",
     "author": "bigmistqke",
-    "date": "2026-01-22T00:39:33+01:00",
-    "message": "chore: extract build:lexicons script",
+    "date": "2026-01-25T20:49:39+01:00",
+    "message": "refactor: update atproto crud for lexicon changes",
     "files_changed": 1
+  },
+  {
+    "hash": "09b52f83f1e6b7b56914608b070845eab3b4711f",
+    "short_hash": "09b52f8",
+    "author": "bigmistqke",
+    "date": "2026-01-25T20:49:36+01:00",
+    "message": "chore: add dev:jam script and @solid-primitives/range dep\n\nSplit dev scripts: dev:app for main app, dev:jam for jam sequencer",
+    "files_changed": 2
+  },
+  {
+    "hash": "e4a3815cfb19fc0ec0fa82d6c20ef2f28effb862",
+    "short_hash": "e4a3815",
+    "author": "bigmistqke",
+    "date": "2026-01-25T20:49:32+01:00",
+    "message": "refactor: simplify sequencer component and styling",
+    "files_changed": 2
+  },
+  {
+    "hash": "5feda7f9f4301968a7a55e62c5d08440debe93f0",
+    "short_hash": "5feda7f",
+    "author": "bigmistqke",
+    "date": "2026-01-25T20:49:27+01:00",
+    "message": "refactor: extract canvas to separate lexicon, rename static→fixed\n\n- Extract dj.eddy.canvas from dj.eddy.project (deleted)\n- Rename dj.eddy.value.static to dj.eddy.value.fixed (clearer naming)\n- Update all lexicon refs",
+    "files_changed": 13
   },
   {
     "hash": "52893dd99e99b0be7b690e792e0a62d17ca962bc",
@@ -13,14 +37,6 @@
     "author": "bigmistqke",
     "date": "2026-01-22T00:39:33+01:00",
     "message": "chore: extract build:lexicons script",
-    "files_changed": 1
-  },
-  {
-    "hash": "293d38cfa797e0b174930352e4482e2ff5cd135e",
-    "short_hash": "293d38c",
-    "author": "bigmistqke",
-    "date": "2026-01-22T00:39:29+01:00",
-    "message": "refactor: use ticks for musical timing in lexicon\n\nATProto doesn't support floats - use integer ticks instead of fractional bars.\nAdds ppq (pulses per quarter note, default 960) for resolution.",
     "files_changed": 1
   },
   {

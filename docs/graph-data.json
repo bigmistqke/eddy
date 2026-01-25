@@ -4377,6 +4377,50 @@
       "created_at": "2026-01-22T00:44:25.773367+01:00",
       "updated_at": "2026-01-22T00:44:25.773367+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":80,\"prompt\":\"add goal for lexiconToValibot: get type checking if there are any external types that aren't in the lookup\"}"
+    },
+    {
+      "id": 399,
+      "change_id": "461aed1a-02c9-4156-8950-bf631883eb21",
+      "node_type": "outcome",
+      "title": "Committed: extract canvas to separate lexicon, rename static→fixed",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-25T20:49:49.006640+01:00",
+      "updated_at": "2026-01-25T20:49:49.006640+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"HEAD~4\",\"confidence\":95}"
+    },
+    {
+      "id": 400,
+      "change_id": "1d02d545-7249-412b-b761-a9e206efc266",
+      "node_type": "outcome",
+      "title": "Committed: simplify sequencer component and styling",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-25T20:49:49.036960+01:00",
+      "updated_at": "2026-01-25T20:49:49.036960+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"HEAD~3\",\"confidence\":95}"
+    },
+    {
+      "id": 401,
+      "change_id": "05fc4962-90bc-41ae-b2cd-8b1a6f5cc949",
+      "node_type": "outcome",
+      "title": "Committed: add dev:jam script and @solid-primitives/range dep",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-25T20:49:49.065944+01:00",
+      "updated_at": "2026-01-25T20:49:49.065944+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"HEAD~2\",\"confidence\":95}"
+    },
+    {
+      "id": 402,
+      "change_id": "dcc35e5b-e62e-464b-a686-f3bfd896f9ac",
+      "node_type": "outcome",
+      "title": "Committed: update atproto crud for lexicon changes",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-25T20:49:49.096197+01:00",
+      "updated_at": "2026-01-25T20:49:49.096197+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"HEAD~1\",\"confidence\":95}"
     }
   ],
   "edges": [
