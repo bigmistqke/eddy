@@ -22,8 +22,8 @@ export default {
         },
         source: {
           type: 'union',
-          refs: ['dj.eddy.clip#source.stem', 'dj.eddy.clip#source.group'],
-          description: 'Source media: a stem reference or a nested group',
+          refs: ['dj.eddy.clip#source.stem', 'dj.eddy.clip#source.group', 'dj.eddy.clip#source.url'],
+          description: 'Source media: a stem reference, nested group, or URL',
         },
         offset: {
           type: 'integer',

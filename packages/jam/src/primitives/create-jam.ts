@@ -45,8 +45,6 @@ export interface CreateJamOptions {
   initialProject?: MusicalProject
   /** Initial jam metadata */
   initialMetadata?: JamMetadata
-  /** Initial track video URL mapping */
-  initialTrackVideos?: Record<string, string>
   /** Canvas size for layout calculations */
   canvasSize: { width: number; height: number }
 }
@@ -98,11 +96,11 @@ function makeDefaultProject(): MusicalProject {
       { id: LAYOUT_TRACK_ID, name: 'Layout', clipIds: ['layout-0', 'layout-1', 'layout-2', 'layout-3', 'layout-4'] },
     ],
     clips: [
-      // Content clips (timing on content tracks)
-      { id: 'clip-0', tick: 0, ticks: TICKS_PER_BAR * 3 },
-      { id: 'clip-1a', tick: TICKS_PER_BAR, ticks: TICKS_PER_BAR },
-      { id: 'clip-1b', tick: TICKS_PER_BAR * 2 + TICKS_PER_BAR / 2, ticks: TICKS_PER_BAR },
-      { id: 'clip-2', tick: TICKS_PER_BAR * 2, ticks: TICKS_PER_BAR * 2 },
+      // Content clips (timing on content tracks, with URL sources)
+      { id: 'clip-0', tick: 0, ticks: TICKS_PER_BAR * 3, source: { type: 'url', url: '/videos/big-buck-bunny.webm' } },
+      { id: 'clip-1a', tick: TICKS_PER_BAR, ticks: TICKS_PER_BAR, source: { type: 'url', url: '/videos/sample-5s.webm' } },
+      { id: 'clip-1b', tick: TICKS_PER_BAR * 2 + TICKS_PER_BAR / 2, ticks: TICKS_PER_BAR, source: { type: 'url', url: '/videos/sample-5s.webm' } },
+      { id: 'clip-2', tick: TICKS_PER_BAR * 2, ticks: TICKS_PER_BAR * 2, source: { type: 'url', url: '/videos/sample-10s.webm' } },
       // Layout clips (reference layout groups)
       { id: 'layout-0', tick: 0, ticks: TICKS_PER_BAR, source: { type: 'group', id: 'layout-group-0' } },
       { id: 'layout-1', tick: TICKS_PER_BAR, ticks: TICKS_PER_BAR, source: { type: 'group', id: 'layout-group-1' } },
@@ -119,15 +117,6 @@ function makeDefaultMetadata(): JamMetadata {
     bpm: 120,
     columnCount: 8,
     columnDuration: '1',
-  }
-}
-
-function makeDefaultTrackVideos(): Record<string, string> {
-  return {
-    'track-0': '/videos/big-buck-bunny.webm',
-    'track-1': '/videos/sample-5s.webm',
-    'track-2': '/videos/sample-10s.webm',
-    'track-3': '/videos/sample-15s.webm',
   }
 }
 
@@ -168,9 +157,6 @@ export function createJam(options: CreateJamOptions) {
   )
   const [metadata, setMetadata] = createStore<JamMetadata>(
     options.initialMetadata ?? makeDefaultMetadata()
-  )
-  const [trackVideos, setTrackVideos] = createStore<Record<string, string>>(
-    options.initialTrackVideos ?? makeDefaultTrackVideos()
   )
 
   // Playback state
@@ -977,15 +963,31 @@ export function createJam(options: CreateJamOptions) {
   /*                                                                                */
   /**********************************************************************************/
 
-  function addTrack(name?: string) {
-    const id = `track-${generateId()}`
+  function addTrack(name?: string, videoUrl?: string) {
+    const trackId = `track-${generateId()}`
+    const clipIds: string[] = []
+
+    // If a video URL is provided, create a clip that spans the full timeline
+    if (videoUrl) {
+      const clipId = `clip-${generateId()}`
+      const totalTicks = metadata.columnCount * columnDurationTicks()
+      const clip: MusicalClip = {
+        id: clipId,
+        tick: 0,
+        ticks: totalTicks,
+        source: { type: 'url', url: videoUrl },
+      }
+      setProject('clips', clips => [...clips, clip])
+      clipIds.push(clipId)
+    }
+
     const track: Track = {
-      id,
+      id: trackId,
       name: name ?? `Track ${project.tracks.length + 1}`,
-      clipIds: [],
+      clipIds,
     }
     setProject('tracks', tracks => [...tracks, track])
-    return id
+    return trackId
   }
 
   function removeTrack(trackId: string) {
@@ -1078,7 +1080,6 @@ export function createJam(options: CreateJamOptions) {
     // State
     project,
     metadata,
-    trackVideos,
     timeline,
     duration,
     currentTime,
@@ -1129,10 +1130,6 @@ export function createJam(options: CreateJamOptions) {
     addTrack,
     removeTrack,
     renameTrack,
-
-    // Track video actions
-    getTrackVideoUrl: (trackId: string) => trackVideos[trackId],
-    setTrackVideoUrl: (trackId: string, url: string) => setTrackVideos(trackId, url),
 
     // Playback actions
     play,

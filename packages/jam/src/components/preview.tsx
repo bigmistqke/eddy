@@ -122,33 +122,29 @@ export function Preview(props: PreviewProps) {
   })
 
   async function loadVideos() {
-    const tracks = props.jam.contentTracks()
+    // Load videos for all clips with URL sources
+    for (const clip of props.jam.project.clips) {
+      if (clip.source?.type !== 'url') continue
 
-    for (const track of tracks) {
-      const videoUrl = props.jam.trackVideos[track.id]
-      if (!videoUrl) continue
+      const videoUrl = clip.source.url
+      const clipId = clip.id
 
       try {
-        // Create playback for this track
         const playback = makeVideoPlayback({
           onFrame: frame => {
             if (!compositor || !frame) return
-            // Use track.id as clipId for simplicity (1 stem per track model)
-            compositor.setFrame(track.id, frame)
+            compositor.setFrame(clipId, frame)
           },
         })
 
-        // Load the video using UrlSource
         const source = new UrlSource(videoUrl)
         await playback.load(source)
-
-        // Seek to current time to show initial frame
         await playback.seek(props.jam.currentTime())
 
-        playbacks.set(track.id, playback)
-        console.log(`Loaded video for track ${track.id}: ${videoUrl}`)
+        playbacks.set(clipId, playback)
+        console.log(`Loaded video for clip ${clipId}: ${videoUrl}`)
       } catch (error) {
-        console.error(`Failed to load video for track ${track.id}:`, error)
+        console.error(`Failed to load video for clip ${clipId}:`, error)
       }
     }
   }
@@ -180,7 +176,7 @@ export function Preview(props: PreviewProps) {
       isPlaying => {
         const time = props.jam.currentTime()
 
-        for (const [trackId, playback] of playbacks) {
+        for (const playback of playbacks.values()) {
           if (isPlaying) {
             playback.play(time)
           } else {

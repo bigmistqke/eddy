@@ -38,5 +38,19 @@ export default {
         },
       },
     },
+
+    'source.url': {
+      type: 'object',
+      description: 'Direct URL reference for local/external media',
+      required: ['type', 'url'],
+      properties: {
+        type: { type: 'string', const: 'url' },
+        url: {
+          type: 'string',
+          format: 'uri',
+          description: 'URL of the media file',
+        },
+      },
+    },
   },
 } as const satisfies LexiconDoc

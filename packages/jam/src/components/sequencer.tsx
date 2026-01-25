@@ -173,8 +173,7 @@ export function Grid(props: GridProps) {
   function handleAddTrack() {
     const trackCount = tracks().length
     const videoUrl = TEST_VIDEOS[trackCount % TEST_VIDEOS.length]
-    const trackId = props.jam.addTrack()
-    props.jam.setTrackVideoUrl(trackId, videoUrl)
+    props.jam.addTrack(undefined, videoUrl)
   }
 
   const gridTemplateColumns = () => `80px repeat(${columnCount()}, 60px) 48px`

@@ -125,7 +125,8 @@ export type Track = v.InferOutput<typeof trackValidators.track>
 // Clip sources (shared)
 export type ClipSourceStem = v.InferOutput<(typeof clipValidators)['source.stem']>
 export type ClipSourceGroup = v.InferOutput<(typeof clipValidators)['source.group']>
-export type ClipSource = ClipSourceStem | ClipSourceGroup
+export type ClipSourceUrl = v.InferOutput<(typeof clipValidators)['source.url']>
+export type ClipSource = ClipSourceStem | ClipSourceGroup | ClipSourceUrl
 
 // Group types
 export type Group = v.InferOutput<(typeof groupValidators)['group']>
