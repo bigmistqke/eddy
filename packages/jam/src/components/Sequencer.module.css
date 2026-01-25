@@ -221,6 +221,36 @@
   background: rgb(25 42 61);
 }
 
+/* Region position variants - connect cells in same region */
+.timelineCell[data-region='start'] {
+  padding-right: 0;
+}
+
+.timelineCell[data-region='start'] .timelineButton {
+  border-radius: 4px 0 0 4px;
+  border-right: none;
+}
+
+.timelineCell[data-region='middle'] {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.timelineCell[data-region='middle'] .timelineButton {
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+}
+
+.timelineCell[data-region='end'] {
+  padding-left: 0;
+}
+
+.timelineCell[data-region='end'] .timelineButton {
+  border-radius: 0 4px 4px 0;
+  border-left: none;
+}
+
 .timelineButton {
   display: grid;
   grid-template-columns: 1fr auto;

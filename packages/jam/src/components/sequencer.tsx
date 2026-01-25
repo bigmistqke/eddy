@@ -231,6 +231,7 @@ export function Grid(props: GridProps) {
                     styles.timelineCell,
                     currentColumnIndex() === colIndex && styles.current,
                   )}
+                  data-region={jam.getRegionPosition(colIndex)}
                   onClick={() => {
                     jam.selectColumn(colIndex)
                     jam.seekToColumn(colIndex)

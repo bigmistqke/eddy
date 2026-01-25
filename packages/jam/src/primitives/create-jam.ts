@@ -213,6 +213,20 @@ export function createJam(options: CreateJamOptions) {
     ) ?? null
   }
 
+  /** Get a column's position within its region (for visual styling) */
+  type RegionPosition = 'none' | 'single' | 'start' | 'middle' | 'end'
+  function getRegionPosition(columnIndex: number): RegionPosition {
+    const region = getLayoutRegionForColumn(columnIndex)
+    if (!region) return 'none'
+
+    const regionLength = region.endColumn - region.startColumn
+    if (regionLength === 1) return 'single'
+
+    if (columnIndex === region.startColumn) return 'start'
+    if (columnIndex === region.endColumn - 1) return 'end'
+    return 'middle'
+  }
+
   const selectedLayoutRegion = createMemo(() => {
     const index = selectedColumnIndex()
     return index !== null ? getLayoutRegionForColumn(index) : null
@@ -877,6 +891,7 @@ export function createJam(options: CreateJamOptions) {
 
     // Layout region actions
     getLayoutRegionForColumn,
+    getRegionPosition,
     findLayoutRegionIndex,
     setLayoutRegion,
     removeLayoutRegion,
