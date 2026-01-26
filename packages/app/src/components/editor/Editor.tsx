@@ -76,8 +76,17 @@ export const Editor: Component<EditorProps> = props => {
     }
   })
 
-  // Derive layout from first group (MVP: single grid layout)
-  const layout = createMemo(() => editor.project().groups[0]?.layout)
+  // Derive layout from first layout clip in metadata tracks
+  const layout = createMemo(() => {
+    const metadataTracks = editor.project().metadataTracks ?? []
+    for (const track of metadataTracks) {
+      const layoutClip = track.clips.find(clip => clip.source?.type === 'layout')
+      if (layoutClip?.source?.type === 'layout') {
+        return layoutClip.source
+      }
+    }
+    return undefined
+  })
 
   // Helper to get track volume/pan from project store
   const getTrackVolume = (trackId: string) => {
@@ -224,7 +233,7 @@ export const Editor: Component<EditorProps> = props => {
           'grid-template-rows': `repeat(${layout()?.rows ?? 1}, 1fr)`,
         }}
       >
-        <Index each={editor.project().tracks}>
+        <Index each={editor.project().mediaTracks}>
           {(track, index) => (
             <Track
               trackId={track().id}

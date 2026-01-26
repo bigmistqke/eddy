@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@bigmistqke/view.gl": "^0.1.9",
+    "@eddy/lexicons": "workspace:*",
     "@eddy/media": "workspace:*",
     "@eddy/timeline": "workspace:*",
     "@eddy/utils": "workspace:*",

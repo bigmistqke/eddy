@@ -8,6 +8,7 @@
   --margin: 4px;
   --color-bg: #0a0a0a;
   --color-cell: #1a1a1a;
+  --color-column-selected: rgb(25 42 61);
   display: grid;
   grid-template-rows: 1fr auto;
   height: 100%;
@@ -93,7 +94,7 @@
   height: 48px;
   z-index: 2;
   display: grid;
-  box-shadow: 0px 0px var(--margin) black;
+  box-shadow: 0px 0px var(--margin) var(--color-bg);
 }
 
 .label {
@@ -209,10 +210,16 @@
   bottom: 0px;
   background: var(--color-bg);
   border: none;
+  z-index: 1;
+
+  &:not(.current) {
+    box-shadow: 0px 0px var(--margin) var(--color-bg);
+  }
 }
 
 .timelineCell.current {
-  background: rgb(25 42 61);
+  background: var(--color-column-selected);
+  box-shadow: 0px 0px var(--margin) var(--color-column-selected);
 }
 
 /* Region position variants - connect cells in same region */
@@ -289,6 +296,8 @@
 /**********************************************************************************/
 
 .addColumnButtonContainer {
+  position: sticky;
+  bottom: 0px;
   display: grid;
   width: calc(52px + var(--margin));
   padding: var(--margin);
@@ -331,7 +340,7 @@
   padding-left: calc(var(--margin) * 2);
   min-width: 80px;
   z-index: 2;
-  box-shadow: 0px 0px var(--margin) black;
+  box-shadow: 0px 0px var(--margin) var(--color-bg);
 }
 
 .addTrackButton {

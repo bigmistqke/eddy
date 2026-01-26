@@ -278,6 +278,9 @@ importers:
       '@bigmistqke/view.gl':
         specifier: ^0.1.9
         version: 0.1.13
+      '@eddy/lexicons':
+        specifier: workspace:*
+        version: link:../lexicons
       '@eddy/media':
         specifier: workspace:*
         version: link:../media

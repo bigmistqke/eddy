@@ -8,10 +8,9 @@
  * - dj.eddy.musical: Clips/projects with bar timing (DAWs, jam)
  *
  * Shared:
- * - dj.eddy.track: Track with clipIds[] (domain-agnostic)
- * - dj.eddy.group: Group with members[] (domain-agnostic)
- * - dj.eddy.clip: Source types only (stem, group refs)
- * - dj.eddy.absolute: Canvas definition
+ * - dj.eddy.track: Media and metadata tracks with inline clips
+ * - dj.eddy.clip: Source types (stem, url, project, layout)
+ * - dj.eddy.canvas: Canvas definition
  */
 
 import {
@@ -27,7 +26,6 @@ import absoluteLexicon from './dj.eddy.absolute'
 import audioEffectLexicon from './dj.eddy.audio.effect'
 import canvasLexicon from './dj.eddy.canvas'
 import clipLexicon from './dj.eddy.clip'
-import groupLexicon from './dj.eddy.group'
 import jamLexicon from './dj.eddy.jam'
 import musicalLexicon from './dj.eddy.musical'
 import pipelineLexicon from './dj.eddy.pipeline'
@@ -44,7 +42,6 @@ const lookup = createLookup(
   clipLexicon,
   curveLexicon,
   fixedLexicon,
-  groupLexicon,
   jamLexicon,
   musicalLexicon,
   pipelineLexicon,
@@ -76,7 +73,6 @@ export const valuesValidators = lexiconToValibot(fixedLexicon, sdkConfig)
 export const curveValidators = lexiconToValibot(curveLexicon, sdkConfig)
 export const trackValidators = lexiconToValibot(trackLexicon, sdkConfig)
 export const clipValidators = lexiconToValibot(clipLexicon, sdkConfig)
-export const groupValidators = lexiconToValibot(groupLexicon, sdkConfig)
 export const jamValidators = lexiconToValibot(jamLexicon, sdkConfig)
 export const pipelineValidators = lexiconToValibot(pipelineLexicon, sdkConfig)
 
@@ -119,20 +115,21 @@ export type Clip = AbsoluteClip | MusicalClip
 // Canvas
 export type Canvas = v.InferOutput<typeof canvasValidators.canvas>
 
-// Track (domain-agnostic, uses clipIds)
-export type Track = v.InferOutput<typeof trackValidators.track>
+// Track types (with inline clips)
+export type MediaTrackAbsolute = v.InferOutput<(typeof trackValidators)['media.absolute']>
+export type MediaTrackMusical = v.InferOutput<(typeof trackValidators)['media.musical']>
+export type MetadataTrackAbsolute = v.InferOutput<(typeof trackValidators)['metadata.absolute']>
+export type MetadataTrackMusical = v.InferOutput<(typeof trackValidators)['metadata.musical']>
+export type MediaTrack = MediaTrackAbsolute | MediaTrackMusical
+export type MetadataTrack = MetadataTrackAbsolute | MetadataTrackMusical
+export type Track = MediaTrack | MetadataTrack
 
 // Clip sources (shared)
 export type ClipSourceStem = v.InferOutput<(typeof clipValidators)['source.stem']>
-export type ClipSourceGroup = v.InferOutput<(typeof clipValidators)['source.group']>
 export type ClipSourceUrl = v.InferOutput<(typeof clipValidators)['source.url']>
-export type ClipSource = ClipSourceStem | ClipSourceGroup | ClipSourceUrl
-
-// Group types
-export type Group = v.InferOutput<(typeof groupValidators)['group']>
-export type Member = v.InferOutput<(typeof groupValidators)['member']>
-export type MemberVoid = v.InferOutput<(typeof groupValidators)['member.void']>
-export type LayoutGrid = v.InferOutput<(typeof groupValidators)['layout.grid']>
+export type ClipSourceProject = v.InferOutput<(typeof clipValidators)['source.project']>
+export type ClipSourceLayout = v.InferOutput<(typeof clipValidators)['source.layout']>
+export type ClipSource = ClipSourceStem | ClipSourceUrl | ClipSourceProject | ClipSourceLayout
 
 // Value types
 export type StaticValue = v.InferOutput<typeof valuesValidators.fixed>

@@ -16,8 +16,9 @@ import type {
 import { makeEffectManager } from './effect-manager'
 import type { EffectValue } from './effects'
 import { makeVideoRenderer, type VideoRenderer } from './make-video-renderer'
-import type { CompiledTimeline, EffectParamRef, EffectRef, Placement } from '@eddy/timeline'
-import { getActivePlacements } from '@eddy/timeline'
+import type { AbsoluteProject, MediaTrackAbsolute, AbsoluteClip } from '@eddy/lexicons'
+import type { CanvasSize, Placement } from '@eddy/timeline'
+import { getPlacementsAtTime } from '@eddy/timeline'
 
 const log = debug('video:make-video-compositor', false)
 
@@ -70,8 +71,8 @@ export interface VideoCompositor {
   /** The capture effect manager */
   readonly captureEffectManager: EffectManager
 
-  /** Set the compiled layout timeline */
-  setTimeline(timeline: CompiledTimeline): void
+  /** Set the project for timeline-based rendering */
+  setProject(project: AbsoluteProject): void
 
   /**
    * Set an effect param value by source coordinates.
@@ -120,26 +121,9 @@ export interface VideoCompositor {
 /*                                                                                */
 /**********************************************************************************/
 
-/** Create onBeforeRender callback that applies effect values to controls */
-function makeOnBeforeRender(
-  chain: CompiledEffectChain,
-  effectRefs: EffectRef[],
-  effectParamRefs: EffectParamRef[],
-  effectValues: Map<string, EffectValue>,
-): () => void {
-  return () => {
-    for (let index = 0; index < effectRefs.length; index++) {
-      const value = effectValues.get(effectRefs[index].key)
-      if (value === undefined) continue
-
-      const paramRef = effectParamRefs[index]
-      const control = chain.controls[paramRef.chainIndex]
-      if (!control || typeof control[paramRef.paramKey] !== 'function') continue
-
-      control[paramRef.paramKey](value)
-    }
-  }
-}
+// Note: Effect value application (makeOnBeforeRender) has been removed.
+// The new schema stores effects on tracks/clips directly rather than as refs.
+// Effect values can be applied by looking up the pipeline and updating controls.
 
 /**********************************************************************************/
 /*                                                                                */
@@ -163,8 +147,9 @@ export function makeVideoCompositor(config: VideoCompositorConfig): VideoComposi
   const mainEffectManager = makeEffectManager(mainRenderer.gl, effectRegistry)
   const captureEffectManager = makeEffectManager(captureRenderer.gl, effectRegistry)
 
-  // Current compiled timeline
-  let compiledTimeline: CompiledTimeline | null = null
+  // Current project and canvas size for runtime queries
+  let currentProject: AbsoluteProject | null = null
+  const canvasSize: CanvasSize = { width, height }
 
   // Frame sources - keyed by clipId
   const frames = new Map<string, VideoFrame>()
@@ -208,6 +193,45 @@ export function makeVideoCompositor(config: VideoCompositorConfig): VideoComposi
     log('Compiled effect chain', { id: effectId, effectCount: effectKeys.length })
 
     return compiled
+  }
+
+  /**
+   * Look up effect chain info from project for a placement.
+   * Combines track and clip visual pipelines into effect keys.
+   */
+  function getEffectInfoForPlacement(
+    placement: Placement,
+  ): { effectId: string; effectKeys: EffectKey[] } | null {
+    if (!currentProject) return null
+
+    const track = currentProject.mediaTracks.find((t: MediaTrackAbsolute) => t.id === placement.trackId)
+    if (!track) return null
+
+    const clip = track.clips.find((c: AbsoluteClip) => c.id === placement.clipId)
+
+    // Collect effects from track and clip pipelines
+    const effectKeys: EffectKey[] = []
+
+    // Add clip effects first (applied first)
+    if (clip?.visualPipeline?.effects) {
+      for (const effect of clip.visualPipeline.effects) {
+        effectKeys.push(effect.type as EffectKey)
+      }
+    }
+
+    // Add track effects (applied after clip effects)
+    if (track.visualPipeline?.effects) {
+      for (const effect of track.visualPipeline.effects) {
+        effectKeys.push(effect.type as EffectKey)
+      }
+    }
+
+    if (effectKeys.length === 0) return null
+
+    // Create a signature for caching
+    const effectId = `${placement.trackId}:${placement.clipId}:${effectKeys.join(',')}`
+
+    return { effectId, effectKeys }
   }
 
   function setFrame(clipId: string, frame: VideoFrame | null): void {
@@ -304,12 +328,9 @@ export function makeVideoCompositor(config: VideoCompositorConfig): VideoComposi
 
     setFrame,
 
-    setTimeline(newTimeline) {
-      compiledTimeline = newTimeline
-      log('setTimeline', {
-        duration: compiledTimeline.duration,
-        segments: compiledTimeline.segments.length,
-      })
+    setProject(project) {
+      currentProject = project
+      log('setProject', { title: project.title })
     },
 
     setEffectValue(sourceType, sourceId, effectIndex, paramKey, value) {
@@ -341,7 +362,7 @@ export function makeVideoCompositor(config: VideoCompositorConfig): VideoComposi
     },
 
     render(time): RenderStats {
-      if (!compiledTimeline) return renderStats
+      if (!currentProject) return renderStats
 
       // Reset stats
       renderStats = { expected: 0, rendered: 0, dropped: 0, stale: 0 }
@@ -349,12 +370,12 @@ export function makeVideoCompositor(config: VideoCompositorConfig): VideoComposi
       // Clear canvas
       mainRenderer.clear()
 
-      // Query timeline for active placements at this time
-      const activePlacements = getActivePlacements(compiledTimeline, time)
+      // Query project for active placements at this time (time is in seconds, convert to ms)
+      const activePlacements = getPlacementsAtTime(currentProject, time * 1000, canvasSize)
       renderStats.expected = activePlacements.length
 
       // Render all active placements
-      for (const { placement } of activePlacements) {
+      for (const placement of activePlacements) {
         // Get frame from appropriate source based on clipId
         const isPreview = placement.clipId === previewClipId
         const frame = isPreview ? previewFrame : frames.get(placement.clipId)
@@ -368,22 +389,18 @@ export function makeVideoCompositor(config: VideoCompositorConfig): VideoComposi
         // Use trackId for texture key when preview (avoids collision with playback textures)
         const textureKey = isPreview ? `preview-${placement.trackId}` : placement.clipId
 
-        // Get or compile effect chain from placement's signature
-        const effectChain = getOrCompileEffectChain(mainEffectManager, placement)
+        // Look up effect chain from track/clip visualPipeline
+        const effectInfo = getEffectInfoForPlacement(placement)
+        const effectChain = effectInfo
+          ? getOrCompileEffectChain(mainEffectManager, effectInfo)
+          : undefined
 
         mainRenderer.renderPlacement({
           id: textureKey,
           frame,
           viewport: placement.viewport,
           effectChain,
-          onBeforeRender: effectChain
-            ? makeOnBeforeRender(
-                effectChain,
-                placement.effectRefs,
-                placement.effectParamRefs,
-                effectValues,
-              )
-            : undefined,
+          onBeforeRender: undefined, // Effect values not yet supported in new schema
         })
       }
 
@@ -391,43 +408,41 @@ export function makeVideoCompositor(config: VideoCompositorConfig): VideoComposi
     },
 
     renderToCaptureCanvas(time) {
-      if (!compiledTimeline) return
+      if (!currentProject) return
 
-      // Query timeline for active placements
-      const activePlacements = getActivePlacements(compiledTimeline, time)
+      // Query project for active placements (time in seconds, convert to ms)
+      const activePlacements = getPlacementsAtTime(currentProject, time * 1000, canvasSize)
 
       // Render using pre-uploaded textures
       captureRenderer.renderById(
-        activePlacements.map(({ placement }) => {
-          const effectChain = getOrCompileEffectChain(captureEffectManager, placement)
+        activePlacements.map(placement => {
+          // Look up effect chain from track/clip visualPipeline
+          const effectInfo = getEffectInfoForPlacement(placement)
+          const effectChain = effectInfo
+            ? getOrCompileEffectChain(captureEffectManager, effectInfo)
+            : undefined
+
           return {
             id: placement.clipId,
             viewport: placement.viewport,
             effectChain: effectChain ?? undefined,
-            onBeforeRender: effectChain
-              ? makeOnBeforeRender(
-                  effectChain,
-                  placement.effectRefs,
-                  placement.effectParamRefs,
-                  effectValues,
-                )
-              : undefined,
+            onBeforeRender: undefined,
           }
         }),
       )
     },
 
     renderAndCapture(time) {
-      if (!compiledTimeline) return null
+      if (!currentProject) return null
 
       // Clear canvas
       mainRenderer.clear()
 
-      // Query timeline for active placements at this time
-      const activePlacements = getActivePlacements(compiledTimeline, time)
+      // Query project for active placements at this time (time in seconds, convert to ms)
+      const activePlacements = getPlacementsAtTime(currentProject, time * 1000, canvasSize)
 
       // Render all active placements
-      for (const { placement } of activePlacements) {
+      for (const placement of activePlacements) {
         // Get frame from appropriate source based on clipId
         const isPreview = placement.clipId === previewClipId
         const frame = isPreview ? previewFrame : frames.get(placement.clipId)
@@ -439,22 +454,18 @@ export function makeVideoCompositor(config: VideoCompositorConfig): VideoComposi
         // Use trackId for texture key when preview (avoids collision with playback textures)
         const textureKey = isPreview ? `preview-${placement.trackId}` : placement.clipId
 
-        // Get or compile effect chain from placement's signature
-        const effectChain = getOrCompileEffectChain(mainEffectManager, placement)
+        // Look up effect chain from track/clip visualPipeline
+        const effectInfo = getEffectInfoForPlacement(placement)
+        const effectChain = effectInfo
+          ? getOrCompileEffectChain(mainEffectManager, effectInfo)
+          : undefined
 
         mainRenderer.renderPlacement({
           id: textureKey,
           frame,
           viewport: placement.viewport,
           effectChain: effectChain ?? undefined,
-          onBeforeRender: effectChain
-            ? makeOnBeforeRender(
-                effectChain,
-                placement.effectRefs,
-                placement.effectParamRefs,
-                effectValues,
-              )
-            : undefined,
+          onBeforeRender: undefined,
         })
       }
 
@@ -463,7 +474,7 @@ export function makeVideoCompositor(config: VideoCompositorConfig): VideoComposi
     },
 
     renderFramesAndCapture(time, frameEntries) {
-      if (!compiledTimeline) return null
+      if (!currentProject) return null
 
       // Build a temporary frame map from the provided frames
       const exportFrames = new Map<string, VideoFrame>()
@@ -474,30 +485,26 @@ export function makeVideoCompositor(config: VideoCompositorConfig): VideoComposi
       // Clear canvas
       mainRenderer.clear()
 
-      // Query timeline for active placements at this time
-      const activePlacements = getActivePlacements(compiledTimeline, time)
+      // Query project for active placements at this time (time in seconds, convert to ms)
+      const activePlacements = getPlacementsAtTime(currentProject, time * 1000, canvasSize)
 
       // Render all active placements using provided frames
-      for (const { placement } of activePlacements) {
+      for (const placement of activePlacements) {
         const frame = exportFrames.get(placement.clipId)
         if (!frame) continue
 
-        // Get or compile effect chain from placement's signature
-        const effectChain = getOrCompileEffectChain(mainEffectManager, placement)
+        // Look up effect chain from track/clip visualPipeline
+        const effectInfo = getEffectInfoForPlacement(placement)
+        const effectChain = effectInfo
+          ? getOrCompileEffectChain(mainEffectManager, effectInfo)
+          : undefined
 
         mainRenderer.renderPlacement({
           id: placement.clipId,
           frame,
           viewport: placement.viewport,
           effectChain: effectChain ?? undefined,
-          onBeforeRender: effectChain
-            ? makeOnBeforeRender(
-                effectChain,
-                placement.effectRefs,
-                placement.effectParamRefs,
-                effectValues,
-              )
-            : undefined,
+          onBeforeRender: undefined,
         })
       }
 

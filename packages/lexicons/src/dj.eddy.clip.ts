@@ -25,20 +25,6 @@ export default {
       },
     },
 
-    'source.group': {
-      type: 'object',
-      description: 'Reference to a group within this project (for nested compositions)',
-      required: ['type', 'id'],
-      properties: {
-        type: { type: 'string', const: 'group' },
-        id: {
-          type: 'string',
-          description: 'ID of the group to use as source',
-          maxLength: 64,
-        },
-      },
-    },
-
     'source.url': {
       type: 'object',
       description: 'Direct URL reference for local/external media',
@@ -49,6 +35,58 @@ export default {
           type: 'string',
           format: 'uri',
           description: 'URL of the media file',
+        },
+      },
+    },
+
+    'source.project': {
+      type: 'object',
+      description: 'Reference to another project for nested composition',
+      required: ['type', 'uri'],
+      properties: {
+        type: { type: 'string', const: 'project' },
+        uri: {
+          type: 'string',
+          format: 'at-uri',
+          description: 'AT URI of the project to embed',
+        },
+      },
+    },
+
+    'source.layout': {
+      type: 'object',
+      description: 'Layout instruction for arranging tracks',
+      required: ['type', 'mode', 'slots'],
+      properties: {
+        type: { type: 'string', const: 'layout' },
+        mode: {
+          type: 'string',
+          enum: ['grid', 'focus', 'pip', 'split'],
+          description: 'Layout mode',
+        },
+        slots: {
+          type: 'array',
+          items: { type: 'string', maxLength: 64 },
+          maxLength: 16,
+          description: 'Track IDs to include in layout, in order',
+        },
+        columns: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 8,
+          description: 'Number of columns (for grid mode)',
+        },
+        rows: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 8,
+          description: 'Number of rows (for grid mode)',
+        },
+        gap: {
+          type: 'integer',
+          minimum: 0,
+          maximum: 100,
+          description: 'Gap between cells (0-100, percentage of cell size)',
         },
       },
     },

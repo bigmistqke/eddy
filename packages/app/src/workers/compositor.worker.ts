@@ -7,7 +7,7 @@
  */
 
 import { expose, handle, type Handled, type Transferred } from '@bigmistqke/rpc/messenger'
-import type { CompiledTimeline } from '@eddy/timeline'
+import type { AbsoluteProject } from '@eddy/lexicons'
 import { debug } from '@eddy/utils'
 import {
   makeBrightnessEffect,
@@ -42,8 +42,8 @@ const log = debug('compositor.worker', false)
 
 /** Methods returned by init() as a sub-proxy */
 export interface CompositorMethods {
-  /** Set the compiled layout timeline */
-  setTimeline(timeline: CompiledTimeline): void
+  /** Set the project for timeline-based rendering */
+  setProject(project: AbsoluteProject): void
 
   /**
    * Set an effect param value by source coordinates.
@@ -122,8 +122,8 @@ expose<CompositorWorkerMethods>({
     const playbackWorkerPorts = new Map<string, MessagePort>()
 
     return handle({
-      setTimeline(timeline) {
-        compositor.setTimeline(timeline)
+      setProject(project) {
+        compositor.setProject(project)
       },
 
       setEffectValue(sourceType, sourceId, effectIndex, paramKey, value) {

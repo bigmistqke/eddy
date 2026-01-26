@@ -1,13 +1,13 @@
 /**
- * Compile Musical Timeline
+ * Musical Timeline Utilities
  *
- * Converts MusicalProject (tick-based timing) to AbsoluteProject (ms-based)
- * and delegates to compileAbsoluteTimeline.
+ * Converts musical timing (ticks) to absolute timing (ms).
+ * Uses the same runtime query approach as absolute timeline.
  */
 
-import type { AbsoluteClip, AbsoluteProject, MusicalClip, MusicalProject } from '@eddy/lexicons'
-import { compileAbsoluteTimeline } from './compile-absolute-timeline'
-import type { CanvasSize, CompiledTimeline } from './types'
+import type { MusicalClip, MusicalProject, AbsoluteProject, AbsoluteClip } from '@eddy/lexicons'
+import type { CanvasSize, Placement } from './compile-absolute-timeline'
+import { getPlacementsAtTime as getAbsolutePlacementsAtTime, getProjectDuration as getAbsoluteProjectDuration } from './compile-absolute-timeline'
 
 /**********************************************************************************/
 /*                                                                                */
@@ -33,20 +33,14 @@ function ticksToMs(ticks: number, bpm: number, ppq: number): number {
   return Math.round(ticks * msPerTick)
 }
 
-/**********************************************************************************/
-/*                                                                                */
-/*                                  Conversion                                    */
-/*                                                                                */
-/**********************************************************************************/
-
 /** Convert a MusicalClip to AbsoluteClip */
 function convertClip(clip: MusicalClip, bpm: number, ppq: number): AbsoluteClip {
   return {
     id: clip.id,
     source: clip.source,
     start: ticksToMs(clip.start, bpm, ppq),
-    duration: ticksToMs(clip.duration, bpm, ppq),
-    offset: clip.offset ? ticksToMs(clip.offset, bpm, ppq) : undefined,
+    duration: clip.duration !== undefined ? ticksToMs(clip.duration, bpm, ppq) : undefined,
+    offset: clip.offset !== undefined ? ticksToMs(clip.offset, bpm, ppq) : undefined,
     speed: clip.speed,
     reverse: clip.reverse,
     audioPipeline: clip.audioPipeline,
@@ -54,30 +48,43 @@ function convertClip(clip: MusicalClip, bpm: number, ppq: number): AbsoluteClip 
   }
 }
 
+/**********************************************************************************/
+/*                                                                                */
+/*                                  Conversion                                    */
+/*                                                                                */
+/**********************************************************************************/
+
 /** Convert MusicalProject to AbsoluteProject */
-function musicalToAbsolute(project: MusicalProject): AbsoluteProject {
+export function musicalToAbsolute(project: MusicalProject): AbsoluteProject {
   const bpm = project.bpm ?? DEFAULT_BPM
   const ppq = project.ppq ?? DEFAULT_PPQ
 
-  const clips: AbsoluteClip[] = project.clips.map(clip => convertClip(clip, bpm, ppq))
+  // Convert media tracks
+  const mediaTracks = project.mediaTracks.map(track => ({
+    id: track.id,
+    name: track.name,
+    clips: track.clips.map(clip => convertClip(clip, bpm, ppq)),
+    audioPipeline: track.audioPipeline,
+    visualPipeline: track.visualPipeline,
+    muted: track.muted,
+    solo: track.solo,
+  }))
 
-  // Calculate duration from durationTicks or derive from clips
-  let duration: number | undefined
-  if (project.durationTicks !== undefined) {
-    duration = ticksToMs(project.durationTicks, bpm, ppq)
-  }
+  // Convert metadata tracks
+  const metadataTracks = (project.metadataTracks ?? []).map(track => ({
+    id: track.id,
+    name: track.name,
+    clips: track.clips.map(clip => convertClip(clip, bpm, ppq)),
+  }))
 
   return {
     schemaVersion: project.schemaVersion,
     title: project.title,
     description: project.description,
-    duration,
+    duration: project.durationTicks !== undefined ? ticksToMs(project.durationTicks, bpm, ppq) : undefined,
     canvas: project.canvas,
-    curves: project.curves,
-    tracks: project.tracks,
-    clips,
-    groups: project.groups,
-    root: project.root,
+    mediaTracks,
+    metadataTracks,
     parent: project.parent,
     createdAt: project.createdAt,
     updatedAt: project.updatedAt,
@@ -91,16 +98,39 @@ function musicalToAbsolute(project: MusicalProject): AbsoluteProject {
 /**********************************************************************************/
 
 /**
- * Compile a MusicalProject into a CompiledTimeline.
- * Converts tick-based timing to ms-based, then delegates to compileAbsoluteTimeline.
+ * Get placements at a given time (in ticks).
+ * Converts to absolute timing internally.
  */
-export function compileMusicalTimeline(
+export function getPlacementsAtTime(
   project: MusicalProject,
-  canvasSize: CanvasSize,
-): CompiledTimeline {
+  timeTicks: number,
+  canvas: CanvasSize,
+): Placement[] {
+  const bpm = project.bpm ?? DEFAULT_BPM
+  const ppq = project.ppq ?? DEFAULT_PPQ
+  const timeMs = ticksToMs(timeTicks, bpm, ppq)
+
   const absoluteProject = musicalToAbsolute(project)
-  return compileAbsoluteTimeline(absoluteProject, canvasSize)
+  return getAbsolutePlacementsAtTime(absoluteProject, timeMs, canvas)
 }
 
-/** Export the converter for testing/debugging */
-export { musicalToAbsolute }
+/**
+ * Get project duration in ticks.
+ */
+export function getProjectDuration(project: MusicalProject): number {
+  if (project.durationTicks !== undefined) {
+    return project.durationTicks
+  }
+
+  // Calculate from clips
+  const bpm = project.bpm ?? DEFAULT_BPM
+  const ppq = project.ppq ?? DEFAULT_PPQ
+  const absoluteProject = musicalToAbsolute(project)
+  const durationMs = getAbsoluteProjectDuration(absoluteProject)
+
+  // Convert back to ticks
+  const actualBpm = bpm / 100
+  const msPerBeat = 60000 / actualBpm
+  const msPerTick = msPerBeat / ppq
+  return Math.round(durationMs / msPerTick)
+}

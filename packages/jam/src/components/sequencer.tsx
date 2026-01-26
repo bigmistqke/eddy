@@ -6,10 +6,10 @@
  * Shows clips with connected styling for multi-column spans.
  */
 
-import type { JamLayoutType } from '@eddy/lexicons'
+import type { ClipSourceLayout, JamLayoutType } from '@eddy/lexicons'
 import { Repeat } from '@solid-primitives/range'
 import clsx from 'clsx'
-import { createSignal, For, Show } from 'solid-js'
+import { createEffect, createSignal, For, Show } from 'solid-js'
 import type { ClipPosition, Jam } from '~/primitives/create-jam'
 import styles from './Sequencer.module.css'
 
@@ -45,9 +45,13 @@ const TEST_VIDEOS = [
   '/videos/sample-15s.webm',
 ]
 
-/** Convert grid layout to JamLayoutType for icon display */
-function gridToLayoutType(layout: { type: 'grid'; columns: number; rows: number }): JamLayoutType {
-  const { columns, rows } = layout
+/** Convert layout source to JamLayoutType for icon display */
+function layoutSourceToType(source: ClipSourceLayout): JamLayoutType {
+  const { mode, columns, rows } = source
+  if (mode === 'pip') return 'pip'
+  if (mode === 'focus') return 'full'
+  if (mode === 'split') return 'h-split'
+  // Grid mode - determine by dimensions
   if (columns === 1 && rows === 1) return 'full'
   if (columns === 2 && rows === 1) return 'h-split'
   if (columns === 1 && rows === 2) return 'v-split'
@@ -178,6 +182,8 @@ export function Grid(props: GridProps) {
 
   const gridTemplateColumns = () => `80px repeat(${columnCount()}, 60px) 48px`
 
+  createEffect(() => console.log('props', props.jam.currentTime()))
+
   return (
     <div
       class={styles.sequencer}
@@ -259,7 +265,7 @@ export function Grid(props: GridProps) {
                         {props.jam.metadata.columnDuration}
                       </span>
                       <span class={styles.timelineIcon}>
-                        {region() ? LAYOUT_ICONS[gridToLayoutType(region()!.layout)] : '·'}
+                        {region() ? LAYOUT_ICONS[layoutSourceToType(region()!.source)] : '·'}
                       </span>
                     </Show>
                   </div>

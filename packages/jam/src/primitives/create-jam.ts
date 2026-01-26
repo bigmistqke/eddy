@@ -3,21 +3,20 @@
  *
  * State management for the Jam app.
  * Uses musical time domain (ticks) for clips.
- * Layout regions are clips on a layout track that reference layout groups.
+ * Layout regions are clips on a metadata track with source.type='layout'.
  */
 
 import type {
-  Group,
+  ClipSourceLayout,
   JamColumnDuration,
   JamLayoutType,
   JamMetadata,
+  MediaTrackMusical,
+  MetadataTrackMusical,
   MusicalClip,
   MusicalProject,
-  Track,
 } from '@eddy/lexicons'
-import type { CompiledTimeline } from '@eddy/timeline'
-import { compileMusicalTimeline } from '@eddy/timeline'
-import type { Accessor } from 'solid-js'
+import { getProjectDuration, musicalToAbsolute } from '@eddy/timeline'
 import { createEffect, createMemo, createSignal, on, onCleanup } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
 
@@ -52,16 +51,14 @@ export interface CreateJamOptions {
 /** Clip position within cell */
 export type ClipPosition = 'none' | 'start' | 'middle' | 'end' | 'single'
 
-/** Layout region derived from layout track clip + group */
+/** Layout region derived from layout track clip */
 export interface LayoutRegion {
   clipId: string
-  groupId: string
   startTick: number
   endTick: number
   startColumn: number
   endColumn: number
-  layout: { type: 'grid'; columns: number; rows: number }
-  slots: string[] // track IDs
+  source: ClipSourceLayout
 }
 
 /**********************************************************************************/
@@ -77,36 +74,49 @@ function makeDefaultProject(): MusicalProject {
     canvas: { width: 640, height: 360 },
     bpm: 12000, // 120 BPM (scaled by 100)
     ppq: DEFAULT_PPQ,
-    root: LAYOUT_TRACK_ID,
-    groups: [
-      // Layout groups - define composition for each region
-      { id: 'layout-group-0', layout: { type: 'grid', columns: 1, rows: 1 }, members: [{ id: 'track-0' }] },
-      { id: 'layout-group-1', layout: { type: 'grid', columns: 2, rows: 2 }, members: [{ id: 'track-0' }, { id: 'track-1' }, { id: 'track-2' }, { id: 'track-3' }] },
-      { id: 'layout-group-2', layout: { type: 'grid', columns: 2, rows: 1 }, members: [{ id: 'track-0' }, { id: 'track-1' }] },
-      { id: 'layout-group-3', layout: { type: 'grid', columns: 2, rows: 1 }, members: [{ id: 'track-0' }, { id: 'track-1' }] },
-      { id: 'layout-group-4', layout: { type: 'grid', columns: 2, rows: 2 }, members: [{ id: 'track-0' }, { id: 'track-1' }, { id: 'track-2' }, { type: 'void' }] },
+    mediaTracks: [
+      // Content tracks with inline clips
+      {
+        id: 'track-0',
+        name: 'Track 1',
+        clips: [
+          { id: 'clip-0', start: 0, duration: TICKS_PER_BAR * 3, source: { type: 'url', url: '/videos/big-buck-bunny.webm' } },
+        ],
+      },
+      {
+        id: 'track-1',
+        name: 'Track 2',
+        clips: [
+          { id: 'clip-1a', start: TICKS_PER_BAR, duration: TICKS_PER_BAR, source: { type: 'url', url: '/videos/sample-5s.webm' } },
+          { id: 'clip-1b', start: TICKS_PER_BAR * 2 + TICKS_PER_BAR / 2, duration: TICKS_PER_BAR, source: { type: 'url', url: '/videos/sample-5s.webm' } },
+        ],
+      },
+      {
+        id: 'track-2',
+        name: 'Track 3',
+        clips: [
+          { id: 'clip-2', start: TICKS_PER_BAR * 2, duration: TICKS_PER_BAR * 2, source: { type: 'url', url: '/videos/sample-10s.webm' } },
+        ],
+      },
+      {
+        id: 'track-3',
+        name: 'Track 4',
+        clips: [],
+      },
     ],
-    tracks: [
-      // Content tracks
-      { id: 'track-0', name: 'Track 1', clipIds: ['clip-0'] },
-      { id: 'track-1', name: 'Track 2', clipIds: ['clip-1a', 'clip-1b'] },
-      { id: 'track-2', name: 'Track 3', clipIds: ['clip-2'] },
-      { id: 'track-3', name: 'Track 4', clipIds: [] },
-      // Layout track - clips define regions via group sources
-      { id: LAYOUT_TRACK_ID, name: 'Layout', clipIds: ['layout-0', 'layout-1', 'layout-2', 'layout-3', 'layout-4'] },
-    ],
-    clips: [
-      // Content clips (timing on content tracks, with URL sources)
-      { id: 'clip-0', start: 0, duration: TICKS_PER_BAR * 3, source: { type: 'url', url: '/videos/big-buck-bunny.webm' } },
-      { id: 'clip-1a', start: TICKS_PER_BAR, duration: TICKS_PER_BAR, source: { type: 'url', url: '/videos/sample-5s.webm' } },
-      { id: 'clip-1b', start: TICKS_PER_BAR * 2 + TICKS_PER_BAR / 2, duration: TICKS_PER_BAR, source: { type: 'url', url: '/videos/sample-5s.webm' } },
-      { id: 'clip-2', start: TICKS_PER_BAR * 2, duration: TICKS_PER_BAR * 2, source: { type: 'url', url: '/videos/sample-10s.webm' } },
-      // Layout clips (reference layout groups, offset makes content flow through time)
-      { id: 'layout-0', start: 0, duration: TICKS_PER_BAR, offset: 0, source: { type: 'group', id: 'layout-group-0' } },
-      { id: 'layout-1', start: TICKS_PER_BAR, duration: TICKS_PER_BAR, offset: -TICKS_PER_BAR, source: { type: 'group', id: 'layout-group-1' } },
-      { id: 'layout-2', start: TICKS_PER_BAR * 2, duration: TICKS_PER_BAR * 1, offset: -TICKS_PER_BAR * 2, source: { type: 'group', id: 'layout-group-2' } },
-      { id: 'layout-3', start: TICKS_PER_BAR * 3, duration: TICKS_PER_BAR * 1, offset: -TICKS_PER_BAR * 3, source: { type: 'group', id: 'layout-group-3' } },
-      { id: 'layout-4', start: TICKS_PER_BAR * 4, duration: TICKS_PER_BAR * 1, offset: -TICKS_PER_BAR * 4, source: { type: 'group', id: 'layout-group-4' } },
+    metadataTracks: [
+      // Layout track - clips define layout regions directly
+      {
+        id: LAYOUT_TRACK_ID,
+        name: 'Layout',
+        clips: [
+          { id: 'layout-0', start: TICKS_PER_BAR * 0, duration: TICKS_PER_BAR, source: { type: 'layout', mode: 'grid', slots: ['track-0'], columns: 1, rows: 1 } },
+          { id: 'layout-1', start: TICKS_PER_BAR * 1, duration: TICKS_PER_BAR, source: { type: 'layout', mode: 'grid', slots: ['track-0', 'track-1', 'track-2', 'track-3'], columns: 2, rows: 2 } },
+          { id: 'layout-2', start: TICKS_PER_BAR * 2, duration: TICKS_PER_BAR, source: { type: 'layout', mode: 'grid', slots: ['track-0', 'track-1'], columns: 2, rows: 1 } },
+          { id: 'layout-3', start: TICKS_PER_BAR * 3, duration: TICKS_PER_BAR, source: { type: 'layout', mode: 'grid', slots: ['track-0', 'track-1'], columns: 2, rows: 1 } },
+          { id: 'layout-4', start: TICKS_PER_BAR * 4, duration: TICKS_PER_BAR, source: { type: 'layout', mode: 'grid', slots: ['track-0', 'track-1', 'track-2'], columns: 2, rows: 2 } },
+        ],
+      },
     ],
     createdAt: new Date().toISOString(),
   }
@@ -184,12 +194,11 @@ export function createJam(options: CreateJamOptions) {
   window.addEventListener('resize', handleResize)
   onCleanup(() => window.removeEventListener('resize', handleResize))
 
-  // Derived state
-  const timeline: Accessor<CompiledTimeline> = createMemo(() =>
-    compileMusicalTimeline(project, canvasSize)
-  )
-
-  const duration = createMemo(() => timeline().duration)
+  // Derived state - convert to absolute for duration calculation
+  const duration = createMemo(() => {
+    const absoluteProject = musicalToAbsolute(project)
+    return getProjectDuration(absoluteProject) / 1000 // Convert ms to seconds
+  })
 
   /** Get PPQ from project or use default */
   const ppq = createMemo(() => project.ppq ?? DEFAULT_PPQ)
@@ -242,9 +251,9 @@ export function createJam(options: CreateJamOptions) {
     return ticksToMs(ticks) / 1000
   }
 
-  /** Get layout track */
+  /** Get layout track from metadataTracks */
   const layoutTrack = createMemo(() =>
-    project.tracks.find(t => t.id === LAYOUT_TRACK_ID)
+    (project.metadataTracks ?? []).find(t => t.id === LAYOUT_TRACK_ID)
   )
 
   /** Get all layout regions derived from layout track clips */
@@ -255,16 +264,11 @@ export function createJam(options: CreateJamOptions) {
     const boundaries = columnBoundariesTicks()
     const regions: LayoutRegion[] = []
 
-    for (const clipId of track.clipIds) {
-      const clip = getClipById(clipId)
-      if (!clip || clip.source?.type !== 'group') continue
-
-      const groupSource = clip.source as { type: 'group'; id: string }
-      const group = project.groups.find(g => g.id === groupSource.id)
-      if (!group) continue
+    for (const clip of track.clips) {
+      if (!clip.source || clip.source.type !== 'layout') continue
 
       const startTick = clip.start
-      const endTick = clip.start + clip.duration
+      const endTick = clip.start + (clip.duration ?? 0)
 
       // Find column boundaries
       let startColumn = 0
@@ -282,19 +286,13 @@ export function createJam(options: CreateJamOptions) {
         endColumn = boundaries.length - 1
       }
 
-      const slots = group.members
-        .filter((m): m is { id: string } => 'id' in m)
-        .map(m => m.id)
-
       regions.push({
         clipId: clip.id,
-        groupId: group.id,
         startTick,
         endTick,
         startColumn,
         endColumn,
-        layout: group.layout ?? { type: 'grid', columns: 1, rows: 1 },
-        slots,
+        source: clip.source,
       })
     }
 
@@ -336,23 +334,42 @@ export function createJam(options: CreateJamOptions) {
     return Number(duration)
   }
 
-  /** Get clips for a track by looking up clipIds */
+  /** Get clips for a media track (clips are inline) */
   function getClipsForTrack(trackId: string): MusicalClip[] {
-    const track = project.tracks.find(t => t.id === trackId)
-    if (!track) return []
-    return track.clipIds
-      .map(id => project.clips.find(c => c.id === id))
-      .filter((c): c is MusicalClip => c !== undefined)
+    const track = project.mediaTracks.find(t => t.id === trackId)
+    return track?.clips ?? []
   }
 
-  /** Find clip by ID in project */
+  /** Find media track containing a clip */
+  function findTrackContainingClip(clipId: string): { track: MediaTrackMusical; clipIndex: number } | null {
+    for (const track of project.mediaTracks) {
+      const clipIndex = track.clips.findIndex(c => c.id === clipId)
+      if (clipIndex !== -1) {
+        return { track, clipIndex }
+      }
+    }
+    return null
+  }
+
+  /** Find clip by ID in media tracks */
   function getClipById(clipId: string): MusicalClip | undefined {
-    return project.clips.find(c => c.id === clipId)
+    for (const track of project.mediaTracks) {
+      const clip = track.clips.find(c => c.id === clipId)
+      if (clip) return clip
+    }
+    return undefined
   }
 
-  /** Find clip index in project.clips */
-  function getClipIndex(clipId: string): number {
-    return project.clips.findIndex(c => c.id === clipId)
+  /** Find track index and clip index for a clip */
+  function getClipLocation(clipId: string): { trackIndex: number; clipIndex: number } | null {
+    for (let trackIndex = 0; trackIndex < project.mediaTracks.length; trackIndex++) {
+      const track = project.mediaTracks[trackIndex]
+      const clipIndex = track.clips.findIndex(c => c.id === clipId)
+      if (clipIndex !== -1) {
+        return { trackIndex, clipIndex }
+      }
+    }
+    return null
   }
 
   /**********************************************************************************/
@@ -362,26 +379,24 @@ export function createJam(options: CreateJamOptions) {
   /**********************************************************************************/
 
   /** Find which clip (if any) overlaps a given column for a track */
-  function getClipAtColumn(trackId: string, columnIndex: number): { clipId: string; clipIndex: number } | null {
-    const track = project.tracks.find(t => t.id === trackId)
-    if (!track) return null
+  function getClipAtColumn(trackId: string, columnIndex: number): { clipId: string; trackIndex: number; clipIndex: number } | null {
+    const trackIndex = project.mediaTracks.findIndex(t => t.id === trackId)
+    if (trackIndex === -1) return null
 
+    const track = project.mediaTracks[trackIndex]
     const boundaries = columnBoundariesTicks()
     const columnStartTick = boundaries[columnIndex]
     const columnEndTick = boundaries[columnIndex + 1]
     if (columnStartTick === undefined || columnEndTick === undefined) return null
 
-    for (const clipId of track.clipIds) {
-      const clip = getClipById(clipId)
-      if (!clip) continue
-
+    for (let clipIndex = 0; clipIndex < track.clips.length; clipIndex++) {
+      const clip = track.clips[clipIndex]
       const clipStart = clip.start
-      const clipEnd = clip.start + clip.duration
+      const clipEnd = clip.start + (clip.duration ?? 0)
 
       // Check if clip overlaps this column
       if (clipStart < columnEndTick && clipEnd > columnStartTick) {
-        const clipIndex = getClipIndex(clipId)
-        return { clipId, clipIndex }
+        return { clipId: clip.id, trackIndex, clipIndex }
       }
     }
     return null
@@ -400,7 +415,7 @@ export function createJam(options: CreateJamOptions) {
     const columnEndTick = boundaries[columnIndex + 1]
 
     const clipStart = clip.start
-    const clipEnd = clip.start + clip.duration
+    const clipEnd = clip.start + (clip.duration ?? 0)
 
     const startsInColumn = clipStart >= columnStartTick && clipStart < columnEndTick
     const endsInColumn = clipEnd > columnStartTick && clipEnd <= columnEndTick
@@ -418,7 +433,7 @@ export function createJam(options: CreateJamOptions) {
 
   /** Get all tracks that have clips in a column */
   function getTracksWithClipsInColumn(columnIndex: number): string[] {
-    return project.tracks
+    return project.mediaTracks
       .filter(track => hasClipAtColumn(track.id, columnIndex))
       .map(track => track.id)
   }
@@ -438,6 +453,9 @@ export function createJam(options: CreateJamOptions) {
 
   /** Create a new clip at a column */
   function createClipAtColumn(trackId: string, columnIndex: number): string {
+    const trackIndex = project.mediaTracks.findIndex(t => t.id === trackId)
+    if (trackIndex === -1) return ''
+
     const boundaries = columnBoundariesTicks()
     const columnStartTick = boundaries[columnIndex]
     const columnEndTick = boundaries[columnIndex + 1]
@@ -450,16 +468,8 @@ export function createJam(options: CreateJamOptions) {
       duration: columnEndTick - columnStartTick,
     }
 
-    // Add clip to project.clips
-    setProject('clips', clips => [...clips, newClip])
-
-    // Add clipId to track
-    setProject(
-      'tracks',
-      track => track.id === trackId,
-      'clipIds',
-      clipIds => [...clipIds, clipId]
-    )
+    // Add clip directly to track's clips array
+    setProject('mediaTracks', trackIndex, 'clips', clips => [...clips, newClip])
 
     return clipId
   }
@@ -469,16 +479,10 @@ export function createJam(options: CreateJamOptions) {
     const clipInfo = getClipAtColumn(trackId, columnIndex)
     if (!clipInfo) return
 
-    // Remove clipId from track
-    setProject(
-      'tracks',
-      track => track.id === trackId,
-      'clipIds',
-      clipIds => clipIds.filter(id => id !== clipInfo.clipId)
+    // Remove clip from track's clips array
+    setProject('mediaTracks', clipInfo.trackIndex, 'clips', clips =>
+      clips.filter(c => c.id !== clipInfo.clipId)
     )
-
-    // Remove clip from project.clips
-    setProject('clips', clips => clips.filter(c => c.id !== clipInfo.clipId))
   }
 
   /** Extend a clip to include an additional column */
@@ -499,6 +503,8 @@ export function createJam(options: CreateJamOptions) {
       // Extending forward
       const newEnd = targetColumnEndTick
       setProject(
+        'mediaTracks',
+        clipInfo.trackIndex,
         'clips',
         clipInfo.clipIndex,
         'duration',
@@ -507,8 +513,10 @@ export function createJam(options: CreateJamOptions) {
     } else {
       // Extending backward
       const newStart = targetColumnStartTick
-      const newDuration = (clip.start + clip.duration) - newStart
+      const newDuration = (clip.start + (clip.duration ?? 0)) - newStart
       setProject(
+        'mediaTracks',
+        clipInfo.trackIndex,
         'clips',
         clipInfo.clipIndex,
         produce(c => {
@@ -529,7 +537,7 @@ export function createJam(options: CreateJamOptions) {
       originalClips: clips.map(c => ({
         id: c.id,
         start: c.start,
-        duration: c.duration,
+        duration: c.duration ?? 0,
       })),
     }
   }
@@ -557,6 +565,8 @@ export function createJam(options: CreateJamOptions) {
 
     // Update the painted clip
     setProject(
+      'mediaTracks',
+      clipInfo.trackIndex,
       'clips',
       clipInfo.clipIndex,
       produce(c => {
@@ -580,19 +590,16 @@ export function createJam(options: CreateJamOptions) {
   ) {
     if (!paintSession) return
 
-    const track = project.tracks.find(t => t.id === trackId)
-    if (!track) return
+    const trackIndex = project.mediaTracks.findIndex(t => t.id === trackId)
+    if (trackIndex === -1) return
 
-    for (const clipId of track.clipIds) {
-      if (clipId === paintedClipId) continue
+    const track = project.mediaTracks[trackIndex]
 
-      const clip = getClipById(clipId)
-      if (!clip) continue
+    for (let clipIndex = 0; clipIndex < track.clips.length; clipIndex++) {
+      const clip = track.clips[clipIndex]
+      if (clip.id === paintedClipId) continue
 
-      const clipIndex = getClipIndex(clipId)
-      if (clipIndex === -1) continue
-
-      const original = paintSession.originalClips.find(c => c.id === clipId)
+      const original = paintSession.originalClips.find(c => c.id === clip.id)
       if (!original) continue
 
       const originalStart = original.start
@@ -629,10 +636,12 @@ export function createJam(options: CreateJamOptions) {
 
         // Apply changes if different from current
         const currentStart = clip.start
-        const currentEnd = clip.start + clip.duration
+        const currentEnd = clip.start + (clip.duration ?? 0)
 
         if (newClipStart !== currentStart || newClipEnd !== currentEnd) {
           setProject(
+            'mediaTracks',
+            trackIndex,
             'clips',
             clipIndex,
             produce(c => {
@@ -644,10 +653,12 @@ export function createJam(options: CreateJamOptions) {
       } else {
         // No overlap - restore to original if it was changed
         const currentStart = clip.start
-        const currentEnd = clip.start + clip.duration
+        const currentEnd = clip.start + (clip.duration ?? 0)
 
         if (currentStart !== originalStart || currentEnd !== originalEnd) {
           setProject(
+            'mediaTracks',
+            trackIndex,
             'clips',
             clipIndex,
             produce(c => {
@@ -753,30 +764,34 @@ export function createJam(options: CreateJamOptions) {
     const lastColumn = metadata.columnCount - 1
     const lastColumnEndTick = columnBoundariesTicks()[lastColumn]
 
-    // Shrink any layout clips that extend past the new column count
-    const track = layoutTrack()
-    if (track) {
-      for (const clipId of track.clipIds) {
-        const clipIndex = getClipIndex(clipId)
-        const clip = getClipById(clipId)
-        if (!clip || clipIndex === -1) continue
+    // Find layout track index
+    const layoutTrackIndex = (project.metadataTracks ?? []).findIndex(t => t.id === LAYOUT_TRACK_ID)
 
-        const clipEnd = clip.start + clip.duration
+    // Shrink any layout clips that extend past the new column count
+    if (layoutTrackIndex !== -1) {
+      const track = project.metadataTracks![layoutTrackIndex]
+      const clipsToRemove: string[] = []
+
+      for (let clipIndex = 0; clipIndex < track.clips.length; clipIndex++) {
+        const clip = track.clips[clipIndex]
+        const clipEnd = clip.start + (clip.duration ?? 0)
+
         if (clipEnd > lastColumnEndTick) {
           if (clip.start >= lastColumnEndTick) {
-            // Clip starts after new end - remove it
-            setProject(
-              'tracks',
-              t => t.id === LAYOUT_TRACK_ID,
-              'clipIds',
-              ids => ids.filter(id => id !== clipId)
-            )
-            setProject('clips', clips => clips.filter(c => c.id !== clipId))
+            // Clip starts after new end - mark for removal
+            clipsToRemove.push(clip.id)
           } else {
             // Shrink clip to fit
-            setProject('clips', clipIndex, 'duration', lastColumnEndTick - clip.start)
+            setProject('metadataTracks', layoutTrackIndex, 'clips', clipIndex, 'duration', lastColumnEndTick - clip.start)
           }
         }
+      }
+
+      // Remove clips that start after new end
+      if (clipsToRemove.length > 0) {
+        setProject('metadataTracks', layoutTrackIndex, 'clips', clips =>
+          clips.filter(c => !clipsToRemove.includes(c.id))
+        )
       }
     }
 
@@ -805,9 +820,13 @@ export function createJam(options: CreateJamOptions) {
     )
   }
 
-  /** Get layout type string from grid layout */
-  function layoutToType(layout: { type: 'grid'; columns: number; rows: number }): string {
-    const { columns, rows } = layout
+  /** Get layout type string from layout source */
+  function layoutSourceToType(source: ClipSourceLayout): string {
+    const { mode, columns, rows } = source
+    if (mode === 'pip') return 'pip'
+    if (mode === 'split') return 'h-split'
+    if (mode === 'focus') return 'full'
+    // Grid mode - determine by dimensions
     if (columns === 1 && rows === 1) return 'full'
     if (columns === 2 && rows === 1) return 'h-split'
     if (columns === 1 && rows === 2) return 'v-split'
@@ -815,16 +834,16 @@ export function createJam(options: CreateJamOptions) {
     return `${columns}x${rows}`
   }
 
-  /** Convert layout type string to grid config */
-  function typeToLayout(type: string): { type: 'grid'; columns: number; rows: number } {
+  /** Convert layout type string to layout source */
+  function typeToLayoutSource(type: string): ClipSourceLayout {
     switch (type) {
-      case 'full': return { type: 'grid', columns: 1, rows: 1 }
-      case 'h-split': return { type: 'grid', columns: 2, rows: 1 }
-      case 'v-split': return { type: 'grid', columns: 1, rows: 2 }
-      case '2x2': return { type: 'grid', columns: 2, rows: 2 }
-      case '3-up': return { type: 'grid', columns: 2, rows: 2 } // 3-up uses 2x2 with void
-      case 'pip': return { type: 'grid', columns: 2, rows: 1 } // pip uses 2x1
-      default: return { type: 'grid', columns: 1, rows: 1 }
+      case 'full': return { type: 'layout', mode: 'focus', slots: [] }
+      case 'h-split': return { type: 'layout', mode: 'grid', slots: [], columns: 2, rows: 1 }
+      case 'v-split': return { type: 'layout', mode: 'grid', slots: [], columns: 1, rows: 2 }
+      case '2x2': return { type: 'layout', mode: 'grid', slots: [], columns: 2, rows: 2 }
+      case '3-up': return { type: 'layout', mode: 'grid', slots: [], columns: 2, rows: 2 }
+      case 'pip': return { type: 'layout', mode: 'pip', slots: [] }
+      default: return { type: 'layout', mode: 'focus', slots: [] }
     }
   }
 
@@ -835,59 +854,41 @@ export function createJam(options: CreateJamOptions) {
     const endTick = boundaries[endColumn]
     if (startTick === undefined || endTick === undefined) return
 
-    // Remove any existing layout clips that overlap with this range
-    const track = layoutTrack()
-    if (track) {
-      const clipsToRemove: string[] = []
-      for (const clipId of track.clipIds) {
-        const clip = getClipById(clipId)
-        if (!clip) continue
-        const clipEnd = clip.start + clip.duration
-        // Check overlap
-        if (clip.start < endTick && clipEnd > startTick) {
-          clipsToRemove.push(clipId)
-        }
-      }
-      // Remove overlapping clips
-      for (const clipId of clipsToRemove) {
-        setProject(
-          'tracks',
-          t => t.id === LAYOUT_TRACK_ID,
-          'clipIds',
-          ids => ids.filter(id => id !== clipId)
-        )
-        setProject('clips', clips => clips.filter(c => c.id !== clipId))
-      }
+    // Find layout track index
+    const layoutTrackIndex = (project.metadataTracks ?? []).findIndex(t => t.id === LAYOUT_TRACK_ID)
+    if (layoutTrackIndex === -1) return
+
+    const track = project.metadataTracks![layoutTrackIndex]
+
+    // Find overlapping clips to remove
+    const clipsToRemove = track.clips
+      .filter(clip => {
+        const clipEnd = clip.start + (clip.duration ?? 0)
+        return clip.start < endTick && clipEnd > startTick
+      })
+      .map(c => c.id)
+
+    // Remove overlapping clips
+    if (clipsToRemove.length > 0) {
+      setProject('metadataTracks', layoutTrackIndex, 'clips', clips =>
+        clips.filter(c => !clipsToRemove.includes(c.id))
+      )
     }
 
-    // Create new group for this region
-    const groupId = `layout-group-${generateId()}`
-    const newGroup: Group = {
-      id: groupId,
-      layout: typeToLayout(layoutType),
-      members: [],
-    }
-    setProject('groups', groups => [...groups, newGroup])
+    // Convert layout type to source
+    const layoutSource = typeToLayoutSource(layoutType)
 
-    // Create new layout clip
-    // offset: -startTick makes nested content flow through time (content at tick 0 = project tick 0)
+    // Create new layout clip with layout source directly
     const clipId = `layout-${generateId()}`
     const newClip: MusicalClip = {
       id: clipId,
       start: startTick,
       duration: endTick - startTick,
-      offset: -startTick,
-      source: { type: 'group', id: groupId },
+      source: layoutSource,
     }
-    setProject('clips', clips => [...clips, newClip])
 
     // Add to layout track
-    setProject(
-      'tracks',
-      t => t.id === LAYOUT_TRACK_ID,
-      'clipIds',
-      ids => [...ids, clipId]
-    )
+    setProject('metadataTracks', layoutTrackIndex, 'clips', clips => [...clips, newClip])
   }
 
   /** Remove layout region at column */
@@ -895,17 +896,14 @@ export function createJam(options: CreateJamOptions) {
     const region = getLayoutRegionForColumn(columnIndex)
     if (!region) return
 
-    // Remove the layout clip
-    setProject(
-      'tracks',
-      t => t.id === LAYOUT_TRACK_ID,
-      'clipIds',
-      ids => ids.filter(id => id !== region.clipId)
-    )
-    setProject('clips', clips => clips.filter(c => c.id !== region.clipId))
+    // Find layout track index
+    const layoutTrackIndex = (project.metadataTracks ?? []).findIndex(t => t.id === LAYOUT_TRACK_ID)
+    if (layoutTrackIndex === -1) return
 
-    // Optionally remove the group if no longer referenced
-    // (for now, leave orphaned groups - they don't hurt)
+    // Remove the layout clip
+    setProject('metadataTracks', layoutTrackIndex, 'clips', clips =>
+      clips.filter(c => c.id !== region.clipId)
+    )
   }
 
   /** Assign a slot in a layout region */
@@ -914,37 +912,53 @@ export function createJam(options: CreateJamOptions) {
     if (regionIndex < 0 || regionIndex >= regions.length) return
 
     const region = regions[regionIndex]
-    const groupIndex = project.groups.findIndex(g => g.id === region.groupId)
-    if (groupIndex === -1) return
 
-    setProject('groups', groupIndex, produce((group: Group) => {
-      // Ensure members array is large enough
-      while (group.members.length <= slotIndex) {
-        group.members.push({ type: 'void' })
-      }
+    // Find layout track and clip indices
+    const layoutTrackIndex = (project.metadataTracks ?? []).findIndex(t => t.id === LAYOUT_TRACK_ID)
+    if (layoutTrackIndex === -1) return
 
-      // Remove trackId from any other slot in this group first
-      if (trackId) {
-        group.members = group.members.map(m =>
-          'id' in m && m.id === trackId ? { type: 'void' } : m
-        )
-      }
+    const track = project.metadataTracks![layoutTrackIndex]
+    const clipIndex = track.clips.findIndex(c => c.id === region.clipId)
+    if (clipIndex === -1) return
 
-      // Assign to target slot
-      group.members[slotIndex] = trackId ? { id: trackId } : { type: 'void' }
-    }))
+    const clip = track.clips[clipIndex]
+    if (clip.source?.type !== 'layout') return
+
+    // Create updated slots array from current store state
+    const currentSlots = [...clip.source.slots]
+
+    // Ensure slots array is large enough
+    while (currentSlots.length <= slotIndex) {
+      currentSlots.push('')
+    }
+
+    // Remove trackId from any other slot first
+    const updatedSlots = trackId
+      ? currentSlots.map(slot => slot === trackId ? '' : slot)
+      : currentSlots
+
+    // Assign to target slot
+    updatedSlots[slotIndex] = trackId ?? ''
+
+    // Create new source with updated slots
+    const newSource: ClipSourceLayout = {
+      ...clip.source,
+      slots: updatedSlots,
+    }
+
+    setProject('metadataTracks', layoutTrackIndex, 'clips', clipIndex, 'source', newSource)
   }
 
   /** Check if a track is in the layout region containing a column */
   function isTrackInColumn(columnIndex: number, trackId: string): boolean {
     const region = getLayoutRegionForColumn(columnIndex)
-    return region?.slots?.includes(trackId) ?? false
+    return region?.source.slots.includes(trackId) ?? false
   }
 
   /** Get slot index for a track in the region containing a column */
   function getTrackSlotIndex(columnIndex: number, trackId: string): number | null {
     const region = getLayoutRegionForColumn(columnIndex)
-    const index = region?.slots?.indexOf(trackId) ?? -1
+    const index = region?.source.slots.indexOf(trackId) ?? -1
     return index >= 0 ? index : null
   }
 
@@ -953,10 +967,19 @@ export function createJam(options: CreateJamOptions) {
     const region = getLayoutRegionForColumn(columnIndex)
     if (!region) return
 
-    const groupIndex = project.groups.findIndex(g => g.id === region.groupId)
-    if (groupIndex === -1) return
+    // Find layout track and clip indices
+    const layoutTrackIndex = (project.metadataTracks ?? []).findIndex(t => t.id === LAYOUT_TRACK_ID)
+    if (layoutTrackIndex === -1) return
 
-    setProject('groups', groupIndex, 'layout', typeToLayout(layoutType))
+    const track = project.metadataTracks![layoutTrackIndex]
+    const clipIndex = track.clips.findIndex(c => c.id === region.clipId)
+    if (clipIndex === -1) return
+
+    // Get new layout source, preserving existing slots
+    const newSource = typeToLayoutSource(layoutType)
+    newSource.slots = region.source.slots
+
+    setProject('metadataTracks', layoutTrackIndex, 'clips', clipIndex, 'source', newSource)
   }
 
   /**********************************************************************************/
@@ -967,28 +990,26 @@ export function createJam(options: CreateJamOptions) {
 
   function addTrack(name?: string, videoUrl?: string) {
     const trackId = `track-${generateId()}`
-    const clipIds: string[] = []
+    const clips: MusicalClip[] = []
 
     // If a video URL is provided, create a clip that spans the full timeline
     if (videoUrl) {
       const clipId = `clip-${generateId()}`
       const totalTicks = metadata.columnCount * columnDurationTicks()
-      const clip: MusicalClip = {
+      clips.push({
         id: clipId,
         start: 0,
         duration: totalTicks,
         source: { type: 'url', url: videoUrl },
-      }
-      setProject('clips', clips => [...clips, clip])
-      clipIds.push(clipId)
+      })
     }
 
-    const track: Track = {
+    const track: MediaTrackMusical = {
       id: trackId,
-      name: name ?? `Track ${project.tracks.length + 1}`,
-      clipIds,
+      name: name ?? `Track ${project.mediaTracks.length + 1}`,
+      clips,
     }
-    setProject('tracks', tracks => [...tracks, track])
+    setProject('mediaTracks', tracks => [...tracks, track])
     return trackId
   }
 
@@ -996,29 +1017,28 @@ export function createJam(options: CreateJamOptions) {
     // Don't allow removing the layout track
     if (trackId === LAYOUT_TRACK_ID) return
 
-    const track = project.tracks.find(t => t.id === trackId)
+    // Remove from mediaTracks (clips are inline, so they go with the track)
+    setProject('mediaTracks', tracks => tracks.filter(t => t.id !== trackId))
 
-    // Remove track's clips from project.clips
-    if (track) {
-      const clipIdsToRemove = new Set(track.clipIds)
-      setProject('clips', clips => clips.filter(c => !clipIdsToRemove.has(c.id)))
-    }
-
-    // Remove from project.tracks
-    setProject('tracks', tracks => tracks.filter(t => t.id !== trackId))
-
-    // Remove from all layout groups
-    setProject('groups', produce((groups: Group[]) => {
-      for (const group of groups) {
-        group.members = group.members.map(m =>
-          'id' in m && m.id === trackId ? { type: 'void' } : m
-        )
+    // Remove from all layout clips' slots
+    const layoutTrackIndex = (project.metadataTracks ?? []).findIndex(t => t.id === LAYOUT_TRACK_ID)
+    if (layoutTrackIndex !== -1) {
+      const track = project.metadataTracks![layoutTrackIndex]
+      for (let clipIndex = 0; clipIndex < track.clips.length; clipIndex++) {
+        const clip = track.clips[clipIndex]
+        if (clip.source?.type === 'layout') {
+          const newSource: ClipSourceLayout = {
+            ...clip.source,
+            slots: clip.source.slots.map(slot => slot === trackId ? '' : slot),
+          }
+          setProject('metadataTracks', layoutTrackIndex, 'clips', clipIndex, 'source', newSource)
+        }
       }
-    }))
+    }
   }
 
   function renameTrack(trackId: string, name: string) {
-    setProject('tracks', t => t.id === trackId, 'name', name)
+    setProject('mediaTracks', t => t.id === trackId, 'name', name)
   }
 
   /**********************************************************************************/
@@ -1067,10 +1087,8 @@ export function createJam(options: CreateJamOptions) {
     setProject('bpm', Math.max(20, Math.min(300, bpm)) * 100)
   }
 
-  /** Get content tracks (excluding layout track) */
-  const contentTracks = createMemo(() =>
-    project.tracks.filter(t => t.id !== LAYOUT_TRACK_ID)
-  )
+  /** Get content tracks (all media tracks) */
+  const contentTracks = createMemo(() => project.mediaTracks)
 
   /**********************************************************************************/
   /*                                                                                */
@@ -1082,7 +1100,6 @@ export function createJam(options: CreateJamOptions) {
     // State
     project,
     metadata,
-    timeline,
     duration,
     currentTime,
     isPlaying,

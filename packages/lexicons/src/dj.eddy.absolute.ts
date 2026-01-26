@@ -14,7 +14,7 @@ export default {
     clip: {
       type: 'object',
       description: 'A clip with absolute timing (milliseconds)',
-      required: ['id', 'start', 'duration'],
+      required: ['id', 'start'],
       properties: {
         id: {
           type: 'string',
@@ -22,8 +22,13 @@ export default {
         },
         source: {
           type: 'union',
-          refs: ['dj.eddy.clip#source.stem', 'dj.eddy.clip#source.group', 'dj.eddy.clip#source.url'],
-          description: 'Source media: a stem reference, nested group, or URL',
+          refs: [
+            'dj.eddy.clip#source.stem',
+            'dj.eddy.clip#source.url',
+            'dj.eddy.clip#source.project',
+            'dj.eddy.clip#source.layout',
+          ],
+          description: 'Source: stem, URL, nested project, or layout instruction',
         },
         start: {
           type: 'integer',
@@ -32,21 +37,20 @@ export default {
         },
         duration: {
           type: 'integer',
-          description: 'Duration in milliseconds',
+          description: 'Duration in milliseconds. If omitted, extends to next clip on track.',
           minimum: 0,
         },
         offset: {
           type: 'integer',
-          description: 'Time shift into content in milliseconds. For stem/url clips: source in-point. For group clips: shifts nested content time reference.',
+          description: 'Time shift into content in milliseconds (source in-point)',
         },
         speed: {
-          type: 'union',
-          refs: ['dj.eddy.value.static#fixed'],
+          type: 'ref',
+          ref: 'dj.eddy.value.static#fixed',
           description: 'Playback speed multiplier (0.1-10)',
         },
         reverse: {
-          type: 'union',
-          refs: ['dj.eddy.value.static#fixed'],
+          type: 'boolean',
           description: 'Play clip in reverse',
         },
         audioPipeline: {
@@ -68,7 +72,7 @@ export default {
       key: 'tid',
       record: {
         type: 'object',
-        required: ['title', 'canvas', 'tracks', 'clips', 'groups', 'createdAt'],
+        required: ['title', 'canvas', 'mediaTracks', 'createdAt'],
         properties: {
           schemaVersion: {
             type: 'integer',
@@ -92,46 +96,22 @@ export default {
             type: 'ref',
             ref: 'dj.eddy.canvas#canvas',
           },
-          curves: {
+          mediaTracks: {
             type: 'array',
-            items: {
-              type: 'union',
-              refs: [
-                'dj.eddy.value.curve#keyframe',
-                'dj.eddy.value.curve#envelope',
-                'dj.eddy.value.curve#lfo',
-              ],
-            },
-            maxLength: 256,
-            description: 'Reusable animation curves',
-          },
-          tracks: {
-            type: 'array',
-            items: { type: 'ref', ref: 'dj.eddy.track#track' },
+            items: { type: 'ref', ref: 'dj.eddy.track#media.absolute' },
             maxLength: 32,
-            description: 'Tracks (reference clips by ID)',
+            description: 'Media tracks containing stem/url/project clips',
           },
-          clips: {
+          metadataTracks: {
             type: 'array',
-            items: { type: 'ref', ref: '#clip' },
-            maxLength: 1024,
-            description: 'All clips in absolute time',
-          },
-          groups: {
-            type: 'array',
-            items: { type: 'ref', ref: 'dj.eddy.group#group' },
-            maxLength: 64,
-            description: 'Groups for spatial composition',
-          },
-          root: {
-            type: 'string',
-            description: 'ID of the root entry point (can be a track or group)',
-            maxLength: 64,
+            items: { type: 'ref', ref: 'dj.eddy.track#metadata.absolute' },
+            maxLength: 16,
+            description: 'Metadata tracks containing layout/curve clips',
           },
           parent: {
             type: 'ref',
             ref: 'com.atproto.repo.strongRef',
-            description: 'Source project if this is a remix',
+            description: 'Source project if this is a remix (pinned to specific version)',
           },
           createdAt: {
             type: 'string',

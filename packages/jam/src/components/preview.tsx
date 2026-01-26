@@ -5,6 +5,7 @@
  * Draggable overlay that can be repositioned.
  */
 
+import { musicalToAbsolute } from '@eddy/timeline'
 import {
   makeEffectRegistry,
   makeVideoCompositor,
@@ -78,8 +79,8 @@ export function Preview(props: PreviewProps) {
   // Effect registry (empty for now - no effects)
   const effectRegistry = makeEffectRegistry({})
 
-  // Get compiled timeline
-  const timeline = createMemo(() => props.jam.timeline())
+  // Convert musical project to absolute for the compositor
+  const absoluteProject = createMemo(() => musicalToAbsolute(props.jam.project))
 
   onMount(() => {
     if (!canvasRef) return
@@ -122,29 +123,31 @@ export function Preview(props: PreviewProps) {
   })
 
   async function loadVideos() {
-    // Load videos for all clips with URL sources
-    for (const clip of props.jam.project.clips) {
-      if (clip.source?.type !== 'url') continue
+    // Load videos for all clips with URL sources across all media tracks
+    for (const track of props.jam.project.mediaTracks) {
+      for (const clip of track.clips) {
+        if (clip.source?.type !== 'url') continue
 
-      const videoUrl = clip.source.url
-      const clipId = clip.id
+        const videoUrl = clip.source.url
+        const clipId = clip.id
 
-      try {
-        const playback = makeVideoPlayback({
-          onFrame: frame => {
-            if (!compositor || !frame) return
-            compositor.setFrame(clipId, frame)
-          },
-        })
+        try {
+          const playback = makeVideoPlayback({
+            onFrame: frame => {
+              if (!compositor || !frame) return
+              compositor.setFrame(clipId, frame)
+            },
+          })
 
-        const source = new UrlSource(videoUrl)
-        await playback.load(source)
-        await playback.seek(props.jam.currentTime())
+          const source = new UrlSource(videoUrl)
+          await playback.load(source)
+          await playback.seek(props.jam.currentTime())
 
-        playbacks.set(clipId, playback)
-        console.log(`Loaded video for clip ${clipId}: ${videoUrl}`)
-      } catch (error) {
-        console.error(`Failed to load video for clip ${clipId}:`, error)
+          playbacks.set(clipId, playback)
+          console.log(`Loaded video for clip ${clipId}: ${videoUrl}`)
+        } catch (error) {
+          console.error(`Failed to load video for clip ${clipId}:`, error)
+        }
       }
     }
   }
@@ -156,8 +159,8 @@ export function Preview(props: PreviewProps) {
         return
       }
 
-      // Update timeline
-      compositor.setTimeline(timeline())
+      // Update project for rendering
+      compositor.setProject(absoluteProject())
 
       // Render at current time
       const time = props.jam.currentTime()

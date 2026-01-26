@@ -1,30 +1,29 @@
 /**
  * @eddy/timeline
  *
- * Compiles hierarchical Project data into flat layout timelines.
- * Framework-agnostic, pure computation.
+ * Runtime utilities for querying project timeline data.
+ * No pre-compilation - just query at render time.
  */
 
+// Absolute timeline (ms) - primary API
 export {
-  compileAbsoluteTimeline,
-  findSegmentAtTime,
-  getActivePlacements
+  computePlacements,
+  getActiveMediaClips,
+  getLayoutAtTime,
+  getPlacementsAtTime,
+  getProjectDuration,
 } from './compile-absolute-timeline'
 
-export {
-  compileMusicalTimeline,
-  musicalToAbsolute
-} from './compile-musical-timeline'
-
 export type {
-  ActivePlacement,
+  ActiveClip,
   CanvasSize,
-  CompiledTimeline,
-  EffectParamRef,
-  EffectRef,
-  LayoutSegment,
   Placement,
-  TransitionInfo,
-  Viewport
-} from './types'
+  Viewport,
+} from './compile-absolute-timeline'
 
+// Musical timeline (ticks) - converts to absolute internally
+export { musicalToAbsolute } from './compile-musical-timeline'
+export {
+  getPlacementsAtTime as getMusicalPlacementsAtTime,
+  getProjectDuration as getMusicalProjectDuration,
+} from './compile-musical-timeline'

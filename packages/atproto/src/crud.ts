@@ -2,6 +2,7 @@ import type { Agent } from '@atproto/api'
 import {
   absoluteValidators,
   absoluteWireValidators,
+  type AbsoluteClip,
   type AbsoluteProject,
   type Canvas,
   type ClipSource,
@@ -201,7 +202,7 @@ export async function listProjects(agent: Agent): Promise<ProjectListItem[]> {
       rkey,
       title: project.title,
       createdAt: project.createdAt,
-      trackCount: project.tracks.length,
+      trackCount: project.mediaTracks.length,
     }
   })
 }
@@ -269,8 +270,13 @@ export async function publishProject(
   const myDid = agent.assertDid
   const stemRefs = new Map<string, StemRef>()
 
-  // Collect all clips that need stem processing
-  const allClips = project.clips.map(clip => ({ clip }))
+  // Collect all clips from all media tracks that need stem processing
+  const allClips: { trackId: string; clip: AbsoluteClip }[] = []
+  for (const track of project.mediaTracks) {
+    for (const clip of track.clips) {
+      allClips.push({ trackId: track.id, clip })
+    }
+  }
 
   // Process stems in parallel
   await Promise.all(
@@ -298,26 +304,25 @@ export async function publishProject(
     }),
   )
 
-  // Verify all clips have stem refs
-  for (const clip of project.clips) {
-    if (!stemRefs.has(clip.id)) {
-      throw new Error(`Clip ${clip.id} has no local blob and no remote source`)
-    }
-  }
-
-  // Build clips with stem refs
-  const clips = project.clips.map(clip => ({
-    id: clip.id,
-    source: { type: 'stem' as const, ref: stemRefs.get(clip.id)! },
-    start: clip.start,
-    duration: clip.duration,
-  }))
-
-  // Build tracks - preserve all tracks
-  const tracks = project.tracks.map(track => ({
+  // Build media tracks with updated clip sources
+  const mediaTracks = project.mediaTracks.map(track => ({
     id: track.id,
-    clipIds: track.clipIds,
+    name: track.name,
+    clips: track.clips.map(clip => {
+      const stemRef = stemRefs.get(clip.id)
+      // If we have a stem ref for this clip, use it; otherwise keep original source
+      const source = stemRef
+        ? { type: 'stem' as const, ref: stemRef }
+        : clip.source
+      return {
+        id: clip.id,
+        source,
+        start: clip.start,
+        duration: clip.duration,
+      }
+    }),
     audioPipeline: track.audioPipeline,
+    visualPipeline: track.visualPipeline,
   }))
 
   // Build and validate project record
@@ -330,13 +335,8 @@ export async function publishProject(
       width: canvas.width,
       height: canvas.height,
     },
-    groups: project.groups.map(group => ({
-      id: group.id,
-      members: group.members,
-      ...(group.layout && { layout: group.layout }),
-    })),
-    tracks,
-    clips,
+    mediaTracks,
+    metadataTracks: project.metadataTracks,
     createdAt: project.createdAt,
   })
 
@@ -392,9 +392,12 @@ export async function deleteOrphanedStems(agent: Agent): Promise<string[]> {
   for (const projectItem of projects) {
     try {
       const project = await getProject(agent, projectItem.uri)
-      for (const clip of project.value.clips) {
-        if (isStemSource(clip.source)) {
-          referencedStems.add(clip.source.ref.uri)
+      // Iterate over all media tracks and their clips
+      for (const track of project.value.mediaTracks) {
+        for (const clip of track.clips) {
+          if (isStemSource(clip.source)) {
+            referencedStems.add(clip.source.ref.uri)
+          }
         }
       }
     } catch {

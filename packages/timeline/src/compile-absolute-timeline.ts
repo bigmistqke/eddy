@@ -1,70 +1,43 @@
 /**
- * Compile Layout Timeline
+ * Absolute Timeline Utilities
  *
- * Compiles hierarchical Project data into a flat LayoutTimeline.
- * The timeline uses segments with placements for O(log n) time queries.
- *
- * Key concepts:
- * - Clip: a time window that contains either a stem (media) or a group (nested structure)
- * - Track: infinite timeline containing clips, has a viewport
- * - Group: spatial container with layout (grid), contains tracks
- * - Placement: final flat structure - clip's position in space (viewport) and source timing
- * - Segment: a time range with stable layout (no clips starting/ending)
- *
- * Nesting model:
- * - Clips "clip space in time" - define when content plays
- * - Groups define how content is arranged spatially
- * - Same tracks can appear in multiple groups (layout transitions)
+ * Simple runtime queries for the flat project structure.
+ * No compilation - just query layout and media at render time.
  */
 
-import type { AbsoluteClip, AbsoluteProject, Group, Track, Value } from '@eddy/lexicons'
-import type {
-  ActivePlacement,
-  CanvasSize,
-  CompiledTimeline,
-  EffectParamRef,
-  EffectRef,
-  LayoutSegment,
-  Placement,
-  Viewport,
-} from './types'
+import type { AbsoluteClip, AbsoluteProject, ClipSourceLayout } from '@eddy/lexicons'
 
 /**********************************************************************************/
 /*                                                                                */
-/*                                  Internal Types                                */
+/*                                     Types                                      */
 /*                                                                                */
 /**********************************************************************************/
 
-/** Intermediate clip info before segmentation */
-interface ClipInfo {
-  clipId: string
+export interface CanvasSize {
+  width: number
+  height: number
+}
+
+export interface Viewport {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export interface ActiveClip {
   trackId: string
+  clip: AbsoluteClip
+  /** Time in source media (seconds) */
+  sourceTime: number
+}
+
+export interface Placement {
+  trackId: string
+  clipId: string
   viewport: Viewport
-  timelineStart: number // When clip starts on timeline (seconds)
-  timelineEnd: number // When clip ends on timeline (seconds)
-  sourceIn: number // Source start time (seconds)
-  sourceOut: number // Source end time (seconds)
+  sourceTime: number
   speed: number
-  effectSignature: string
-  effectKeys: string[]
-  effectRefs: EffectRef[]
-  effectParamRefs: EffectParamRef[]
-}
-
-/** Context passed down during recursive compilation */
-interface CompileContext {
-  project: AbsoluteProject
-  trackMap: Map<string, Track>
-  groupMap: Map<string, Group>
-  parentMap: Map<string, Group>
-  clipMap: Map<string, AbsoluteClip>
-  canvasSize: CanvasSize
-}
-
-/** Time window constraint for nested content */
-interface TimeWindow {
-  start: number // Absolute start time on root timeline (seconds)
-  end: number // Absolute end time on root timeline (seconds)
 }
 
 /**********************************************************************************/
@@ -73,496 +46,33 @@ interface TimeWindow {
 /*                                                                                */
 /**********************************************************************************/
 
-/** Resolve a Value to a number at a given time */
-function resolveValue(value: Value | undefined, defaultValue: number, _time = 0): number {
-  if (!value) return defaultValue
-  // Static value - scaled by 100 in lexicon
-  // TODO: Add curve ref evaluation when curve system is implemented
-  return value.value / 100
-}
-
-/** Check if a member is a void placeholder */
-function isVoidMember(member: { id?: string; type?: string }): boolean {
-  return 'type' in member && member.type === 'void'
-}
-
-/** Get the root entry point - can be a track or group */
-function getRoot(project: AbsoluteProject, trackMap: Map<string, Track>, groupMap: Map<string, Group>): { type: 'track'; track: Track } | { type: 'group'; group: Group } | undefined {
-  if (project.root) {
-    const track = trackMap.get(project.root)
-    if (track) return { type: 'track', track }
-    const group = groupMap.get(project.root)
-    if (group) return { type: 'group', group }
-  }
-
-  // Default to first group
-  const firstGroup = project.groups[0]
-  if (firstGroup) return { type: 'group', group: firstGroup }
-
-  return undefined
-}
-
-/** Build a map from track ID to Track */
-function buildTrackMap(project: AbsoluteProject): Map<string, Track> {
-  const trackMap = new Map<string, Track>()
-  for (const track of project.tracks) {
-    trackMap.set(track.id, track)
-  }
-  return trackMap
-}
-
-/** Build a map from group ID to Group */
-function buildGroupMap(project: AbsoluteProject): Map<string, Group> {
-  const groupMap = new Map<string, Group>()
-  for (const group of project.groups) {
-    groupMap.set(group.id, group)
-  }
-  return groupMap
-}
-
-/** Build a map from clip ID to Clip */
-function buildClipMap(project: AbsoluteProject): Map<string, AbsoluteClip> {
-  const clipMap = new Map<string, AbsoluteClip>()
-  for (const clip of project.clips) {
-    clipMap.set(clip.id, clip)
-  }
-  return clipMap
-}
-
-/** Build a map from member ID (track or group) to parent group */
-function buildParentMap(project: AbsoluteProject): Map<string, Group> {
-  const parentMap = new Map<string, Group>()
-  for (const group of project.groups) {
-    for (const member of group.members) {
-      if (!isVoidMember(member)) {
-        const memberId = (member as { id: string }).id
-        parentMap.set(memberId, group)
-      }
-    }
-  }
-  return parentMap
-}
-
-/** Get param keys from an effect's params object */
-function getEffectParamKeys(effect: { type: string; params?: unknown }): string[] {
-  if (!effect.params || typeof effect.params !== 'object') return []
-  return Object.keys(effect.params as object)
-}
-
-/** Compute effectParamRefs from effectRefs (maps each ref to its chain index) */
-function computeEffectParamRefs(refs: EffectRef[]): EffectParamRef[] {
-  const paramRefs: EffectParamRef[] = []
-  let chainIndex = -1
-  let lastEffectKey = ''
-
-  for (const ref of refs) {
-    // Key format: "sourceType:sourceId:effectIndex:paramKey"
-    const lastColon = ref.key.lastIndexOf(':')
-    const effectKey = ref.key.slice(0, lastColon)
-
-    if (effectKey !== lastEffectKey) {
-      chainIndex++
-      lastEffectKey = effectKey
-    }
-    paramRefs.push({ chainIndex, paramKey: ref.key.slice(lastColon + 1) })
-  }
-
-  return paramRefs
-}
-
-/**********************************************************************************/
-/*                                                                                */
-/*                               Viewport Calculation                             */
-/*                                                                                */
-/**********************************************************************************/
-
-/** Calculate viewport for a grid cell within a parent viewport */
-function calculateGridViewport(
-  cellIndex: number,
-  columns: number,
-  rows: number,
-  parentViewport: Viewport,
-  gap = 0,
-  padding = 0,
-): Viewport {
-  const col = cellIndex % columns
-  const row = Math.floor(cellIndex / columns)
-
-  // Calculate cell size accounting for gap and padding
-  const totalGapX = gap * (columns - 1)
-  const totalGapY = gap * (rows - 1)
-  const availableWidth = parentViewport.width * (1 - 2 * padding) - totalGapX
-  const availableHeight = parentViewport.height * (1 - 2 * padding) - totalGapY
-
-  const cellWidth = availableWidth / columns
-  const cellHeight = availableHeight / rows
-
-  // Calculate position relative to parent viewport
-  const paddingX = parentViewport.width * padding
-  const paddingY = parentViewport.height * padding
-  const x = parentViewport.x + paddingX + col * (cellWidth + gap)
-  const y = parentViewport.y + paddingY + row * (cellHeight + gap)
-
-  return {
-    x: Math.round(x),
-    y: Math.round(y),
-    width: Math.round(cellWidth),
-    height: Math.round(cellHeight),
-  }
-}
-
-/** Calculate viewport for stacked layout (full parent viewport) */
-function calculateStackViewport(parentViewport: Viewport): Viewport {
-  return { ...parentViewport }
-}
-
-/**********************************************************************************/
-/*                                                                                */
-/*                                Effect Collection                               */
-/*                                                                                */
-/**********************************************************************************/
-
 /**
- * Collect cascaded video effects for a clip.
- * Walks up the hierarchy: clip → track → group → parent groups... → root group
+ * Find the active clip at a given time on a track.
+ * Handles optional duration (extends to next clip).
  */
-function collectCascadedEffects(
-  clip: AbsoluteClip,
-  track: Track,
-  ctx: CompileContext,
-): EffectRef[] {
-  const refs: EffectRef[] = []
+function findActiveClip(
+  clips: AbsoluteClip[],
+  timeMs: number,
+): AbsoluteClip | null {
+  // Sort clips by start time
+  const sorted = [...clips].sort((a, b) => a.start - b.start)
 
-  // 1. Clip effects
-  const clipEffects = clip.visualPipeline?.effects
-  if (clipEffects) {
-    for (let index = 0; index < clipEffects.length; index++) {
-      const effect = clipEffects[index]
-      for (const paramKey of getEffectParamKeys(effect)) {
-        refs.push({
-          key: `clip:${clip.id}:${index}:${paramKey}`,
-          effectType: effect.type,
-        })
-      }
-    }
-  }
+  for (let i = 0; i < sorted.length; i++) {
+    const clip = sorted[i]
+    const clipStart = clip.start
 
-  // 2. Track effects
-  const trackEffects = track.visualPipeline?.effects
-  if (trackEffects) {
-    for (let index = 0; index < trackEffects.length; index++) {
-      const effect = trackEffects[index]
-      for (const paramKey of getEffectParamKeys(effect)) {
-        refs.push({
-          key: `track:${track.id}:${index}:${paramKey}`,
-          effectType: effect.type,
-        })
-      }
-    }
-  }
-
-  // 3. Walk up group hierarchy
-  let currentId: string = track.id
-  let parentGroup = ctx.parentMap.get(currentId)
-
-  while (parentGroup) {
-    const groupEffects = parentGroup.visualPipeline?.effects
-    if (groupEffects) {
-      for (let index = 0; index < groupEffects.length; index++) {
-        const effect = groupEffects[index]
-        for (const paramKey of getEffectParamKeys(effect)) {
-          refs.push({
-            key: `group:${parentGroup.id}:${index}:${paramKey}`,
-            effectType: effect.type,
-          })
-        }
-      }
-    }
-    currentId = parentGroup.id
-    parentGroup = ctx.parentMap.get(currentId)
-  }
-
-  return refs
-}
-
-/**********************************************************************************/
-/*                                                                                */
-/*                              Recursive Compilation                             */
-/*                                                                                */
-/**********************************************************************************/
-
-/**
- * Process a group's members and collect clip infos.
- * This handles the spatial arrangement (layout) of the group.
- *
- * @param timeWindow - Optional constraint that clips nested content to a time range
- */
-function processGroup(
-  group: Group,
-  parentViewport: Viewport,
-  timeOffset: number,
-  timeScale: number,
-  ctx: CompileContext,
-  timeWindow?: TimeWindow,
-): ClipInfo[] {
-  const clipInfos: ClipInfo[] = []
-
-  const layout = group.layout
-  const columns = layout?.columns ?? 1
-  const rows = layout?.rows ?? 1
-  const gap = layout ? resolveValue(layout.gap, 0) : 0
-  const padding = layout ? resolveValue(layout.padding, 0) : 0
-
-  let cellIndex = 0
-  for (const member of group.members) {
-    if (isVoidMember(member)) {
-      cellIndex++
-      continue
-    }
-
-    const memberId = (member as { id: string }).id
-
-    // Calculate viewport for this member
-    const memberViewport = layout
-      ? calculateGridViewport(cellIndex, columns, rows, parentViewport, gap, padding)
-      : calculateStackViewport(parentViewport)
-
-    // Member could be a track or a nested group
-    const track = ctx.trackMap.get(memberId)
-    const nestedGroup = ctx.groupMap.get(memberId)
-
-    if (track) {
-      // Process track's clips
-      const trackClipInfos = processTrack(
-        track,
-        memberViewport,
-        timeOffset,
-        timeScale,
-        ctx,
-        timeWindow,
-      )
-      clipInfos.push(...trackClipInfos)
-    } else if (nestedGroup) {
-      // Recursively process nested group
-      const nestedClipInfos = processGroup(
-        nestedGroup,
-        memberViewport,
-        timeOffset,
-        timeScale,
-        ctx,
-        timeWindow,
-      )
-      clipInfos.push(...nestedClipInfos)
-    }
-
-    cellIndex++
-  }
-
-  return clipInfos
-}
-
-/**
- * Process a track's clips and collect clip infos.
- * Handles both stem sources (creates ClipInfo) and group sources (recurses).
- *
- * @param timeWindow - Optional constraint that clips content to a time range
- */
-function processTrack(
-  track: Track,
-  trackViewport: Viewport,
-  timeOffset: number,
-  timeScale: number,
-  ctx: CompileContext,
-  timeWindow?: TimeWindow,
-): ClipInfo[] {
-  const clipInfos: ClipInfo[] = []
-
-  for (const clipId of track.clipIds) {
-    const clip = ctx.clipMap.get(clipId)
-    if (!clip) {
-      throw new Error(`Clip not found: ${clipId} (referenced by track ${track.id})`)
-    }
-
-    const speed = resolveValue(clip.speed, 1) * timeScale
-
-    // Clip timing is relative to parent (timeOffset)
-    let clipStart = timeOffset + clip.start / 1000 // ms to seconds
-    let clipEnd = timeOffset + (clip.start + clip.duration) / 1000
-
-    // Apply time window constraint if present
-    if (timeWindow) {
-      // Skip clips entirely outside the window
-      if (clipEnd <= timeWindow.start || clipStart >= timeWindow.end) {
-        continue
-      }
-      // Clamp to window bounds
-      clipStart = Math.max(clipStart, timeWindow.start)
-      clipEnd = Math.min(clipEnd, timeWindow.end)
-    }
-
-    if (clip.source?.type === 'group') {
-      // Clip references a group - recurse into it
-      const groupId = clip.source.id
-      const group = ctx.groupMap.get(groupId)
-
-      if (group) {
-        // The group's content plays within this clip's time window
-        // Create a new time window constraint for nested content
-        const nestedWindow: TimeWindow = { start: clipStart, end: clipEnd }
-
-        // Apply offset to shift the time reference for nested content
-        // offset < 0 means nested content's time 0 maps to earlier in project time
-        // This allows content to "flow through" across multiple layout regions
-        const clipOffset = (clip.offset ?? 0) / 1000
-        const nestedTimeOffset = clipStart + clipOffset
-
-        const nestedClipInfos = processGroup(
-          group,
-          trackViewport,
-          nestedTimeOffset,
-          speed,
-          ctx,
-          nestedWindow,
-        )
-        clipInfos.push(...nestedClipInfos)
-      }
+    // Determine clip end: explicit duration or next clip's start
+    let clipEnd: number
+    if (clip.duration !== undefined) {
+      clipEnd = clipStart + clip.duration
     } else {
-      // Clip references a stem/url - create ClipInfo
-      // offset is the source in-point (where to start in the source media)
-      const originalClipStart = timeOffset + clip.start / 1000
-      const timeWindowOffset = (clipStart - originalClipStart) * speed
-      const sourceIn = (clip.offset ?? 0) / 1000 + timeWindowOffset
-      const sourceOut = sourceIn + (clipEnd - clipStart) * speed
-
-      // Collect cascaded effects
-      const effectRefs = collectCascadedEffects(clip, track, ctx)
-      const effectParamRefs = computeEffectParamRefs(effectRefs)
-
-      // Build effectKeys (one per effect instance)
-      const effectKeys: string[] = []
-      let lastEffectKey = ''
-      for (const ref of effectRefs) {
-        const lastColon = ref.key.lastIndexOf(':')
-        const effectKey = ref.key.slice(0, lastColon)
-        if (effectKey !== lastEffectKey) {
-          effectKeys.push(ref.effectType)
-          lastEffectKey = effectKey
-        }
-      }
-      const effectSignature = effectKeys.join('|')
-
-      clipInfos.push({
-        clipId: clip.id,
-        trackId: track.id,
-        viewport: trackViewport,
-        timelineStart: clipStart,
-        timelineEnd: clipEnd,
-        sourceIn,
-        sourceOut,
-        speed,
-        effectSignature,
-        effectKeys,
-        effectRefs,
-        effectParamRefs,
-      })
-    }
-  }
-
-  return clipInfos
-}
-
-/**********************************************************************************/
-/*                                                                                */
-/*                               Segment Building                                 */
-/*                                                                                */
-/**********************************************************************************/
-
-/** Build segments from clip transition points */
-function buildSegments(clipInfos: ClipInfo[]): LayoutSegment[] {
-  if (clipInfos.length === 0) return []
-
-  // Collect all transition points (clip starts and ends)
-  const transitionSet = new Set<number>()
-  transitionSet.add(0) // Always start at 0
-
-  for (const clip of clipInfos) {
-    transitionSet.add(clip.timelineStart)
-    transitionSet.add(clip.timelineEnd)
-  }
-
-  // Sort transition points
-  const transitions = Array.from(transitionSet).sort((a, b) => a - b)
-
-  // Build segments between consecutive transitions
-  const segments: LayoutSegment[] = []
-
-  for (let i = 0; i < transitions.length - 1; i++) {
-    const startTime = transitions[i]
-    const endTime = transitions[i + 1]
-
-    // Find the TOP clip per track for this segment (punch-through behavior)
-    const topClipPerTrack = new Map<string, ClipInfo>()
-
-    for (const clip of clipInfos) {
-      if (clip.timelineStart < endTime && clip.timelineEnd > startTime) {
-        // Later clips overwrite earlier ones (last in array = highest priority)
-        topClipPerTrack.set(clip.trackId, clip)
-      }
+      // Extends to next clip or infinity
+      const nextClip = sorted[i + 1]
+      clipEnd = nextClip ? nextClip.start : Infinity
     }
 
-    // Build placements from the winning clips
-    const placements: Placement[] = []
-    for (const clip of topClipPerTrack.values()) {
-      const segmentOffsetInClip = Math.max(0, startTime - clip.timelineStart) * clip.speed
-      placements.push({
-        clipId: clip.clipId,
-        trackId: clip.trackId,
-        viewport: clip.viewport,
-        in: clip.sourceIn + segmentOffsetInClip,
-        out: clip.sourceOut,
-        speed: clip.speed,
-        effectId: clip.effectSignature,
-        effectKeys: clip.effectKeys,
-        effectRefs: clip.effectRefs,
-        effectParamRefs: clip.effectParamRefs,
-      })
-    }
-
-    if (placements.length > 0) {
-      segments.push({ startTime, endTime, placements })
-    }
-  }
-
-  return segments
-}
-
-/**********************************************************************************/
-/*                                                                                */
-/*                                 Public API                                     */
-/*                                                                                */
-/**********************************************************************************/
-
-/**
- * Binary search to find segment containing time.
- * Returns the segment or null if time is outside all segments.
- */
-export function findSegmentAtTime(timeline: CompiledTimeline, time: number): LayoutSegment | null {
-  const { segments } = timeline
-  if (segments.length === 0) return null
-
-  let low = 0
-  let high = segments.length - 1
-
-  while (low <= high) {
-    const mid = Math.floor((low + high) / 2)
-    const segment = segments[mid]
-
-    if (time < segment.startTime) {
-      high = mid - 1
-    } else if (time >= segment.endTime) {
-      low = mid + 1
-    } else {
-      return segment
+    if (timeMs >= clipStart && timeMs < clipEnd) {
+      return clip
     }
   }
 
@@ -570,71 +80,241 @@ export function findSegmentAtTime(timeline: CompiledTimeline, time: number): Lay
 }
 
 /**
- * Get all placements active at a given time with computed local times.
- * Uses binary search for O(log n) segment lookup.
+ * Check if a clip source is a layout source
  */
-export function getActivePlacements(timeline: CompiledTimeline, time: number): ActivePlacement[] {
-  const segment = findSegmentAtTime(timeline, time)
-  if (!segment) return []
+function isLayoutSource(source: unknown): source is ClipSourceLayout {
+  return (
+    typeof source === 'object' &&
+    source !== null &&
+    'type' in source &&
+    source.type === 'layout'
+  )
+}
 
-  const timeInSegment = time - segment.startTime
+/**********************************************************************************/
+/*                                                                                */
+/*                              Viewport Calculation                              */
+/*                                                                                */
+/**********************************************************************************/
 
-  return segment.placements.map(placement => ({
-    placement,
-    localTime: placement.in + timeInSegment * placement.speed,
-  }))
+/**
+ * Calculate grid viewport for a slot
+ */
+function calculateGridViewport(
+  slotIndex: number,
+  columns: number,
+  rows: number,
+  canvas: CanvasSize,
+  gap = 0,
+): Viewport {
+  const col = slotIndex % columns
+  const row = Math.floor(slotIndex / columns)
+
+  const gapPx = (gap / 100) * Math.min(canvas.width, canvas.height)
+  const totalGapX = gapPx * (columns - 1)
+  const totalGapY = gapPx * (rows - 1)
+
+  const cellWidth = (canvas.width - totalGapX) / columns
+  const cellHeight = (canvas.height - totalGapY) / rows
+
+  return {
+    x: Math.round(col * (cellWidth + gapPx)),
+    y: Math.round(row * (cellHeight + gapPx)),
+    width: Math.round(cellWidth),
+    height: Math.round(cellHeight),
+  }
 }
 
 /**
- * Compile a Project into a LayoutTimeline.
- * Handles nested groups for layout transitions.
- * Root can be a track (for layout-driven composition) or a group.
+ * Calculate viewport for a layout mode and slot index
  */
-export function compileAbsoluteTimeline(
+function calculateViewport(
+  layout: ClipSourceLayout,
+  slotIndex: number,
+  canvas: CanvasSize,
+): Viewport {
+  const { mode, columns, rows, gap } = layout
+
+  switch (mode) {
+    case 'grid': {
+      const cols = columns ?? 2
+      const rowCount = rows ?? Math.ceil(layout.slots.length / cols)
+      return calculateGridViewport(slotIndex, cols, rowCount, canvas, gap)
+    }
+
+    case 'focus': {
+      // First slot is fullscreen, rest are hidden (shouldn't reach here)
+      return { x: 0, y: 0, width: canvas.width, height: canvas.height }
+    }
+
+    case 'pip': {
+      // First slot is fullscreen, second is small corner
+      if (slotIndex === 0) {
+        return { x: 0, y: 0, width: canvas.width, height: canvas.height }
+      }
+      // PIP in bottom-right corner, 25% size
+      const pipWidth = Math.round(canvas.width * 0.25)
+      const pipHeight = Math.round(canvas.height * 0.25)
+      const margin = 16
+      return {
+        x: canvas.width - pipWidth - margin,
+        y: canvas.height - pipHeight - margin,
+        width: pipWidth,
+        height: pipHeight,
+      }
+    }
+
+    case 'split': {
+      // Horizontal split
+      const splitWidth = Math.round(canvas.width / layout.slots.length)
+      return {
+        x: slotIndex * splitWidth,
+        y: 0,
+        width: splitWidth,
+        height: canvas.height,
+      }
+    }
+
+    default:
+      return { x: 0, y: 0, width: canvas.width, height: canvas.height }
+  }
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                  Public API                                    */
+/*                                                                                */
+/**********************************************************************************/
+
+/**
+ * Get the active layout at a given time.
+ * Returns null if no layout is active (nothing displayed).
+ */
+export function getLayoutAtTime(
   project: AbsoluteProject,
-  canvasSize: CanvasSize,
-): CompiledTimeline {
-  // Build lookup maps first (needed for getRoot)
-  const trackMap = buildTrackMap(project)
-  const groupMap = buildGroupMap(project)
+  timeMs: number,
+): ClipSourceLayout | null {
+  const metadataTracks = project.metadataTracks ?? []
 
-  const root = getRoot(project, trackMap, groupMap)
-  if (!root) {
-    return { duration: 0, segments: [] }
-  }
-
-  const ctx: CompileContext = {
-    project,
-    trackMap,
-    groupMap,
-    parentMap: buildParentMap(project),
-    clipMap: buildClipMap(project),
-    canvasSize,
-  }
-
-  // Root viewport is the full canvas
-  const rootViewport: Viewport = {
-    x: 0,
-    y: 0,
-    width: canvasSize.width,
-    height: canvasSize.height,
-  }
-
-  // Process root - can be a track or a group
-  const clipInfos = root.type === 'track'
-    ? processTrack(root.track, rootViewport, 0, 1, ctx)
-    : processGroup(root.group, rootViewport, 0, 1, ctx)
-
-  // Build segments from transitions
-  const segments = buildSegments(clipInfos)
-
-  // Calculate duration
-  let duration = 0
-  for (const clip of clipInfos) {
-    if (clip.timelineEnd > duration) {
-      duration = clip.timelineEnd
+  for (const track of metadataTracks) {
+    const clip = findActiveClip(track.clips, timeMs)
+    if (clip && isLayoutSource(clip.source)) {
+      return clip.source
     }
   }
 
-  return { duration, segments }
+  return null
+}
+
+/**
+ * Get active media clips at a given time.
+ * Returns clip info for each media track that has content.
+ */
+export function getActiveMediaClips(
+  project: AbsoluteProject,
+  timeMs: number,
+): ActiveClip[] {
+  const result: ActiveClip[] = []
+  const timeSeconds = timeMs / 1000
+
+  for (const track of project.mediaTracks) {
+    const clip = findActiveClip(track.clips, timeMs)
+    if (clip) {
+      // Calculate source time
+      const clipStartSeconds = clip.start / 1000
+      const offsetSeconds = (clip.offset ?? 0) / 1000
+      const speed = clip.speed?.value ? clip.speed.value / 100 : 1
+      const timeInClip = timeSeconds - clipStartSeconds
+      const sourceTime = offsetSeconds + timeInClip * speed
+
+      result.push({
+        trackId: track.id,
+        clip,
+        sourceTime,
+      })
+    }
+  }
+
+  return result
+}
+
+/**
+ * Compute placements for active clips based on current layout.
+ * Only clips in the layout's slots are included.
+ */
+export function computePlacements(
+  layout: ClipSourceLayout,
+  activeClips: ActiveClip[],
+  canvas: CanvasSize,
+): Placement[] {
+  const placements: Placement[] = []
+
+  // Build map of trackId -> activeClip for quick lookup
+  const clipByTrack = new Map<string, ActiveClip>()
+  for (const ac of activeClips) {
+    clipByTrack.set(ac.trackId, ac)
+  }
+
+  // Only include tracks that are in the layout's slots
+  for (let slotIndex = 0; slotIndex < layout.slots.length; slotIndex++) {
+    const trackId = layout.slots[slotIndex]
+    const activeClip = clipByTrack.get(trackId)
+
+    if (activeClip) {
+      const viewport = calculateViewport(layout, slotIndex, canvas)
+      const speed = activeClip.clip.speed?.value ? activeClip.clip.speed.value / 100 : 1
+
+      placements.push({
+        trackId,
+        clipId: activeClip.clip.id,
+        viewport,
+        sourceTime: activeClip.sourceTime,
+        speed,
+      })
+    }
+  }
+
+  return placements
+}
+
+/**
+ * Get all placements at a given time.
+ * Combines layout lookup, media clip lookup, and viewport calculation.
+ * Returns empty array if no layout is active.
+ */
+export function getPlacementsAtTime(
+  project: AbsoluteProject,
+  timeMs: number,
+  canvas: CanvasSize,
+): Placement[] {
+  const layout = getLayoutAtTime(project, timeMs)
+  if (!layout) return []
+
+  const activeClips = getActiveMediaClips(project, timeMs)
+  return computePlacements(layout, activeClips, canvas)
+}
+
+/**
+ * Calculate project duration from all clips.
+ */
+export function getProjectDuration(project: AbsoluteProject): number {
+  let maxEndMs = 0
+
+  // Check media tracks
+  for (const track of project.mediaTracks) {
+    for (const clip of track.clips) {
+      const end = clip.start + (clip.duration ?? 0)
+      if (end > maxEndMs) maxEndMs = end
+    }
+  }
+
+  // Check metadata tracks
+  for (const track of project.metadataTracks ?? []) {
+    for (const clip of track.clips) {
+      const end = clip.start + (clip.duration ?? 0)
+      if (end > maxEndMs) maxEndMs = end
+    }
+  }
+
+  return maxEndMs
 }

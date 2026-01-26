@@ -13,11 +13,12 @@ import type {
   AbsoluteProject,
   AudioEffect,
   ClipSource,
-  ClipSourceStem
+  ClipSourceStem,
+  MediaTrackAbsolute,
 } from '@eddy/lexicons'
 import { makeMuxer } from '@eddy/media'
 import { action, createResourceMap, deepResource, defer, hold, resource } from '@eddy/solid'
-import { getActivePlacements } from '@eddy/timeline'
+import { getActiveMediaClips, getProjectDuration } from '@eddy/timeline'
 import { assertedNotNullish, debug } from '@eddy/utils'
 import type { EffectValue } from '@eddy/video'
 import { createEffect, createSelector, createSignal, mapArray, type Accessor } from 'solid-js'
@@ -49,29 +50,16 @@ interface LocalClipState {
 
 function makeDefaultProject(): AbsoluteProject {
   return {
-    schemaVersion: 1,
     title: 'Untitled Project',
     canvas: {
       width: 640,
       height: 360,
     },
-    groups: [
-      {
-        id: 'main-grid',
-        members: [{ id: 'track-0' }, { id: 'track-1' }, { id: 'track-2' }, { id: 'track-3' }],
-        layout: {
-          type: 'grid',
-          columns: 2,
-          rows: 2,
-        },
-        audioPipeline: { effects: [{ type: 'audio.gain', params: { value: { value: 100 } } }] },
-      },
-    ],
-    tracks: [
+    mediaTracks: [
       {
         id: 'track-0',
         name: 'Track 1',
-        clipIds: [],
+        clips: [],
         audioPipeline: {
           effects: [
             { type: 'audio.gain', params: { value: { value: 100 } } },
@@ -91,7 +79,7 @@ function makeDefaultProject(): AbsoluteProject {
       {
         id: 'track-1',
         name: 'Track 2',
-        clipIds: [],
+        clips: [],
         audioPipeline: {
           effects: [
             { type: 'audio.gain', params: { value: { value: 100 } } },
@@ -111,7 +99,7 @@ function makeDefaultProject(): AbsoluteProject {
       {
         id: 'track-2',
         name: 'Track 3',
-        clipIds: [],
+        clips: [],
         audioPipeline: {
           effects: [
             { type: 'audio.gain', params: { value: { value: 100 } } },
@@ -125,7 +113,7 @@ function makeDefaultProject(): AbsoluteProject {
       {
         id: 'track-3',
         name: 'Track 4',
-        clipIds: [],
+        clips: [],
         audioPipeline: {
           effects: [
             { type: 'audio.gain', params: { value: { value: 100 } } },
@@ -137,7 +125,25 @@ function makeDefaultProject(): AbsoluteProject {
         },
       },
     ],
-    clips: [],
+    metadataTracks: [
+      {
+        id: 'layout-track',
+        name: 'Layout',
+        clips: [
+          {
+            id: 'default-layout',
+            start: 0,
+            source: {
+              type: 'layout',
+              mode: 'grid',
+              columns: 2,
+              rows: 2,
+              slots: ['track-0', 'track-1', 'track-2', 'track-3'],
+            },
+          },
+        ],
+      },
+    ],
     createdAt: new Date().toISOString(),
   }
 }
@@ -233,10 +239,11 @@ export function createEditor(options: CreateEditorOptions) {
   // Resource map for stem clips - streams from atproto directly to OPFS
   // Returns true when clip is ready in OPFS, null on failure
   const stemClips = createResourceMap(
-    // Derive clips that have stem sources from project store
+    // Derive clips that have stem sources from project store (flatten from tracks)
     () =>
       project()
-        .clips.filter((clip): clip is typeof clip & { source: ClipSourceStem } =>
+        .mediaTracks.flatMap(track => track.clips)
+        .filter((clip): clip is typeof clip & { source: ClipSourceStem } =>
           isStemSource(clip.source),
         )
         .map(clip => [clip.id, clip] as const),
@@ -259,7 +266,7 @@ export function createEditor(options: CreateEditorOptions) {
   const hasAnyRecording = whenMemo(
     player,
     _player => {
-      for (const track of project().tracks) {
+      for (const track of project().mediaTracks) {
         if (_player.hasClipForTrack(track.id)) return true
       }
       return false
@@ -269,7 +276,7 @@ export function createEditor(options: CreateEditorOptions) {
 
   function setEffectValue(trackId: string, effectIndex: number, value: number) {
     setProject(
-      'tracks',
+      'mediaTracks',
       t => t.id === trackId,
       'audioPipeline',
       'effects',
@@ -296,7 +303,7 @@ export function createEditor(options: CreateEditorOptions) {
   }
 
   function getEffectValue(trackId: string, effectIndex: number): number {
-    const track = project().tracks.find(t => t.id === trackId)
+    const track = project().mediaTracks.find(t => t.id === trackId)
     const effect = track?.audioPipeline?.effects?.[effectIndex]
     if (
       effect &&
@@ -312,7 +319,7 @@ export function createEditor(options: CreateEditorOptions) {
   }
 
   function getTrackPipeline(trackId: string): AudioEffect[] {
-    const track = project().tracks.find(t => t.id === trackId)
+    const track = project().mediaTracks.find(t => t.id === trackId)
     return track?.audioPipeline?.effects ?? []
   }
 
@@ -320,7 +327,7 @@ export function createEditor(options: CreateEditorOptions) {
   function setVideoEffectValue(trackId: string, effectIndex: number, value: number) {
     // Update store
     setProject(
-      'tracks',
+      'mediaTracks',
       t => t.id === trackId,
       'visualPipeline',
       'effects',
@@ -348,7 +355,7 @@ export function createEditor(options: CreateEditorOptions) {
   }
 
   function getVideoEffectValue(trackId: string, effectIndex: number): number {
-    const track = project().tracks.find(t => t.id === trackId)
+    const track = project().mediaTracks.find(t => t.id === trackId)
     const effect = track?.visualPipeline?.effects?.[effectIndex]
     if (
       effect &&
@@ -372,7 +379,7 @@ export function createEditor(options: CreateEditorOptions) {
   ) {
     // Update store
     setProject(
-      'tracks',
+      'mediaTracks',
       t => t.id === trackId,
       'visualPipeline',
       'effects',
@@ -393,7 +400,7 @@ export function createEditor(options: CreateEditorOptions) {
   }
 
   function getVisualPipeline(trackId: string) {
-    const track = project().tracks.find(t => t.id === trackId)
+    const track = project().mediaTracks.find(t => t.id === trackId)
     return track?.visualPipeline?.effects ?? []
   }
 
@@ -401,46 +408,39 @@ export function createEditor(options: CreateEditorOptions) {
     // Track that this clip exists locally (blob is stored in OPFS)
     setLocalClips(clipId, { duration })
 
-    // Create the clip at project level
+    // Create the clip
     const newClip: AbsoluteClip = {
       id: clipId,
       start: Math.round(startMs),
       duration: Math.round(duration),
     }
 
-    // Add clip to project.clips
-    setProject('clips', clips => [...clips, newClip])
-
-    // Add clipId to track.clipIds
+    // Add clip to track.clips (inline)
     setProject(
-      'tracks',
+      'mediaTracks',
       track => track.id === trackId,
-      'clipIds',
-      clipIds => [...clipIds, clipId],
+      'clips',
+      clips => [...clips, newClip],
     )
 
     setProject('updatedAt', new Date().toISOString())
   }
 
   function clearTrack(trackId: string) {
-    const track = project().tracks.find(t => t.id === trackId)
+    const track = project().mediaTracks.find(t => t.id === trackId)
 
     if (track) {
       // Clear local state for each clip
-      for (const clipId of track.clipIds) {
-        setLocalClips(clipId, undefined!)
+      for (const clip of track.clips) {
+        setLocalClips(clip.id, undefined!)
       }
-
-      // Remove clips from project.clips
-      const clipIdsToRemove = new Set(track.clipIds)
-      setProject('clips', clips => clips.filter(clip => !clipIdsToRemove.has(clip.id)))
     }
 
-    // Clear clipIds on the track
+    // Clear clips on the track
     setProject(
-      'tracks',
+      'mediaTracks',
       t => t.id === trackId,
-      'clipIds',
+      'clips',
       [],
     )
 
@@ -449,13 +449,12 @@ export function createEditor(options: CreateEditorOptions) {
 
   /** Find the clip at a given time (in seconds) on a track */
   function getClipAtTime(trackId: string, timeSeconds: number): AbsoluteClip | undefined {
-    const track = project().tracks.find(t => t.id === trackId)
+    const track = project().mediaTracks.find(t => t.id === trackId)
     if (!track) return undefined
 
     const timeMs = timeSeconds * 1000 // Convert to ms (clips use ms)
-    const clipIds = new Set(track.clipIds)
-    return project().clips.find(
-      clip => clipIds.has(clip.id) && clip.start <= timeMs && timeMs < clip.start + clip.duration,
+    return track.clips.find(
+      clip => clip.start <= timeMs && timeMs < clip.start + (clip.duration ?? Infinity),
     )
   }
 
@@ -464,16 +463,13 @@ export function createEditor(options: CreateEditorOptions) {
     // Clean up local blob reference
     setLocalClips(clipId, undefined!)
 
-    // Remove clipId from track.clipIds
+    // Remove clip from track.clips (inline)
     setProject(
-      'tracks',
+      'mediaTracks',
       t => t.id === trackId,
-      'clipIds',
-      clipIds => clipIds.filter(id => id !== clipId),
+      'clips',
+      clips => clips.filter(clip => clip.id !== clipId),
     )
-
-    // Remove clip from project.clips
-    setProject('clips', clips => clips.filter(clip => clip.id !== clipId))
 
     setProject('updatedAt', new Date().toISOString())
   }
@@ -639,7 +635,10 @@ export function createEditor(options: CreateEditorOptions) {
     const _project = project()
     const clipBlobs = new Map<string, { blob: Blob; duration: number }>()
 
-    for (const clip of _project.clips) {
+    // Flatten all clips from mediaTracks
+    const allClips = _project.mediaTracks.flatMap(track => track.clips)
+
+    for (const clip of allClips) {
       // Skip clips that already have a stem source - they don't need to be re-uploaded
       if (clip.source?.type === 'stem') continue
 
@@ -652,7 +651,7 @@ export function createEditor(options: CreateEditorOptions) {
 
     // Check if there's anything to publish (either new recordings or existing stems)
     const hasNewRecordings = clipBlobs.size > 0
-    const hasExistingStems = _project.clips.some(clip => clip.source?.type === 'stem')
+    const hasExistingStems = allClips.some(clip => clip.source?.type === 'stem')
 
     if (!hasNewRecordings && !hasExistingStems) {
       throw new Error('No recordings to publish')
@@ -666,7 +665,7 @@ export function createEditor(options: CreateEditorOptions) {
   whenEffect(player, _player => {
     createEffect(
       mapArray(
-        () => project().tracks.map(t => t.id),
+        () => project().mediaTracks.map(t => t.id),
         trackId => {
           // Track the current clip ID to detect changes
           let currentClipId: string | null = null
@@ -675,11 +674,8 @@ export function createEditor(options: CreateEditorOptions) {
           createEffect(() => {
             // Access track by ID and get first clip
             const _project = project()
-            const track = _project.tracks.find(t => t.id === trackId)
-            const firstClipId = track?.clipIds[0]
-            const clip = firstClipId
-              ? _project.clips.find(c => c.id === firstClipId)
-              : undefined
+            const track = _project.mediaTracks.find(t => t.id === trackId)
+            const clip = track?.clips[0]
             const newClipId = clip?.id ?? null
 
             // Clip changed - clear old one first
@@ -771,9 +767,9 @@ export function createEditor(options: CreateEditorOptions) {
     .phase('preparing', async (_, { onCleanup }) => {
       const _player = assertedNotNullish(player(), 'No player available')
       const _project = project()
-      const timeline = _player.timeline()
+      const duration = getProjectDuration(_project) / 1000 // Convert to seconds
 
-      if (timeline.duration <= 0) {
+      if (duration <= 0) {
         throw new Error('No content to export')
       }
 
@@ -784,27 +780,21 @@ export function createEditor(options: CreateEditorOptions) {
       // Restart render loop when export completes or is cancelled
       onCleanup(() => _player.startRenderLoop())
 
-      return { player: _player, project: _project, timeline }
+      return { player: _player, project: _project, duration }
     })
-    .phase('audio', async ({ project: _project, timeline }, { setProgress }) => {
+    .phase('audio', async ({ project: _project, duration }, { setProgress }) => {
       log('export: preparing audio')
       const sampleRate = 48000
-      const audioMixer = makeOfflineAudioMixer(timeline.duration, sampleRate)
+      const audioMixer = makeOfflineAudioMixer(duration, sampleRate)
       let hasAudio = false
       let clipIndex = 0
-      const totalClips = _project.tracks.reduce((sum, t) => sum + t.clipIds.length, 0)
-
-      // Build a map of clips for quick lookup
-      const clipsById = new Map(_project.clips.map(c => [c.id, c]))
+      const totalClips = _project.mediaTracks.reduce((sum, t) => sum + t.clips.length, 0)
 
       // Decode and mix audio from all clips
-      for (const track of _project.tracks) {
+      for (const track of _project.mediaTracks) {
         const effects = track.audioPipeline?.effects ?? []
 
-        for (const clipId of track.clipIds) {
-          const clip = clipsById.get(clipId)
-          if (!clip) continue
-
+        for (const clip of track.clips) {
           const buffer = await getClipBuffer(clip.id)
           if (buffer) {
             const audioBuffer = await decodeClipAudio(buffer, sampleRate)
@@ -828,13 +818,13 @@ export function createEditor(options: CreateEditorOptions) {
     .phase('video', async ({ renderedAudio, sampleRate }, { setProgress, signal }) => {
       const _player = assertedNotNullish(player(), 'No player available')
       const _project = project()
-      const timeline = _player.timeline()
+      const duration = getProjectDuration(_project) / 1000 // Convert to seconds
       const frameRate = 30
       const frameDuration = 1 / frameRate
-      const totalFrames = Math.ceil(timeline.duration * frameRate)
+      const totalFrames = Math.ceil(duration * frameRate)
       const samplesPerFrame = Math.floor(sampleRate / frameRate)
 
-      log('export: rendering video', { totalFrames, duration: timeline.duration })
+      log('export: rendering video', { totalFrames, duration })
 
       // Initialize muxer
       const muxer = makeMuxer({
@@ -851,15 +841,15 @@ export function createEditor(options: CreateEditorOptions) {
 
         const time = frameIndex * frameDuration
 
-        // Get active placements from timeline at this time
-        const activePlacements = getActivePlacements(timeline, time)
+        // Get active clips from project at this time (time in seconds, convert to ms)
+        const activeClips = getActiveMediaClips(_project, time * 1000)
 
         // Fetch frames directly from each clip's playback worker
         const frameEntries: Array<{ clipId: string; frame: VideoFrame }> = []
-        for (const { placement, localTime } of activePlacements) {
-          const frame = await _player.getClipFrameAtTime(placement.clipId, localTime)
+        for (const { clip, sourceTime } of activeClips) {
+          const frame = await _player.getClipFrameAtTime(clip.id, sourceTime) // sourceTime is already in seconds
           if (frame) {
-            frameEntries.push({ clipId: placement.clipId, frame })
+            frameEntries.push({ clipId: clip.id, frame })
           }
         }
 
