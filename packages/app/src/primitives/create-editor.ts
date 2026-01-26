@@ -8,13 +8,15 @@ import {
   makeOfflineAudioMixer,
   resumeAudioContext,
 } from '@eddy/audio'
-import type {
-  AbsoluteClip,
-  AbsoluteProject,
-  AudioEffect,
-  ClipSource,
-  ClipSourceStem,
-  MediaTrackAbsolute,
+import {
+  isClipStem,
+  isInteger,
+  type AbsoluteProject,
+  type AudioEffect,
+  type Clip,
+  type ClipStem,
+  type ClipUrl,
+  type MediaClip,
 } from '@eddy/lexicons'
 import { makeMuxer } from '@eddy/media'
 import { action, createResourceMap, deepResource, defer, hold, resource } from '@eddy/solid'
@@ -38,7 +40,7 @@ const log = debug('create-editor', false)
 const clipBufferCache = new Map<string, ArrayBuffer>()
 
 /** Check if a clip source is a stem reference */
-function isStemSource(source: ClipSource | undefined): source is ClipSourceStem {
+function isStemSource(source: Clip | undefined): source is ClipStem {
   return source?.type === 'stem'
 }
 
@@ -50,6 +52,7 @@ interface LocalClipState {
 
 function makeDefaultProject(): AbsoluteProject {
   return {
+    type: 'absolute',
     title: 'Untitled Project',
     canvas: {
       width: 640,
@@ -133,13 +136,11 @@ function makeDefaultProject(): AbsoluteProject {
           {
             id: 'default-layout',
             start: 0,
-            source: {
-              type: 'layout',
-              mode: 'grid',
-              columns: 2,
-              rows: 2,
-              slots: ['track-0', 'track-1', 'track-2', 'track-3'],
-            },
+            type: 'layout',
+            mode: 'grid',
+            columns: 2,
+            rows: 2,
+            slots: ['track-0', 'track-1', 'track-2', 'track-3'],
           },
         ],
       },
@@ -243,9 +244,7 @@ export function createEditor(options: CreateEditorOptions) {
     () =>
       project()
         .mediaTracks.flatMap(track => track.clips)
-        .filter((clip): clip is typeof clip & { source: ClipSourceStem } =>
-          isStemSource(clip.source),
-        )
+        .filter(isClipStem)
         .map(clip => [clip.id, clip] as const),
     async (clipId, clip) => {
       const agent = options.agent()
@@ -253,7 +252,7 @@ export function createEditor(options: CreateEditorOptions) {
 
       try {
         // Stream directly from ATProto to OPFS (avoids loading blob into memory)
-        await streamStemToOPFS(agent, clip.source.ref.uri, clipId, createWritableStream)
+        await streamStemToOPFS(agent, clip.ref.uri, clipId, createWritableStream)
         return true
       } catch (err) {
         console.error(`Failed to fetch stem for clip ${clipId}:`, err)
@@ -282,18 +281,12 @@ export function createEditor(options: CreateEditorOptions) {
       'effects',
       effectIndex,
       effect => {
-        if (
-          'params' in effect &&
-          effect.params &&
-          'value' in effect.params &&
-          effect.params.value &&
-          'value' in effect.params.value
-        ) {
+        if ('params' in effect && effect.params) {
           return {
             ...effect,
             params: {
               ...effect.params,
-              value: { ...effect.params.value, value: Math.round(value * 100) },
+              value: { ...effect.params, value: Math.round(value * 100) },
             },
           }
         }
@@ -305,15 +298,14 @@ export function createEditor(options: CreateEditorOptions) {
   function getEffectValue(trackId: string, effectIndex: number): number {
     const track = project().mediaTracks.find(t => t.id === trackId)
     const effect = track?.audioPipeline?.effects?.[effectIndex]
-    if (
-      effect &&
-      'params' in effect &&
-      effect.params &&
-      'value' in effect.params &&
-      effect.params.value &&
-      'value' in effect.params.value
-    ) {
-      return effect.params.value.value / 100
+    const params = effect && 'params' in effect ? effect.params : null
+    const valueObj = params && typeof params === 'object' && 'value' in params ? params.value : null
+    const value =
+      valueObj && typeof valueObj === 'object' && valueObj !== null && 'value' in valueObj
+        ? (valueObj as { value: number }).value
+        : null
+    if (typeof value === 'number') {
+      return value / 100
     }
     return 1
   }
@@ -333,17 +325,10 @@ export function createEditor(options: CreateEditorOptions) {
       'effects',
       effectIndex,
       effect => {
-        if (
-          effect &&
-          'params' in effect &&
-          effect.params &&
-          'value' in effect.params &&
-          effect.params.value &&
-          'value' in effect.params.value
-        ) {
+        if (isInteger(effect.params)) {
           return {
             ...effect,
-            params: { ...effect.params, value: { ...effect.params.value, value } },
+            params: { ...effect.params, value: { ...effect.params, value } },
           }
         }
         return effect
@@ -357,15 +342,8 @@ export function createEditor(options: CreateEditorOptions) {
   function getVideoEffectValue(trackId: string, effectIndex: number): number {
     const track = project().mediaTracks.find(t => t.id === trackId)
     const effect = track?.visualPipeline?.effects?.[effectIndex]
-    if (
-      effect &&
-      'params' in effect &&
-      effect.params &&
-      'value' in effect.params &&
-      effect.params.value &&
-      'value' in effect.params.value
-    ) {
-      return effect.params.value.value
+    if (isInteger(effect?.params)) {
+      return effect.params.value
     }
     return 0
   }
@@ -408,11 +386,13 @@ export function createEditor(options: CreateEditorOptions) {
     // Track that this clip exists locally (blob is stored in OPFS)
     setLocalClips(clipId, { duration })
 
-    // Create the clip
-    const newClip: AbsoluteClip = {
+    // Create the clip as a URL type pointing to OPFS
+    const newClip: MediaClip = {
+      type: 'url',
       id: clipId,
       start: Math.round(startMs),
       duration: Math.round(duration),
+      url: `opfs://${clipId}`, // Virtual URL pointing to OPFS storage
     }
 
     // Add clip to track.clips (inline)
@@ -437,18 +417,13 @@ export function createEditor(options: CreateEditorOptions) {
     }
 
     // Clear clips on the track
-    setProject(
-      'mediaTracks',
-      t => t.id === trackId,
-      'clips',
-      [],
-    )
+    setProject('mediaTracks', t => t.id === trackId, 'clips', [])
 
     setProject('updatedAt', new Date().toISOString())
   }
 
   /** Find the clip at a given time (in seconds) on a track */
-  function getClipAtTime(trackId: string, timeSeconds: number): AbsoluteClip | undefined {
+  function getClipAtTime(trackId: string, timeSeconds: number): MediaClip | undefined {
     const track = project().mediaTracks.find(t => t.id === trackId)
     if (!track) return undefined
 
@@ -640,7 +615,7 @@ export function createEditor(options: CreateEditorOptions) {
 
     for (const clip of allClips) {
       // Skip clips that already have a stem source - they don't need to be re-uploaded
-      if (clip.source?.type === 'stem') continue
+      if (isClipStem(clip)) continue
 
       const blob = await getClipBlob(clip.id)
       const duration = clip.duration
@@ -651,7 +626,7 @@ export function createEditor(options: CreateEditorOptions) {
 
     // Check if there's anything to publish (either new recordings or existing stems)
     const hasNewRecordings = clipBlobs.size > 0
-    const hasExistingStems = allClips.some(clip => clip.source?.type === 'stem')
+    const hasExistingStems = allClips.some(isClipStem)
 
     if (!hasNewRecordings && !hasExistingStems) {
       throw new Error('No recordings to publish')
@@ -680,9 +655,9 @@ export function createEditor(options: CreateEditorOptions) {
 
             // Clip changed - clear old one first
             if (newClipId !== currentClipId) {
-              if (_player.hasClip(trackId)) {
+              if (currentClipId && _player.hasClip(currentClipId)) {
                 log('clearing old clip from player', { trackId, oldClipId: currentClipId })
-                _player.clearClip(trackId)
+                _player.clearClip(currentClipId)
               }
               currentClipId = newClipId
             }
@@ -734,7 +709,7 @@ export function createEditor(options: CreateEditorOptions) {
                     trackId,
                     effectIndex,
                     paramKey,
-                    paramValue.value,
+                    paramValue.value as EffectValue,
                   )
                 }
               }

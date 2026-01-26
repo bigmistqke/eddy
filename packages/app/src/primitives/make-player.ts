@@ -289,7 +289,10 @@ export async function makePlayer({ canvas: canvasElement, width, height, project
   // Passed to compositor for runtime queries
   const projectWithPreviews = createMemo(() => {
     const _previewTracks = previewTracks()
-    return injectPreviewClips(project(), _previewTracks)
+    const _project = project()
+    // Access clips to ensure fine-grained tracking (store mutations)
+    _project.mediaTracks.forEach(t => t.clips.length)
+    return injectPreviewClips(_project, _previewTracks)
   })
 
   // Worker pools for video and audio playback
@@ -480,11 +483,13 @@ export async function makePlayer({ canvas: canvasElement, width, height, project
   }
 
   // Sync project with compositor when it changes
-  createEffect(
-    on(projectWithPreviews, currentProject => {
-      compositor.setProject(currentProject)
-    }),
-  )
+  // Note: Don't use `on()` here - we need fine-grained tracking of nested properties
+  createEffect(() => {
+    const currentProject = projectWithPreviews()
+    // Access mediaTracks.clips to ensure fine-grained tracking of clip changes
+    currentProject.mediaTracks.forEach(t => t.clips.length)
+    compositor.setProject(currentProject)
+  })
 
   /**
    * Activate a scheduled playback for a clip.

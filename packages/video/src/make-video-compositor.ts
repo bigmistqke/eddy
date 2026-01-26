@@ -6,6 +6,9 @@
  * for the actual WebGL rendering.
  */
 
+import { isMediaClip, type AbsoluteProject, type Clip, type MediaTrack } from '@eddy/lexicons'
+import type { CanvasSize, Placement } from '@eddy/timeline'
+import { getPlacementsAtTime } from '@eddy/timeline'
 import { debug } from '@eddy/utils'
 import type {
   CompiledEffectChain,
@@ -16,9 +19,6 @@ import type {
 import { makeEffectManager } from './effect-manager'
 import type { EffectValue } from './effects'
 import { makeVideoRenderer, type VideoRenderer } from './make-video-renderer'
-import type { AbsoluteProject, MediaTrackAbsolute, AbsoluteClip } from '@eddy/lexicons'
-import type { CanvasSize, Placement } from '@eddy/timeline'
-import { getPlacementsAtTime } from '@eddy/timeline'
 
 const log = debug('video:make-video-compositor', false)
 
@@ -204,16 +204,16 @@ export function makeVideoCompositor(config: VideoCompositorConfig): VideoComposi
   ): { effectId: string; effectKeys: EffectKey[] } | null {
     if (!currentProject) return null
 
-    const track = currentProject.mediaTracks.find((t: MediaTrackAbsolute) => t.id === placement.trackId)
+    const track = currentProject.mediaTracks.find((t: MediaTrack) => t.id === placement.trackId)
     if (!track) return null
 
-    const clip = track.clips.find((c: AbsoluteClip) => c.id === placement.clipId)
+    const clip = track.clips.find((c: Clip) => c.id === placement.clipId)
 
     // Collect effects from track and clip pipelines
     const effectKeys: EffectKey[] = []
 
     // Add clip effects first (applied first)
-    if (clip?.visualPipeline?.effects) {
+    if (isMediaClip(clip) && clip?.visualPipeline?.effects) {
       for (const effect of clip.visualPipeline.effects) {
         effectKeys.push(effect.type as EffectKey)
       }

@@ -38,8 +38,8 @@ export interface MuxerMethods {
    */
   finalize(clipId: string): Promise<{ clipId: string; frameCount: number }>
 
-  /** Reset state for next recording */
-  reset(): void
+  /** Reset state for next recording (re-initializes encoders) */
+  reset(): Promise<void>
 }
 
 export interface MuxerWorkerMethods {
@@ -164,9 +164,10 @@ expose<MuxerWorkerMethods>({
         return { clipId, frameCount: result.videoFrameCount }
       },
 
-      reset() {
+      async reset() {
         capturedFrameCount = 0
         muxer.reset()
+        await muxer.init() // Re-initialize after reset
         scheduler?.reset()
       },
     } satisfies MuxerMethods)
