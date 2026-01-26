@@ -4553,6 +4553,50 @@
       "created_at": "2026-01-26T02:37:58.894416+01:00",
       "updated_at": "2026-01-26T02:37:58.894416+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 415,
+      "change_id": "70053f9e-5a7f-4be1-b9ec-b5cf67e5c6d7",
+      "node_type": "outcome",
+      "title": "Committed: remove groups, inline clips in tracks - simplified schema with mediaTracks/metadataTracks",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-26T03:29:07.570995+01:00",
+      "updated_at": "2026-01-26T03:29:07.570995+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"3bad67d\",\"confidence\":95}"
+    },
+    {
+      "id": 416,
+      "change_id": "d1f27690-86d1-4ab0-b6de-816217777ab5",
+      "node_type": "action",
+      "title": "Fixed runtime bugs: preview clips missing type field, isMediaClip logic error",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-26T22:14:27.297340+01:00",
+      "updated_at": "2026-01-26T22:14:27.297340+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 417,
+      "change_id": "58dccd5c-9950-4859-911c-a291f0a25911",
+      "node_type": "outcome",
+      "title": "Committed preview/isMediaClip fixes",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-26T22:16:52.584854+01:00",
+      "updated_at": "2026-01-26T22:16:52.584854+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"cbd0b44\",\"confidence\":95}"
+    },
+    {
+      "id": 418,
+      "change_id": "7122356d-c47b-4ce4-8107-7ce4a49bf582",
+      "node_type": "outcome",
+      "title": "Committed multi-clip recording fixes",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-26T22:46:52.368678+01:00",
+      "updated_at": "2026-01-26T22:46:52.368678+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"765e37f\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -8526,6 +8570,50 @@
       "weight": 1.0,
       "rationale": "schema detail",
       "created_at": "2026-01-26T02:38:03.319685+01:00"
+    },
+    {
+      "id": 362,
+      "from_node_id": 403,
+      "to_node_id": 415,
+      "from_change_id": "c2d49c83-e627-4b9d-911b-9f75323d3749",
+      "to_change_id": "70053f9e-5a7f-4be1-b9ec-b5cf67e5c6d7",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-26T03:29:10.999450+01:00"
+    },
+    {
+      "id": 363,
+      "from_node_id": 403,
+      "to_node_id": 416,
+      "from_change_id": "c2d49c83-e627-4b9d-911b-9f75323d3749",
+      "to_change_id": "d1f27690-86d1-4ab0-b6de-816217777ab5",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Fixes schema refactor bugs",
+      "created_at": "2026-01-26T22:14:32.265339+01:00"
+    },
+    {
+      "id": 364,
+      "from_node_id": 416,
+      "to_node_id": 417,
+      "from_change_id": "d1f27690-86d1-4ab0-b6de-816217777ab5",
+      "to_change_id": "58dccd5c-9950-4859-911c-a291f0a25911",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-26T22:16:52.645126+01:00"
+    },
+    {
+      "id": 365,
+      "from_node_id": 416,
+      "to_node_id": 418,
+      "from_change_id": "d1f27690-86d1-4ab0-b6de-816217777ab5",
+      "to_change_id": "7122356d-c47b-4ce4-8107-7ce4a49bf582",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-26T22:46:52.380428+01:00"
     }
   ]
 }

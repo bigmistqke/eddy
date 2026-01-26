@@ -6,7 +6,7 @@
  * Shows clips with connected styling for multi-column spans.
  */
 
-import type { ClipSourceLayout, JamLayoutType } from '@eddy/lexicons'
+import type { ClipLayout, JamLayoutType } from '@eddy/lexicons'
 import { Repeat } from '@solid-primitives/range'
 import clsx from 'clsx'
 import { createEffect, createSignal, For, Show } from 'solid-js'
@@ -46,7 +46,7 @@ const TEST_VIDEOS = [
 ]
 
 /** Convert layout source to JamLayoutType for icon display */
-function layoutSourceToType(source: ClipSourceLayout): JamLayoutType {
+function layoutSourceToType(source: ClipLayout): JamLayoutType {
   const { mode, columns, rows } = source
   if (mode === 'pip') return 'pip'
   if (mode === 'focus') return 'full'
@@ -265,7 +265,7 @@ export function Grid(props: GridProps) {
                         {props.jam.metadata.columnDuration}
                       </span>
                       <span class={styles.timelineIcon}>
-                        {region() ? LAYOUT_ICONS[layoutSourceToType(region()!.source)] : '·'}
+                        {region() ? LAYOUT_ICONS[layoutSourceToType(region()!.clip)] : '·'}
                       </span>
                     </Show>
                   </div>

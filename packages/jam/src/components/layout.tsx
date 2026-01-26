@@ -4,7 +4,7 @@
  * Compact horizontal bar for editing selected column/region properties.
  */
 
-import type { ClipSourceLayout, JamLayoutType } from '@eddy/lexicons'
+import type { ClipLayout, JamLayoutType } from '@eddy/lexicons'
 import clsx from 'clsx'
 import { createMemo, For, Index, Show } from 'solid-js'
 import type { Jam } from '~/primitives/create-jam'
@@ -39,8 +39,7 @@ function getSlotCount(layoutType: JamLayoutType): number {
 }
 
 /** Convert layout source to JamLayoutType */
-function layoutSourceToType(source: ClipSourceLayout): JamLayoutType {
-  const { mode, columns, rows } = source
+function layoutSourceToType({ mode, columns, rows }: ClipLayout): JamLayoutType {
   if (mode === 'pip') return 'pip'
   if (mode === 'focus') return 'full'
   if (mode === 'split') return 'h-split'
@@ -115,7 +114,10 @@ export function ActionBar(props: ActionBarProps) {
               <For each={ALL_LAYOUTS}>
                 {layout => (
                   <button
-                    class={clsx(styles.layoutButton, layoutSourceToType(region().source) === layout && styles.selected)}
+                    class={clsx(
+                      styles.layoutButton,
+                      layoutSourceToType(region().clip) === layout && styles.selected,
+                    )}
                     onClick={() => handleLayoutChange(layout)}
                   >
                     <LayoutPreview layout={layout} size={24} />

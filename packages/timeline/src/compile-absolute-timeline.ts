@@ -5,7 +5,8 @@
  * No compilation - just query layout and media at render time.
  */
 
-import type { AbsoluteClip, AbsoluteProject, ClipSourceLayout } from '@eddy/lexicons'
+import type { AbsoluteProject, Clip, ClipLayout, } from '@eddy/lexicons'
+import { isMediaClip, } from '@eddy/lexicons'
 
 /**********************************************************************************/
 /*                                                                                */
@@ -27,7 +28,7 @@ export interface Viewport {
 
 export interface ActiveClip {
   trackId: string
-  clip: AbsoluteClip
+  clip: Clip
   /** Time in source media (seconds) */
   sourceTime: number
 }
@@ -51,9 +52,9 @@ export interface Placement {
  * Handles optional duration (extends to next clip).
  */
 function findActiveClip(
-  clips: AbsoluteClip[],
+  clips: Clip[],
   timeMs: number,
-): AbsoluteClip | null {
+): Clip | null {
   // Sort clips by start time
   const sorted = [...clips].sort((a, b) => a.start - b.start)
 
@@ -82,7 +83,7 @@ function findActiveClip(
 /**
  * Check if a clip source is a layout source
  */
-function isLayoutSource(source: unknown): source is ClipSourceLayout {
+function isClipLayout(source: unknown): source is ClipLayout {
   return (
     typeof source === 'object' &&
     source !== null &&
@@ -129,7 +130,7 @@ function calculateGridViewport(
  * Calculate viewport for a layout mode and slot index
  */
 function calculateViewport(
-  layout: ClipSourceLayout,
+  layout: ClipLayout,
   slotIndex: number,
   canvas: CanvasSize,
 ): Viewport {
@@ -193,13 +194,13 @@ function calculateViewport(
 export function getLayoutAtTime(
   project: AbsoluteProject,
   timeMs: number,
-): ClipSourceLayout | null {
+): ClipLayout | null {
   const metadataTracks = project.metadataTracks ?? []
 
   for (const track of metadataTracks) {
     const clip = findActiveClip(track.clips, timeMs)
-    if (clip && isLayoutSource(clip.source)) {
-      return clip.source
+    if (clip && isClipLayout(clip)) {
+      return clip
     }
   }
 
@@ -219,13 +220,13 @@ export function getActiveMediaClips(
 
   for (const track of project.mediaTracks) {
     const clip = findActiveClip(track.clips, timeMs)
-    if (clip) {
+    if (isMediaClip(clip)) {
       // Calculate source time
       const clipStartSeconds = clip.start / 1000
-      const offsetSeconds = (clip.offset ?? 0) / 1000
-      const speed = clip.speed?.value ? clip.speed.value / 100 : 1
+      const startSeconds = (clip.start ?? 0) / 1000
+      const speed = clip.speed ? clip.speed / 100 : 1
       const timeInClip = timeSeconds - clipStartSeconds
-      const sourceTime = offsetSeconds + timeInClip * speed
+      const sourceTime = startSeconds + timeInClip * speed
 
       result.push({
         trackId: track.id,
@@ -243,7 +244,7 @@ export function getActiveMediaClips(
  * Only clips in the layout's slots are included.
  */
 export function computePlacements(
-  layout: ClipSourceLayout,
+  layout: ClipLayout,
   activeClips: ActiveClip[],
   canvas: CanvasSize,
 ): Placement[] {
@@ -260,9 +261,9 @@ export function computePlacements(
     const trackId = layout.slots[slotIndex]
     const activeClip = clipByTrack.get(trackId)
 
-    if (activeClip) {
+    if (activeClip && isMediaClip(activeClip.clip)) {
       const viewport = calculateViewport(layout, slotIndex, canvas)
-      const speed = activeClip.clip.speed?.value ? activeClip.clip.speed.value / 100 : 1
+      const speed = activeClip.clip.speed ? activeClip.clip.speed / 100 : 1
 
       placements.push({
         trackId,

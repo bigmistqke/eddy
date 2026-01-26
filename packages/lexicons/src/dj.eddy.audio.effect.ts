@@ -9,8 +9,7 @@ export default {
       required: ['value'],
       properties: {
         value: {
-          type: 'union',
-          refs: ['dj.eddy.value.static#fixed'],
+          type: 'integer',
           description: 'Volume (0-100, where 100 = unity gain)',
         },
       },
@@ -22,8 +21,7 @@ export default {
       properties: {
         type: { type: 'string', const: 'audio.gain' },
         enabled: {
-          type: 'union',
-          refs: ['dj.eddy.value.static#fixed'],
+          type: 'integer',
         },
         params: { type: 'ref', ref: '#gain.params' },
       },
@@ -34,8 +32,7 @@ export default {
       required: ['value'],
       properties: {
         value: {
-          type: 'union',
-          refs: ['dj.eddy.value.static#fixed'],
+          type: 'integer',
           description: 'Stereo position (0 = left, 50 = center, 100 = right)',
         },
       },
@@ -47,8 +44,7 @@ export default {
       properties: {
         type: { type: 'string', const: 'audio.pan' },
         enabled: {
-          type: 'union',
-          refs: ['dj.eddy.value.static#fixed'],
+          type: 'integer',
         },
         params: { type: 'ref', ref: '#pan.params' },
       },
@@ -58,18 +54,15 @@ export default {
       type: 'object',
       properties: {
         mix: {
-          type: 'union',
-          refs: ['dj.eddy.value.static#fixed'],
+          type: 'integer',
           description: 'Wet/dry mix (0 = dry, 100 = wet)',
         },
         decay: {
-          type: 'union',
-          refs: ['dj.eddy.value.static#fixed'],
+          type: 'integer',
           description: 'Decay time scaled by 100 (e.g., 200 = 2 seconds)',
         },
         preDelay: {
-          type: 'union',
-          refs: ['dj.eddy.value.static#fixed'],
+          type: 'integer',
           description: 'Pre-delay in milliseconds (0-100)',
         },
       },
@@ -82,8 +75,7 @@ export default {
       properties: {
         type: { type: 'string', const: 'audio.reverb' },
         enabled: {
-          type: 'union',
-          refs: ['dj.eddy.value.static#fixed'],
+          type: 'integer',
         },
         params: { type: 'ref', ref: '#reverb.params' },
       },
@@ -99,8 +91,7 @@ export default {
           description: "Custom effect identifier (e.g., 'audio.vendor.effectName')",
         },
         enabled: {
-          type: 'union',
-          refs: ['dj.eddy.value.static#fixed'],
+          type: 'integer',
         },
         params: { type: 'unknown' },
       },

@@ -11,12 +11,19 @@ export default {
   lexicon: 1,
   id: 'dj.eddy.clip',
   defs: {
-    'source.stem': {
+    'clip.stem': {
       type: 'object',
       description: 'Reference to an external stem record',
-      required: ['type', 'ref'],
+      required: ['type', 'ref', 'start', 'id'],
       properties: {
         type: { type: 'string', const: 'stem' },
+        id: { type: 'string' },
+        start: { type: 'integer' },
+        duration: { type: 'integer' },
+        speed: { type: 'integer' },
+        reverse: { type: 'boolean' },
+        audioPipeline: { type: 'ref', ref: 'dj.eddy.pipeline#audioPipeline' },
+        visualPipeline: { type: 'ref', ref: 'dj.eddy.pipeline#visualPipeline' },
         ref: {
           type: 'ref',
           ref: 'com.atproto.repo.strongRef',
@@ -25,12 +32,19 @@ export default {
       },
     },
 
-    'source.url': {
+    'clip.url': {
       type: 'object',
       description: 'Direct URL reference for local/external media',
-      required: ['type', 'url'],
+      required: ['type', 'url', 'start', 'id'],
       properties: {
         type: { type: 'string', const: 'url' },
+        id: { type: 'string' },
+        start: { type: 'integer' },
+        duration: { type: 'integer' },
+        speed: { type: 'integer' },
+        reverse: { type: 'boolean' },
+        audioPipeline: { type: 'ref', ref: 'dj.eddy.pipeline#audioPipeline' },
+        visualPipeline: { type: 'ref', ref: 'dj.eddy.pipeline#visualPipeline' },
         url: {
           type: 'string',
           format: 'uri',
@@ -39,12 +53,19 @@ export default {
       },
     },
 
-    'source.project': {
+    'clip.project': {
       type: 'object',
       description: 'Reference to another project for nested composition',
-      required: ['type', 'uri'],
+      required: ['type', 'uri', 'start', 'id'],
       properties: {
         type: { type: 'string', const: 'project' },
+        id: { type: 'string' },
+        start: { type: 'integer' },
+        duration: { type: 'integer' },
+        speed: { type: 'integer' },
+        reverse: { type: 'boolean' },
+        audioPipeline: { type: 'ref', ref: 'dj.eddy.pipeline#audioPipeline' },
+        visualPipeline: { type: 'ref', ref: 'dj.eddy.pipeline#visualPipeline' },
         uri: {
           type: 'string',
           format: 'at-uri',
@@ -53,12 +74,15 @@ export default {
       },
     },
 
-    'source.layout': {
+    'clip.layout': {
       type: 'object',
       description: 'Layout instruction for arranging tracks',
-      required: ['type', 'mode', 'slots'],
+      required: ['type', 'mode', 'slots', 'start', 'id'],
       properties: {
         type: { type: 'string', const: 'layout' },
+        id: { type: 'string' },
+        start: { type: 'integer' },
+        duration: { type: 'integer' },
         mode: {
           type: 'string',
           enum: ['grid', 'focus', 'pip', 'split'],

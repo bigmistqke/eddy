@@ -4,33 +4,6 @@ export default {
   lexicon: 1,
   id: 'dj.eddy.value.static',
   defs: {
-    fixed: {
-      type: 'object',
-      description:
-        "A static numeric value. Values are integers scaled by 100 (e.g., 50 = 0.5, 100 = 1.0). This avoids floats which AT Protocol doesn't support.",
-      required: ['value'],
-      properties: {
-        value: {
-          type: 'integer',
-          description: 'Value scaled by 100 (50 = 0.5)',
-        },
-        min: {
-          type: 'integer',
-          description: 'Minimum allowed value (scaled by 100)',
-          default: 0,
-        },
-        max: {
-          type: 'integer',
-          description: 'Maximum allowed value (scaled by 100)',
-          default: 100,
-        },
-        default: {
-          type: 'integer',
-          description: 'Default value if not specified (scaled by 100)',
-        },
-      },
-    },
-
     vec2: {
       type: 'object',
       description:
@@ -75,20 +48,6 @@ export default {
           minLength: 4,
           maxLength: 4,
           description: '[x, y, z, w] each scaled by 100',
-        },
-      },
-    },
-
-    blendMode: {
-      type: 'object',
-      description: 'A static blend mode value.',
-      required: ['value'],
-      properties: {
-        value: {
-          type: 'string',
-          enum: ['normal', 'multiply', 'screen', 'overlay', 'add'],
-          default: 'normal',
-          description: 'Blend mode for compositing',
         },
       },
     },

@@ -11,69 +11,17 @@ export default {
   lexicon: 1,
   id: 'dj.eddy.musical',
   defs: {
-    clip: {
-      type: 'object',
-      description: 'A clip with musical timing (ticks)',
-      required: ['id', 'start'],
-      properties: {
-        id: {
-          type: 'string',
-          maxLength: 64,
-        },
-        source: {
-          type: 'union',
-          refs: [
-            'dj.eddy.clip#source.stem',
-            'dj.eddy.clip#source.url',
-            'dj.eddy.clip#source.project',
-            'dj.eddy.clip#source.layout',
-          ],
-          description: 'Source: stem, URL, nested project, or layout instruction',
-        },
-        start: {
-          type: 'integer',
-          description: 'Position on timeline in ticks',
-          minimum: 0,
-        },
-        duration: {
-          type: 'integer',
-          description: 'Duration in ticks. If omitted, extends to next clip on track.',
-          minimum: 0,
-        },
-        offset: {
-          type: 'integer',
-          description: 'Time shift into content in ticks (source in-point)',
-        },
-        speed: {
-          type: 'ref',
-          ref: 'dj.eddy.value.static#fixed',
-          description: 'Playback speed multiplier (0.1-10)',
-        },
-        reverse: {
-          type: 'boolean',
-          description: 'Play clip in reverse',
-        },
-        audioPipeline: {
-          type: 'ref',
-          ref: 'dj.eddy.pipeline#audioPipeline',
-          description: 'Clip-level audio effect chain',
-        },
-        visualPipeline: {
-          type: 'ref',
-          ref: 'dj.eddy.pipeline#visualPipeline',
-          description: 'Clip-level video effect chain',
-        },
-      },
-    },
-
     project: {
       type: 'record',
       description: 'A project with musical timing (bars/beats)',
       key: 'tid',
       record: {
         type: 'object',
-        required: ['title', 'canvas', 'mediaTracks', 'bpm', 'createdAt'],
+        required: ['type', 'title', 'canvas', 'mediaTracks', 'bpm', 'createdAt'],
         properties: {
+          type: {
+            type: 'string', const: 'musical'
+          },
           schemaVersion: {
             type: 'integer',
             description: 'Schema version for migration support',
@@ -116,15 +64,15 @@ export default {
           },
           mediaTracks: {
             type: 'array',
-            items: { type: 'ref', ref: 'dj.eddy.track#media.musical' },
+            items: { type: 'ref', ref: 'dj.eddy.track#media' },
             maxLength: 32,
             description: 'Media tracks containing stem/url/project clips',
           },
           metadataTracks: {
             type: 'array',
-            items: { type: 'ref', ref: 'dj.eddy.track#metadata.musical' },
+            items: { type: 'union', refs: ['dj.eddy.track#layout'] },
             maxLength: 16,
-            description: 'Metadata tracks containing layout/curve clips',
+            description: 'Metadata tracks containing layout clips',
           },
           parent: {
             type: 'ref',

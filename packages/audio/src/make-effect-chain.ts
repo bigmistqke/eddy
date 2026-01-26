@@ -1,4 +1,4 @@
-import type { AudioEffect, StaticValue } from '@eddy/lexicons'
+import { isInteger, type AudioEffect } from '@eddy/lexicons'
 import { debug } from '@eddy/utils'
 import {
   AudioElementRegistry,
@@ -26,14 +26,9 @@ export interface EffectChain {
 /*                                                                                */
 /**********************************************************************************/
 
-/** Check if value is a StaticValue (has 'value' property) */
-function isStaticValue(value: unknown): value is StaticValue {
-  return typeof value === 'object' && value !== null && 'value' in value
-}
-
-/** Extract numeric value from StaticValue or CurveRef, defaulting to provided default */
+/** Extract numeric value from StaticFixed or CurveRef, defaulting to provided default */
 function extractValue(value: unknown, defaultValue: number): number {
-  if (isStaticValue(value)) {
+  if (isInteger(value)) {
     return value.value
   }
   // CurveRef - for now return default (TODO: implement curve evaluation)
@@ -94,7 +89,7 @@ export function makeEffectChain(ctx: BaseAudioContext, effects: AudioEffect[]): 
       input: passthrough,
       output: passthrough,
       elements,
-      dispose: () => {},
+      dispose: () => { },
     }
   }
 

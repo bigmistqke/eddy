@@ -126,9 +126,9 @@ export function Preview(props: PreviewProps) {
     // Load videos for all clips with URL sources across all media tracks
     for (const track of props.jam.project.mediaTracks) {
       for (const clip of track.clips) {
-        if (clip.source?.type !== 'url') continue
+        if (clip.type !== 'url') continue
 
-        const videoUrl = clip.source.url
+        const videoUrl = clip.url
         const clipId = clip.id
 
         try {

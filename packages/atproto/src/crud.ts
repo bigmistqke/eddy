@@ -2,25 +2,24 @@ import type { Agent } from '@atproto/api'
 import {
   absoluteValidators,
   absoluteWireValidators,
-  type AbsoluteClip,
-  type AbsoluteProject,
-  type Canvas,
-  type ClipSource,
-  type ClipSourceStem,
-  type Stem,
-  type StemRef,
+  isClipStem,
   stemValidators,
   stemWireValidators,
+  type AbsoluteProject,
+  type Canvas,
+  type MediaClip,
+  type Stem,
+  type StemRef
 } from '@eddy/lexicons'
 import { debug } from '@eddy/utils'
 import * as v from 'valibot'
 
 const log = debug('atproto:crud', false)
 
-/** Check if a clip source is a stem reference */
-function isStemSource(source: ClipSource | undefined): source is ClipSourceStem {
-  return source?.type === 'stem'
-}
+// /** Check if a clip source is a stem reference */
+// function isStemSource(source: Clip | undefined): source is ClipStem {
+//   return source?.type === 'stem'
+// }
 
 export interface RecordRef {
   uri: string
@@ -271,7 +270,7 @@ export async function publishProject(
   const stemRefs = new Map<string, StemRef>()
 
   // Collect all clips from all media tracks that need stem processing
-  const allClips: { trackId: string; clip: AbsoluteClip }[] = []
+  const allClips: { trackId: string; clip: MediaClip }[] = []
   for (const track of project.mediaTracks) {
     for (const clip of track.clips) {
       allClips.push({ trackId: track.id, clip })
@@ -290,14 +289,14 @@ export async function publishProject(
       }
 
       // Case 2: Existing stem source
-      if (isStemSource(clip.source)) {
-        const { repo } = parseAtUri(clip.source.ref.uri)
+      if (isClipStem(clip)) {
+        const { repo } = parseAtUri(clip.ref.uri)
         if (repo === myDid) {
           // Own stem - keep as is
-          stemRefs.set(clip.id, clip.source.ref)
+          stemRefs.set(clip.id, clip.ref)
         } else {
           // External stem - clone to own PDS
-          const cloned = await cloneStem(agent, clip.source.ref.uri)
+          const cloned = await cloneStem(agent, clip.ref.uri)
           stemRefs.set(clip.id, cloned)
         }
       }
@@ -313,7 +312,7 @@ export async function publishProject(
       // If we have a stem ref for this clip, use it; otherwise keep original source
       const source = stemRef
         ? { type: 'stem' as const, ref: stemRef }
-        : clip.source
+        : clip
       return {
         id: clip.id,
         source,
@@ -395,8 +394,8 @@ export async function deleteOrphanedStems(agent: Agent): Promise<string[]> {
       // Iterate over all media tracks and their clips
       for (const track of project.value.mediaTracks) {
         for (const clip of track.clips) {
-          if (isStemSource(clip.source)) {
-            referencedStems.add(clip.source.ref.uri)
+          if (isClipStem(clip)) {
+            referencedStems.add(clip.ref.uri)
           }
         }
       }

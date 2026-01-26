@@ -1,3 +1,4 @@
+import { isClipLayout } from '@eddy/lexicons'
 import {
   FiCircle,
   FiDownload,
@@ -9,13 +10,13 @@ import {
   FiVolume2,
 } from 'solid-icons/fi'
 import {
-  type Component,
   createEffect,
   createMemo,
   createSignal,
   Index,
   onMount,
   Show,
+  type Component,
 } from 'solid-js'
 import { useAuth } from '~/contexts/auth-context'
 import { createEditor } from '~/primitives/create-editor'
@@ -80,9 +81,9 @@ export const Editor: Component<EditorProps> = props => {
   const layout = createMemo(() => {
     const metadataTracks = editor.project().metadataTracks ?? []
     for (const track of metadataTracks) {
-      const layoutClip = track.clips.find(clip => clip.source?.type === 'layout')
-      if (layoutClip?.source?.type === 'layout') {
-        return layoutClip.source
+      const layoutClip = track.clips.find(isClipLayout)
+      if (layoutClip) {
+        return layoutClip
       }
     }
     return undefined

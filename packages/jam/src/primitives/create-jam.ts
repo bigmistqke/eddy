@@ -7,14 +7,15 @@
  */
 
 import type {
-  ClipSourceLayout,
+  Clip,
+  ClipLayout,
+  ClipUrl,
   JamColumnDuration,
   JamLayoutType,
   JamMetadata,
-  MediaTrackMusical,
-  MetadataTrackMusical,
-  MusicalClip,
-  MusicalProject,
+  LayoutTrack,
+  MediaTrack,
+  MusicalProject
 } from '@eddy/lexicons'
 import { getProjectDuration, musicalToAbsolute } from '@eddy/timeline'
 import { createEffect, createMemo, createSignal, on, onCleanup } from 'solid-js'
@@ -58,7 +59,7 @@ export interface LayoutRegion {
   endTick: number
   startColumn: number
   endColumn: number
-  source: ClipSourceLayout
+  clip: ClipLayout
 }
 
 /**********************************************************************************/
@@ -69,6 +70,7 @@ export interface LayoutRegion {
 
 function makeDefaultProject(): MusicalProject {
   return {
+    type: 'musical',
     schemaVersion: 1,
     title: 'Jam Session',
     canvas: { width: 640, height: 360 },
@@ -80,22 +82,22 @@ function makeDefaultProject(): MusicalProject {
         id: 'track-0',
         name: 'Track 1',
         clips: [
-          { id: 'clip-0', start: 0, duration: TICKS_PER_BAR * 3, source: { type: 'url', url: '/videos/big-buck-bunny.webm' } },
+          { id: 'clip-0', start: 0, duration: TICKS_PER_BAR * 3, type: 'url', url: '/videos/big-buck-bunny.webm' },
         ],
       },
       {
         id: 'track-1',
         name: 'Track 2',
         clips: [
-          { id: 'clip-1a', start: TICKS_PER_BAR, duration: TICKS_PER_BAR, source: { type: 'url', url: '/videos/sample-5s.webm' } },
-          { id: 'clip-1b', start: TICKS_PER_BAR * 2 + TICKS_PER_BAR / 2, duration: TICKS_PER_BAR, source: { type: 'url', url: '/videos/sample-5s.webm' } },
+          { id: 'clip-1a', start: TICKS_PER_BAR, duration: TICKS_PER_BAR, type: 'url', url: '/videos/sample-5s.webm' },
+          { id: 'clip-1b', start: TICKS_PER_BAR * 2 + TICKS_PER_BAR / 2, duration: TICKS_PER_BAR, type: 'url', url: '/videos/sample-5s.webm' },
         ],
       },
       {
         id: 'track-2',
         name: 'Track 3',
         clips: [
-          { id: 'clip-2', start: TICKS_PER_BAR * 2, duration: TICKS_PER_BAR * 2, source: { type: 'url', url: '/videos/sample-10s.webm' } },
+          { id: 'clip-2', start: TICKS_PER_BAR * 2, duration: TICKS_PER_BAR * 2, type: 'url', url: '/videos/sample-10s.webm' },
         ],
       },
       {
@@ -110,13 +112,13 @@ function makeDefaultProject(): MusicalProject {
         id: LAYOUT_TRACK_ID,
         name: 'Layout',
         clips: [
-          { id: 'layout-0', start: TICKS_PER_BAR * 0, duration: TICKS_PER_BAR, source: { type: 'layout', mode: 'grid', slots: ['track-0'], columns: 1, rows: 1 } },
-          { id: 'layout-1', start: TICKS_PER_BAR * 1, duration: TICKS_PER_BAR, source: { type: 'layout', mode: 'grid', slots: ['track-0', 'track-1', 'track-2', 'track-3'], columns: 2, rows: 2 } },
-          { id: 'layout-2', start: TICKS_PER_BAR * 2, duration: TICKS_PER_BAR, source: { type: 'layout', mode: 'grid', slots: ['track-0', 'track-1'], columns: 2, rows: 1 } },
-          { id: 'layout-3', start: TICKS_PER_BAR * 3, duration: TICKS_PER_BAR, source: { type: 'layout', mode: 'grid', slots: ['track-0', 'track-1'], columns: 2, rows: 1 } },
-          { id: 'layout-4', start: TICKS_PER_BAR * 4, duration: TICKS_PER_BAR, source: { type: 'layout', mode: 'grid', slots: ['track-0', 'track-1', 'track-2'], columns: 2, rows: 2 } },
+          { type: 'layout', id: 'clip-layout-0', start: TICKS_PER_BAR * 0, duration: TICKS_PER_BAR, mode: 'grid', slots: ['track-0'], columns: 1, rows: 1 },
+          { type: 'layout', id: 'clip-layout-1', start: TICKS_PER_BAR * 1, duration: TICKS_PER_BAR, mode: 'grid', slots: ['track-0', 'track-1', 'track-2', 'track-3'], columns: 2, rows: 2 },
+          { type: 'layout', id: 'clip-layout-2', start: TICKS_PER_BAR * 2, duration: TICKS_PER_BAR, mode: 'grid', slots: ['track-0', 'track-1'], columns: 2, rows: 1 },
+          { type: 'layout', id: 'clip-layout-3', start: TICKS_PER_BAR * 3, duration: TICKS_PER_BAR, mode: 'grid', slots: ['track-0', 'track-1'], columns: 2, rows: 1 },
+          { type: 'layout', id: 'clip-layout-4', start: TICKS_PER_BAR * 4, duration: TICKS_PER_BAR, mode: 'grid', slots: ['track-0', 'track-1', 'track-2'], columns: 2, rows: 2 },
         ],
-      },
+      } satisfies LayoutTrack,
     ],
     createdAt: new Date().toISOString(),
   }
@@ -265,7 +267,7 @@ export function createJam(options: CreateJamOptions) {
     const regions: LayoutRegion[] = []
 
     for (const clip of track.clips) {
-      if (!clip.source || clip.source.type !== 'layout') continue
+      if (clip.type !== 'layout') continue
 
       const startTick = clip.start
       const endTick = clip.start + (clip.duration ?? 0)
@@ -292,7 +294,7 @@ export function createJam(options: CreateJamOptions) {
         endTick,
         startColumn,
         endColumn,
-        source: clip.source,
+        clip: clip,
       })
     }
 
@@ -335,13 +337,13 @@ export function createJam(options: CreateJamOptions) {
   }
 
   /** Get clips for a media track (clips are inline) */
-  function getClipsForTrack(trackId: string): MusicalClip[] {
+  function getClipsForTrack(trackId: string): Clip[] {
     const track = project.mediaTracks.find(t => t.id === trackId)
     return track?.clips ?? []
   }
 
   /** Find media track containing a clip */
-  function findTrackContainingClip(clipId: string): { track: MediaTrackMusical; clipIndex: number } | null {
+  function findTrackContainingClip(clipId: string): { track: MediaTrack; clipIndex: number } | null {
     for (const track of project.mediaTracks) {
       const clipIndex = track.clips.findIndex(c => c.id === clipId)
       if (clipIndex !== -1) {
@@ -352,7 +354,7 @@ export function createJam(options: CreateJamOptions) {
   }
 
   /** Find clip by ID in media tracks */
-  function getClipById(clipId: string): MusicalClip | undefined {
+  function getClipById(clipId: string): Clip | undefined {
     for (const track of project.mediaTracks) {
       const clip = track.clips.find(c => c.id === clipId)
       if (clip) return clip
@@ -462,14 +464,16 @@ export function createJam(options: CreateJamOptions) {
     if (columnStartTick === undefined || columnEndTick === undefined) return ''
 
     const clipId = `clip-${generateId()}`
-    const newClip: MusicalClip = {
+    const newClip: Clip = {
       id: clipId,
       start: columnStartTick,
       duration: columnEndTick - columnStartTick,
+      type: 'url',
+      url: ''
     }
 
     // Add clip directly to track's clips array
-    setProject('mediaTracks', trackIndex, 'clips', clips => [...clips, newClip])
+    setProject('mediaTracks', trackIndex, 'clips', produce(clips => [...clips, newClip]))
 
     return clipId
   }
@@ -820,30 +824,30 @@ export function createJam(options: CreateJamOptions) {
     )
   }
 
-  /** Get layout type string from layout source */
-  function layoutSourceToType(source: ClipSourceLayout): string {
-    const { mode, columns, rows } = source
-    if (mode === 'pip') return 'pip'
-    if (mode === 'split') return 'h-split'
-    if (mode === 'focus') return 'full'
-    // Grid mode - determine by dimensions
-    if (columns === 1 && rows === 1) return 'full'
-    if (columns === 2 && rows === 1) return 'h-split'
-    if (columns === 1 && rows === 2) return 'v-split'
-    if (columns === 2 && rows === 2) return '2x2'
-    return `${columns}x${rows}`
-  }
+  // /** Get layout type string from layout source */
+  // function layoutSourceToType(source: ClipSourceLayout): string {
+  //   const { mode, columns, rows } = source
+  //   if (mode === 'pip') return 'pip'
+  //   if (mode === 'split') return 'h-split'
+  //   if (mode === 'focus') return 'full'
+  //   // Grid mode - determine by dimensions
+  //   if (columns === 1 && rows === 1) return 'full'
+  //   if (columns === 2 && rows === 1) return 'h-split'
+  //   if (columns === 1 && rows === 2) return 'v-split'
+  //   if (columns === 2 && rows === 2) return '2x2'
+  //   return `${columns}x${rows}`
+  // }
 
   /** Convert layout type string to layout source */
-  function typeToLayoutSource(type: string): ClipSourceLayout {
+  function typeToLayout(type: string, config: Pick<ClipLayout, 'start' | 'duration' | 'id'>): ClipLayout {
     switch (type) {
-      case 'full': return { type: 'layout', mode: 'focus', slots: [] }
-      case 'h-split': return { type: 'layout', mode: 'grid', slots: [], columns: 2, rows: 1 }
-      case 'v-split': return { type: 'layout', mode: 'grid', slots: [], columns: 1, rows: 2 }
-      case '2x2': return { type: 'layout', mode: 'grid', slots: [], columns: 2, rows: 2 }
-      case '3-up': return { type: 'layout', mode: 'grid', slots: [], columns: 2, rows: 2 }
-      case 'pip': return { type: 'layout', mode: 'pip', slots: [] }
-      default: return { type: 'layout', mode: 'focus', slots: [] }
+      case 'full': return { type: 'layout', mode: 'focus', slots: [], ...config }
+      case 'h-split': return { type: 'layout', mode: 'grid', slots: [], columns: 2, rows: 1, ...config }
+      case 'v-split': return { type: 'layout', mode: 'grid', slots: [], columns: 1, rows: 2, ...config }
+      case '2x2': return { type: 'layout', mode: 'grid', slots: [], columns: 2, rows: 2, ...config }
+      case '3-up': return { type: 'layout', mode: 'grid', slots: [], columns: 2, rows: 2, ...config }
+      case 'pip': return { type: 'layout', mode: 'pip', slots: [], ...config }
+      default: return { type: 'layout', mode: 'focus', slots: [], ...config }
     }
   }
 
@@ -875,17 +879,15 @@ export function createJam(options: CreateJamOptions) {
       )
     }
 
-    // Convert layout type to source
-    const layoutSource = typeToLayoutSource(layoutType)
-
     // Create new layout clip with layout source directly
     const clipId = `layout-${generateId()}`
-    const newClip: MusicalClip = {
+
+    // Convert layout type to source
+    const newClip = typeToLayout(layoutType, {
       id: clipId,
       start: startTick,
       duration: endTick - startTick,
-      source: layoutSource,
-    }
+    })
 
     // Add to layout track
     setProject('metadataTracks', layoutTrackIndex, 'clips', clips => [...clips, newClip])
@@ -922,10 +924,10 @@ export function createJam(options: CreateJamOptions) {
     if (clipIndex === -1) return
 
     const clip = track.clips[clipIndex]
-    if (clip.source?.type !== 'layout') return
+    if (clip.type !== 'layout') return
 
     // Create updated slots array from current store state
-    const currentSlots = [...clip.source.slots]
+    const currentSlots = [...clip.slots]
 
     // Ensure slots array is large enough
     while (currentSlots.length <= slotIndex) {
@@ -940,25 +942,19 @@ export function createJam(options: CreateJamOptions) {
     // Assign to target slot
     updatedSlots[slotIndex] = trackId ?? ''
 
-    // Create new source with updated slots
-    const newSource: ClipSourceLayout = {
-      ...clip.source,
-      slots: updatedSlots,
-    }
-
-    setProject('metadataTracks', layoutTrackIndex, 'clips', clipIndex, 'source', newSource)
+    setProject('metadataTracks', layoutTrackIndex, 'clips', clipIndex, 'slots', updatedSlots)
   }
 
   /** Check if a track is in the layout region containing a column */
   function isTrackInColumn(columnIndex: number, trackId: string): boolean {
     const region = getLayoutRegionForColumn(columnIndex)
-    return region?.source.slots.includes(trackId) ?? false
+    return region?.clip.slots.includes(trackId) ?? false
   }
 
   /** Get slot index for a track in the region containing a column */
   function getTrackSlotIndex(columnIndex: number, trackId: string): number | null {
     const region = getLayoutRegionForColumn(columnIndex)
-    const index = region?.source.slots.indexOf(trackId) ?? -1
+    const index = region?.clip.slots.indexOf(trackId) ?? -1
     return index >= 0 ? index : null
   }
 
@@ -976,10 +972,10 @@ export function createJam(options: CreateJamOptions) {
     if (clipIndex === -1) return
 
     // Get new layout source, preserving existing slots
-    const newSource = typeToLayoutSource(layoutType)
-    newSource.slots = region.source.slots
+    const newClip = typeToLayout(layoutType, region.clip)
+    newClip.slots = region.clip.slots
 
-    setProject('metadataTracks', layoutTrackIndex, 'clips', clipIndex, 'source', newSource)
+    setProject('metadataTracks', layoutTrackIndex, 'clips', clipIndex, newClip)
   }
 
   /**********************************************************************************/
@@ -990,7 +986,7 @@ export function createJam(options: CreateJamOptions) {
 
   function addTrack(name?: string, videoUrl?: string) {
     const trackId = `track-${generateId()}`
-    const clips: MusicalClip[] = []
+    const clips: ClipUrl[] = []
 
     // If a video URL is provided, create a clip that spans the full timeline
     if (videoUrl) {
@@ -1000,11 +996,12 @@ export function createJam(options: CreateJamOptions) {
         id: clipId,
         start: 0,
         duration: totalTicks,
-        source: { type: 'url', url: videoUrl },
+        type: 'url',
+        url: videoUrl
       })
     }
 
-    const track: MediaTrackMusical = {
+    const track: MediaTrack = {
       id: trackId,
       name: name ?? `Track ${project.mediaTracks.length + 1}`,
       clips,
@@ -1026,12 +1023,8 @@ export function createJam(options: CreateJamOptions) {
       const track = project.metadataTracks![layoutTrackIndex]
       for (let clipIndex = 0; clipIndex < track.clips.length; clipIndex++) {
         const clip = track.clips[clipIndex]
-        if (clip.source?.type === 'layout') {
-          const newSource: ClipSourceLayout = {
-            ...clip.source,
-            slots: clip.source.slots.map(slot => slot === trackId ? '' : slot),
-          }
-          setProject('metadataTracks', layoutTrackIndex, 'clips', clipIndex, 'source', newSource)
+        if (clip.type === 'layout') {
+          setProject('metadataTracks', layoutTrackIndex, 'clips', clipIndex, 'slots', (slot) => slot === trackId, '')
         }
       }
     }

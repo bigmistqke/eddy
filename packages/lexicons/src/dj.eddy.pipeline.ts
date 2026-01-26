@@ -15,8 +15,7 @@ export default {
           description: 'Target bus ID (track, group, or special bus)',
         },
         amount: {
-          type: 'ref',
-          ref: 'dj.eddy.value.static#fixed',
+          type: 'integer',
           description: 'Output amount (0-100)',
         },
       },

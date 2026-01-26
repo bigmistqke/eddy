@@ -11,7 +11,8 @@
     }
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && pnpm build:types",
+    "build:types": "node scripts/build-types.ts",
     "dev": "tsup --watch",
     "types": "tsc --noEmit"
   },
@@ -22,6 +23,7 @@
     "valibot": "^1.2.0"
   },
   "devDependencies": {
+    "ts-morph": "^24.0.0",
     "typescript": "^5.7.0"
   },
   "peerDependencies": {

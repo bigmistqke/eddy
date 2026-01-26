@@ -18,6 +18,7 @@
     "test:browser:run": "pnpm --filter @eddy/codecs test:browser:run",
     "perf": "node --experimental-strip-types scripts/perf-test.ts",
     "types": "pnpm -r types",
+    "types:app": "pnpm  --filter @eddy/app types",
     "sync-issues": "node --experimental-strip-types scripts/sync-graph-to-issues.ts"
   },
   "devDependencies": {

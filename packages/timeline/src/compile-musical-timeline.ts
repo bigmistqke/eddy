@@ -5,7 +5,7 @@
  * Uses the same runtime query approach as absolute timeline.
  */
 
-import type { MusicalClip, MusicalProject, AbsoluteProject, AbsoluteClip } from '@eddy/lexicons'
+import type { AbsoluteProject, Clip, MusicalProject } from '@eddy/lexicons'
 import type { CanvasSize, Placement } from './compile-absolute-timeline'
 import { getPlacementsAtTime as getAbsolutePlacementsAtTime, getProjectDuration as getAbsoluteProjectDuration } from './compile-absolute-timeline'
 
@@ -33,18 +33,12 @@ function ticksToMs(ticks: number, bpm: number, ppq: number): number {
   return Math.round(ticks * msPerTick)
 }
 
-/** Convert a MusicalClip to AbsoluteClip */
-function convertClip(clip: MusicalClip, bpm: number, ppq: number): AbsoluteClip {
+/** Convert a music Clip to an absolute Clip */
+function musicalClipToAbsoluteClip<T extends Clip>(clip: T, bpm: number, ppq: number): T {
   return {
-    id: clip.id,
-    source: clip.source,
+    ...clip,
     start: ticksToMs(clip.start, bpm, ppq),
     duration: clip.duration !== undefined ? ticksToMs(clip.duration, bpm, ppq) : undefined,
-    offset: clip.offset !== undefined ? ticksToMs(clip.offset, bpm, ppq) : undefined,
-    speed: clip.speed,
-    reverse: clip.reverse,
-    audioPipeline: clip.audioPipeline,
-    visualPipeline: clip.visualPipeline,
   }
 }
 
@@ -63,7 +57,7 @@ export function musicalToAbsolute(project: MusicalProject): AbsoluteProject {
   const mediaTracks = project.mediaTracks.map(track => ({
     id: track.id,
     name: track.name,
-    clips: track.clips.map(clip => convertClip(clip, bpm, ppq)),
+    clips: track.clips.map(clip => musicalClipToAbsoluteClip(clip, bpm, ppq)),
     audioPipeline: track.audioPipeline,
     visualPipeline: track.visualPipeline,
     muted: track.muted,
@@ -71,23 +65,18 @@ export function musicalToAbsolute(project: MusicalProject): AbsoluteProject {
   }))
 
   // Convert metadata tracks
-  const metadataTracks = (project.metadataTracks ?? []).map(track => ({
+  const metadataTracks = project.metadataTracks?.map(track => ({
     id: track.id,
     name: track.name,
-    clips: track.clips.map(clip => convertClip(clip, bpm, ppq)),
+    clips: track.clips.map(clip => musicalClipToAbsoluteClip(clip, bpm, ppq)),
   }))
 
   return {
-    schemaVersion: project.schemaVersion,
-    title: project.title,
-    description: project.description,
+    ...project,
+    type: 'absolute',
     duration: project.durationTicks !== undefined ? ticksToMs(project.durationTicks, bpm, ppq) : undefined,
-    canvas: project.canvas,
     mediaTracks,
     metadataTracks,
-    parent: project.parent,
-    createdAt: project.createdAt,
-    updatedAt: project.updatedAt,
   }
 }
 
