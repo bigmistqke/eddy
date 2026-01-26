@@ -1,5 +1,21 @@
 [
   {
+    "hash": "4135539419bc307f2b479b2732da3dd9d9c145dc",
+    "short_hash": "4135539",
+    "author": "bigmistqke",
+    "date": "2026-01-26T22:52:19+01:00",
+    "message": "refactor: simplify lexicon schemas and adapt consumers\n\n- Remove unused pipeline/value lexicons\n- Add vector value types and codegen scripts\n- Update timeline, jam, and app packages",
+    "files_changed": 27
+  },
+  {
+    "hash": "765e37ff47e4b56b1fc5904b9c30a5140161f254",
+    "short_hash": "765e37f",
+    "author": "bigmistqke",
+    "date": "2026-01-26T22:46:47+01:00",
+    "message": "fix: multi-clip recording and playback\n\n- Fix hasClip/clearClip using clipId instead of trackId\n- Re-initialize muxer after reset for subsequent recordings\n- Fix SolidJS reactivity for compositor project sync\n- Add fine-grained tracking of clips array for store mutations",
+    "files_changed": 4
+  },
+  {
     "hash": "765e37ff47e4b56b1fc5904b9c30a5140161f254",
     "short_hash": "765e37f",
     "author": "bigmistqke",
@@ -46,14 +62,6 @@
     "date": "2026-01-25T23:26:33+01:00",
     "message": "chore: sync deciduous graph",
     "files_changed": 2
-  },
-  {
-    "hash": "54f2823b03052bd2232fe5156f907091a57ed9a6",
-    "short_hash": "54f2823",
-    "author": "bigmistqke",
-    "date": "2026-01-25T23:26:16+01:00",
-    "message": "refactor: rename clip.offset→start, add offset field for time shift\n\n- Renamed `offset`→`start` (position on timeline in ms/ticks)\n- Renamed `ticks`→`duration` for consistency\n- Added new `offset` field for time shift into content:\n  - For stem/url clips: source in-point\n  - For group clips: shifts nested content time reference\n- Updated timeline compilers to use new fields\n- Updated create-editor.ts to use clipIds model (track.clipIds + project.clips)\n- Layout clips now use offset: -start to make content flow through time",
-    "files_changed": 10
   },
   {
     "hash": "54f2823b03052bd2232fe5156f907091a57ed9a6",

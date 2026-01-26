@@ -22,18 +22,18 @@ import strongRefLexicon from '@bigmistqke/typed-lexicons/com/atproto/repo/strong
 import * as v from "valibot"
 
 // Lexicon imports
-import absoluteLexicon from './dj.eddy.absolute'
-import audioEffectLexicon from './dj.eddy.audio.effect'
-import canvasLexicon from './dj.eddy.canvas'
-import clipLexicon from './dj.eddy.clip'
-import jamLexicon from './dj.eddy.jam'
-import musicalLexicon from './dj.eddy.musical'
-import pipelineLexicon from './dj.eddy.pipeline'
-import stemLexicon from './dj.eddy.stem'
-import trackLexicon from './dj.eddy.track'
-import curveLexicon from './dj.eddy.value.curve'
-import vectorLexicon from './dj.eddy.value.vector'
-import visualEffectLexicon from './dj.eddy.visual.effect'
+import absoluteLexicon from './lexicons/dj.eddy.absolute'
+import audioEffectLexicon from './lexicons/dj.eddy.audio.effect'
+import canvasLexicon from './lexicons/dj.eddy.canvas'
+import clipLexicon from './lexicons/dj.eddy.clip'
+import jamLexicon from './lexicons/dj.eddy.jam'
+import musicalLexicon from './lexicons/dj.eddy.musical'
+import pipelineLexicon from './lexicons/dj.eddy.pipeline'
+import stemLexicon from './lexicons/dj.eddy.stem'
+import trackLexicon from './lexicons/dj.eddy.track'
+import curveLexicon from './lexicons/dj.eddy.value.curve'
+import vectorLexicon from './lexicons/dj.eddy.value.vector'
+import visualEffectLexicon from './lexicons/dj.eddy.visual.effect'
 
 const lookup = createLookup(
     absoluteLexicon,
@@ -99,6 +99,10 @@ export const isClipStem = (clip: any): clip is ClipStem => {
     return v.safeParse(clipValidators['clip.stem'], clip).success
 }
 
+export const isClipUrl = (clip: any): clip is ClipUrl => {
+    return v.safeParse(clipValidators['clip.url'], clip).success
+}
+
 export const isClipLayout = (clip: any): clip is ClipLayout => {
     return v.safeParse(clipValidators['clip.layout'], clip).success
 }
@@ -116,10 +120,10 @@ export const isInteger = (value: any): value is Integer => {
 export type Integer = v.InferOutput<typeof integerValidator>
 
 // Absolute time domain (ms)
-export type AbsoluteProject = v.InferOutput<typeof absoluteValidators.project>
+export type AbsoluteProject = v.InferOutput<typeof absoluteValidators.main>
 
 // Musical time domain (bars)
-export type MusicalProject = v.InferOutput<typeof musicalValidators.project>
+export type MusicalProject = v.InferOutput<typeof musicalValidators.main>
 export type TimeSignature = v.InferOutput<typeof musicalValidators.timeSignature>
 
 // Union types for generic handling

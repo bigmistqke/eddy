@@ -11,7 +11,7 @@ export default {
   lexicon: 1,
   id: 'dj.eddy.absolute',
   defs: {
-    project: {
+    main: {
       type: 'record',
       description: 'A project with absolute timing (milliseconds)',
       key: 'tid',

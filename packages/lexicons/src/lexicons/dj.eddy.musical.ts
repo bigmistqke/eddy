@@ -11,7 +11,7 @@ export default {
   lexicon: 1,
   id: 'dj.eddy.musical',
   defs: {
-    project: {
+    main: {
       type: 'record',
       description: 'A project with musical timing (bars/beats)',
       key: 'tid',

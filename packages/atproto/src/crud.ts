@@ -3,10 +3,12 @@ import {
   absoluteValidators,
   absoluteWireValidators,
   isClipStem,
+  isClipUrl,
   stemValidators,
   stemWireValidators,
   type AbsoluteProject,
   type Canvas,
+  type ClipUrl,
   type MediaClip,
   type Stem,
   type StemRef
@@ -64,7 +66,7 @@ export async function getProject(agent: Agent, uri: string): Promise<ProjectReco
   return {
     uri: response.data.uri,
     cid: response.data.cid ?? '',
-    value: v.parse(absoluteValidators.project, response.data.value),
+    value: v.parse(absoluteValidators.main, response.data.value),
   }
 }
 
@@ -193,7 +195,7 @@ export async function listProjects(agent: Agent): Promise<ProjectListItem[]> {
   })
 
   return response.data.records.map(record => {
-    const project = v.parse(absoluteValidators.project, record.value)
+    const project = v.parse(absoluteValidators.main, record.value)
     const { rkey } = parseAtUri(record.uri)
     return {
       uri: record.uri,
@@ -277,18 +279,25 @@ export async function publishProject(
     }
   }
 
-  // Process stems in parallel
+  // Helper to check if a URL clip uses opfs:// (local storage)
+  const isOpfsUrl = (clip: MediaClip): clip is ClipUrl =>
+    isClipUrl(clip) && clip.url.startsWith('opfs://')
+
+  // Process clips in parallel - upload local recordings, clone external stems
   await Promise.all(
     allClips.map(async ({ clip }) => {
-      // Case 1: New local recording - create stem
-      const localBlob = clipBlobs.get(clip.id)
-      if (localBlob) {
+      // Case 1: Local recording (opfs:// URL) - must have blob, upload as stem
+      if (isOpfsUrl(clip)) {
+        const localBlob = clipBlobs.get(clip.id)
+        if (!localBlob) {
+          throw new Error(`Local clip ${clip.id} has no blob - cannot publish`)
+        }
         const stemRecord = await makeStemRecord(agent, localBlob.blob, localBlob.duration)
         stemRefs.set(clip.id, stemRecord)
         return
       }
 
-      // Case 2: Existing stem source
+      // Case 2: Existing stem source - keep or clone
       if (isClipStem(clip)) {
         const { repo } = parseAtUri(clip.ref.uri)
         if (repo === myDid) {
@@ -300,25 +309,40 @@ export async function publishProject(
           stemRefs.set(clip.id, cloned)
         }
       }
+
+      // Case 3: URL clips (http/https) and project clips pass through unchanged
     }),
   )
 
   // Build media tracks with updated clip sources
   const mediaTracks = project.mediaTracks.map(track => ({
+    type: 'media' as const,
     id: track.id,
     name: track.name,
-    clips: track.clips.map(clip => {
+    clips: track.clips.map((clip): MediaClip => {
       const stemRef = stemRefs.get(clip.id)
-      // If we have a stem ref for this clip, use it; otherwise keep original source
-      const source = stemRef
-        ? { type: 'stem' as const, ref: stemRef }
-        : clip
-      return {
-        id: clip.id,
-        source,
-        start: clip.start,
-        duration: clip.duration,
+
+      // Local opfs:// clips get converted to stems
+      if (stemRef && isOpfsUrl(clip)) {
+        return {
+          type: 'stem',
+          id: clip.id,
+          ref: stemRef,
+          start: clip.start,
+          duration: clip.duration,
+        }
       }
+
+      // Stem clips use updated ref (in case it was cloned)
+      if (isClipStem(clip)) {
+        return {
+          ...clip,
+          ref: stemRef ?? clip.ref,
+        }
+      }
+
+      // URL (http/https) and project clips pass through unchanged
+      return clip
     }),
     audioPipeline: track.audioPipeline,
     visualPipeline: track.visualPipeline,
@@ -326,8 +350,8 @@ export async function publishProject(
 
   // Build and validate project record
   const canvas = project.canvas as Canvas
-  const record = v.parse(absoluteWireValidators.project, {
-    $type: 'dj.eddy.absolute',
+  const record = v.parse(absoluteWireValidators.main, {
+    type: 'absolute',
     schemaVersion: 1,
     title: project.title,
     canvas: {
@@ -337,14 +361,17 @@ export async function publishProject(
     mediaTracks,
     metadataTracks: project.metadataTracks,
     createdAt: project.createdAt,
-  })
+  } satisfies AbsoluteProject)
 
   log('creating project record', record)
 
   const response = await agent.com.atproto.repo.createRecord({
     repo: agent.assertDid,
     collection: 'dj.eddy.absolute',
-    record,
+    record: {
+      $type: 'dj.eddy.absolute',
+      ...record,
+    },
   })
 
   return {
