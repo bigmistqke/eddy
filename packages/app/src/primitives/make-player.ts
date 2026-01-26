@@ -1,6 +1,6 @@
 import { rpc, transfer, type RPC } from '@bigmistqke/rpc/messenger'
 import { makeAudioBus, type AudioBus, type AudioBusOutput } from '@eddy/audio'
-import type { AudioPipeline, MediaTrack, Project, StaticValue } from '@eddy/lexicons'
+import type { AbsoluteProject, AudioPipeline, Integer, Project } from '@eddy/lexicons'
 import { createClock, type Clock } from '@eddy/solid'
 import { getProjectDuration } from '@eddy/timeline'
 import { debug, makeLoop, makeMonitor } from '@eddy/utils'
@@ -37,7 +37,7 @@ const counters: Array<{
 
 // Expose perf stats globally for console debugging
 if (typeof window !== 'undefined') {
-  ;(window as any).eddy = { monitor }
+  ; (window as any).eddy = { monitor }
 }
 
 /**********************************************************************************/
@@ -146,7 +146,7 @@ export interface CreatePlayerOptions {
   canvas: HTMLCanvasElement
   width: number
   height: number
-  project: Accessor<Project>
+  project: Accessor<AbsoluteProject>
   schedulerBuffer: SchedulerBuffer
 }
 
@@ -173,9 +173,9 @@ interface ClipEntry {
 /**********************************************************************************/
 
 /**
- * Resolve a StaticValue to a number (0-100 scale from lexicon -> 0-1 for audio).
+ * Resolve a StaticFixed to a number (0-100 scale from lexicon -> 0-1 for audio).
  */
-function resolveStaticValue(value: StaticValue | undefined, defaultValue: number): number {
+function resolveStaticFixed(value: Integer | undefined, defaultValue: number): number {
   if (!value) return defaultValue
   return value.value / 100
 }
@@ -184,7 +184,7 @@ function resolveStaticValue(value: StaticValue | undefined, defaultValue: number
  * Inject a preview clip into a track, replacing its existing clips.
  * Used when a track is in preview mode.
  */
-function injectPreviewClip(project: Project, previewTrackId: string): Project {
+function injectPreviewClip<T extends Project>(project: T, previewTrackId: string): T {
   return {
     ...project,
     mediaTracks: project.mediaTracks.map(track => {
@@ -193,9 +193,11 @@ function injectPreviewClip(project: Project, previewTrackId: string): Project {
         ...track,
         clips: [
           {
+            type: 'url', // Required for isMediaClip to recognize this as a media clip
             id: PREVIEW_CLIP_ID,
             start: 0,
             duration: Number.MAX_SAFE_INTEGER, // Effectively infinite
+            url: 'preview://', // Virtual URL for preview stream
           },
         ],
       }
@@ -206,7 +208,7 @@ function injectPreviewClip(project: Project, previewTrackId: string): Project {
 /**
  * Inject preview clips for multiple tracks.
  */
-function injectPreviewClips(project: Project, previewTrackIds: Set<string>): Project {
+function injectPreviewClips<T extends Project>(project: T, previewTrackIds: Set<string>): T {
   if (previewTrackIds.size === 0) return project
 
   let result = project
@@ -226,8 +228,7 @@ function injectPreviewClips(project: Project, previewTrackIds: Set<string>): Pro
  * Create a player that manages compositor, playback workers, and audio pipelines.
  * Uses direct worker-to-worker frame transfer for video.
  */
-export async function makePlayer(options: CreatePlayerOptions): Promise<Player> {
-  const { canvas: canvasElement, width, height, project, schedulerBuffer } = options
+export async function makePlayer({ canvas: canvasElement, width, height, project, schedulerBuffer }: CreatePlayerOptions): Promise<Player> {
   log('makePlayer', { width, height, schedulerBuffer })
 
   // Set canvas size and transfer to worker
@@ -340,7 +341,7 @@ export async function makePlayer(options: CreatePlayerOptions): Promise<Player> 
 
       resolved.push({
         destination,
-        amount: resolveStaticValue(output.amount, 1),
+        amount: output.amount / 100,
       })
     }
 

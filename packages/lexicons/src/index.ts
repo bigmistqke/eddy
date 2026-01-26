@@ -14,12 +14,12 @@
  */
 
 import {
-  createLookup,
-  lexiconToValibot,
-  type InferLexiconOutput,
+    createLookup,
+    lexiconToValibot,
+    type InferLexiconOutput
 } from '@bigmistqke/lexicon-to-valibot'
 import strongRefLexicon from '@bigmistqke/typed-lexicons/com/atproto/repo/strongRef'
-import type * as v from 'valibot'
+import * as v from "valibot"
 
 // Lexicon imports
 import absoluteLexicon from './dj.eddy.absolute'
@@ -32,27 +32,29 @@ import pipelineLexicon from './dj.eddy.pipeline'
 import stemLexicon from './dj.eddy.stem'
 import trackLexicon from './dj.eddy.track'
 import curveLexicon from './dj.eddy.value.curve'
-import fixedLexicon from './dj.eddy.value.static'
+import vectorLexicon from './dj.eddy.value.vector'
 import visualEffectLexicon from './dj.eddy.visual.effect'
 
 const lookup = createLookup(
-  absoluteLexicon,
-  audioEffectLexicon,
-  canvasLexicon,
-  clipLexicon,
-  curveLexicon,
-  fixedLexicon,
-  jamLexicon,
-  musicalLexicon,
-  pipelineLexicon,
-  stemLexicon,
-  strongRefLexicon,
-  trackLexicon,
-  visualEffectLexicon,
+    absoluteLexicon,
+    audioEffectLexicon,
+    canvasLexicon,
+    clipLexicon,
+    curveLexicon,
+    vectorLexicon,
+    jamLexicon,
+    musicalLexicon,
+    pipelineLexicon,
+    stemLexicon,
+    strongRefLexicon,
+    trackLexicon,
+    visualEffectLexicon,
 )
 
 const sdkConfig = { lookup, format: 'sdk' } as const
 const wireConfig = { lookup, format: 'wire' } as const
+
+const integerValidator = v.object({ type: v.literal('integer'), value: v.number() })
 
 /**********************************************************************************/
 /*                                                                                */
@@ -69,7 +71,7 @@ export const canvasValidators = lexiconToValibot(canvasLexicon, sdkConfig)
 export const stemValidators = lexiconToValibot(stemLexicon, sdkConfig)
 export const audioEffectValidators = lexiconToValibot(audioEffectLexicon, sdkConfig)
 export const visualEffectValidators = lexiconToValibot(visualEffectLexicon, sdkConfig)
-export const valuesValidators = lexiconToValibot(fixedLexicon, sdkConfig)
+export const valuesValidators = lexiconToValibot(vectorLexicon, sdkConfig)
 export const curveValidators = lexiconToValibot(curveLexicon, sdkConfig)
 export const trackValidators = lexiconToValibot(trackLexicon, sdkConfig)
 export const clipValidators = lexiconToValibot(clipLexicon, sdkConfig)
@@ -82,63 +84,71 @@ export const musicalWireValidators = lexiconToValibot(musicalLexicon, wireConfig
 export const stemWireValidators = lexiconToValibot(stemLexicon, wireConfig)
 export const audioEffectWireValidators = lexiconToValibot(audioEffectLexicon, wireConfig)
 export const visualEffectWireValidators = lexiconToValibot(visualEffectLexicon, wireConfig)
-export const valuesWireValidators = lexiconToValibot(fixedLexicon, wireConfig)
+export const valuesWireValidators = lexiconToValibot(vectorLexicon, wireConfig)
 export const curveWireValidators = lexiconToValibot(curveLexicon, wireConfig)
 export const jamWireValidators = lexiconToValibot(jamLexicon, wireConfig)
 export const pipelineWireValidators = lexiconToValibot(pipelineLexicon, wireConfig)
 
+export const isMediaClip = (clip: any): clip is MediaClip => {
+    return v.safeParse(clipValidators['clip.project'], clip).success ||
+        v.safeParse(clipValidators['clip.stem'], clip).success ||
+        v.safeParse(clipValidators['clip.url'], clip).success
+}
+
+export const isClipStem = (clip: any): clip is ClipStem => {
+    return v.safeParse(clipValidators['clip.stem'], clip).success
+}
+
+export const isClipLayout = (clip: any): clip is ClipLayout => {
+    return v.safeParse(clipValidators['clip.layout'], clip).success
+}
+
+export const isInteger = (value: any): value is Integer => {
+    return v.safeParse(integerValidator, value).success
+}
+
 /**********************************************************************************/
 /*                                                                                */
-/*                              Time Domain Types                                 */
+/*                                      Types                                     */
 /*                                                                                */
 /**********************************************************************************/
+
+export type Integer = v.InferOutput<typeof integerValidator>
 
 // Absolute time domain (ms)
 export type AbsoluteProject = v.InferOutput<typeof absoluteValidators.project>
-export type AbsoluteClip = v.InferOutput<typeof absoluteValidators.clip>
 
 // Musical time domain (bars)
 export type MusicalProject = v.InferOutput<typeof musicalValidators.project>
-export type MusicalClip = v.InferOutput<typeof musicalValidators.clip>
 export type TimeSignature = v.InferOutput<typeof musicalValidators.timeSignature>
 
 // Union types for generic handling
 export type Project = AbsoluteProject | MusicalProject
-export type Clip = AbsoluteClip | MusicalClip
-
-/**********************************************************************************/
-/*                                                                                */
-/*                                 Shared Types                                   */
-/*                                                                                */
-/**********************************************************************************/
 
 // Canvas
 export type Canvas = v.InferOutput<typeof canvasValidators.canvas>
 
 // Track types (with inline clips)
-export type MediaTrackAbsolute = v.InferOutput<(typeof trackValidators)['media.absolute']>
-export type MediaTrackMusical = v.InferOutput<(typeof trackValidators)['media.musical']>
-export type MetadataTrackAbsolute = v.InferOutput<(typeof trackValidators)['metadata.absolute']>
-export type MetadataTrackMusical = v.InferOutput<(typeof trackValidators)['metadata.musical']>
-export type MediaTrack = MediaTrackAbsolute | MediaTrackMusical
-export type MetadataTrack = MetadataTrackAbsolute | MetadataTrackMusical
-export type Track = MediaTrack | MetadataTrack
+export type MediaTrack = v.InferOutput<(typeof trackValidators)['media']>
+export type LayoutTrack = v.InferOutput<(typeof trackValidators)['layout']>
+export type Track = MediaTrack | LayoutTrack
 
 // Clip sources (shared)
-export type ClipSourceStem = v.InferOutput<(typeof clipValidators)['source.stem']>
-export type ClipSourceUrl = v.InferOutput<(typeof clipValidators)['source.url']>
-export type ClipSourceProject = v.InferOutput<(typeof clipValidators)['source.project']>
-export type ClipSourceLayout = v.InferOutput<(typeof clipValidators)['source.layout']>
-export type ClipSource = ClipSourceStem | ClipSourceUrl | ClipSourceProject | ClipSourceLayout
+export type ClipStem = v.InferOutput<(typeof clipValidators)['clip.stem']>
+export type ClipUrl = v.InferOutput<(typeof clipValidators)['clip.url']>
+export type ClipProject = v.InferOutput<(typeof clipValidators)['clip.project']>
+export type ClipLayout = v.InferOutput<(typeof clipValidators)['clip.layout']>
+
+export type MediaClip = ClipStem | ClipUrl | ClipProject
+export type MetadataClip = ClipLayout
+
+export type Clip = MediaClip | MetadataClip
 
 // Value types
-export type StaticValue = v.InferOutput<typeof valuesValidators.fixed>
 export type StaticVec2 = v.InferOutput<typeof valuesValidators.vec2>
 export type StaticVec3 = v.InferOutput<typeof valuesValidators.vec3>
 export type StaticVec4 = v.InferOutput<typeof valuesValidators.vec4>
-export type StaticBlendMode = v.InferOutput<typeof valuesValidators.blendMode>
 export type CustomParams = v.InferOutput<typeof valuesValidators.customParams>
-export type Value = StaticValue
 
 // Pipeline types
 export type PipelineOutput = v.InferOutput<typeof pipelineValidators.output>
@@ -173,13 +183,13 @@ export type VisualEffectSaturation = v.InferOutput<typeof visualEffectValidators
 export type VisualEffectColorize = v.InferOutput<typeof visualEffectValidators.colorize>
 export type VisualEffectCustom = v.InferOutput<typeof visualEffectValidators.custom>
 export type VisualEffect =
-  | VisualEffectTransform
-  | VisualEffectOpacity
-  | VisualEffectBrightness
-  | VisualEffectContrast
-  | VisualEffectSaturation
-  | VisualEffectColorize
-  | VisualEffectCustom
+    | VisualEffectTransform
+    | VisualEffectOpacity
+    | VisualEffectBrightness
+    | VisualEffectContrast
+    | VisualEffectSaturation
+    | VisualEffectColorize
+    | VisualEffectCustom
 
 // Jam types (uses musical time internally)
 export type JamMetadata = v.InferOutput<typeof jamValidators.metadata>
