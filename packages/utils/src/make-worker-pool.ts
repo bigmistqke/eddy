@@ -5,7 +5,7 @@
  * Workers are acquired, used, and released back to the pool.
  */
 
-import { debug } from '@eddy/utils'
+import { debug } from './debug'
 
 const log = debug('make-worker-pool', false)
 
