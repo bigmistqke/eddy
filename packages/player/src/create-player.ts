@@ -9,7 +9,15 @@ import { rpc, transfer, type RPC } from '@bigmistqke/rpc/messenger'
 import { makeAudioBus, type AudioBus, type AudioBusOutput } from '@eddy/audio'
 import type { AbsoluteProject, AudioPipeline, Integer, Project } from '@eddy/lexicons'
 import { getProjectDuration } from '@eddy/timeline'
-import { createClock, debug, makeLoop, makeMonitor, pick, type Clock } from '@eddy/utils'
+import {
+  createClock,
+  debug,
+  makeLoop,
+  makeMonitor,
+  makeWorkerPool,
+  pick,
+  type Clock,
+} from '@eddy/utils'
 import { createEffect, createMemo, createSignal, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import { PREVIEW_CLIP_ID } from './constants'
@@ -21,7 +29,6 @@ import {
   type VideoWorkerRPC,
 } from './make-playback'
 import type { SchedulerBuffer } from './make-scheduler'
-import { makeWorkerPool } from './make-worker-pool'
 import type { CompositorMethods, CompositorWorkerMethods } from './workers/compositor.worker'
 import CompositorWorker from './workers/compositor.worker?worker'
 import type { AudioPlaybackWorkerMethods } from './workers/playback.audio.worker'

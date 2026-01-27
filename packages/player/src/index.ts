@@ -33,13 +33,6 @@ export {
   type SchedulerBuffer,
 } from './make-scheduler'
 
-export {
-  makeWorkerPool,
-  type PooledWorker,
-  type WorkerPool,
-  type WorkerPoolOptions,
-} from './make-worker-pool'
-
 export { PREVIEW_CLIP_ID } from './constants'
 
 export {
@@ -53,7 +46,11 @@ export {
   writeBlob,
 } from './opfs'
 
-export type { CompositorMethods, CompositorWorkerMethods, RenderStats } from './workers/compositor.worker'
+export type {
+  CompositorMethods,
+  CompositorWorkerMethods,
+  RenderStats,
+} from './workers/compositor.worker'
+export type { DemuxWorkerMethods } from './workers/demux.worker'
 export type { AudioPlaybackWorkerMethods } from './workers/playback.audio.worker'
 export type { VideoPlaybackWorkerMethods } from './workers/playback.video.worker'
-export type { DemuxWorkerMethods } from './workers/demux.worker'

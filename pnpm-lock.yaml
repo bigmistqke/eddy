@@ -31,7 +31,7 @@ importers:
         specifier: ^5.7.0
         version: 5.9.3
 
-  packages/app:
+  apps/app:
     dependencies:
       '@bigmistqke/rpc':
         specifier: link:../../../rpc/packages/rpc
@@ -47,28 +47,28 @@ importers:
         version: 0.1.13
       '@eddy/atproto':
         specifier: workspace:*
-        version: link:../atproto
+        version: link:../../packages/atproto
       '@eddy/audio':
         specifier: workspace:*
-        version: link:../audio
+        version: link:../../packages/audio
       '@eddy/lexicons':
         specifier: workspace:*
-        version: link:../lexicons
+        version: link:../../packages/lexicons
       '@eddy/media':
         specifier: workspace:*
-        version: link:../media
+        version: link:../../packages/media
       '@eddy/player':
         specifier: workspace:*
-        version: link:../player
+        version: link:../../packages/player
       '@eddy/timeline':
         specifier: workspace:*
-        version: link:../timeline
+        version: link:../../packages/timeline
       '@eddy/utils':
         specifier: workspace:*
-        version: link:../utils
+        version: link:../../packages/utils
       '@eddy/video':
         specifier: workspace:*
-        version: link:../video
+        version: link:../../packages/video
       '@solidjs/router':
         specifier: ^0.15.0
         version: 0.15.4(solid-js@1.9.10)
@@ -106,6 +106,55 @@ importers:
       vitest:
         specifier: ^3.0.0
         version: 3.2.4(@types/node@22.19.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)
+
+  apps/jam:
+    dependencies:
+      '@bigmistqke/rpc':
+        specifier: link:../../../rpc/packages/rpc
+        version: link:../../../rpc/packages/rpc
+      '@eddy/audio':
+        specifier: workspace:*
+        version: link:../../packages/audio
+      '@eddy/lexicons':
+        specifier: workspace:*
+        version: link:../../packages/lexicons
+      '@eddy/media':
+        specifier: workspace:*
+        version: link:../../packages/media
+      '@eddy/timeline':
+        specifier: workspace:*
+        version: link:../../packages/timeline
+      '@eddy/utils':
+        specifier: workspace:*
+        version: link:../../packages/utils
+      '@eddy/video':
+        specifier: workspace:*
+        version: link:../../packages/video
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      mediabunny:
+        specifier: ^1.27.3
+        version: 1.28.0
+      solid-js:
+        specifier: ^1.9.0
+        version: 1.9.10
+    devDependencies:
+      '@types/audioworklet':
+        specifier: ^0.0.92
+        version: 0.0.92
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.7
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vite:
+        specifier: ^6.0.0
+        version: 6.4.1(@types/node@22.19.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)
+      vite-plugin-solid:
+        specifier: ^2.11.0
+        version: 2.11.10(solid-js@1.9.10)(vite@6.4.1(@types/node@22.19.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2))
 
   packages/atproto:
     dependencies:
@@ -156,55 +205,6 @@ importers:
       vite:
         specifier: ^6.4.1
         version: 6.4.1(@types/node@25.0.9)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)
-
-  packages/jam:
-    dependencies:
-      '@bigmistqke/rpc':
-        specifier: link:../../../rpc/packages/rpc
-        version: link:../../../rpc/packages/rpc
-      '@eddy/audio':
-        specifier: workspace:*
-        version: link:../audio
-      '@eddy/lexicons':
-        specifier: workspace:*
-        version: link:../lexicons
-      '@eddy/media':
-        specifier: workspace:*
-        version: link:../media
-      '@eddy/timeline':
-        specifier: workspace:*
-        version: link:../timeline
-      '@eddy/utils':
-        specifier: workspace:*
-        version: link:../utils
-      '@eddy/video':
-        specifier: workspace:*
-        version: link:../video
-      clsx:
-        specifier: ^2.1.1
-        version: 2.1.1
-      mediabunny:
-        specifier: ^1.27.3
-        version: 1.28.0
-      solid-js:
-        specifier: ^1.9.0
-        version: 1.9.10
-    devDependencies:
-      '@types/audioworklet':
-        specifier: ^0.0.92
-        version: 0.0.92
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.19.7
-      typescript:
-        specifier: ^5.7.0
-        version: 5.9.3
-      vite:
-        specifier: ^6.0.0
-        version: 6.4.1(@types/node@22.19.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)
-      vite-plugin-solid:
-        specifier: ^2.11.0
-        version: 2.11.10(solid-js@1.9.10)(vite@6.4.1(@types/node@22.19.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2))
 
   packages/lexicons:
     dependencies:
@@ -298,6 +298,10 @@ importers:
         version: 2.1.9(@types/node@25.0.9)
 
   packages/utils:
+    dependencies:
+      solid-js:
+        specifier: ^1.9.0
+        version: 1.9.10
     devDependencies:
       typescript:
         specifier: ^5.7.0

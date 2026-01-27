@@ -1,7 +1,8 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "types": ["vite/client", "@types/audioworklet"]
+    "types": ["vite/client", "@types/audioworklet"],
+    "lib": ["ESNext", "DOM", "DOM.AsyncIterable", "WebWorker"]
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "../utils/src/make-worker-pool.ts"]
 }
