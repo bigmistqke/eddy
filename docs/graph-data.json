@@ -4784,6 +4784,50 @@
       "created_at": "2026-01-27T15:36:07.157175+01:00",
       "updated_at": "2026-01-27T15:36:07.157175+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"06e2c70\",\"confidence\":95}"
+    },
+    {
+      "id": 436,
+      "change_id": "46a126bc-abd4-42af-9888-aa4bce11ee19",
+      "node_type": "goal",
+      "title": "Create @eddy/capture package",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-27T15:41:32.888885+01:00",
+      "updated_at": "2026-01-27T15:41:32.888885+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"i want a packages/capture package that abstracts away the worker stuff -> it should be agnostic to MediaStreamTrackProcessor -> you should just be able to transfer a ReadableStream for video and audio to it\"}"
+    },
+    {
+      "id": 437,
+      "change_id": "e29a0a8b-ebdc-432c-8f00-2051be5ec965",
+      "node_type": "action",
+      "title": "Implemented @eddy/capture package",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-27T15:46:58.335967+01:00",
+      "updated_at": "2026-01-27T15:46:58.335967+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 438,
+      "change_id": "902f513d-870b-4068-a661-dd7e714b2bac",
+      "node_type": "outcome",
+      "title": "Created @eddy/capture package - types pass",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-27T15:47:02.884313+01:00",
+      "updated_at": "2026-01-27T15:47:02.884313+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 439,
+      "change_id": "83fc121c-611e-44bb-b637-1a43ad369f0e",
+      "node_type": "outcome",
+      "title": "Committed: refactor - extract capture pipeline into @eddy/capture package",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-27T15:47:48.373036+01:00",
+      "updated_at": "2026-01-27T15:47:48.373036+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"a2a1cb7\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -8966,6 +9010,39 @@
       "weight": 1.0,
       "rationale": "Code simplification",
       "created_at": "2026-01-27T15:36:07.278303+01:00"
+    },
+    {
+      "id": 381,
+      "from_node_id": 436,
+      "to_node_id": 437,
+      "from_change_id": "46a126bc-abd4-42af-9888-aa4bce11ee19",
+      "to_change_id": "e29a0a8b-ebdc-432c-8f00-2051be5ec965",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-01-27T15:46:58.347643+01:00"
+    },
+    {
+      "id": 382,
+      "from_node_id": 437,
+      "to_node_id": 438,
+      "from_change_id": "e29a0a8b-ebdc-432c-8f00-2051be5ec965",
+      "to_change_id": "902f513d-870b-4068-a661-dd7e714b2bac",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Result",
+      "created_at": "2026-01-27T15:47:02.893601+01:00"
+    },
+    {
+      "id": 383,
+      "from_node_id": 437,
+      "to_node_id": 439,
+      "from_change_id": "e29a0a8b-ebdc-432c-8f00-2051be5ec965",
+      "to_change_id": "83fc121c-611e-44bb-b637-1a43ad369f0e",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-27T15:47:48.386975+01:00"
     }
   ]
 }
