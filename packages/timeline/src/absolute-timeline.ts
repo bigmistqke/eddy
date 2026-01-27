@@ -5,8 +5,8 @@
  * No compilation - just query layout and media at render time.
  */
 
-import type { AbsoluteProject, Clip, ClipLayout, } from '@eddy/lexicons'
-import { isMediaClip, } from '@eddy/lexicons'
+import type { AbsoluteProject, Clip, ClipLayout } from '@eddy/lexicons'
+import { isMediaClip } from '@eddy/lexicons'
 
 /**********************************************************************************/
 /*                                                                                */
@@ -51,10 +51,7 @@ export interface Placement {
  * Find the active clip at a given time on a track.
  * Handles optional duration (extends to next clip).
  */
-function findActiveClip(
-  clips: Clip[],
-  timeMs: number,
-): Clip | null {
+function findActiveClip(clips: Clip[], timeMs: number): Clip | null {
   // Sort clips by start time
   const sorted = [...clips].sort((a, b) => a.start - b.start)
 
@@ -85,10 +82,7 @@ function findActiveClip(
  */
 function isClipLayout(source: unknown): source is ClipLayout {
   return (
-    typeof source === 'object' &&
-    source !== null &&
-    'type' in source &&
-    source.type === 'layout'
+    typeof source === 'object' && source !== null && 'type' in source && source.type === 'layout'
   )
 }
 
@@ -129,11 +123,7 @@ function calculateGridViewport(
 /**
  * Calculate viewport for a layout mode and slot index
  */
-function calculateViewport(
-  layout: ClipLayout,
-  slotIndex: number,
-  canvas: CanvasSize,
-): Viewport {
+function calculateViewport(layout: ClipLayout, slotIndex: number, canvas: CanvasSize): Viewport {
   const { mode, columns, rows, gap } = layout
 
   switch (mode) {
@@ -191,10 +181,7 @@ function calculateViewport(
  * Get the active layout at a given time.
  * Returns null if no layout is active (nothing displayed).
  */
-export function getLayoutAtTime(
-  project: AbsoluteProject,
-  timeMs: number,
-): ClipLayout | null {
+export function getLayoutAtTime(project: AbsoluteProject, timeMs: number): ClipLayout | null {
   const metadataTracks = project.metadataTracks ?? []
 
   for (const track of metadataTracks) {
@@ -211,10 +198,7 @@ export function getLayoutAtTime(
  * Get active media clips at a given time.
  * Returns clip info for each media track that has content.
  */
-export function getActiveMediaClips(
-  project: AbsoluteProject,
-  timeMs: number,
-): ActiveClip[] {
+export function getActiveMediaClips(project: AbsoluteProject, timeMs: number): ActiveClip[] {
   const result: ActiveClip[] = []
   const timeSeconds = timeMs / 1000
 

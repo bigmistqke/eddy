@@ -15,17 +15,30 @@ import {
   type AudioEffect,
   type Clip,
   type ClipStem,
-  type ClipUrl,
   type MediaClip,
 } from '@eddy/lexicons'
 import { makeMuxer } from '@eddy/media'
-import { action, createResourceMap, deepResource, defer, hold, resource } from '@eddy/solid'
+import {
+  createPlayer,
+  createWritableStream,
+  readClipBlob,
+  SCHEDULER_BUFFER,
+  writeBlob,
+} from '@eddy/player'
 import { getActiveMediaClips, getProjectDuration } from '@eddy/timeline'
-import { assertedNotNullish, debug } from '@eddy/utils'
+import {
+  action,
+  assertedNotNullish,
+  createResourceMap,
+  debug,
+  deepResource,
+  defer,
+  hold,
+  resource,
+} from '@eddy/utils'
 import type { EffectValue } from '@eddy/video'
 import { createEffect, createSelector, createSignal, mapArray, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
-import { createPlayer, createWritableStream, readClipBlob, SCHEDULER_BUFFER, writeBlob } from '@eddy/player'
 import { makeDebugInfo as initDebugInfo } from '~/primitives/make-debug-info'
 import type { CaptureWorkerMethods } from '~/workers/capture.worker'
 import CaptureWorker from '~/workers/capture.worker?worker'

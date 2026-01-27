@@ -6,8 +6,8 @@
  */
 
 import type { AbsoluteProject, Clip, MusicalProject } from '@eddy/lexicons'
-import type { CanvasSize, Placement } from './compile-absolute-timeline'
-import { getPlacementsAtTime as getAbsolutePlacementsAtTime, getProjectDuration as getAbsoluteProjectDuration } from './compile-absolute-timeline'
+import type { CanvasSize, Placement } from './absolute-timeline'
+import { getPlacementsAtTime, getProjectDuration } from './absolute-timeline'
 
 /**********************************************************************************/
 /*                                                                                */
@@ -74,7 +74,8 @@ export function musicalToAbsolute(project: MusicalProject): AbsoluteProject {
   return {
     ...project,
     type: 'absolute',
-    duration: project.durationTicks !== undefined ? ticksToMs(project.durationTicks, bpm, ppq) : undefined,
+    duration:
+      project.durationTicks !== undefined ? ticksToMs(project.durationTicks, bpm, ppq) : undefined,
     mediaTracks,
     metadataTracks,
   }
@@ -90,7 +91,7 @@ export function musicalToAbsolute(project: MusicalProject): AbsoluteProject {
  * Get placements at a given time (in ticks).
  * Converts to absolute timing internally.
  */
-export function getPlacementsAtTime(
+export function getMusicalPlacementsAtTime(
   project: MusicalProject,
   timeTicks: number,
   canvas: CanvasSize,
@@ -100,13 +101,13 @@ export function getPlacementsAtTime(
   const timeMs = ticksToMs(timeTicks, bpm, ppq)
 
   const absoluteProject = musicalToAbsolute(project)
-  return getAbsolutePlacementsAtTime(absoluteProject, timeMs, canvas)
+  return getPlacementsAtTime(absoluteProject, timeMs, canvas)
 }
 
 /**
  * Get project duration in ticks.
  */
-export function getProjectDuration(project: MusicalProject): number {
+export function getMusicalProjectDuration(project: MusicalProject): number {
   if (project.durationTicks !== undefined) {
     return project.durationTicks
   }
@@ -115,7 +116,7 @@ export function getProjectDuration(project: MusicalProject): number {
   const bpm = project.bpm ?? DEFAULT_BPM
   const ppq = project.ppq ?? DEFAULT_PPQ
   const absoluteProject = musicalToAbsolute(project)
-  const durationMs = getAbsoluteProjectDuration(absoluteProject)
+  const durationMs = getProjectDuration(absoluteProject)
 
   // Convert back to ticks
   const actualBpm = bpm / 100

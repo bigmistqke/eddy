@@ -19,7 +19,6 @@
     "@eddy/audio": "workspace:*",
     "@eddy/lexicons": "workspace:*",
     "@eddy/player": "workspace:*",
-    "@eddy/solid": "workspace:*",
     "@eddy/timeline": "workspace:*",
     "@eddy/media": "workspace:*",
     "@eddy/utils": "workspace:*",

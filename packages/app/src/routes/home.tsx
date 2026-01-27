@@ -1,7 +1,7 @@
 import { deleteOrphanedStems, deleteProject, listProjects } from '@eddy/atproto'
+import { action, resource } from '@eddy/utils'
 import { A } from '@solidjs/router'
 import { FiTrash2 } from 'solid-icons/fi'
-import { action, resource } from '@eddy/solid'
 import { For, Show, useTransition } from 'solid-js'
 import { useAuth } from '~/contexts/auth-context'
 import styles from './home.module.css'
