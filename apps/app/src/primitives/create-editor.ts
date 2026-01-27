@@ -1,4 +1,4 @@
-import { $MESSENGER, rpc, transfer } from '@bigmistqke/rpc/messenger'
+import { transfer } from '@bigmistqke/rpc/messenger'
 import { every, whenEffect, whenMemo } from '@bigmistqke/solid-whenever'
 import type { Agent } from '@eddy/atproto'
 import { createReadableStreamFromAtProto, getProjectByRkey, publishProject } from '@eddy/atproto'
@@ -8,6 +8,7 @@ import {
   makeOfflineAudioMixer,
   resumeAudioContext,
 } from '@eddy/audio'
+import { makeCapture, type Capture } from '@eddy/capture'
 import {
   isClipStem,
   isInteger,
@@ -35,10 +36,6 @@ import type { EffectValue } from '@eddy/video'
 import { createEffect, createSelector, createSignal, mapArray, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import { makeDebugInfo } from '~/primitives/make-debug-info'
-import type { CaptureWorkerMethods } from '~/workers/capture.worker'
-import CaptureWorker from '~/workers/capture.worker?worker'
-import type { MuxerWorkerMethods } from '~/workers/muxer.worker'
-import MuxerWorker from '~/workers/muxer.worker?worker'
 
 const log = debug('create-editor', false)
 
@@ -202,38 +199,13 @@ export function createEditor(options: CreateEditorOptions) {
     },
   )
 
-  // Pre-initialize capture and muxer workers
-  const [workers] = resource(async ({ onCleanup }) => {
-    log('creating workers...')
-    const captureWorker = new CaptureWorker()
-    const muxerWorker = new MuxerWorker()
-
-    const captureWorkerRpc = rpc<CaptureWorkerMethods>(captureWorker)
-    const muxerWorkerRpc = rpc<MuxerWorkerMethods>(muxerWorker)
-
-    onCleanup(() => {
-      captureWorkerRpc[$MESSENGER].terminate()
-      muxerWorkerRpc[$MESSENGER].terminate()
-    })
-
-    // Pass scheduler buffer to muxer for backpressure signaling
-    muxerWorkerRpc.setSchedulerBuffer(SCHEDULER_BUFFER)
-
-    // Create MessageChannel to connect capture → muxer
-    const channel = new MessageChannel()
-
-    // Set up capture port on muxer
-    await muxerWorkerRpc.setCapturePort(transfer(channel.port2))
-
-    // Initialize capture with muxer port, returns capture methods
-    const capture = await captureWorkerRpc.init(transfer(channel.port1))
-
-    // Initialize muxer (VP9 + Opus encoders), returns muxer methods
-    const muxer = await muxerWorkerRpc.init()
-
-    log('workers ready')
-
-    return { capture, muxer }
+  // Pre-initialize capture pipeline
+  const [capture] = resource(async ({ onCleanup }) => {
+    log('creating capture pipeline...')
+    const capture = await makeCapture({ schedulerBuffer: SCHEDULER_BUFFER })
+    onCleanup(() => capture.dispose())
+    log('capture pipeline ready')
+    return capture
   })
 
   const [localClips, setLocalClips] = createStore<Record<string, LocalClipState>>({})
@@ -517,7 +489,7 @@ export function createEditor(options: CreateEditorOptions) {
   const recordAction = action(function* (trackId: string, { onCleanup }) {
     log('record', { trackId })
 
-    const _workers = assertedNotNullish(workers(), 'Workers not ready')
+    const _capture = assertedNotNullish(capture(), 'Capture not ready')
     const _player = assertedNotNullish(player(), 'No player available')
     const stream = assertedNotNullish(
       previewAction.latest(),
@@ -537,7 +509,7 @@ export function createEditor(options: CreateEditorOptions) {
 
     // Start capture (runs until cancelled)
     const startTime = performance.now()
-    const capturePromise = _workers.capture
+    const capturePromise = _capture
       .start(
         transfer(videoProcessor.readable),
         audioProcessor ? transfer(audioProcessor.readable) : undefined,
@@ -547,7 +519,7 @@ export function createEditor(options: CreateEditorOptions) {
     onCleanup(async () => {
       log('stopping capture...')
       await capturePromise
-      await _workers.capture.stop()
+      await _capture.stop()
     })
 
     // Route playback audio through MediaStream output during recording.
@@ -580,13 +552,13 @@ export function createEditor(options: CreateEditorOptions) {
       startTime: number
       timelineOffset: number
     }) => {
-      const _workers = assertedNotNullish(workers(), 'Workers not ready')
+      const _capture = assertedNotNullish(capture(), 'Capture not ready')
 
       // Generate clipId before finalize (muxer writes to OPFS using this ID)
       const clipId = `clip-${trackId}-${Date.now()}`
 
       log('finalizing recording...', { clipId })
-      const result = await _workers.muxer.finalize(clipId)
+      const result = await _capture.finalize(clipId)
       const duration = performance.now() - startTime
 
       if (result.frameCount > 0) {
@@ -600,8 +572,8 @@ export function createEditor(options: CreateEditorOptions) {
         addRecording(trackId, clipId, duration, timelineOffset)
       }
 
-      // Reset muxer for next recording
-      await _workers.muxer.reset()
+      // Reset capture for next recording
+      await _capture.reset()
 
       await player()?.stop()
 

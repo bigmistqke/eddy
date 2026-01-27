@@ -7,7 +7,7 @@
  */
 
 import { expose, handle, type Handled } from '@bigmistqke/rpc/messenger'
-import { makeMuxer, type AudioFrameData, type VideoFrameData } from '@eddy/media'
+import { makeMuxer, type AudioFrameData, type MuxerOptions, type VideoFrameData } from '@eddy/media'
 import { writeBlobToOPFS } from '@eddy/opfs'
 import { makeScheduler, type RecorderScheduler, type SchedulerBuffer } from '@eddy/player'
 import { debug } from '@eddy/utils'
@@ -52,10 +52,10 @@ export interface MuxerWorkerMethods {
   setCapturePort(port: MessagePort): void
 
   /**
-   * Initialize the muxer (creates VP9 encoder + Opus encoder).
+   * Initialize the muxer with optional codec settings.
    * Returns methods as sub-proxy.
    */
-  init(): Promise<Handled<MuxerMethods>>
+  init(options?: MuxerOptions): Promise<Handled<MuxerMethods>>
 }
 
 /**********************************************************************************/
@@ -106,10 +106,12 @@ expose<MuxerWorkerMethods>({
     )
   },
 
-  async init() {
-    log('initializing VP9 + Opus encoders...')
+  async init(options = {}) {
+    const { videoCodec = 'vp9', videoBitrate = 2_000_000, audio = true } = options
 
-    const muxer = makeMuxer({ videoCodec: 'vp9', videoBitrate: 2_000_000, audio: true })
+    log('initializing encoders...', { videoCodec, videoBitrate, audio })
+
+    const muxer = makeMuxer({ videoCodec, videoBitrate, audio })
     await muxer.init()
 
     let capturedFrameCount = 0

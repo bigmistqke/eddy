@@ -17,6 +17,7 @@
     "@bigmistqke/view.gl": "^0.1.12",
     "@eddy/atproto": "workspace:*",
     "@eddy/audio": "workspace:*",
+    "@eddy/capture": "workspace:*",
     "@eddy/lexicons": "workspace:*",
     "@eddy/player": "workspace:*",
     "@eddy/timeline": "workspace:*",

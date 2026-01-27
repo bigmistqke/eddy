@@ -51,6 +51,9 @@ importers:
       '@eddy/audio':
         specifier: workspace:*
         version: link:../../packages/audio
+      '@eddy/capture':
+        specifier: workspace:*
+        version: link:../../packages/capture
       '@eddy/lexicons':
         specifier: workspace:*
         version: link:../../packages/lexicons
@@ -198,6 +201,37 @@ importers:
       mediabunny:
         specifier: ^1.27.3
         version: 1.28.0
+    devDependencies:
+      '@types/audioworklet':
+        specifier: ^0.0.92
+        version: 0.0.92
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vite:
+        specifier: ^6.4.1
+        version: 6.4.1(@types/node@25.0.9)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.2)
+
+  packages/capture:
+    dependencies:
+      '@bigmistqke/rpc':
+        specifier: link:../../../rpc/packages/rpc
+        version: link:../../../rpc/packages/rpc
+      '@eddy/audio':
+        specifier: workspace:*
+        version: link:../audio
+      '@eddy/media':
+        specifier: workspace:*
+        version: link:../media
+      '@eddy/opfs':
+        specifier: workspace:*
+        version: link:../opfs
+      '@eddy/player':
+        specifier: workspace:*
+        version: link:../player
+      '@eddy/utils':
+        specifier: workspace:*
+        version: link:../utils
     devDependencies:
       '@types/audioworklet':
         specifier: ^0.0.92

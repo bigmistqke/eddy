@@ -8,6 +8,14 @@
     "files_changed": 4
   },
   {
+    "hash": "06e2c7016274dcc98feca25573e5338054eef306",
+    "short_hash": "06e2c70",
+    "author": "bigmistqke",
+    "date": "2026-01-27T15:36:00+01:00",
+    "message": "refactor: simplify publishProject to single pass and update opfs imports\n\nCombine clip processing and track building into a single parallel pass,\neliminating the intermediate stemRefs Map. Also update opfs function names.",
+    "files_changed": 4
+  },
+  {
     "hash": "1df46c9206a4ccc16faf44b0e14e269660f2e1bc",
     "short_hash": "1df46c9",
     "author": "bigmistqke",
@@ -30,14 +38,6 @@
     "date": "2026-01-27T15:03:25+01:00",
     "message": "chore: sync deciduous graph",
     "files_changed": 2
-  },
-  {
-    "hash": "6fe0bf4ff50c2271051996b0f60d2856ea137a55",
-    "short_hash": "6fe0bf4",
-    "author": "bigmistqke",
-    "date": "2026-01-27T15:03:06+01:00",
-    "message": "refactor: move make-worker-pool to @eddy/utils for sharing\n\nMove worker pool utility to utils package so it can be used by other\npackages. Also cleanup duplicate make-player.ts from apps/app.",
-    "files_changed": 14
   },
   {
     "hash": "6fe0bf4ff50c2271051996b0f60d2856ea137a55",
