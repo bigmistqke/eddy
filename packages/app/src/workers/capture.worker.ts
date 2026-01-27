@@ -8,6 +8,7 @@
  */
 
 import { expose, handle, rpc, type Handled, type RPC } from '@bigmistqke/rpc/messenger'
+import { extractAudioChannels } from '@eddy/audio'
 import type { AudioFrameData, VideoFrameData } from '@eddy/media'
 import { debug } from '@eddy/utils'
 
@@ -69,58 +70,8 @@ async function copyVideoFrameToBuffer(frame: VideoFrame): Promise<{
 
 /** Convert AudioData to AudioFrameData format expected by muxer */
 function audioDataToFrameData(audioData: AudioData, firstTimestamp: number): AudioFrameData {
-  const numberOfChannels = audioData.numberOfChannels
-  const numberOfFrames = audioData.numberOfFrames
   const sampleRate = audioData.sampleRate
-  const format = audioData.format
-
-  const data: Float32Array[] = []
-
-  if (format?.endsWith('-planar')) {
-    // Planar format: each channel is a separate plane
-    for (let channel = 0; channel < numberOfChannels; channel++) {
-      const channelData = new Float32Array(numberOfFrames)
-      audioData.copyTo(channelData, { planeIndex: channel })
-      data.push(channelData)
-    }
-  } else {
-    // Interleaved format: all channels in plane 0
-    const byteSize = audioData.allocationSize({ planeIndex: 0 })
-    const tempBuffer = new ArrayBuffer(byteSize)
-    audioData.copyTo(tempBuffer, { planeIndex: 0 })
-
-    if (format === 'f32') {
-      const interleaved = new Float32Array(tempBuffer)
-      for (let channel = 0; channel < numberOfChannels; channel++) {
-        const channelData = new Float32Array(numberOfFrames)
-        for (let i = 0; i < numberOfFrames; i++) {
-          channelData[i] = interleaved[i * numberOfChannels + channel]!
-        }
-        data.push(channelData)
-      }
-    } else if (format === 's16') {
-      const interleaved = new Int16Array(tempBuffer)
-      for (let channel = 0; channel < numberOfChannels; channel++) {
-        const channelData = new Float32Array(numberOfFrames)
-        for (let i = 0; i < numberOfFrames; i++) {
-          channelData[i] = interleaved[i * numberOfChannels + channel]! / 32768
-        }
-        data.push(channelData)
-      }
-    } else {
-      // Fallback: try to copy as planar (might fail for some formats)
-      for (let channel = 0; channel < numberOfChannels; channel++) {
-        const channelData = new Float32Array(numberOfFrames)
-        try {
-          audioData.copyTo(channelData, { planeIndex: channel })
-        } catch {
-          channelData.fill(0)
-        }
-        data.push(channelData)
-      }
-    }
-  }
-
+  const data = extractAudioChannels(audioData)
   const timestamp = (audioData.timestamp - firstTimestamp) / 1_000_000
   audioData.close()
 

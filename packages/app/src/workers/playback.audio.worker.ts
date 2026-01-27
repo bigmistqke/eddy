@@ -8,13 +8,14 @@
 
 import { expose, transfer } from '@bigmistqke/rpc/messenger'
 import {
+  extractAudioChannels,
   makeAudioPlayback,
   makeAudioRingBufferWriter,
   type AudioPlaybackState,
   type RingBufferWriter,
 } from '@eddy/audio'
 import type { AudioTrackInfo } from '@eddy/media'
-import { debug, makeLoop } from '@eddy/utils'
+import { debug, makeLoop, pick } from '@eddy/utils'
 import { makeOPFSSource } from '~/opfs'
 
 const log = debug('playback.audio.worker', false)
@@ -92,60 +93,6 @@ function resample(input: Float32Array, inputRate: number, outputRate: number): F
   return output
 }
 
-/** Extract samples from AudioData to Float32Array per channel */
-function extractAudioSamples(audioData: AudioData): Float32Array[] {
-  const numberOfChannels = audioData.numberOfChannels
-  const numberOfFrames = audioData.numberOfFrames
-  const format = audioData.format
-
-  const channels: Float32Array[] = []
-
-  if (format === 'f32-planar') {
-    for (let ch = 0; ch < numberOfChannels; ch++) {
-      const channelData = new Float32Array(numberOfFrames)
-      audioData.copyTo(channelData, { planeIndex: ch })
-      channels.push(channelData)
-    }
-  } else if (format === 'f32') {
-    const byteSize = audioData.allocationSize({ planeIndex: 0 })
-    const tempBuffer = new ArrayBuffer(byteSize)
-    audioData.copyTo(tempBuffer, { planeIndex: 0 })
-    const interleaved = new Float32Array(tempBuffer)
-    for (let ch = 0; ch < numberOfChannels; ch++) {
-      const channelData = new Float32Array(numberOfFrames)
-      for (let i = 0; i < numberOfFrames; i++) {
-        channelData[i] = interleaved[i * numberOfChannels + ch]!
-      }
-      channels.push(channelData)
-    }
-  } else if (format === 's16') {
-    const byteSize = audioData.allocationSize({ planeIndex: 0 })
-    const tempBuffer = new ArrayBuffer(byteSize)
-    audioData.copyTo(tempBuffer, { planeIndex: 0 })
-    const interleaved = new Int16Array(tempBuffer)
-    for (let ch = 0; ch < numberOfChannels; ch++) {
-      const channelData = new Float32Array(numberOfFrames)
-      for (let i = 0; i < numberOfFrames; i++) {
-        channelData[i] = interleaved[i * numberOfChannels + ch]! / 32768
-      }
-      channels.push(channelData)
-    }
-  } else {
-    // Fallback
-    for (let ch = 0; ch < numberOfChannels; ch++) {
-      const channelData = new Float32Array(numberOfFrames)
-      try {
-        audioData.copyTo(channelData, { planeIndex: ch, format: 'f32-planar' })
-      } catch {
-        channelData.fill(0)
-      }
-      channels.push(channelData)
-    }
-  }
-
-  return channels
-}
-
 /**********************************************************************************/
 /*                                                                                */
 /*                                     State                                      */
@@ -206,7 +153,9 @@ function flushPendingSamples(): void {
     // Resample if needed
     let channelsToWrite = sample.channels
     if (sample.sampleRate !== targetSampleRate) {
-      channelsToWrite = sample.channels.map(ch => resample(ch, sample.sampleRate, targetSampleRate!))
+      channelsToWrite = sample.channels.map(ch =>
+        resample(ch, sample.sampleRate, targetSampleRate!),
+      )
     }
 
     // Try to write to ring buffer
@@ -243,7 +192,7 @@ const schedulingLoop = makeLoop(() => {
 /** Schedule decoded audio for playback */
 function scheduleAudio(audioData: AudioData): void {
   // Extract samples
-  const channels = extractAudioSamples(audioData)
+  const channels = extractAudioChannels(audioData)
   const sampleRate = audioData.sampleRate
   const mediaTime = audioData.timestamp / 1_000_000 // Convert from microseconds to seconds
 
@@ -287,10 +236,7 @@ const playback = makeAudioPlayback({
 /**********************************************************************************/
 
 expose<AudioPlaybackWorkerMethods>({
-  getBufferRange: playback.getBufferRange,
-  getPerf: playback.getPerf,
-  getState: playback.getState,
-  resetPerf: playback.resetPerf,
+  ...pick(playback, ['getBufferRange', 'getPerf', 'getState', 'resetPerf']),
 
   setRingBuffer(sampleBuffer, controlBuffer, sampleRate) {
     log('setRingBuffer', { targetSampleRate: sampleRate })

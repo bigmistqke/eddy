@@ -3,7 +3,7 @@ import { makeAudioBus, type AudioBus, type AudioBusOutput } from '@eddy/audio'
 import type { AbsoluteProject, AudioPipeline, Integer, Project } from '@eddy/lexicons'
 import { createClock, type Clock } from '@eddy/solid'
 import { getProjectDuration } from '@eddy/timeline'
-import { debug, makeLoop, makeMonitor } from '@eddy/utils'
+import { debug, makeLoop, makeMonitor, pick } from '@eddy/utils'
 import { createEffect, createMemo, createSignal, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import { PREVIEW_CLIP_ID } from '~/constants'
@@ -254,17 +254,17 @@ export async function makePlayer({
   const compositor: Compositor = {
     canvas: canvasElement,
 
-    // ...pick(compositorRpc, ['setProject', 'setFrame', 'render', 'connectPlaybackWorker', 'disconnectPlaybackWorker', 'renderToCaptureCanvas', 'renderAndCapture', 'renderFramesAndCapture', ])
-    // Delegate to worker methods
-    setProject: compositorRpc.setProject,
-    setFrame: compositorRpc.setFrame,
-    render: compositorRpc.render,
-    connectPlaybackWorker: compositorRpc.connectPlaybackWorker,
-    disconnectPlaybackWorker: compositorRpc.disconnectPlaybackWorker,
-    renderToCaptureCanvas: compositorRpc.renderToCaptureCanvas,
-    renderAndCapture: compositorRpc.renderAndCapture,
-    renderFramesAndCapture: compositorRpc.renderFramesAndCapture,
-    setEffectValue: compositorRpc.setEffectValue,
+    ...pick(compositorRpc, [
+      'connectPlaybackWorker',
+      'disconnectPlaybackWorker',
+      'render',
+      'renderAndCapture',
+      'renderFramesAndCapture',
+      'renderToCaptureCanvas',
+      'setEffectValue',
+      'setFrame',
+      'setProject',
+    ]),
 
     setPreviewStream(trackId: string, stream: MediaStream | null) {
       // Clean up existing processor
