@@ -15,10 +15,10 @@ import type { RPC } from '@bigmistqke/rpc/messenger'
 import { makeAudioScheduler, type AudioScheduler } from '@eddy/audio'
 import type { AudioTrackInfo, VideoTrackInfo } from '@eddy/media'
 import { debug } from '@eddy/utils'
-import type { SchedulerBuffer } from '~/primitives/make-scheduler'
-import type { PooledWorker } from '~/primitives/make-worker-pool'
-import type { AudioPlaybackWorkerMethods } from '~/workers/playback.audio.worker'
-import type { VideoPlaybackWorkerMethods } from '~/workers/playback.video.worker'
+import type { SchedulerBuffer } from './make-scheduler'
+import type { PooledWorker } from './make-worker-pool'
+import type { AudioPlaybackWorkerMethods } from './workers/playback.audio.worker'
+import type { VideoPlaybackWorkerMethods } from './workers/playback.video.worker'
 
 const log = debug('make-playback', false)
 

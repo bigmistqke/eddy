@@ -12,10 +12,10 @@
  */
 
 import { debug } from '@eddy/utils'
-import type { Playback } from '~/primitives/make-playback'
-import { makePlayback, type AudioWorkerRPC, type VideoWorkerRPC } from '~/primitives/make-playback'
-import type { SchedulerBuffer } from '~/primitives/make-scheduler'
-import type { WorkerPool } from '~/primitives/make-worker-pool'
+import type { Playback } from './make-playback'
+import { makePlayback, type AudioWorkerRPC, type VideoWorkerRPC } from './make-playback'
+import type { SchedulerBuffer } from './make-scheduler'
+import type { WorkerPool } from './make-worker-pool'
 
 const log = debug('make-ahead-scheduler', false)
 

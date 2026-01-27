@@ -10,12 +10,12 @@ import { expose, rpc, transfer, type RPC } from '@bigmistqke/rpc/messenger'
 import type { VideoTrackInfo } from '@eddy/media'
 import { debug, pick } from '@eddy/utils'
 import { makeVideoPlayback, type VideoPlayback } from '@eddy/video'
-import { makeOPFSSource } from '~/opfs'
+import { makeOPFSSource } from '../opfs'
 import {
   makeScheduler,
   type PlaybackScheduler,
   type SchedulerBuffer,
-} from '~/primitives/make-scheduler'
+} from '../make-scheduler'
 
 const log = debug('playback.video.worker', false)
 

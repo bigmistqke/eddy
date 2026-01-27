@@ -16,7 +16,7 @@ import {
 } from '@eddy/audio'
 import type { AudioTrackInfo } from '@eddy/media'
 import { debug, makeLoop, pick } from '@eddy/utils'
-import { makeOPFSSource } from '~/opfs'
+import { makeOPFSSource } from '../opfs'
 
 const log = debug('playback.audio.worker', false)
 

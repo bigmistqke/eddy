@@ -1,3 +1,10 @@
+/**
+ * CreatePlayer
+ *
+ * Main entry point for the player package. Creates a player that manages
+ * compositor, playback workers, and audio pipelines.
+ */
+
 import { rpc, transfer, type RPC } from '@bigmistqke/rpc/messenger'
 import { makeAudioBus, type AudioBus, type AudioBusOutput } from '@eddy/audio'
 import type { AbsoluteProject, AudioPipeline, Integer, Project } from '@eddy/lexicons'
@@ -6,24 +13,24 @@ import { getProjectDuration } from '@eddy/timeline'
 import { debug, makeLoop, makeMonitor, pick } from '@eddy/utils'
 import { createEffect, createMemo, createSignal, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
-import { PREVIEW_CLIP_ID } from '~/constants'
-import { makeAheadScheduler, SCHEDULE_AHEAD } from '~/primitives/make-ahead-scheduler'
+import { PREVIEW_CLIP_ID } from './constants'
+import { makeAheadScheduler, SCHEDULE_AHEAD } from './make-ahead-scheduler'
 import {
   makePlayback,
   type AudioWorkerRPC,
   type Playback,
   type VideoWorkerRPC,
-} from '~/primitives/make-playback'
-import type { SchedulerBuffer } from '~/primitives/make-scheduler'
-import { makeWorkerPool } from '~/primitives/make-worker-pool'
-import type { CompositorMethods, CompositorWorkerMethods } from '~/workers/compositor.worker'
-import CompositorWorker from '~/workers/compositor.worker?worker'
-import type { AudioPlaybackWorkerMethods } from '~/workers/playback.audio.worker'
-import AudioPlaybackWorker from '~/workers/playback.audio.worker?worker'
-import type { VideoPlaybackWorkerMethods } from '~/workers/playback.video.worker'
-import VideoPlaybackWorker from '~/workers/playback.video.worker?worker'
+} from './make-playback'
+import type { SchedulerBuffer } from './make-scheduler'
+import { makeWorkerPool } from './make-worker-pool'
+import type { CompositorMethods, CompositorWorkerMethods } from './workers/compositor.worker'
+import CompositorWorker from './workers/compositor.worker?worker'
+import type { AudioPlaybackWorkerMethods } from './workers/playback.audio.worker'
+import AudioPlaybackWorker from './workers/playback.audio.worker?worker'
+import type { VideoPlaybackWorkerMethods } from './workers/playback.video.worker'
+import VideoPlaybackWorker from './workers/playback.video.worker?worker'
 
-const log = debug('make-player', false)
+const log = debug('create-player', false)
 const monitor = makeMonitor<
   'renderLoop',
   'frames-expected' | 'frames-rendered' | 'frames-dropped' | 'frames-stale'
@@ -220,7 +227,7 @@ function injectPreviewClips<T extends Project>(project: T, previewTrackIds: Set<
 
 /**********************************************************************************/
 /*                                                                                */
-/*                                  Make Player                                   */
+/*                                  Create Player                                 */
 /*                                                                                */
 /**********************************************************************************/
 
@@ -228,14 +235,14 @@ function injectPreviewClips<T extends Project>(project: T, previewTrackIds: Set<
  * Create a player that manages compositor, playback workers, and audio pipelines.
  * Uses direct worker-to-worker frame transfer for video.
  */
-export async function makePlayer({
+export async function createPlayer({
   canvas: canvasElement,
   width,
   height,
   project,
   schedulerBuffer,
 }: CreatePlayerOptions): Promise<Player> {
-  log('makePlayer', { width, height, schedulerBuffer })
+  log('createPlayer', { width, height, schedulerBuffer })
 
   // Set canvas size and transfer to worker
   canvasElement.width = width

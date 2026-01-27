@@ -25,14 +25,12 @@ import { assertedNotNullish, debug } from '@eddy/utils'
 import type { EffectValue } from '@eddy/video'
 import { createEffect, createSelector, createSignal, mapArray, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
-import { createWritableStream, readClipBlob, writeBlob } from '~/opfs'
+import { createPlayer, createWritableStream, readClipBlob, SCHEDULER_BUFFER, writeBlob } from '@eddy/player'
 import { makeDebugInfo as initDebugInfo } from '~/primitives/make-debug-info'
-import { SCHEDULER_BUFFER } from '~/primitives/make-scheduler'
 import type { CaptureWorkerMethods } from '~/workers/capture.worker'
 import CaptureWorker from '~/workers/capture.worker?worker'
 import type { MuxerWorkerMethods } from '~/workers/muxer.worker'
 import MuxerWorker from '~/workers/muxer.worker?worker'
-import { makePlayer } from './make-player'
 
 const log = debug('create-editor', false)
 
@@ -178,7 +176,7 @@ export function createEditor(options: CreateEditorOptions) {
       () => project().canvas.height,
     ),
     async ([canvas, width, height], { onCleanup }) => {
-      const result = await makePlayer({
+      const result = await createPlayer({
         canvas,
         width,
         height,

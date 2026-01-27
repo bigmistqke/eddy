@@ -18,7 +18,7 @@ import {
   type RenderStats,
   type VideoCompositor,
 } from '@eddy/video'
-import { PREVIEW_CLIP_ID } from '~/constants'
+import { PREVIEW_CLIP_ID } from '../constants'
 
 /** Map of effect type names to factory functions */
 export const effectCatalog = {

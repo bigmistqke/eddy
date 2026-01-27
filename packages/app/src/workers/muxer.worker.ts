@@ -9,12 +9,12 @@
 import { expose, handle, type Handled } from '@bigmistqke/rpc/messenger'
 import { makeMuxer, type AudioFrameData, type VideoFrameData } from '@eddy/media'
 import { debug } from '@eddy/utils'
-import { writeBlob } from '~/opfs'
 import {
   makeScheduler,
+  writeBlob,
   type RecorderScheduler,
   type SchedulerBuffer,
-} from '~/primitives/make-scheduler'
+} from '@eddy/player'
 
 const log = debug('muxer.worker', false)
 
