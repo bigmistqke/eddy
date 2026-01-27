@@ -11,17 +11,12 @@ import {
   type ClipUrl,
   type MediaClip,
   type Stem,
-  type StemRef
+  type StemRef,
 } from '@eddy/lexicons'
 import { debug } from '@eddy/utils'
 import * as v from 'valibot'
 
 const log = debug('atproto:crud', false)
-
-// /** Check if a clip source is a stem reference */
-// function isStemSource(source: Clip | undefined): source is ClipStem {
-//   return source?.type === 'stem'
-// }
 
 export interface RecordRef {
   uri: string
@@ -49,25 +44,21 @@ export interface ProjectListItem {
   trackCount: number
 }
 
+/**********************************************************************************/
+/*                                                                                */
+/*                                      Utils                                     */
+/*                                                                                */
+/**********************************************************************************/
+
+// Helper to check if a URL clip uses opfs:// (local storage)
+const isOpfsUrl = (clip: MediaClip): clip is ClipUrl =>
+  isClipUrl(clip) && clip.url.startsWith('opfs://')
+
 // Parse AT URI into components: at://did/collection/rkey
 function parseAtUri(uri: string): { repo: string; collection: string; rkey: string } {
   const match = uri.match(/^at:\/\/([^/]+)\/([^/]+)\/([^/]+)$/)
   if (!match) throw new Error(`Invalid AT URI: ${uri}`)
   return { repo: match[1], collection: match[2], rkey: match[3] }
-}
-
-export async function getProject(agent: Agent, uri: string): Promise<ProjectRecord> {
-  const { repo, collection, rkey } = parseAtUri(uri)
-  const response = await agent.com.atproto.repo.getRecord({
-    repo,
-    collection,
-    rkey,
-  })
-  return {
-    uri: response.data.uri,
-    cid: response.data.cid ?? '',
-    value: v.parse(absoluteValidators.main, response.data.value),
-  }
 }
 
 // Resolve a handle to a DID
@@ -76,150 +67,14 @@ async function resolveHandle(agent: Agent, handle: string): Promise<string> {
   return response.data.did
 }
 
-// Get project by handle (optional) and rkey
-// If no handle provided, uses the agent's own DID
-export async function getProjectByRkey(
-  agent: Agent,
-  rkey: string,
-  handle?: string,
-): Promise<ProjectRecord> {
-  let did: string
-  if (handle) {
-    did = await resolveHandle(agent, handle)
-  } else {
-    did = agent.assertDid
-  }
-
-  const uri = `at://${did}/dj.eddy.absolute/${rkey}`
-  return getProject(agent, uri)
-}
-
-async function getStem(agent: Agent, uri: string): Promise<StemRecord> {
-  const { repo, collection, rkey } = parseAtUri(uri)
-  const response = await agent.com.atproto.repo.getRecord({
-    repo,
-    collection,
-    rkey,
-  })
-  return {
-    uri: response.data.uri,
-    cid: response.data.cid ?? '',
-    value: v.parse(stemValidators.main, response.data.value),
-  }
-}
-
-export async function getStemBlob(agent: Agent, stemUri: string): Promise<Blob> {
-  const { repo } = parseAtUri(stemUri)
-  const stem = await getStem(agent, stemUri)
-  const blob = stem.value.blob
-
-  // Handle both BlobRef (ref is CID) and untyped (cid is string) formats
-  const blobCid = 'ref' in blob ? blob.ref.toString() : blob.cid
-
-  log('fetching blob', { did: repo, cid: blobCid })
-
-  // Fetch the actual blob
-  const blobResponse = await agent.com.atproto.sync.getBlob({
-    did: repo,
-    cid: blobCid,
-  })
-
-  return new Blob([blobResponse.data as BlobPart], { type: stem.value.mimeType })
-}
-
-/** Get the PDS URL from an agent (works with both CredentialSession and OAuthSession) */
-async function getPdsUrl(agent: Agent): Promise<URL> {
-  const sessionManager = agent.sessionManager as {
-    // CredentialSession
-    dispatchUrl?: URL
-    // OAuthSession
-    getTokenInfo?: () => Promise<{ aud: string }>
-  }
-
-  // CredentialSession exposes dispatchUrl directly
-  if (sessionManager.dispatchUrl) {
-    return sessionManager.dispatchUrl
-  }
-
-  // OAuthSession has getTokenInfo which returns the PDS URL as 'aud'
-  if (sessionManager.getTokenInfo) {
-    const tokenInfo = await sessionManager.getTokenInfo()
-    return new URL(tokenInfo.aud)
-  }
-
-  throw new Error('Cannot determine PDS URL from agent session')
-}
-
-/** Stream a stem directly from ATProto to OPFS (avoids loading blob into memory) */
-export async function streamStemToOPFS(
-  agent: Agent,
-  stemUri: string,
-  clipId: string,
-  createWritableStream: (clipId: string) => Promise<FileSystemWritableFileStream>,
-): Promise<void> {
-  const { repo } = parseAtUri(stemUri)
-  const stem = await getStem(agent, stemUri)
-  const blob = stem.value.blob
-
-  // Handle both BlobRef (ref is CID) and untyped (cid is string) formats
-  const blobCid = 'ref' in blob ? blob.ref.toString() : blob.cid
-
-  log('streaming blob to OPFS', { did: repo, cid: blobCid, clipId })
-
-  // Construct the blob URL and fetch with streaming
-  const pdsUrl = await getPdsUrl(agent)
-  const url = new URL('/xrpc/com.atproto.sync.getBlob', pdsUrl)
-  url.searchParams.set('did', repo)
-  url.searchParams.set('cid', blobCid)
-
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch blob: ${response.status} ${response.statusText}`)
-  }
-  if (!response.body) {
-    throw new Error('Response body is null')
-  }
-
-  // Stream directly to OPFS
-  const writable = await createWritableStream(clipId)
-  await response.body.pipeTo(writable)
-
-  log('streamed blob to OPFS', { clipId })
-}
-
-export async function listProjects(agent: Agent): Promise<ProjectListItem[]> {
-  const response = await agent.com.atproto.repo.listRecords({
-    repo: agent.assertDid,
-    collection: 'dj.eddy.absolute',
-    limit: 50,
-  })
-
-  return response.data.records.map(record => {
-    const project = v.parse(absoluteValidators.main, record.value)
-    const { rkey } = parseAtUri(record.uri)
-    return {
-      uri: record.uri,
-      cid: record.cid,
-      rkey,
-      title: project.title,
-      createdAt: project.createdAt,
-      trackCount: project.mediaTracks.length,
-    }
-  })
-}
-
-export async function uploadBlob(agent: Agent, blob: Blob) {
+async function uploadBlob(agent: Agent, blob: Blob) {
   const response = await agent.uploadBlob(blob, {
     encoding: blob.type,
   })
   return response.data.blob
 }
 
-export async function makeStemRecord(
-  agent: Agent,
-  blob: Blob,
-  duration: number,
-): Promise<RecordRef> {
+async function makeStemRecord(agent: Agent, blob: Blob, duration: number): Promise<RecordRef> {
   const uploadedBlob = await uploadBlob(agent, blob)
 
   const record = v.parse(stemWireValidators.main, {
@@ -263,122 +118,179 @@ async function cloneStem(agent: Agent, stemUri: string): Promise<StemRef> {
   return makeStemRecord(agent, blob, stem.value.duration)
 }
 
-export async function publishProject(
-  agent: Agent,
-  project: AbsoluteProject,
-  clipBlobs: Map<string, { blob: Blob; duration: number }>,
-): Promise<RecordRef> {
-  const myDid = agent.assertDid
-  const stemRefs = new Map<string, StemRef>()
-
-  // Collect all clips from all media tracks that need stem processing
-  const allClips: { trackId: string; clip: MediaClip }[] = []
-  for (const track of project.mediaTracks) {
-    for (const clip of track.clips) {
-      allClips.push({ trackId: track.id, clip })
-    }
-  }
-
-  // Helper to check if a URL clip uses opfs:// (local storage)
-  const isOpfsUrl = (clip: MediaClip): clip is ClipUrl =>
-    isClipUrl(clip) && clip.url.startsWith('opfs://')
-
-  // Process clips in parallel - upload local recordings, clone external stems
-  await Promise.all(
-    allClips.map(async ({ clip }) => {
-      // Case 1: Local recording (opfs:// URL) - must have blob, upload as stem
-      if (isOpfsUrl(clip)) {
-        const localBlob = clipBlobs.get(clip.id)
-        if (!localBlob) {
-          throw new Error(`Local clip ${clip.id} has no blob - cannot publish`)
-        }
-        const stemRecord = await makeStemRecord(agent, localBlob.blob, localBlob.duration)
-        stemRefs.set(clip.id, stemRecord)
-        return
-      }
-
-      // Case 2: Existing stem source - keep or clone
-      if (isClipStem(clip)) {
-        const { repo } = parseAtUri(clip.ref.uri)
-        if (repo === myDid) {
-          // Own stem - keep as is
-          stemRefs.set(clip.id, clip.ref)
-        } else {
-          // External stem - clone to own PDS
-          const cloned = await cloneStem(agent, clip.ref.uri)
-          stemRefs.set(clip.id, cloned)
-        }
-      }
-
-      // Case 3: URL clips (http/https) and project clips pass through unchanged
-    }),
-  )
-
-  // Build media tracks with updated clip sources
-  const mediaTracks = project.mediaTracks.map(track => ({
-    type: 'media' as const,
-    id: track.id,
-    name: track.name,
-    clips: track.clips.map((clip): MediaClip => {
-      const stemRef = stemRefs.get(clip.id)
-
-      // Local opfs:// clips get converted to stems
-      if (stemRef && isOpfsUrl(clip)) {
-        return {
-          type: 'stem',
-          id: clip.id,
-          ref: stemRef,
-          start: clip.start,
-          duration: clip.duration,
-        }
-      }
-
-      // Stem clips use updated ref (in case it was cloned)
-      if (isClipStem(clip)) {
-        return {
-          ...clip,
-          ref: stemRef ?? clip.ref,
-        }
-      }
-
-      // URL (http/https) and project clips pass through unchanged
-      return clip
-    }),
-    audioPipeline: track.audioPipeline,
-    visualPipeline: track.visualPipeline,
-  }))
-
-  // Build and validate project record
-  const canvas = project.canvas as Canvas
-  const record = v.parse(absoluteWireValidators.main, {
-    type: 'absolute',
-    schemaVersion: 1,
-    title: project.title,
-    canvas: {
-      width: canvas.width,
-      height: canvas.height,
-    },
-    mediaTracks,
-    metadataTracks: project.metadataTracks,
-    createdAt: project.createdAt,
-  } satisfies AbsoluteProject)
-
-  log('creating project record', record)
-
-  const response = await agent.com.atproto.repo.createRecord({
-    repo: agent.assertDid,
-    collection: 'dj.eddy.absolute',
-    record: {
-      $type: 'dj.eddy.absolute',
-      ...record,
-    },
+async function getStem(agent: Agent, uri: string): Promise<StemRecord> {
+  const { repo, collection, rkey } = parseAtUri(uri)
+  const response = await agent.com.atproto.repo.getRecord({
+    repo,
+    collection,
+    rkey,
   })
-
   return {
     uri: response.data.uri,
-    cid: response.data.cid,
+    cid: response.data.cid ?? '',
+    value: v.parse(stemValidators.main, response.data.value),
   }
 }
+
+async function getStemBlob(agent: Agent, stemUri: string): Promise<Blob> {
+  const { repo } = parseAtUri(stemUri)
+  const stem = await getStem(agent, stemUri)
+  const blob = stem.value.blob
+
+  // Handle both BlobRef (ref is CID) and untyped (cid is string) formats
+  const blobCid = 'ref' in blob ? blob.ref.toString() : blob.cid
+
+  log('fetching blob', { did: repo, cid: blobCid })
+
+  // Fetch the actual blob
+  const blobResponse = await agent.com.atproto.sync.getBlob({
+    did: repo,
+    cid: blobCid,
+  })
+
+  return new Blob([blobResponse.data as BlobPart], { type: stem.value.mimeType })
+}
+
+/** Get the PDS URL from an agent (works with both CredentialSession and OAuthSession) */
+async function getPdsUrl(agent: Agent): Promise<URL> {
+  const sessionManager = agent.sessionManager as {
+    // CredentialSession
+    dispatchUrl?: URL
+    // OAuthSession
+    getTokenInfo?: () => Promise<{ aud: string }>
+  }
+
+  // CredentialSession exposes dispatchUrl directly
+  if (sessionManager.dispatchUrl) {
+    return sessionManager.dispatchUrl
+  }
+
+  // OAuthSession has getTokenInfo which returns the PDS URL as 'aud'
+  if (sessionManager.getTokenInfo) {
+    const tokenInfo = await sessionManager.getTokenInfo()
+    return new URL(tokenInfo.aud)
+  }
+
+  throw new Error('Cannot determine PDS URL from agent session')
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                             Get Project By R Key                               */
+/*                                                                                */
+/**********************************************************************************/
+
+async function getProject(agent: Agent, uri: string): Promise<ProjectRecord> {
+  const { repo, collection, rkey } = parseAtUri(uri)
+  const response = await agent.com.atproto.repo.getRecord({
+    repo,
+    collection,
+    rkey,
+  })
+  return {
+    uri: response.data.uri,
+    cid: response.data.cid ?? '',
+    value: v.parse(absoluteValidators.main, response.data.value),
+  }
+}
+
+// Get project by handle (optional) and rkey
+// If no handle provided, uses the agent's own DID
+export async function getProjectByRkey(
+  agent: Agent,
+  rkey: string,
+  handle?: string,
+): Promise<ProjectRecord> {
+  let did: string
+  if (handle) {
+    did = await resolveHandle(agent, handle)
+  } else {
+    did = agent.assertDid
+  }
+
+  const uri = `at://${did}/dj.eddy.absolute/${rkey}`
+  return getProject(agent, uri)
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                      Create Readable Stream From At Proto                      */
+/*                                                                                */
+/**********************************************************************************/
+
+/** Stream a stem directly from ATProto to OPFS (avoids loading blob into memory) */
+export async function createReadableStreamFromAtProto(
+  agent: Agent,
+  stemUri: string,
+  clipId: string,
+): Promise<ReadableStream<Uint8Array<ArrayBuffer>>> {
+  const { repo } = parseAtUri(stemUri)
+  const stem = await getStem(agent, stemUri)
+  const blob = stem.value.blob
+
+  // Handle both BlobRef (ref is CID) and untyped (cid is string) formats
+  const blobCid = 'ref' in blob ? blob.ref.toString() : blob.cid
+
+  log('streaming blob to OPFS', { did: repo, cid: blobCid, clipId })
+
+  // Construct the blob URL and fetch with streaming
+  const pdsUrl = await getPdsUrl(agent)
+  const url = new URL('/xrpc/com.atproto.sync.getBlob', pdsUrl)
+  url.searchParams.set('did', repo)
+  url.searchParams.set('cid', blobCid)
+
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch blob: ${response.status} ${response.statusText}`)
+  }
+  if (!response.body) {
+    throw new Error('Response body is null')
+  }
+
+  return response.body
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                       List                                     */
+/*                                                                                */
+/**********************************************************************************/
+
+export async function listProjects(agent: Agent): Promise<ProjectListItem[]> {
+  const response = await agent.com.atproto.repo.listRecords({
+    repo: agent.assertDid,
+    collection: 'dj.eddy.absolute',
+    limit: 50,
+  })
+
+  return response.data.records.map(record => {
+    const project = v.parse(absoluteValidators.main, record.value)
+    const { rkey } = parseAtUri(record.uri)
+    return {
+      uri: record.uri,
+      cid: record.cid,
+      rkey,
+      title: project.title,
+      createdAt: project.createdAt,
+      trackCount: project.mediaTracks.length,
+    }
+  })
+}
+
+export async function listStems(agent: Agent): Promise<string[]> {
+  const response = await agent.com.atproto.repo.listRecords({
+    repo: agent.assertDid,
+    collection: 'dj.eddy.stem',
+    limit: 100,
+  })
+  return response.data.records.map(record => record.uri)
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                      Delete                                    */
+/*                                                                                */
+/**********************************************************************************/
 
 export async function deleteProject(agent: Agent, uri: string): Promise<void> {
   const { repo, rkey } = parseAtUri(uri)
@@ -398,15 +310,6 @@ export async function deleteStem(agent: Agent, uri: string): Promise<void> {
     collection: 'dj.eddy.stem',
     rkey,
   })
-}
-
-export async function listStems(agent: Agent): Promise<string[]> {
-  const response = await agent.com.atproto.repo.listRecords({
-    repo: agent.assertDid,
-    collection: 'dj.eddy.stem',
-    limit: 100,
-  })
-  return response.data.records.map(record => record.uri)
 }
 
 export async function deleteOrphanedStems(agent: Agent): Promise<string[]> {
@@ -438,4 +341,92 @@ export async function deleteOrphanedStems(agent: Agent): Promise<string[]> {
   await Promise.all(orphanedStems.map(uri => deleteStem(agent, uri)))
 
   return orphanedStems
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                  Publish Project                               */
+/*                                                                                */
+/**********************************************************************************/
+
+export async function publishProject(
+  agent: Agent,
+  project: AbsoluteProject,
+  clipBlobs: Map<string, { blob: Blob; duration: number }>,
+): Promise<RecordRef> {
+  // Build media tracks with processed clips in parallel
+  const mediaTracks = await Promise.all(
+    project.mediaTracks.map(async track => ({
+      type: 'media' as const,
+      id: track.id,
+      name: track.name,
+      clips: await Promise.all(
+        track.clips.map(async (clip): Promise<MediaClip> => {
+          // Case 1: Local recording (opfs:// URL) - upload as stem
+          if (isOpfsUrl(clip)) {
+            const localBlob = clipBlobs.get(clip.id)
+            if (!localBlob) {
+              throw new Error(`Local clip ${clip.id} has no blob - cannot publish`)
+            }
+            const stemRef = await makeStemRecord(agent, localBlob.blob, localBlob.duration)
+            return {
+              type: 'stem',
+              id: clip.id,
+              ref: stemRef,
+              start: clip.start,
+              duration: clip.duration,
+            }
+          }
+
+          // Case 2: Existing stem source - keep or clone
+          if (isClipStem(clip)) {
+            const { repo } = parseAtUri(clip.ref.uri)
+            if (repo === agent.assertDid) {
+              // Own stem - keep as is
+              return clip
+            }
+            // External stem - clone to own PDS
+            const clonedRef = await cloneStem(agent, clip.ref.uri)
+            return { ...clip, ref: clonedRef }
+          }
+
+          // Case 3: URL clips (http/https) and project clips pass through unchanged
+          return clip
+        }),
+      ),
+      audioPipeline: track.audioPipeline,
+      visualPipeline: track.visualPipeline,
+    })),
+  )
+
+  // Build and validate project record
+  const canvas = project.canvas as Canvas
+  const record = v.parse(absoluteWireValidators.main, {
+    type: 'absolute',
+    schemaVersion: 1,
+    title: project.title,
+    canvas: {
+      width: canvas.width,
+      height: canvas.height,
+    },
+    mediaTracks,
+    metadataTracks: project.metadataTracks,
+    createdAt: project.createdAt,
+  } satisfies AbsoluteProject)
+
+  log('creating project record', record)
+
+  const response = await agent.com.atproto.repo.createRecord({
+    repo: agent.assertDid,
+    collection: 'dj.eddy.absolute',
+    record: {
+      $type: 'dj.eddy.absolute',
+      ...record,
+    },
+  })
+
+  return {
+    uri: response.data.uri,
+    cid: response.data.cid,
+  }
 }

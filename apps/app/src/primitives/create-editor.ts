@@ -1,7 +1,7 @@
 import { $MESSENGER, rpc, transfer } from '@bigmistqke/rpc/messenger'
 import { every, whenEffect, whenMemo } from '@bigmistqke/solid-whenever'
 import type { Agent } from '@eddy/atproto'
-import { getProjectByRkey, publishProject, streamStemToOPFS } from '@eddy/atproto'
+import { createReadableStreamFromAtProto, getProjectByRkey, publishProject } from '@eddy/atproto'
 import {
   decodeClipAudio,
   extractAudioChunk,
@@ -18,7 +18,7 @@ import {
   type MediaClip,
 } from '@eddy/lexicons'
 import { makeMuxer } from '@eddy/media'
-import { createWritableStreamFromClip, readClipBlob, writeBlobToClip } from '@eddy/opfs'
+import { createWritableStreamToOPFS, readClipBlob, writeBlobToOPFS } from '@eddy/opfs'
 import { createPlayer, SCHEDULER_BUFFER } from '@eddy/player'
 import { getActiveMediaClips, getProjectDuration } from '@eddy/timeline'
 import {
@@ -258,7 +258,10 @@ export function createEditor(options: CreateEditorOptions) {
 
       try {
         // Stream directly from ATProto to OPFS (avoids loading blob into memory)
-        await streamStemToOPFS(agent, clip.ref.uri, clipId, createWritableStreamFromClip)
+        const readableStream = await createReadableStreamFromAtProto(agent, clip.ref.uri, clipId)
+        const writableStream = await createWritableStreamToOPFS(clipId)
+
+        readableStream.pipeTo(writableStream)
         return true
       } catch (err) {
         console.error(`Failed to fetch stem for clip ${clipId}:`, err)
@@ -1057,7 +1060,7 @@ export function createEditor(options: CreateEditorOptions) {
     /** Load a test clip into a track (for perf testing) */
     async loadTestClip(trackId: string, blob: Blob, duration: number, offset = 0) {
       const clipId = `clip-${trackId}-${Date.now()}`
-      await writeBlobToClip(clipId, blob)
+      await writeBlobToOPFS(clipId, blob)
       addRecording(trackId, clipId, duration, offset)
     },
 
