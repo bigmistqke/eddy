@@ -1,5 +1,29 @@
 [
   {
+    "hash": "b261f6f4c75e78e8904ff909e9d4300e78ef11db",
+    "short_hash": "b261f6f",
+    "author": "bigmistqke",
+    "date": "2026-01-27T14:48:54+01:00",
+    "message": "refactor: move app and jam from packages/ to apps/\n\nSeparate applications from library packages for clearer monorepo structure.",
+    "files_changed": 109
+  },
+  {
+    "hash": "eacdc510f5b42e6b8f37bb996650101e0ca94d65",
+    "short_hash": "eacdc51",
+    "author": "bigmistqke",
+    "date": "2026-01-27T14:47:59+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
+    "hash": "abdebd60c465d472b25fd813b0b3da136f3c4a33",
+    "short_hash": "abdebd6",
+    "author": "bigmistqke",
+    "date": "2026-01-27T14:47:42+01:00",
+    "message": "refactor: merge @eddy/solid into @eddy/utils and rename timeline files\n\nConsolidate @eddy/solid package into @eddy/utils/solid to reduce package\ncount. Also rename compile-*-timeline.ts to *-timeline.ts for consistency.",
+    "files_changed": 28
+  },
+  {
     "hash": "abdebd60c465d472b25fd813b0b3da136f3c4a33",
     "short_hash": "abdebd6",
     "author": "bigmistqke",
@@ -38,22 +62,6 @@
     "date": "2026-01-27T14:10:00+01:00",
     "message": "chore: sync deciduous graph",
     "files_changed": 2
-  },
-  {
-    "hash": "3d8ba796d2d3b0e5b3692618264286832ba6a03a",
-    "short_hash": "3d8ba79",
-    "author": "bigmistqke",
-    "date": "2026-01-27T14:10:00+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "a8bbf030444a01160943b20ae36b23a7abba6d67",
-    "short_hash": "a8bbf03",
-    "author": "bigmistqke",
-    "date": "2026-01-27T14:08:59+01:00",
-    "message": "refactor: extract extractAudioChannels to @eddy/audio and use pick() for interfaces",
-    "files_changed": 5
   },
   {
     "hash": "a8bbf030444a01160943b20ae36b23a7abba6d67",
