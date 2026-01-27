@@ -19,6 +19,7 @@
     "@eddy/timeline": "workspace:*",
     "@eddy/utils": "workspace:*",
     "@eddy/video": "workspace:*",
+    "@eddy/opfs": "workspace:*",
     "mediabunny": "^1.27.3",
     "solid-js": "^1.9.0"
   },

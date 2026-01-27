@@ -8,13 +8,9 @@
 
 import { expose, handle, type Handled } from '@bigmistqke/rpc/messenger'
 import { makeMuxer, type AudioFrameData, type VideoFrameData } from '@eddy/media'
+import { writeBlobToClip } from '@eddy/opfs'
+import { makeScheduler, type RecorderScheduler, type SchedulerBuffer } from '@eddy/player'
 import { debug } from '@eddy/utils'
-import {
-  makeScheduler,
-  writeBlob,
-  type RecorderScheduler,
-  type SchedulerBuffer,
-} from '@eddy/player'
 
 const log = debug('muxer.worker', false)
 
@@ -155,7 +151,7 @@ expose<MuxerWorkerMethods>({
         log('finalized', { clipId, frames: result.videoFrameCount, bytes: result.blob.size })
 
         // Write to OPFS
-        await writeBlob(clipId, result.blob)
+        await writeBlobToClip(clipId, result.blob)
 
         log('written to OPFS', { clipId })
 

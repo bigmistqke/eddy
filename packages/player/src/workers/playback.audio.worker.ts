@@ -15,8 +15,8 @@ import {
   type RingBufferWriter,
 } from '@eddy/audio'
 import type { AudioTrackInfo } from '@eddy/media'
+import { makeOPFSSource } from '@eddy/opfs'
 import { debug, makeLoop, pick } from '@eddy/utils'
-import { makeOPFSSource } from '../opfs'
 
 const log = debug('playback.audio.worker', false)
 

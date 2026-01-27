@@ -18,13 +18,8 @@ import {
   type MediaClip,
 } from '@eddy/lexicons'
 import { makeMuxer } from '@eddy/media'
-import {
-  createPlayer,
-  createWritableStream,
-  readClipBlob,
-  SCHEDULER_BUFFER,
-  writeBlob,
-} from '@eddy/player'
+import { createWritableStreamFromClip, readClipBlob, writeBlobToClip } from '@eddy/opfs'
+import { createPlayer, SCHEDULER_BUFFER } from '@eddy/player'
 import { getActiveMediaClips, getProjectDuration } from '@eddy/timeline'
 import {
   action,
@@ -39,7 +34,7 @@ import {
 import type { EffectValue } from '@eddy/video'
 import { createEffect, createSelector, createSignal, mapArray, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
-import { makeDebugInfo as initDebugInfo } from '~/primitives/make-debug-info'
+import { makeDebugInfo } from '~/primitives/make-debug-info'
 import type { CaptureWorkerMethods } from '~/workers/capture.worker'
 import CaptureWorker from '~/workers/capture.worker?worker'
 import type { MuxerWorkerMethods } from '~/workers/muxer.worker'
@@ -196,7 +191,7 @@ export function createEditor(options: CreateEditorOptions) {
         project,
         schedulerBuffer: SCHEDULER_BUFFER,
       })
-      initDebugInfo(result)
+      makeDebugInfo(result)
 
       onCleanup(() => {
         result.destroy()
@@ -263,7 +258,7 @@ export function createEditor(options: CreateEditorOptions) {
 
       try {
         // Stream directly from ATProto to OPFS (avoids loading blob into memory)
-        await streamStemToOPFS(agent, clip.ref.uri, clipId, createWritableStream)
+        await streamStemToOPFS(agent, clip.ref.uri, clipId, createWritableStreamFromClip)
         return true
       } catch (err) {
         console.error(`Failed to fetch stem for clip ${clipId}:`, err)
@@ -1062,7 +1057,7 @@ export function createEditor(options: CreateEditorOptions) {
     /** Load a test clip into a track (for perf testing) */
     async loadTestClip(trackId: string, blob: Blob, duration: number, offset = 0) {
       const clipId = `clip-${trackId}-${Date.now()}`
-      await writeBlob(clipId, blob)
+      await writeBlobToClip(clipId, blob)
       addRecording(trackId, clipId, duration, offset)
     },
 

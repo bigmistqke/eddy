@@ -7,7 +7,7 @@
 import { getClipHandle } from './paths'
 
 /** Create a writable stream for a clip (for streaming writes) */
-export async function createWritableStream(
+export async function createWritableStreamFromClip(
   clipId: string,
 ): Promise<FileSystemWritableFileStream> {
   const handle = await getClipHandle(clipId, { create: true })
@@ -15,7 +15,7 @@ export async function createWritableStream(
 }
 
 /** Write a blob to OPFS (for one-shot writes) */
-export async function writeBlob(clipId: string, blob: Blob): Promise<void> {
-  const writable = await createWritableStream(clipId)
+export async function writeBlobToClip(clipId: string, blob: Blob): Promise<void> {
+  const writable = await createWritableStreamFromClip(clipId)
   await blob.stream().pipeTo(writable)
 }

@@ -57,6 +57,9 @@ importers:
       '@eddy/media':
         specifier: workspace:*
         version: link:../../packages/media
+      '@eddy/opfs':
+        specifier: workspace:*
+        version: link:../../packages/opfs
       '@eddy/player':
         specifier: workspace:*
         version: link:../../packages/player
@@ -241,6 +244,19 @@ importers:
         specifier: ^5.7.0
         version: 5.9.3
 
+  packages/opfs:
+    dependencies:
+      mediabunny:
+        specifier: ^1.27.3
+        version: 1.28.0
+    devDependencies:
+      '@types/audioworklet':
+        specifier: ^0.0.92
+        version: 0.0.92
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+
   packages/player:
     dependencies:
       '@bigmistqke/rpc':
@@ -258,6 +274,9 @@ importers:
       '@eddy/media':
         specifier: workspace:*
         version: link:../media
+      '@eddy/opfs':
+        specifier: workspace:*
+        version: link:../opfs
       '@eddy/timeline':
         specifier: workspace:*
         version: link:../timeline

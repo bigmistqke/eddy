@@ -35,17 +35,6 @@ export {
 
 export { PREVIEW_CLIP_ID } from './constants'
 
-export {
-  createWritableStream,
-  deleteClip,
-  getClipHandle,
-  getClipsDirectory,
-  listClips,
-  makeOPFSSource,
-  readClipBlob,
-  writeBlob,
-} from './opfs'
-
 export type {
   CompositorMethods,
   CompositorWorkerMethods,

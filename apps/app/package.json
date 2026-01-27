@@ -23,6 +23,7 @@
     "@eddy/media": "workspace:*",
     "@eddy/utils": "workspace:*",
     "@eddy/video": "workspace:*",
+    "@eddy/opfs": "workspace:*",
     "@solidjs/router": "^0.15.0",
     "clsx": "^2.1.1",
     "mediabunny": "^1.27.3",
