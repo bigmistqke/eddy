@@ -1,5 +1,29 @@
 [
   {
+    "hash": "abdebd60c465d472b25fd813b0b3da136f3c4a33",
+    "short_hash": "abdebd6",
+    "author": "bigmistqke",
+    "date": "2026-01-27T14:47:42+01:00",
+    "message": "refactor: merge @eddy/solid into @eddy/utils and rename timeline files\n\nConsolidate @eddy/solid package into @eddy/utils/solid to reduce package\ncount. Also rename compile-*-timeline.ts to *-timeline.ts for consistency.",
+    "files_changed": 28
+  },
+  {
+    "hash": "68bef9ce87a85eeebf7fe393730e2a731c55f204",
+    "short_hash": "68bef9c",
+    "author": "bigmistqke",
+    "date": "2026-01-27T14:37:44+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
+    "hash": "b03256e871d80e682969c3c4a2d116b1be2a55d6",
+    "short_hash": "b03256e",
+    "author": "bigmistqke",
+    "date": "2026-01-27T14:37:26+01:00",
+    "message": "refactor: extract player/playback into @eddy/player package\n\nMove player orchestration, playback workers, and OPFS utilities into a\nreusable package. The app now imports createPlayer from @eddy/player.",
+    "files_changed": 36
+  },
+  {
     "hash": "b03256e871d80e682969c3c4a2d116b1be2a55d6",
     "short_hash": "b03256e",
     "author": "bigmistqke",
@@ -48,28 +72,12 @@
     "files_changed": 9
   },
   {
-    "hash": "2175b06940e0b1b1a9d642f4bb3811151f1d9eb5",
-    "short_hash": "2175b06",
-    "author": "bigmistqke",
-    "date": "2026-01-27T13:55:44+01:00",
-    "message": "refactor: use pick() for worker interfaces to avoid circular type refs\n\n- Add pick() utility to @eddy/utils\n- Use Pick<> type for explicit method selection in worker interfaces\n- Avoids RPC type mapper hitting circular DOM references",
-    "files_changed": 9
-  },
-  {
     "hash": "8873830bed10e09ba43a3c66422551b60f46c70f",
     "short_hash": "8873830",
     "author": "bigmistqke",
     "date": "2026-01-26T23:43:02+01:00",
     "message": "refactor: simplify worker interfaces with object spreading\n\n- Extend base interfaces instead of redefining methods\n- Spread factory objects directly in worker handlers\n- Change demuxer.info property to getInfo() method",
     "files_changed": 7
-  },
-  {
-    "hash": "10504106bb41eb568b523a9c09f4f2b02e25dae8",
-    "short_hash": "1050410",
-    "author": "bigmistqke",
-    "date": "2026-01-26T23:23:35+01:00",
-    "message": "fix: handle opfs:// URLs in publishProject and reorganize lexicons\n\n- Detect opfs:// URL clips and convert to stems on publish\n- Add isClipUrl helper to lexicons\n- Move lexicon files to lexicons/ subdirectory\n- Rename validators from .project to .main",
-    "files_changed": 28
   },
   {
     "hash": "10504106bb41eb568b523a9c09f4f2b02e25dae8",
