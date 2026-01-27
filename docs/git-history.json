@@ -1,5 +1,37 @@
 [
   {
+    "hash": "b03256e871d80e682969c3c4a2d116b1be2a55d6",
+    "short_hash": "b03256e",
+    "author": "bigmistqke",
+    "date": "2026-01-27T14:37:26+01:00",
+    "message": "refactor: extract player/playback into @eddy/player package\n\nMove player orchestration, playback workers, and OPFS utilities into a\nreusable package. The app now imports createPlayer from @eddy/player.",
+    "files_changed": 36
+  },
+  {
+    "hash": "3d8ba796d2d3b0e5b3692618264286832ba6a03a",
+    "short_hash": "3d8ba79",
+    "author": "bigmistqke",
+    "date": "2026-01-27T14:10:00+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
+    "hash": "3d8ba796d2d3b0e5b3692618264286832ba6a03a",
+    "short_hash": "3d8ba79",
+    "author": "bigmistqke",
+    "date": "2026-01-27T14:10:00+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
+    "hash": "a8bbf030444a01160943b20ae36b23a7abba6d67",
+    "short_hash": "a8bbf03",
+    "author": "bigmistqke",
+    "date": "2026-01-27T14:08:59+01:00",
+    "message": "refactor: extract extractAudioChannels to @eddy/audio and use pick() for interfaces",
+    "files_changed": 5
+  },
+  {
     "hash": "a8bbf030444a01160943b20ae36b23a7abba6d67",
     "short_hash": "a8bbf03",
     "author": "bigmistqke",
@@ -54,22 +86,6 @@
     "date": "2026-01-26T22:52:19+01:00",
     "message": "refactor: simplify lexicon schemas and adapt consumers\n\n- Remove unused pipeline/value lexicons\n- Add vector value types and codegen scripts\n- Update timeline, jam, and app packages",
     "files_changed": 27
-  },
-  {
-    "hash": "4135539419bc307f2b479b2732da3dd9d9c145dc",
-    "short_hash": "4135539",
-    "author": "bigmistqke",
-    "date": "2026-01-26T22:52:19+01:00",
-    "message": "refactor: simplify lexicon schemas and adapt consumers\n\n- Remove unused pipeline/value lexicons\n- Add vector value types and codegen scripts\n- Update timeline, jam, and app packages",
-    "files_changed": 27
-  },
-  {
-    "hash": "765e37ff47e4b56b1fc5904b9c30a5140161f254",
-    "short_hash": "765e37f",
-    "author": "bigmistqke",
-    "date": "2026-01-26T22:46:47+01:00",
-    "message": "fix: multi-clip recording and playback\n\n- Fix hasClip/clearClip using clipId instead of trackId\n- Re-initialize muxer after reset for subsequent recordings\n- Fix SolidJS reactivity for compositor project sync\n- Add fine-grained tracking of clips array for store mutations",
-    "files_changed": 4
   },
   {
     "hash": "765e37ff47e4b56b1fc5904b9c30a5140161f254",

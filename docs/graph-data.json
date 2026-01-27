@@ -4674,6 +4674,72 @@
       "created_at": "2026-01-27T14:09:14.951605+01:00",
       "updated_at": "2026-01-27T14:09:14.951605+01:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"a8bbf03\",\"confidence\":95}"
+    },
+    {
+      "id": 426,
+      "change_id": "d4cf132a-a274-4530-b29a-644f534c3d35",
+      "node_type": "goal",
+      "title": "Create @eddy/player package",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-27T14:22:48.363968+01:00",
+      "updated_at": "2026-01-27T14:22:48.363968+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"Implement the following plan:\\n\\n# Plan: Create `@eddy/player` Package\\n\\n## Goal\\nExtract player/playback orchestration from `packages/app` into a reusable `packages/player` package that provides a SolidJS hook `createPlayer`.\"}"
+    },
+    {
+      "id": 427,
+      "change_id": "345374fe-935d-4e7c-9983-cc3f75dd2515",
+      "node_type": "action",
+      "title": "Create @eddy/player package skeleton",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-27T14:23:03.670879+01:00",
+      "updated_at": "2026-01-27T14:23:03.670879+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 428,
+      "change_id": "e65c1e02-b128-4e1c-87e2-238a33de893e",
+      "node_type": "action",
+      "title": "Move core player files to @eddy/player",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-27T14:23:39.174924+01:00",
+      "updated_at": "2026-01-27T14:23:39.174924+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 429,
+      "change_id": "1c491ea8-6638-487a-8c5d-311d52c44108",
+      "node_type": "action",
+      "title": "Update packages/app to use @eddy/player",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-27T14:29:30.970493+01:00",
+      "updated_at": "2026-01-27T14:29:30.970493+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 430,
+      "change_id": "4360ff2f-afab-4c29-8346-78e918998eb8",
+      "node_type": "outcome",
+      "title": "Created @eddy/player package - types pass",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-27T14:32:45.567816+01:00",
+      "updated_at": "2026-01-27T14:32:45.567816+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"3d8ba79\",\"confidence\":95}"
+    },
+    {
+      "id": 431,
+      "change_id": "5eecfea2-cf8f-4e51-89e6-d13248d9d6c6",
+      "node_type": "outcome",
+      "title": "Committed: refactor - extract player/playback into @eddy/player package",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-27T14:37:31.848889+01:00",
+      "updated_at": "2026-01-27T14:37:31.848889+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"b03256e\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -8757,6 +8823,61 @@
       "weight": 1.0,
       "rationale": "Committed",
       "created_at": "2026-01-27T14:09:14.966027+01:00"
+    },
+    {
+      "id": 372,
+      "from_node_id": 426,
+      "to_node_id": 427,
+      "from_change_id": "d4cf132a-a274-4530-b29a-644f534c3d35",
+      "to_change_id": "345374fe-935d-4e7c-9983-cc3f75dd2515",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Package skeleton creation",
+      "created_at": "2026-01-27T14:23:39.344623+01:00"
+    },
+    {
+      "id": 373,
+      "from_node_id": 426,
+      "to_node_id": 428,
+      "from_change_id": "d4cf132a-a274-4530-b29a-644f534c3d35",
+      "to_change_id": "e65c1e02-b128-4e1c-87e2-238a33de893e",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Core file migration",
+      "created_at": "2026-01-27T14:23:42.999051+01:00"
+    },
+    {
+      "id": 374,
+      "from_node_id": 426,
+      "to_node_id": 429,
+      "from_change_id": "d4cf132a-a274-4530-b29a-644f534c3d35",
+      "to_change_id": "1c491ea8-6638-487a-8c5d-311d52c44108",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "App integration",
+      "created_at": "2026-01-27T14:29:31.145327+01:00"
+    },
+    {
+      "id": 375,
+      "from_node_id": 426,
+      "to_node_id": 430,
+      "from_change_id": "d4cf132a-a274-4530-b29a-644f534c3d35",
+      "to_change_id": "4360ff2f-afab-4c29-8346-78e918998eb8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation complete",
+      "created_at": "2026-01-27T14:32:45.760562+01:00"
+    },
+    {
+      "id": 376,
+      "from_node_id": 429,
+      "to_node_id": 431,
+      "from_change_id": "1c491ea8-6638-487a-8c5d-311d52c44108",
+      "to_change_id": "5eecfea2-cf8f-4e51-89e6-d13248d9d6c6",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-27T14:37:31.960013+01:00"
     }
   ]
 }
