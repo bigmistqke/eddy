@@ -1,5 +1,61 @@
 [
   {
+    "hash": "a8bbf030444a01160943b20ae36b23a7abba6d67",
+    "short_hash": "a8bbf03",
+    "author": "bigmistqke",
+    "date": "2026-01-27T14:08:59+01:00",
+    "message": "refactor: extract extractAudioChannels to @eddy/audio and use pick() for interfaces",
+    "files_changed": 5
+  },
+  {
+    "hash": "2175b06940e0b1b1a9d642f4bb3811151f1d9eb5",
+    "short_hash": "2175b06",
+    "author": "bigmistqke",
+    "date": "2026-01-27T13:55:44+01:00",
+    "message": "refactor: use pick() for worker interfaces to avoid circular type refs\n\n- Add pick() utility to @eddy/utils\n- Use Pick<> type for explicit method selection in worker interfaces\n- Avoids RPC type mapper hitting circular DOM references",
+    "files_changed": 9
+  },
+  {
+    "hash": "2175b06940e0b1b1a9d642f4bb3811151f1d9eb5",
+    "short_hash": "2175b06",
+    "author": "bigmistqke",
+    "date": "2026-01-27T13:55:44+01:00",
+    "message": "refactor: use pick() for worker interfaces to avoid circular type refs\n\n- Add pick() utility to @eddy/utils\n- Use Pick<> type for explicit method selection in worker interfaces\n- Avoids RPC type mapper hitting circular DOM references",
+    "files_changed": 9
+  },
+  {
+    "hash": "8873830bed10e09ba43a3c66422551b60f46c70f",
+    "short_hash": "8873830",
+    "author": "bigmistqke",
+    "date": "2026-01-26T23:43:02+01:00",
+    "message": "refactor: simplify worker interfaces with object spreading\n\n- Extend base interfaces instead of redefining methods\n- Spread factory objects directly in worker handlers\n- Change demuxer.info property to getInfo() method",
+    "files_changed": 7
+  },
+  {
+    "hash": "10504106bb41eb568b523a9c09f4f2b02e25dae8",
+    "short_hash": "1050410",
+    "author": "bigmistqke",
+    "date": "2026-01-26T23:23:35+01:00",
+    "message": "fix: handle opfs:// URLs in publishProject and reorganize lexicons\n\n- Detect opfs:// URL clips and convert to stems on publish\n- Add isClipUrl helper to lexicons\n- Move lexicon files to lexicons/ subdirectory\n- Rename validators from .project to .main",
+    "files_changed": 28
+  },
+  {
+    "hash": "10504106bb41eb568b523a9c09f4f2b02e25dae8",
+    "short_hash": "1050410",
+    "author": "bigmistqke",
+    "date": "2026-01-26T23:23:35+01:00",
+    "message": "fix: handle opfs:// URLs in publishProject and reorganize lexicons\n\n- Detect opfs:// URL clips and convert to stems on publish\n- Add isClipUrl helper to lexicons\n- Move lexicon files to lexicons/ subdirectory\n- Rename validators from .project to .main",
+    "files_changed": 28
+  },
+  {
+    "hash": "4135539419bc307f2b479b2732da3dd9d9c145dc",
+    "short_hash": "4135539",
+    "author": "bigmistqke",
+    "date": "2026-01-26T22:52:19+01:00",
+    "message": "refactor: simplify lexicon schemas and adapt consumers\n\n- Remove unused pipeline/value lexicons\n- Add vector value types and codegen scripts\n- Update timeline, jam, and app packages",
+    "files_changed": 27
+  },
+  {
     "hash": "4135539419bc307f2b479b2732da3dd9d9c145dc",
     "short_hash": "4135539",
     "author": "bigmistqke",
@@ -32,36 +88,12 @@
     "files_changed": 2
   },
   {
-    "hash": "cbd0b447e001348f9bfd0d45ac2863313c19f786",
-    "short_hash": "cbd0b44",
-    "author": "bigmistqke",
-    "date": "2026-01-26T22:16:47+01:00",
-    "message": "fix: preview clips now recognized as media clips\n\n- Add type: 'url' and url field to injected preview clips\n- Fix isMediaClip to use || instead of && (was rejecting all clips)",
-    "files_changed": 2
-  },
-  {
     "hash": "3bad67d2da4f0ef46b9800eaff280cffca328f15",
     "short_hash": "3bad67d",
     "author": "bigmistqke",
     "date": "2026-01-26T03:28:59+01:00",
     "message": "refactor: remove groups, inline clips in tracks\n\n- Delete dj.eddy.group lexicon\n- Add mediaTracks/metadataTracks to project schema\n- Inline clips in tracks (no more clipIds references)\n- Simplify timeline to runtime queries\n- Update app, jam, video packages for new schema\n- Route track audio directly to master (no group hierarchy)",
     "files_changed": 29
-  },
-  {
-    "hash": "3bad67d2da4f0ef46b9800eaff280cffca328f15",
-    "short_hash": "3bad67d",
-    "author": "bigmistqke",
-    "date": "2026-01-26T03:28:59+01:00",
-    "message": "refactor: remove groups, inline clips in tracks\n\n- Delete dj.eddy.group lexicon\n- Add mediaTracks/metadataTracks to project schema\n- Inline clips in tracks (no more clipIds references)\n- Simplify timeline to runtime queries\n- Update app, jam, video packages for new schema\n- Route track audio directly to master (no group hierarchy)",
-    "files_changed": 29
-  },
-  {
-    "hash": "c8eb56cfb1cd300c35898a47ff1df230b9a32d6b",
-    "short_hash": "c8eb56c",
-    "author": "bigmistqke",
-    "date": "2026-01-25T23:26:33+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
   },
   {
     "hash": "54f2823b03052bd2232fe5156f907091a57ed9a6",

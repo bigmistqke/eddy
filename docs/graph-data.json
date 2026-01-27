@@ -4619,6 +4619,61 @@
       "created_at": "2026-01-26T23:08:01.250548+01:00",
       "updated_at": "2026-01-26T23:08:01.250548+01:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 421,
+      "change_id": "0ca08558-c318-440d-896b-61ff14251ea4",
+      "node_type": "outcome",
+      "title": "Committed: handle opfs:// URLs in publishProject and reorganize lexicons",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-26T23:23:40.681864+01:00",
+      "updated_at": "2026-01-26T23:23:40.681864+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"1050410\",\"confidence\":95}"
+    },
+    {
+      "id": 422,
+      "change_id": "555af12d-9cd0-472b-a31c-a2d3056af913",
+      "node_type": "outcome",
+      "title": "Committed: simplify worker interfaces with object spreading",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-26T23:43:07.541640+01:00",
+      "updated_at": "2026-01-26T23:43:07.541640+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"8873830\",\"confidence\":95}"
+    },
+    {
+      "id": 423,
+      "change_id": "6a082e3a-145b-47c0-b2cb-6bcf51082fd2",
+      "node_type": "outcome",
+      "title": "Committed: use pick() for worker interfaces to avoid circular type refs",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-27T13:55:49.975136+01:00",
+      "updated_at": "2026-01-27T13:55:49.975136+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"2175b06\",\"confidence\":95}"
+    },
+    {
+      "id": 424,
+      "change_id": "11360099-53ce-4a25-af77-a888e1aecd81",
+      "node_type": "action",
+      "title": "Extract extractAudioChannels to @eddy/audio and use pick() for interfaces",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-27T14:09:10.366891+01:00",
+      "updated_at": "2026-01-27T14:09:10.366891+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"a8bbf03\",\"confidence\":95}"
+    },
+    {
+      "id": 425,
+      "change_id": "f57303a5-58a2-434b-9e7d-316c1564d1b1",
+      "node_type": "outcome",
+      "title": "Committed: extract extractAudioChannels to @eddy/audio",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-01-27T14:09:14.951605+01:00",
+      "updated_at": "2026-01-27T14:09:14.951605+01:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"a8bbf03\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -8658,6 +8713,50 @@
       "weight": 1.0,
       "rationale": "Fix for publishing local recordings",
       "created_at": "2026-01-26T23:08:05.980655+01:00"
+    },
+    {
+      "id": 368,
+      "from_node_id": 420,
+      "to_node_id": 421,
+      "from_change_id": "3940f692-6eca-44c2-b89f-b958802345e0",
+      "to_change_id": "0ca08558-c318-440d-896b-61ff14251ea4",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-26T23:23:45.521732+01:00"
+    },
+    {
+      "id": 369,
+      "from_node_id": 420,
+      "to_node_id": 422,
+      "from_change_id": "3940f692-6eca-44c2-b89f-b958802345e0",
+      "to_change_id": "555af12d-9cd0-472b-a31c-a2d3056af913",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Related refactor",
+      "created_at": "2026-01-26T23:43:07.552171+01:00"
+    },
+    {
+      "id": 370,
+      "from_node_id": 420,
+      "to_node_id": 423,
+      "from_change_id": "3940f692-6eca-44c2-b89f-b958802345e0",
+      "to_change_id": "6a082e3a-145b-47c0-b2cb-6bcf51082fd2",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Type fix",
+      "created_at": "2026-01-27T13:55:49.997849+01:00"
+    },
+    {
+      "id": 371,
+      "from_node_id": 424,
+      "to_node_id": 425,
+      "from_change_id": "11360099-53ce-4a25-af77-a888e1aecd81",
+      "to_change_id": "f57303a5-58a2-434b-9e7d-316c1564d1b1",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-01-27T14:09:14.966027+01:00"
     }
   ]
 }
