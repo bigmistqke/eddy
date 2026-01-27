@@ -1,5 +1,37 @@
 [
   {
+    "hash": "06e2c7016274dcc98feca25573e5338054eef306",
+    "short_hash": "06e2c70",
+    "author": "bigmistqke",
+    "date": "2026-01-27T15:36:00+01:00",
+    "message": "refactor: simplify publishProject to single pass and update opfs imports\n\nCombine clip processing and track building into a single parallel pass,\neliminating the intermediate stemRefs Map. Also update opfs function names.",
+    "files_changed": 4
+  },
+  {
+    "hash": "1df46c9206a4ccc16faf44b0e14e269660f2e1bc",
+    "short_hash": "1df46c9",
+    "author": "bigmistqke",
+    "date": "2026-01-27T15:17:24+01:00",
+    "message": "refactor: move opfs related logic to @eddy/opfs",
+    "files_changed": 18
+  },
+  {
+    "hash": "1d0fcfb5c7444f76f6efe191f609509738f9d6be",
+    "short_hash": "1d0fcfb",
+    "author": "bigmistqke",
+    "date": "2026-01-27T15:04:15+01:00",
+    "message": "chore: import debug from ./debug",
+    "files_changed": 1
+  },
+  {
+    "hash": "5ad4f6819e41bd0f4a984120727f9044d2f3d443",
+    "short_hash": "5ad4f68",
+    "author": "bigmistqke",
+    "date": "2026-01-27T15:03:25+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
     "hash": "6fe0bf4ff50c2271051996b0f60d2856ea137a55",
     "short_hash": "6fe0bf4",
     "author": "bigmistqke",
@@ -8,12 +40,12 @@
     "files_changed": 14
   },
   {
-    "hash": "f1c5e644bf8e747558a848c201a90fb34a50b90a",
-    "short_hash": "f1c5e64",
+    "hash": "6fe0bf4ff50c2271051996b0f60d2856ea137a55",
+    "short_hash": "6fe0bf4",
     "author": "bigmistqke",
-    "date": "2026-01-27T14:49:10+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
+    "date": "2026-01-27T15:03:06+01:00",
+    "message": "refactor: move make-worker-pool to @eddy/utils for sharing\n\nMove worker pool utility to utils package so it can be used by other\npackages. Also cleanup duplicate make-player.ts from apps/app.",
+    "files_changed": 14
   },
   {
     "hash": "b261f6f4c75e78e8904ff909e9d4300e78ef11db",
@@ -22,30 +54,6 @@
     "date": "2026-01-27T14:48:54+01:00",
     "message": "refactor: move app and jam from packages/ to apps/\n\nSeparate applications from library packages for clearer monorepo structure.",
     "files_changed": 109
-  },
-  {
-    "hash": "b261f6f4c75e78e8904ff909e9d4300e78ef11db",
-    "short_hash": "b261f6f",
-    "author": "bigmistqke",
-    "date": "2026-01-27T14:48:54+01:00",
-    "message": "refactor: move app and jam from packages/ to apps/\n\nSeparate applications from library packages for clearer monorepo structure.",
-    "files_changed": 109
-  },
-  {
-    "hash": "eacdc510f5b42e6b8f37bb996650101e0ca94d65",
-    "short_hash": "eacdc51",
-    "author": "bigmistqke",
-    "date": "2026-01-27T14:47:59+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "abdebd60c465d472b25fd813b0b3da136f3c4a33",
-    "short_hash": "abdebd6",
-    "author": "bigmistqke",
-    "date": "2026-01-27T14:47:42+01:00",
-    "message": "refactor: merge @eddy/solid into @eddy/utils and rename timeline files\n\nConsolidate @eddy/solid package into @eddy/utils/solid to reduce package\ncount. Also rename compile-*-timeline.ts to *-timeline.ts for consistency.",
-    "files_changed": 28
   },
   {
     "hash": "abdebd60c465d472b25fd813b0b3da136f3c4a33",
