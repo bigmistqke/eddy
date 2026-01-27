@@ -1,5 +1,29 @@
 [
   {
+    "hash": "6fe0bf4ff50c2271051996b0f60d2856ea137a55",
+    "short_hash": "6fe0bf4",
+    "author": "bigmistqke",
+    "date": "2026-01-27T15:03:06+01:00",
+    "message": "refactor: move make-worker-pool to @eddy/utils for sharing\n\nMove worker pool utility to utils package so it can be used by other\npackages. Also cleanup duplicate make-player.ts from apps/app.",
+    "files_changed": 14
+  },
+  {
+    "hash": "f1c5e644bf8e747558a848c201a90fb34a50b90a",
+    "short_hash": "f1c5e64",
+    "author": "bigmistqke",
+    "date": "2026-01-27T14:49:10+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
+    "hash": "b261f6f4c75e78e8904ff909e9d4300e78ef11db",
+    "short_hash": "b261f6f",
+    "author": "bigmistqke",
+    "date": "2026-01-27T14:48:54+01:00",
+    "message": "refactor: move app and jam from packages/ to apps/\n\nSeparate applications from library packages for clearer monorepo structure.",
+    "files_changed": 109
+  },
+  {
     "hash": "b261f6f4c75e78e8904ff909e9d4300e78ef11db",
     "short_hash": "b261f6f",
     "author": "bigmistqke",
@@ -30,22 +54,6 @@
     "date": "2026-01-27T14:47:42+01:00",
     "message": "refactor: merge @eddy/solid into @eddy/utils and rename timeline files\n\nConsolidate @eddy/solid package into @eddy/utils/solid to reduce package\ncount. Also rename compile-*-timeline.ts to *-timeline.ts for consistency.",
     "files_changed": 28
-  },
-  {
-    "hash": "68bef9ce87a85eeebf7fe393730e2a731c55f204",
-    "short_hash": "68bef9c",
-    "author": "bigmistqke",
-    "date": "2026-01-27T14:37:44+01:00",
-    "message": "chore: sync deciduous graph",
-    "files_changed": 2
-  },
-  {
-    "hash": "b03256e871d80e682969c3c4a2d116b1be2a55d6",
-    "short_hash": "b03256e",
-    "author": "bigmistqke",
-    "date": "2026-01-27T14:37:26+01:00",
-    "message": "refactor: extract player/playback into @eddy/player package\n\nMove player orchestration, playback workers, and OPFS utilities into a\nreusable package. The app now imports createPlayer from @eddy/player.",
-    "files_changed": 36
   },
   {
     "hash": "b03256e871d80e682969c3c4a2d116b1be2a55d6",
