@@ -1,0 +1,1130 @@
+[
+  {
+    "hash": "a2a1cb785c94f820fc759cfe9454cc6e2358f25b",
+    "short_hash": "a2a1cb7",
+    "author": "bigmistqke",
+    "date": "2026-01-27T15:47:44+01:00",
+    "message": "refactor: extract capture pipeline into @eddy/capture package",
+    "files_changed": 12
+  },
+  {
+    "hash": "46b741c1509d28d562ff80a5249aa5f327195810",
+    "short_hash": "46b741c",
+    "author": "bigmistqke",
+    "date": "2026-01-27T15:36:18+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
+    "hash": "06e2c7016274dcc98feca25573e5338054eef306",
+    "short_hash": "06e2c70",
+    "author": "bigmistqke",
+    "date": "2026-01-27T15:36:00+01:00",
+    "message": "refactor: simplify publishProject to single pass and update opfs imports\n\nCombine clip processing and track building into a single parallel pass,\neliminating the intermediate stemRefs Map. Also update opfs function names.",
+    "files_changed": 4
+  },
+  {
+    "hash": "06e2c7016274dcc98feca25573e5338054eef306",
+    "short_hash": "06e2c70",
+    "author": "bigmistqke",
+    "date": "2026-01-27T15:36:00+01:00",
+    "message": "refactor: simplify publishProject to single pass and update opfs imports\n\nCombine clip processing and track building into a single parallel pass,\neliminating the intermediate stemRefs Map. Also update opfs function names.",
+    "files_changed": 4
+  },
+  {
+    "hash": "1df46c9206a4ccc16faf44b0e14e269660f2e1bc",
+    "short_hash": "1df46c9",
+    "author": "bigmistqke",
+    "date": "2026-01-27T15:17:24+01:00",
+    "message": "refactor: move opfs related logic to @eddy/opfs",
+    "files_changed": 18
+  },
+  {
+    "hash": "1d0fcfb5c7444f76f6efe191f609509738f9d6be",
+    "short_hash": "1d0fcfb",
+    "author": "bigmistqke",
+    "date": "2026-01-27T15:04:15+01:00",
+    "message": "chore: import debug from ./debug",
+    "files_changed": 1
+  },
+  {
+    "hash": "6fe0bf4ff50c2271051996b0f60d2856ea137a55",
+    "short_hash": "6fe0bf4",
+    "author": "bigmistqke",
+    "date": "2026-01-27T15:03:06+01:00",
+    "message": "refactor: move make-worker-pool to @eddy/utils for sharing\n\nMove worker pool utility to utils package so it can be used by other\npackages. Also cleanup duplicate make-player.ts from apps/app.",
+    "files_changed": 14
+  },
+  {
+    "hash": "b261f6f4c75e78e8904ff909e9d4300e78ef11db",
+    "short_hash": "b261f6f",
+    "author": "bigmistqke",
+    "date": "2026-01-27T14:48:54+01:00",
+    "message": "refactor: move app and jam from packages/ to apps/\n\nSeparate applications from library packages for clearer monorepo structure.",
+    "files_changed": 109
+  },
+  {
+    "hash": "abdebd60c465d472b25fd813b0b3da136f3c4a33",
+    "short_hash": "abdebd6",
+    "author": "bigmistqke",
+    "date": "2026-01-27T14:47:42+01:00",
+    "message": "refactor: merge @eddy/solid into @eddy/utils and rename timeline files\n\nConsolidate @eddy/solid package into @eddy/utils/solid to reduce package\ncount. Also rename compile-*-timeline.ts to *-timeline.ts for consistency.",
+    "files_changed": 28
+  },
+  {
+    "hash": "b03256e871d80e682969c3c4a2d116b1be2a55d6",
+    "short_hash": "b03256e",
+    "author": "bigmistqke",
+    "date": "2026-01-27T14:37:26+01:00",
+    "message": "refactor: extract player/playback into @eddy/player package\n\nMove player orchestration, playback workers, and OPFS utilities into a\nreusable package. The app now imports createPlayer from @eddy/player.",
+    "files_changed": 36
+  },
+  {
+    "hash": "3d8ba796d2d3b0e5b3692618264286832ba6a03a",
+    "short_hash": "3d8ba79",
+    "author": "bigmistqke",
+    "date": "2026-01-27T14:10:00+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
+    "hash": "a8bbf030444a01160943b20ae36b23a7abba6d67",
+    "short_hash": "a8bbf03",
+    "author": "bigmistqke",
+    "date": "2026-01-27T14:08:59+01:00",
+    "message": "refactor: extract extractAudioChannels to @eddy/audio and use pick() for interfaces",
+    "files_changed": 5
+  },
+  {
+    "hash": "2175b06940e0b1b1a9d642f4bb3811151f1d9eb5",
+    "short_hash": "2175b06",
+    "author": "bigmistqke",
+    "date": "2026-01-27T13:55:44+01:00",
+    "message": "refactor: use pick() for worker interfaces to avoid circular type refs\n\n- Add pick() utility to @eddy/utils\n- Use Pick<> type for explicit method selection in worker interfaces\n- Avoids RPC type mapper hitting circular DOM references",
+    "files_changed": 9
+  },
+  {
+    "hash": "8873830bed10e09ba43a3c66422551b60f46c70f",
+    "short_hash": "8873830",
+    "author": "bigmistqke",
+    "date": "2026-01-26T23:43:02+01:00",
+    "message": "refactor: simplify worker interfaces with object spreading\n\n- Extend base interfaces instead of redefining methods\n- Spread factory objects directly in worker handlers\n- Change demuxer.info property to getInfo() method",
+    "files_changed": 7
+  },
+  {
+    "hash": "10504106bb41eb568b523a9c09f4f2b02e25dae8",
+    "short_hash": "1050410",
+    "author": "bigmistqke",
+    "date": "2026-01-26T23:23:35+01:00",
+    "message": "fix: handle opfs:// URLs in publishProject and reorganize lexicons\n\n- Detect opfs:// URL clips and convert to stems on publish\n- Add isClipUrl helper to lexicons\n- Move lexicon files to lexicons/ subdirectory\n- Rename validators from .project to .main",
+    "files_changed": 28
+  },
+  {
+    "hash": "4135539419bc307f2b479b2732da3dd9d9c145dc",
+    "short_hash": "4135539",
+    "author": "bigmistqke",
+    "date": "2026-01-26T22:52:19+01:00",
+    "message": "refactor: simplify lexicon schemas and adapt consumers\n\n- Remove unused pipeline/value lexicons\n- Add vector value types and codegen scripts\n- Update timeline, jam, and app packages",
+    "files_changed": 27
+  },
+  {
+    "hash": "765e37ff47e4b56b1fc5904b9c30a5140161f254",
+    "short_hash": "765e37f",
+    "author": "bigmistqke",
+    "date": "2026-01-26T22:46:47+01:00",
+    "message": "fix: multi-clip recording and playback\n\n- Fix hasClip/clearClip using clipId instead of trackId\n- Re-initialize muxer after reset for subsequent recordings\n- Fix SolidJS reactivity for compositor project sync\n- Add fine-grained tracking of clips array for store mutations",
+    "files_changed": 4
+  },
+  {
+    "hash": "cbd0b447e001348f9bfd0d45ac2863313c19f786",
+    "short_hash": "cbd0b44",
+    "author": "bigmistqke",
+    "date": "2026-01-26T22:16:47+01:00",
+    "message": "fix: preview clips now recognized as media clips\n\n- Add type: 'url' and url field to injected preview clips\n- Fix isMediaClip to use || instead of && (was rejecting all clips)",
+    "files_changed": 2
+  },
+  {
+    "hash": "3bad67d2da4f0ef46b9800eaff280cffca328f15",
+    "short_hash": "3bad67d",
+    "author": "bigmistqke",
+    "date": "2026-01-26T03:28:59+01:00",
+    "message": "refactor: remove groups, inline clips in tracks\n\n- Delete dj.eddy.group lexicon\n- Add mediaTracks/metadataTracks to project schema\n- Inline clips in tracks (no more clipIds references)\n- Simplify timeline to runtime queries\n- Update app, jam, video packages for new schema\n- Route track audio directly to master (no group hierarchy)",
+    "files_changed": 29
+  },
+  {
+    "hash": "54f2823b03052bd2232fe5156f907091a57ed9a6",
+    "short_hash": "54f2823",
+    "author": "bigmistqke",
+    "date": "2026-01-25T23:26:16+01:00",
+    "message": "refactor: rename clip.offset→start, add offset field for time shift\n\n- Renamed `offset`→`start` (position on timeline in ms/ticks)\n- Renamed `ticks`→`duration` for consistency\n- Added new `offset` field for time shift into content:\n  - For stem/url clips: source in-point\n  - For group clips: shifts nested content time reference\n- Updated timeline compilers to use new fields\n- Updated create-editor.ts to use clipIds model (track.clipIds + project.clips)\n- Layout clips now use offset: -start to make content flow through time",
+    "files_changed": 10
+  },
+  {
+    "hash": "3f5c8dd63b659d5df7d059bc5ced3e13ff6991d7",
+    "short_hash": "3f5c8dd",
+    "author": "bigmistqke",
+    "date": "2026-01-25T21:56:06+01:00",
+    "message": "feat: add source.url clip type for URL-based media\n\n- Add source.url to clip lexicon for direct URL references\n- Update jam to use URL sources on clips instead of trackVideos\n- Preview loads videos from clip sources by clipId\n- addTrack accepts optional URL to create clip with source",
+    "files_changed": 9
+  },
+  {
+    "hash": "a2aa327809d8d673e3725b46152ee41087f2ff1f",
+    "short_hash": "a2aa327",
+    "author": "bigmistqke",
+    "date": "2026-01-25T21:45:10+01:00",
+    "message": "refactor: use ticks for jam timing and unify timeline compilation\n\n- Rename compileLayoutTimeline to compileAbsoluteTimeline\n- Add compileMusicalTimeline wrapper (ticks → ms conversion)\n- Replace rootGroup with root (can be track or group)\n- Derive jam layout regions from layout track clips\n- Remove compile-jam-timeline.ts (use @eddy/timeline instead)\n- Update jam components to use contentTracks accessor\n- Make JamMetadata.layoutRegions optional",
+    "files_changed": 18
+  },
+  {
+    "hash": "52893dd99e99b0be7b690e792e0a62d17ca962bc",
+    "short_hash": "52893dd",
+    "author": "bigmistqke",
+    "date": "2026-01-22T00:39:33+01:00",
+    "message": "chore: extract build:lexicons script",
+    "files_changed": 1
+  },
+  {
+    "hash": "a2706b1a076ffba5209d00f9770a626b16e9992f",
+    "short_hash": "a2706b1",
+    "author": "bigmistqke",
+    "date": "2026-01-22T00:13:32+01:00",
+    "message": "refactor: remove counter functionality from makeMonitor\n\nSimplifies perf monitor API - counters now handled locally where needed.",
+    "files_changed": 2
+  },
+  {
+    "hash": "fbac04756ff84fa1b080de3500975bee6fd7af99",
+    "short_hash": "fbac047",
+    "author": "bigmistqke",
+    "date": "2026-01-21T23:52:02+01:00",
+    "message": "refactor: replace jam columns with fixed grid and layout regions\n\nColumns now have uniform duration (columnCount + columnDuration).\nLayouts are defined as regions spanning multiple columns (layoutRegions).\nPrepares for decoupling grid UI from timing data.",
+    "files_changed": 8
+  },
+  {
+    "hash": "68bc9096bd0c1de1f6a485ba69c0463367bb2483",
+    "short_hash": "68bc909",
+    "author": "bigmistqke",
+    "date": "2026-01-21T23:02:04+01:00",
+    "message": "refactor: simplify perf monitor API with unified makeMonitor\n\n- Replace createPerfMonitor/makeCounter with single makeMonitor function\n- Monitor wraps functions with timing: monitor('label', fn)\n- Counters integrated: monitor.count('label', amount)\n- Stats accessible via monitor.getAllStats(), monitor.getCounters()\n- Add typed generics for label constraints\n- Add __ENABLE_PERF__ build flag for tree-shaking in production\n- Remove legacy global perf state in favor of instance-based state",
+    "files_changed": 7
+  },
+  {
+    "hash": "4f2f67ca8ff1ddb41b71f323e3c584dd8d88a6d9",
+    "short_hash": "4f2f67c",
+    "author": "bigmistqke",
+    "date": "2026-01-21T03:55:54+01:00",
+    "message": "refactor: merge column header and timeline into single button\n\nClicking a column button now both selects it for editing and seeks\nthe playhead to that position. Removes redundant header row.",
+    "files_changed": 2
+  },
+  {
+    "hash": "47d655b2802fc8e977630ef4f389078de452ac79",
+    "short_hash": "47d655b",
+    "author": "bigmistqke",
+    "date": "2026-01-21T03:52:03+01:00",
+    "message": "refactor: restructure sequencer with scrollable tracks and fixed ruler\n\n- Split into header row, scrollable tracks container, and ruler row\n- Tracks overflow vertically while ruler stays fixed at bottom\n- Column highlighting extends through all sections\n- Added spacer and filler rows for continuous column backgrounds",
+    "files_changed": 2
+  },
+  {
+    "hash": "c6826651b37ea57c487ebf5ca9472b6bca7a6fa4",
+    "short_hash": "c682665",
+    "author": "bigmistqke",
+    "date": "2026-01-21T03:51:56+01:00",
+    "message": "feat: make preview a draggable overlay\n\nPreview is now a floating overlay that can be repositioned by dragging.\nIncludes drag handle with column info display.",
+    "files_changed": 4
+  },
+  {
+    "hash": "7b9f910ba1b1c4cee1e9a8f3a7bcfc83859dd619",
+    "short_hash": "7b9f910",
+    "author": "bigmistqke",
+    "date": "2026-01-21T03:25:44+01:00",
+    "message": "refactor: convert layout sidebar to horizontal action bar\n\nReplaces vertical sidebar with compact horizontal bar showing duration\ninputs, layout selector, and column actions. Removes orientation-based\nresponsive layout.",
+    "files_changed": 4
+  },
+  {
+    "hash": "46db7eb114a1f4bde668291f05b4726f64094280",
+    "short_hash": "46db7eb",
+    "author": "bigmistqke",
+    "date": "2026-01-21T03:05:31+01:00",
+    "message": "feat: auto-sync layouts based on track clip count\n\nLayouts are now determined by how many tracks have clips in a column:\n- 1 track: full\n- 2 tracks: pip, h-split, v-split\n- 3 tracks: 3-up\n- 4 tracks: 2x2\n\nSlots are auto-assigned based on track order. Removes manual slot\nassignment UI and simplifies the layout editor.",
+    "files_changed": 5
+  },
+  {
+    "hash": "5177299a00ffe4e974f913bc75dcd4eeebecf88c",
+    "short_hash": "5177299",
+    "author": "bigmistqke",
+    "date": "2026-01-21T01:58:58+01:00",
+    "message": "refactor: use subgrid for sequencer column backgrounds\n\n- Add column wrapper with subgrid to inherit row alignment\n- Highlight current column via wrapper background instead of cell styling\n- Increase row gap for better visual separation\n- Fix off-center slot numbers by adding padding to balance margins\n- Remove dimmed styling for clips not in visible slots\n- Clean up unused CSS (timelineRuler, z-index, current variants)",
+    "files_changed": 2
+  },
+  {
+    "hash": "6849c87785b52f24ceb88d8866da6247e4d9cec4",
+    "short_hash": "6849c87",
+    "author": "bigmistqke",
+    "date": "2026-01-21T01:38:45+01:00",
+    "message": "feat: add duplicate column and improve layout",
+    "files_changed": 17
+  },
+  {
+    "hash": "1698efe07de92b21f9cc134157627a9bdce8a510",
+    "short_hash": "1698efe",
+    "author": "bigmistqke",
+    "date": "2026-01-21T01:13:42+01:00",
+    "message": "refactor: colocate jam UI components\n\n- Merge Cell, ColumnHeader, TrackLabel, TimelineRuler into Grid.tsx\n- Merge LayoutPreview, LayoutSelector, SlotAssigner into LayoutEditor.tsx\n- Consolidate CSS modules with section headers\n- Simplify index.ts exports",
+    "files_changed": 20
+  },
+  {
+    "hash": "38dc4284a223552061aa0155a8d4acbaab5ebcb6",
+    "short_hash": "38dc428",
+    "author": "bigmistqke",
+    "date": "2026-01-21T01:05:38+01:00",
+    "message": "feat: add video preview with compositor and timeline ruler\n\n- Add Preview component using makeVideoCompositor and makeVideoPlayback\n- Load test videos via UrlSource from mediabunny\n- Use track.id as clipId for 1-stem-per-track model\n- Add timeline ruler row for column-based seeking",
+    "files_changed": 12
+  },
+  {
+    "hash": "77ba666d214ae92b2f5c29e74cb554690c1aeef2",
+    "short_hash": "77ba666",
+    "author": "bigmistqke",
+    "date": "2026-01-21T00:29:56+01:00",
+    "message": "feat: improve jam sequencer UX\n\n- Increased column gap for clearer clip boundaries\n- Added trackVideos store with 4 test video URLs\n- Dimmed styling for clips not in visible slots\n- Slot number indicator on visible clips",
+    "files_changed": 4
+  },
+  {
+    "hash": "439ee8f129871b3a04cfe60a7ad05c0faa6fe836",
+    "short_hash": "439ee8f",
+    "author": "bigmistqke",
+    "date": "2026-01-21T00:13:39+01:00",
+    "message": "fix: improve clip painting and visual styling\n\nPainting now extends clips instead of creating separate ones per cell.\nConnected cells have no gaps and bigger border radius for clip ends.",
+    "files_changed": 3
+  },
+  {
+    "hash": "3270f800bf122c1ffb725e3c8054dd22dd7f693d",
+    "short_hash": "3270f80",
+    "author": "bigmistqke",
+    "date": "2026-01-21T00:05:00+01:00",
+    "message": "feat: add jam package with grid-based video sequencer\n\nGrid-based UI for sequencing video clips through changing layouts.\nIncludes sequencer grid, layout editor, and clip span visualization.",
+    "files_changed": 32
+  },
+  {
+    "hash": "1e1352b8b4abd6bad459ee9f0d1257290fc71c08",
+    "short_hash": "1e1352b",
+    "author": "bigmistqke",
+    "date": "2026-01-20T03:30:42+01:00",
+    "message": "refactor: revert library packages to src entries, remove tsup build\n\nAll packages except lexicons now use ./src/index.ts directly.\nNo build step required - Vite handles transpilation at dev/build time.",
+    "files_changed": 18
+  },
+  {
+    "hash": "93cc521a1ebb416eb8704e3ed14e49a06075efe8",
+    "short_hash": "93cc521",
+    "author": "bigmistqke",
+    "date": "2026-01-20T01:44:48+01:00",
+    "message": "refactor: extract makeVideoRenderer and makeVideoCompositor from compositor worker\n\n- makeVideoRenderer: WebGL layer (textures, shaders, rendering)\n- makeVideoCompositor: orchestration (frames, timeline, effects)\n- compositor.worker.ts reduced to thin RPC wrapper",
+    "files_changed": 6
+  },
+  {
+    "hash": "c6a0cf567caf7ba2170668d6a0cdc68ad40c3849",
+    "short_hash": "c6a0cf5",
+    "author": "bigmistqke",
+    "date": "2026-01-20T00:36:43+01:00",
+    "message": "feat: extract @eddy/solid package with shared SolidJS primitives\n\n- Create @eddy/solid package with action, resource, deep-resource, create-resource-map, create-clock\n- action: async actions with abort/cleanup, phased actions\n- resource: enhanced createResource with proper cleanup\n- deep-resource: resource + store reconciliation\n- create-resource-map: reactive map of resources\n- create-clock: clock for time management\n- Update packages/app to import from @eddy/solid",
+    "files_changed": 22
+  },
+  {
+    "hash": "a43db500dd1f6269127d739bff03f82e4325337a",
+    "short_hash": "a43db50",
+    "author": "bigmistqke",
+    "date": "2026-01-19T23:57:12+01:00",
+    "message": "feat: extract @eddy/timeline package with nested group support\n\n- Create @eddy/timeline package with compileLayoutTimeline, findSegmentAtTime, getActivePlacements\n- Add recursive compilation for nested groups (clips can reference groups for layout transitions)\n- Add TimeWindow constraint to clip inner content to parent clip duration\n- Update packages/app to import from @eddy/timeline\n- Remove old compile-layout-timeline.ts from packages/app\n- 18 tests passing including layout transition test case",
+    "files_changed": 16
+  },
+  {
+    "hash": "80bd3a50091235e621e4a3417ff1e663019abfaa",
+    "short_hash": "80bd3a5",
+    "author": "bigmistqke",
+    "date": "2026-01-19T18:14:59+01:00",
+    "message": "refactor: convert library packages from vite to tsup\n\nFaster builds with esbuild. Audio worklet uses noExternal to bundle deps.",
+    "files_changed": 21
+  },
+  {
+    "hash": "3cef022126c9ba40da0273f7867306f2d0b5f9ff",
+    "short_hash": "3cef022",
+    "author": "bigmistqke",
+    "date": "2026-01-19T18:02:59+01:00",
+    "message": "fix: bundle AudioWorklet as separate entry for library builds\n\nBuild ring-buffer-processor as separate entry with deps bundled inline.\nUse runtime new URL() pattern to resolve worklet path.",
+    "files_changed": 2
+  },
+  {
+    "hash": "c1b9aea36f5d3203a5cea4b8c97c06dcc83bc7fa",
+    "short_hash": "c1b9aea",
+    "author": "bigmistqke",
+    "date": "2026-01-19T18:02:53+01:00",
+    "message": "feat: implement pipeline branching with weighted outputs\n\nAdd pipeline types with weighted output arrays for parallel signal routing.\nAudio uses GainNodes for weighted routing, video compiles branches to single shader.",
+    "files_changed": 11
+  },
+  {
+    "hash": "a0667374111aac5aff8aed63dfee0d336952202b",
+    "short_hash": "a066737",
+    "author": "bigmistqke",
+    "date": "2026-01-19T12:59:14+01:00",
+    "message": "chore: enable sourcemaps for library packages",
+    "files_changed": 6
+  },
+  {
+    "hash": "7074f2cf8814869437195016dac96c6a66cd0dbe",
+    "short_hash": "7074f2c",
+    "author": "bigmistqke",
+    "date": "2026-01-19T11:56:43+01:00",
+    "message": "feat: add curve lexicon validators and mutable types\n\n- Add curveValidators and curveWireValidators for curve data\n- Export CurveKeyframe, CurveEnvelope, CurveLfo, Curve types\n- Add Mutable utility type for solid-js store usage\n- Export MutableProject, MutableTrack, MutableClip, MutableGroup",
+    "files_changed": 3
+  },
+  {
+    "hash": "743b0d5703977f24103a9b51ec4a9128a685fc06",
+    "short_hash": "743b0d5",
+    "author": "bigmistqke",
+    "date": "2026-01-19T01:57:38+01:00",
+    "message": "chore: update dependencies",
+    "files_changed": 2
+  },
+  {
+    "hash": "cf7f50f1b891ef60ee1729cc591bfedf6c8e1ff9",
+    "short_hash": "cf7f50f",
+    "author": "bigmistqke",
+    "date": "2026-01-19T01:57:34+01:00",
+    "message": "refactor: split project lexicon into separate domain files",
+    "files_changed": 10
+  },
+  {
+    "hash": "ef786f74b9be47b5fcc290e80fc9920900d592e6",
+    "short_hash": "ef786f7",
+    "author": "bigmistqke",
+    "date": "2026-01-19T00:31:39+01:00",
+    "message": "chore: add local dependency overrides",
+    "files_changed": 4
+  },
+  {
+    "hash": "f65554be24f9966521a0dae6fee458695bd1e4ed",
+    "short_hash": "f65554b",
+    "author": "bigmistqke",
+    "date": "2026-01-19T00:31:34+01:00",
+    "message": "refactor: move static value definitions to app.eddy.values lexicon",
+    "files_changed": 5
+  },
+  {
+    "hash": "254704f0e72bf515c015173ad93a759e0d6ba960",
+    "short_hash": "254704f",
+    "author": "bigmistqke",
+    "date": "2026-01-18T19:24:45+01:00",
+    "message": "refactor: split effect lexicons into separate files\n\n- Extract audio effects to app.eddy.audioEffect.ts\n- Extract visual effects to app.eddy.visualEffect.ts\n- Update index.ts with cross-lexicon ref resolution\n- Reduces app.eddy.project.ts from 921 to 644 lines",
+    "files_changed": 4
+  },
+  {
+    "hash": "8b42b6b1a645c8dc01182beb644d24404421e7d4",
+    "short_hash": "8b42b6b",
+    "author": "bigmistqke",
+    "date": "2026-01-18T19:17:01+01:00",
+    "message": "feat: add staticBlendMode and customParams types for consistent effect params\n\n- Add staticBlendMode type with { value: 'normal' | ... } pattern\n- Add customParams as empty object for extensible custom effects\n- Update blendMode in visualEffect.opacity to use staticBlendMode ref\n- Update visualEffect.custom.params to use customParams ref\n- Update Track.tsx to use VisualEffect from lexicons",
+    "files_changed": 3
+  },
+  {
+    "hash": "138e97de4910237bb298466e269cb74c8a281a01",
+    "short_hash": "138e97d",
+    "author": "bigmistqke",
+    "date": "2026-01-18T19:06:00+01:00",
+    "message": "refactor: simplify effect rendering with onBeforeRender callback\n\n- Replace effectValues/effectParamRefs arrays with onBeforeRender callback\n- Pre-compute effect keys in EffectRef to avoid hot-path string concatenation\n- Move EffectParamRef type from @eddy/video to compile-layout-timeline\n- Move injectPreviewClip utilities to make-player.ts where used\n- Extract PREVIEW_CLIP_ID to constants.ts\n- Remove unused timeline query functions (getPlacementsInRange, getNextTransition)",
+    "files_changed": 6
+  },
+  {
+    "hash": "879fa0d7f1c294d976bcf4708201b2f80e846459",
+    "short_hash": "879fa0d",
+    "author": "bigmistqke",
+    "date": "2026-01-18T18:40:44+01:00",
+    "message": "feat: add UI for colorize effect with vector param support",
+    "files_changed": 4
+  },
+  {
+    "hash": "571ef278897f527f53340371be7a626dd681fb64",
+    "short_hash": "571ef27",
+    "author": "bigmistqke",
+    "date": "2026-01-18T18:34:01+01:00",
+    "message": "feat: implement multi-param effects with pre-computed paramRefs\n\n- Add params Record pattern to lexicons with separate defs per effect\n- Add vec3/vec4 types for vector effect params (colorize)\n- Change effect controls to use paramKey directly (value(), color(), intensity())\n- Add colorize effect with color (vec3) and intensity (scalar) params\n- Pre-compute effectParamRefs at timeline compile time (perf optimization)\n- Update compositor to use pre-computed refs instead of per-frame allocation",
+    "files_changed": 14
+  },
+  {
+    "hash": "6fab7aa8318198d0e17de1e9f8f989ed6d6c1a41",
+    "short_hash": "6fab7aa",
+    "author": "bigmistqke",
+    "date": "2026-01-18T17:52:49+01:00",
+    "message": "feat: implement audio cascade with root group as master\n\n- Add audioPipeline to Group schema, rename pipeline → videoPipeline\n- Remove masterAudioPipeline/masterVideoPipeline from project (root group serves as master)\n- Modify makeAudioBus to accept optional destination for hierarchy chaining\n- Add group audio buses in player with track → group → parent group routing\n- Add setMasterVolume/getMasterVolume/setMasterPan via root group's audio bus\n- Add useMediaStreamOutput/useDirectOutput to AudioBus for recording\n- Delete getMasterMixer singleton - functionality moved to root group\n- Update default project with gain effect on root group",
+    "files_changed": 7
+  },
+  {
+    "hash": "a8055cda1902ce8c54135fa881465d6adba7437f",
+    "short_hash": "a8055cd",
+    "author": "bigmistqke",
+    "date": "2026-01-18T17:23:31+01:00",
+    "message": "refactor: pre-compute effectKeys in timeline compiler\n\nAvoids redundant mapping on hot render path. Placement now includes\neffectKeys array and effectId (renamed from effectSignature).",
+    "files_changed": 5
+  },
+  {
+    "hash": "2474e6cfb738b9def59dd844fbc9c8fc7e29ec5c",
+    "short_hash": "2474e6c",
+    "author": "bigmistqke",
+    "date": "2026-01-18T17:09:59+01:00",
+    "message": "refactor: consolidate effect-registry into effect-manager and simplify EffectInstance to string",
+    "files_changed": 11
+  },
+  {
+    "hash": "4a7223f22cbd2e250379405e1cd4f6122eecadd4",
+    "short_hash": "4a7223f",
+    "author": "bigmistqke",
+    "date": "2026-01-18T16:56:16+01:00",
+    "message": "refactor: separate video effects into effects, effect-registry, and effect-manager directories\n\nExplicit registry injection replaces global registry. Effects are pure factories,\nregistry and manager take registry as parameter.",
+    "files_changed": 25
+  },
+  {
+    "hash": "cffb0d11b4171a075adc856f11e42aa1f1a49a9a",
+    "short_hash": "cffb0d1",
+    "author": "bigmistqke",
+    "date": "2026-01-18T16:14:18+01:00",
+    "message": "chore: use published view.gl package\n\nSwitch from local link to npm @bigmistqke/view.gl@0.1.12.",
+    "files_changed": 2
+  },
+  {
+    "hash": "ad181304836e9e60c4e76c4c4c8a34aaa265a3bf",
+    "short_hash": "ad18130",
+    "author": "bigmistqke",
+    "date": "2026-01-18T14:13:41+01:00",
+    "message": "refactor: remove initialValues from effect types\n\nValues are set via setEffectValue() before each render, making\ninitialValues redundant. Also renamed compose-effects to compile-effect-program.",
+    "files_changed": 8
+  },
+  {
+    "hash": "49b795b7307d3fff92d1196497981dc8134013a5",
+    "short_hash": "49b795b",
+    "author": "bigmistqke",
+    "date": "2026-01-18T13:57:40+01:00",
+    "message": "refactor: separate effect manager from compositor\n\nEffect chain compilation now handled by makeEffectManager(gl), keeping\nmakeVideoCompositor focused on texture rendering. Worker wires them together.",
+    "files_changed": 4
+  },
+  {
+    "hash": "29f6cc22ef23220bcbd66c3ebc89f941f0ac5e8e",
+    "short_hash": "29f6cc2",
+    "author": "bigmistqke",
+    "date": "2026-01-18T13:49:12+01:00",
+    "message": "chore: minor cleanups in video effects code\n\n- Remove glsl tag from no-effects comment string\n- Remove redundant section header comment\n- Simplify code comment",
+    "files_changed": 3
+  },
+  {
+    "hash": "6aaaef199e611ea6fdf1de4d6e76548ca6682c70",
+    "short_hash": "6aaaef1",
+    "author": "bigmistqke",
+    "date": "2026-01-18T03:37:59+01:00",
+    "message": "chore: link view.gl to local package for development",
+    "files_changed": 2
+  },
+  {
+    "hash": "17123f3d87f5fe16ed5e7bdc6e65f8b0e26aca36",
+    "short_hash": "17123f3",
+    "author": "bigmistqke",
+    "date": "2026-01-18T03:21:54+01:00",
+    "message": "fix: register video effects only in compositor worker\n\nRemoves video effect registration from main thread to prevent\ndual view.gl instances causing symbol alias mismatches.",
+    "files_changed": 2
+  },
+  {
+    "hash": "353b032daed0f8de32b2825c46e0b62582a383f7",
+    "short_hash": "353b032",
+    "author": "bigmistqke",
+    "date": "2026-01-18T02:53:02+01:00",
+    "message": "feat: implement video effect deduplication with array uniforms\n\nEnables same effect type used multiple times in a chain to share\na single GLSL function with indexed array access (WebGL2).",
+    "files_changed": 9
+  },
+  {
+    "hash": "d9c7f58f5d30d8c493565fbd611b64288b8fce6b",
+    "short_hash": "d9c7f58",
+    "author": "bigmistqke",
+    "date": "2026-01-18T01:57:34+01:00",
+    "message": "feat: integrate cascading video effects into compiled timeline\n\n- Add EffectRef type for referencing effect values by source coordinates\n- Extend Placement with effectSignature (for shader caching) and effectRefs\n- Collect cascaded effects during timeline compilation (clip → track → group... → master)\n- Replace track-based effect API with setEffectValue(sourceType, sourceId, effectIndex, value)\n- Cache shader programs by effectSignature, compile lazily on first use\n- Resolve effect values from refs at render time",
+    "files_changed": 4
+  },
+  {
+    "hash": "35229ef411b60b6816c4f75ba9b30edad5570594",
+    "short_hash": "35229ef",
+    "author": "bigmistqke",
+    "date": "2026-01-18T01:29:01+01:00",
+    "message": "fix: move effect symbols to module scope for stable shader identities\n\n- Move Symbol declarations outside factory functions so all effect\n  instances share the same Symbol (fixes multi-track effect bug)\n- Store effect values in array, set uniforms at render time\n- Remove unused make-effect-chain-cache.ts\n- Add activateEffectChain method to compositor\n- Enhanced debug logging",
+    "files_changed": 8
+  },
+  {
+    "hash": "3fd7cc459161622347e4256511e367a599db7c44",
+    "short_hash": "3fd7cc4",
+    "author": "bigmistqke",
+    "date": "2026-01-17T23:58:54+01:00",
+    "message": "fix: activate program before setting initial effect uniform values\n\nWebGL requires gl.useProgram() to be called before setting uniforms.\nWithout this, initial effect values were silently ignored.",
+    "files_changed": 3
+  },
+  {
+    "hash": "06e87899038eda2321e2ea20d6161d5d2e3418c5",
+    "short_hash": "06e8789",
+    "author": "bigmistqke",
+    "date": "2026-01-17T23:30:18+01:00",
+    "message": "feat: wire video effect pipeline from UI to compositor\n\n- Add video effect registry with brightness, contrast, saturation\n- Add videoPipeline to track data model in lexicon\n- Generate video effect sliders dynamically from pipeline\n- Compositor worker registers/updates effect chains per track\n- Comment out curveRef for now (simplify to static values only)",
+    "files_changed": 16
+  },
+  {
+    "hash": "8d526015af8327df27b821e2d376f7e37a7d4ffb",
+    "short_hash": "8d52601",
+    "author": "bigmistqke",
+    "date": "2026-01-17T20:02:07+01:00",
+    "message": "feat: integrate video effect chains into compositor\n\n- Add VideoEffectChain, CompiledEffectChain types\n- Add makeEffectChainCache for caching compiled shaders\n- Compositor now manages effect chains by id\n- Placements can reference effectChainId (passthrough default)\n- Each unique chain compiles to one shader, no framebuffers needed",
+    "files_changed": 4
+  },
+  {
+    "hash": "3bfa262123ae75427fd1d3f22efde718ac7d48bc",
+    "short_hash": "3bfa262",
+    "author": "bigmistqke",
+    "date": "2026-01-17T18:54:04+01:00",
+    "message": "chore: clean up unused exports, dependencies, and files\n\n- Simplify atproto imports to use main export instead of subpaths\n- Remove unused subpath exports from atproto package.json\n- Remove unused deps: @bigmistqke/rpc from audio, @bigmistqke/view.gl from utils\n- Delete unused files: app/src/utils.ts, scripts/seed-deciduous.ts",
+    "files_changed": 8
+  },
+  {
+    "hash": "c772d46f247343a2eac7b00a47386cb6150ff005",
+    "short_hash": "c772d46",
+    "author": "bigmistqke",
+    "date": "2026-01-17T18:48:46+01:00",
+    "message": "refactor: rename create-player to make-player\n\nPlayer is a factory function that creates instances, not a reactive hook.\nAlign with make-* naming convention for factory functions.",
+    "files_changed": 4
+  },
+  {
+    "hash": "9ca2b967cd406304566ab7ba191e5f2d3a47df4c",
+    "short_hash": "9ca2b96",
+    "author": "bigmistqke",
+    "date": "2026-01-17T18:48:41+01:00",
+    "message": "fix: update auth imports after context relocation\n\nUpdate imports to point to new auth locations after moving auth-context\nfrom @eddy/atproto to app components. Remove solid-js deps from atproto\npackage since it no longer contains SolidJS code.",
+    "files_changed": 6
+  },
+  {
+    "hash": "595d81ea8c51db166504343e3bacedeeca55347c",
+    "short_hash": "595d81e",
+    "author": "bigmistqke",
+    "date": "2026-01-17T18:45:42+01:00",
+    "message": "refactor: move auth context from @eddy/atproto to app components\n\nAuth context is SolidJS-specific UI code that belongs in the app, not\nthe atproto package which should remain framework-agnostic.",
+    "files_changed": 8
+  },
+  {
+    "hash": "b043cfae8a1b913f9f67d408c416c848689562b9",
+    "short_hash": "b043cfa",
+    "author": "bigmistqke",
+    "date": "2026-01-17T18:33:48+01:00",
+    "message": "refactor: rename create-* to make-* in video, media, and utils packages\n\nContinue naming convention alignment across remaining packages:\n- @eddy/video: compositor, decoder, playback → make-video-*\n- @eddy/media: demuxer, muxer → make-demuxer, make-muxer\n- @eddy/utils: loop → make-loop, perf → make-perf-monitor\n- @eddy/utils: extract debug and guards to separate modules\n- Update all import paths in workers and primitives",
+    "files_changed": 40
+  },
+  {
+    "hash": "3348d8af14803541cffa8a3666e0b87ed6d250f7",
+    "short_hash": "3348d8a",
+    "author": "bigmistqke",
+    "date": "2026-01-17T18:03:22+01:00",
+    "message": "refactor: rename create-* to make-* in @eddy/audio package\n\nAlign audio package with naming convention established in app primitives:\n- audio-elements → audio-element-registry\n- create-audio-bus → make-audio-bus\n- create-audio-playback → make-audio-playback\n- create-effect-chain → make-effect-chain\n- audio-decoder → make-audio-decoder\n- ring-buffer → audio-ring-buffer\n- scheduler → make-audio-scheduler\n- offline-audio-mixer → make-offline-audio-mixer",
+    "files_changed": 21
+  },
+  {
+    "hash": "4d31bef1f2d85fff4d3ef90c3bc4fef113e429b3",
+    "short_hash": "4d31bef",
+    "author": "bigmistqke",
+    "date": "2026-01-17T17:55:40+01:00",
+    "message": "refactor: consolidate layout-types into compile-layout-timeline\n\nMove all types from layout-types.ts directly into compile-layout-timeline.ts\nsince they're only used by this module and its consumers. Reduces file count\nand keeps related code together.",
+    "files_changed": 4
+  },
+  {
+    "hash": "9cb61d22fae6f3a011d4c5dcebca60feb6215bd8",
+    "short_hash": "9cb61d2",
+    "author": "bigmistqke",
+    "date": "2026-01-17T17:52:15+01:00",
+    "message": "docs: expand decision graph workflow in CLAUDE.md\n\n- Add detailed behavioral triggers table\n- Document verbatim prompt capture requirements\n- Add connection maintenance guidelines\n- Include quick commands reference\n- Add branch-based grouping and audit checklist\n- Document session lifecycle and autonomy rules",
+    "files_changed": 1
+  },
+  {
+    "hash": "6dac56d8aa9ce98c844643cef1a31703b43d7eec",
+    "short_hash": "6dac56d",
+    "author": "bigmistqke",
+    "date": "2026-01-17T17:52:08+01:00",
+    "message": "refactor: reorganize app modules and extract atproto package\n\n- Extract ATProto auth/crud to @eddy/atproto package\n- Move hooks/ and lib/ modules to primitives/ directory\n- Move opfs utilities to dedicated opfs/ directory\n- Rename create-* to make-* for factory functions (ahead-scheduler,\n  debug-info, playback, scheduler, worker-pool, opfs-source)\n- Rename timeline-compiler to compile-layout-timeline\n- Update all import paths across components, workers, and routes",
+    "files_changed": 60
+  },
+  {
+    "hash": "2bb395cad9425dc059254ac302fb2d3370f9ed3b",
+    "short_hash": "2bb395c",
+    "author": "bigmistqke",
+    "date": "2026-01-17T17:32:56+01:00",
+    "message": "refactor: replace handoff mechanism with ahead-scheduler abstraction\n\n- Extract scheduling logic into createAheadScheduler module\n- Reduce SCHEDULE_AHEAD from 2.0s to 0.5s\n- Use modulo for schedule time calculation when looping\n- Remove nextPlayback/nextPlaybackReady from ClipEntry\n- Simplify player code by delegating to scheduler",
+    "files_changed": 2
+  },
+  {
+    "hash": "05767b3db8bd7245fb5886439cbd475d07ce0af2",
+    "short_hash": "05767b3",
+    "author": "bigmistqke",
+    "date": "2026-01-17T17:09:06+01:00",
+    "message": "refactor: use discriminated union state machine in video/playback modules\n\n- create-video-playback.ts: Add PlaybackStateMachine, LoadedResources,\n  isLoaded() guard, createPlaybackTiming(), createFrameBuffer()\n- create-playback.ts: Add PlaybackStateMachine, LoadedResources,\n  isLoaded() guard, transition functions for state changes",
+    "files_changed": 2
+  },
+  {
+    "hash": "973725d3df4ba6796d6958ed5575e1ff159c6027",
+    "short_hash": "973725d",
+    "author": "bigmistqke",
+    "date": "2026-01-17T16:56:59+01:00",
+    "message": "refactor: use discriminated union state machine in create-audio-playback\n\n- Add PlaybackStateMachine type with idle/loading/ready/playing/paused/seeking states\n- Extract LoadedResources interface for states with loaded audio\n- Add isLoaded() type guard for state narrowing\n- Extract createPlaybackTiming() and createAudioBuffer() as separate factories\n- Add transition functions for state changes\n- Enable decoder reuse via PreservedDecoder",
+    "files_changed": 1
+  },
+  {
+    "hash": "6135811b67134517275d8aeb4dddfbafea6ff5af",
+    "short_hash": "6135811",
+    "author": "bigmistqke",
+    "date": "2026-01-17T01:21:27+01:00",
+    "message": "feat: stream ATProto stems directly to OPFS\n\n- Add streamStemToOPFS() that pipes fetch response to OPFS writable stream\n- Add getPdsUrl() helper that works with both CredentialSession and OAuthSession\n- Update stemClips resourceMap to use streaming instead of blob + writeBlob\n- Avoids loading entire blob into JS heap memory",
+    "files_changed": 2
+  },
+  {
+    "hash": "2c388ce52a1a5404331124dfd9a5607b28c6829a",
+    "short_hash": "2c388ce",
+    "author": "bigmistqke",
+    "date": "2026-01-17T00:53:24+01:00",
+    "message": "feat: add OPFS storage for clips to eliminate memory overhead\n\n- Add OPFS module (paths, write, create-opfs-source)\n- Muxer writes to OPFS after finalize instead of returning blob\n- Playback workers read from OPFS via BlobSource (allows concurrent reads)\n- Player loadClip accepts clipId instead of blob\n- stemClips resourceMap writes fetched blobs to OPFS\n- Remove in-memory buffer storage from ClipEntry",
+    "files_changed": 16
+  },
+  {
+    "hash": "3f03fe6315a135d322ef027fb2d715a7040ead35",
+    "short_hash": "3f03fe6",
+    "author": "bigmistqke",
+    "date": "2026-01-16T23:08:22+01:00",
+    "message": "docs: add diagonjs-powered architecture diagram generation\n\nUse diagonjs to generate properly aligned ASCII diagrams from DSL input.\nEdit docs/architecture-source.md with diagon blocks, then render with\nnode scripts/render-architecture.ts.",
+    "files_changed": 6
+  },
+  {
+    "hash": "572cfe29f5be10282e23516f0aa71fb1e0c7dea8",
+    "short_hash": "572cfe2",
+    "author": "bigmistqke",
+    "date": "2026-01-16T22:29:54+01:00",
+    "message": "chore: sync deciduous graph",
+    "files_changed": 2
+  },
+  {
+    "hash": "d2921a7034f9c9fac9e58a423c99649398c0ab92",
+    "short_hash": "d2921a7",
+    "author": "bigmistqke",
+    "date": "2026-01-16T22:29:50+01:00",
+    "message": "refactor: remove perf monitoring and reorganize utils\n\nRemove createPerfMonitor from playback engines and player.\nSplit utils into focused modules: debug.ts, guards.ts.\nUse resolve queue instead of single promise for audio decode.",
+    "files_changed": 20
+  },
+  {
+    "hash": "71042718be678fb32b3c0e684b6725b5991e2387",
+    "short_hash": "7104271",
+    "author": "bigmistqke",
+    "date": "2026-01-16T22:29:38+01:00",
+    "message": "refactor: consolidate tsconfigs and clean up package dependencies\n\nPackage tsconfigs now extend root config, reducing duplication.\nUpdate @bigmistqke/rpc to ^0.1.3, remove unused vite/view.gl deps.",
+    "files_changed": 12
+  },
+  {
+    "hash": "ef2cd554af7d2d070178730a16e032345aeeaa2f",
+    "short_hash": "ef2cd55",
+    "author": "bigmistqke",
+    "date": "2026-01-14T17:10:10+01:00",
+    "message": "refactor: split pipeline.ts into focused modules\n\n- audio-elements.ts: element registry and factories\n- create-effect-chain.ts: low-level effect node builder\n- create-audio-bus.ts: high-level live audio routing\n- Rename: BuiltPipeline → EffectChain, AudioPipeline → AudioBus",
+    "files_changed": 7
+  },
+  {
+    "hash": "01de7f2ec7943c2722a622c316dd6dfbbc01d90e",
+    "short_hash": "01de7f2",
+    "author": "bigmistqke",
+    "date": "2026-01-14T16:29:25+01:00",
+    "message": "feat: record from offset with clip layering support\n\n- Capture timeline offset when recording starts\n- Append new clips to array (later clips = higher priority)\n- Start playback from current position, not always 0\n- Mute track during recording to silence existing clips",
+    "files_changed": 2
+  },
+  {
+    "hash": "60e00febe1e962c879fa6d9d0742fbb641fd12e1",
+    "short_hash": "60e00fe",
+    "author": "bigmistqke",
+    "date": "2026-01-14T16:16:52+01:00",
+    "message": "feat: punch-through clip behavior (top clip replaces underlying)\n\nWhen clips overlap within a track, only the top clip (last in array)\nplays. Earlier clips are silenced/hidden during overlap, then resume.\nThis enables recording over existing clips from an offset.",
+    "files_changed": 1
+  },
+  {
+    "hash": "7522c413b0f6e3e1ceb279e2304198be5f1bbad4",
+    "short_hash": "7522c41",
+    "author": "bigmistqke",
+    "date": "2026-01-14T15:42:22+01:00",
+    "message": "fix: stop audio playback when clip ends\n\nAdd onEnd callback to audio playback engine that fires when media\nreaches its duration. Worker handles this by stopping the scheduling\nloop and setting ring buffer to not playing, preventing the last\naudio chunk from repeating.",
+    "files_changed": 3
+  },
+  {
+    "hash": "1b4a427be895f2084d634e47a9ed83f769455b9b",
+    "short_hash": "1b4a427",
+    "author": "bigmistqke",
+    "date": "2026-01-14T15:36:56+01:00",
+    "message": "refactor: reorganize into domain-based packages (audio, video, media)\n\n- Create @eddy/media: demuxer, muxer (shared media types)\n- Create @eddy/audio: decoder, mixer, ring buffer, scheduler, playback\n- Create @eddy/video: decoder, frame utils, compositor, playback\n- Remove @eddy/codecs, @eddy/compositor, @eddy/mixer, @eddy/playback\n- Update all app imports to use new package structure",
+    "files_changed": 100
+  },
+  {
+    "hash": "5a3cc794918be59884178978159f0ecff7714edc",
+    "short_hash": "5a3cc79",
+    "author": "bigmistqke",
+    "date": "2026-01-14T14:45:05+01:00",
+    "message": "refactor: separate video/audio playback with ring buffer scheduling\n\n- Split playback.worker into playback.video.worker and playback.audio.worker\n- Add ring buffer + AudioWorklet for lock-free audio streaming\n- Add pending queue scheduling in audio worker (matches working ca079e8 approach)\n- Fix createLoop to use setInterval in workers (requestAnimationFrame unavailable)\n- Set shared AudioContext to 48000Hz for video recording compatibility\n- Move playback orchestration to app package",
+    "files_changed": 22
+  },
+  {
+    "hash": "d96bdab4106b9d198c56a75e3da2789d406aee26",
+    "short_hash": "d96bdab",
+    "author": "bigmistqke",
+    "date": "2026-01-14T10:31:26+01:00",
+    "message": "feat: add video export with offline rendering\n\n- Add phased action pattern for multi-phase async operations\n- Implement frame-by-frame export with getFrameAtTime()\n- Fix localTime calculation for clips spanning segment boundaries\n- Add strict mode to findFrameData for accurate export timing\n- Create offline audio mixer for proper audio rendering\n- Add export button with progress indicator",
+    "files_changed": 12
+  },
+  {
+    "hash": "fce67a6170d3e65e0f8fd58c19829e4bafe78c3d",
+    "short_hash": "fce67a6",
+    "author": "bigmistqke",
+    "date": "2026-01-14T00:02:20+01:00",
+    "message": "perf: return sync from decode() when frame already available\n\ndecode() now returns DecodeResult | Promise<DecodeResult>:\n- If frame is already in pendingFrames buffer, return sync (no Promise)\n- If waiting for decoder output, return Promise\n- Caller checks instanceof Promise and only awaits when necessary\n\nReduces Promise overhead in hot path when decoder is keeping up.",
+    "files_changed": 2
+  },
+  {
+    "hash": "5969b19e3f630ff1e2681dd1fa353dc27f963d77",
+    "short_hash": "5969b19",
+    "author": "bigmistqke",
+    "date": "2026-01-12T20:43:35+01:00",
+    "message": "fix: prevent stuck frame bug with createLoop utility\n\nAdd createLoop utility that encapsulates requestAnimationFrame loop\nmanagement with proper cleanup. Fixes sporadic bug where clips would\nget stuck at first frame because stale animationFrameId prevented\nstream loop from restarting.\n\n- createLoop returns { isRunning, start(), stop() }\n- Callback receives loop instance for self-termination\n- Refactor createPlayback and createPlayer to use createLoop",
+    "files_changed": 4
+  },
+  {
+    "hash": "6d6ffa7dec50db684b1ac776423fccb2ea60b004",
+    "short_hash": "6d6ffa7",
+    "author": "bigmistqke",
+    "date": "2026-01-12T20:04:15+01:00",
+    "message": "chore: remove redundant reset() after decoder reuse refactor",
+    "files_changed": 4
+  },
+  {
+    "hash": "fa9a2d2fe8db070c16ef654a2adb080095a435a7",
+    "short_hash": "fa9a2d2",
+    "author": "bigmistqke",
+    "date": "2026-01-12T19:36:19+01:00",
+    "message": "feat: reuse decoder when loading clips with matching config\n\nAdds reset() method that flushes decoder but keeps it alive.\nOn load(), compares VideoDecoderConfig - if codec/width/height match,\nskips decoder initialization (~50-200ms savings on subsequent clips).",
+    "files_changed": 3
+  },
+  {
+    "hash": "43f16f4461957dce80e1b8f6714a32d36c7c9355",
+    "short_hash": "43f16f4",
+    "author": "bigmistqke",
+    "date": "2026-01-12T19:26:09+01:00",
+    "message": "refactor: make createWorkerPool generic with factory functions\n\nWorker pool no longer imports PlaybackWorker directly. Caller provides:\n- create: factory to instantiate Worker\n- wrap: factory to wrap with RPC\n- reset: cleanup function on release\n\nThis decouples the pool from specific worker types.",
+    "files_changed": 2
+  },
+  {
+    "hash": "d9b3db379005df9d539005c8916d51bf1d508ad8",
+    "short_hash": "d9b3db3",
+    "author": "bigmistqke",
+    "date": "2026-01-12T18:30:51+01:00",
+    "message": "feat: add decoder queue backpressure to skip delta frames when overloaded",
+    "files_changed": 1
+  },
+  {
+    "hash": "7ce0b3d2ca851bbe087cfda34ea3e43a7d01180b",
+    "short_hash": "7ce0b3d",
+    "author": "bigmistqke",
+    "date": "2026-01-10T02:47:54+01:00",
+    "message": "refactor: extract worker logic to @eddy/playback and @eddy/compositor\n\n- Replace stale @eddy/playback with new implementation:\n  - PlaybackEngine class for video playback lifecycle\n  - Frame utilities (alignUp, calculateAlignedLayout, frameToData, dataToFrame)\n\n- Replace stale @eddy/compositor with new implementation:\n  - CompositorEngine class for WebGL video frame rendering\n\n- Refactor workers to thin RPC wrappers:\n  - demux.worker.ts: 264 → 101 lines (uses @eddy/codecs)\n  - playback.worker.ts: 861 → 167 lines (uses @eddy/playback)\n  - compositor.worker.ts: 464 → 340 lines (uses @eddy/compositor)\n\n- Update debug.tsx to handle missing playback module gracefully",
+    "files_changed": 20
+  },
+  {
+    "hash": "9369ebdbe7936f48d290d2f885affd340103053e",
+    "short_hash": "9369ebd",
+    "author": "bigmistqke",
+    "date": "2026-01-10T02:12:10+01:00",
+    "message": "chore: add loop perf test to workflow docs",
+    "files_changed": 1
+  },
+  {
+    "hash": "7739a2829227c4f7fb33b94a9058d6f8fa7e2764",
+    "short_hash": "7739a28",
+    "author": "bigmistqke",
+    "date": "2026-01-09T14:39:16+01:00",
+    "message": "feat: add time input to transport bar for scrubbing\n\nShows current time / duration in MM:SS.ms format.\nClick and edit to seek to a specific time.",
+    "files_changed": 2
+  },
+  {
+    "hash": "de934677f25fee84939aafdf7cbce3bf31a8216a",
+    "short_hash": "de93467",
+    "author": "bigmistqke",
+    "date": "2026-01-09T14:28:31+01:00",
+    "message": "fix: preview rendering with segment-based timeline\n\nInjects synthetic 'preview' clip into timeline when track is in preview mode.\nCompositor uses unified render loop for both playback and preview frames.",
+    "files_changed": 4
+  },
+  {
+    "hash": "bd6cf69f62c1c16f3da3d6c684e80c1aa8151ead",
+    "short_hash": "bd6cf69",
+    "author": "bigmistqke",
+    "date": "2026-01-09T12:25:18+01:00",
+    "message": "refactor: clip-based playback with worker pool\n\n- Add WorkerPool for reusing playback workers across clips\n- Change player from track-centric to clip-centric (TrackEntry → ClipEntry)\n- Frames now tagged with clipId, mapped to trackId in compositor\n- Add hasClipForTrack/isLoadingForTrack for track-based queries",
+    "files_changed": 6
+  },
+  {
+    "hash": "d041f494242c9f449e808f65660ef880d17b9a94",
+    "short_hash": "d041f49",
+    "author": "bigmistqke",
+    "date": "2026-01-09T03:35:53+01:00",
+    "message": "feat: add perf instrumentation to playback workers\n\n- Add perf marks for decode, demux, bufferAhead, transferFrame\n- Add getPerf() and resetPerf() RPC methods to workers\n- Add loadTestClip() method to editor for perf testing\n- Expose editor via __EDDY_DEBUG__ for automated testing\n- Improve perf-test.ts with proper editor integration and status checks",
+    "files_changed": 4
+  },
+  {
+    "hash": "9b026c7061e9a2b91db46760baa28a5d9b536a62",
+    "short_hash": "9b026c7",
+    "author": "bigmistqke",
+    "date": "2026-01-09T03:35:43+01:00",
+    "message": "fix: SolidJS store mutation bug and type errors\n\n- Fix track state not updating due to direct object mutation\n  instead of using setTracks() (SolidJS stores are proxies)\n- Fix connectToCompositor argument order (trackId, port)\n- Fix Timeline -> LayoutTimeline type import\n- Add getAllPerf() to collect stats from workers",
+    "files_changed": 2
+  },
+  {
+    "hash": "43026754c1fce8c2052537a75ffba3c665cb59fe",
+    "short_hash": "4302675",
+    "author": "bigmistqke",
+    "date": "2026-01-09T02:45:57+01:00",
+    "message": "chore: add deciduous decision graph workflow",
+    "files_changed": 16
+  },
+  {
+    "hash": "ab10d5ab2529330d3f59f0fc50fda3815f2cc139",
+    "short_hash": "ab10d5a",
+    "author": "bigmistqke",
+    "date": "2026-01-08T23:03:39+01:00",
+    "message": "refactor: clean up player and worker code\n\n- Rename renderCapture to renderToCaptureCanvas for clarity\n- Refactor getOrCreateTrack for early return pattern\n- Use object store pattern for tracks instead of Map\n- Minor formatting and type improvements across workers",
+    "files_changed": 8
+  },
+  {
+    "hash": "b4966d35a08ec34f6d1e4cf07def8e835c6f9d67",
+    "short_hash": "b4966d3",
+    "author": "bigmistqke",
+    "date": "2026-01-06T22:00:11+01:00",
+    "message": "refactor: remove redundant recording.worker.ts",
+    "files_changed": 1
+  },
+  {
+    "hash": "2c3f1139447930c35854ad93ec0b9985d6465586",
+    "short_hash": "2c3f113",
+    "author": "bigmistqke",
+    "date": "2026-01-06T21:59:36+01:00",
+    "message": "refactor: bikeshedding",
+    "files_changed": 3
+  },
+  {
+    "hash": "65255dcf0dc19de4f66a7243f88532e4866319a5",
+    "short_hash": "65255dc",
+    "author": "bigmistqke",
+    "date": "2026-01-06T21:58:49+01:00",
+    "message": "refactor: replace Map+versionTrack-signal with store",
+    "files_changed": 1
+  },
+  {
+    "hash": "c9fa80217ca67d366edb03a6d574416ee5c4d426",
+    "short_hash": "c9fa802",
+    "author": "bigmistqke",
+    "date": "2026-01-06T21:13:24+01:00",
+    "message": "refactor: bikeshed workers",
+    "files_changed": 8
+  },
+  {
+    "hash": "31340abdaa305cc7977e3a91247125f515c5c850",
+    "short_hash": "31340ab",
+    "author": "bigmistqke",
+    "date": "2026-01-06T20:05:44+01:00",
+    "message": "fix: show initial frame after loading clip\n\nSeek to current time after loadClip completes so the first\nframe is displayed immediately instead of waiting for play.",
+    "files_changed": 1
+  },
+  {
+    "hash": "8cb264ddabff63a7f7a293bdd4ad72e56bb3ae3e",
+    "short_hash": "8cb264d",
+    "author": "bigmistqke",
+    "date": "2026-01-06T20:03:49+01:00",
+    "message": "refactor: use playback workers in player instead of slots\n\n- Replace slot-based playback with per-track playback workers\n- Connect workers to compositor via MessageChannel for direct frame transfer\n- Track state with trackVersion signal for reactive hasClip/isLoading\n- Wait for loading tracks before starting playback\n- Add audio pipeline per track entry",
+    "files_changed": 1
+  },
+  {
+    "hash": "e612555279fc4c015187124281d88d2295b74cb2",
+    "short_hash": "e612555",
+    "author": "bigmistqke",
+    "date": "2026-01-06T20:03:43+01:00",
+    "message": "feat: add playback worker for demux/decode with frame streaming\n\n- Single worker per track handles demux + decode\n- Streams VideoFrames directly to compositor via MessagePort\n- Uses ring buffer with raw ArrayBuffer to avoid stale frames\n- Implements play/pause/seek with buffering ahead\n- Enhanced debug logging for decoder diagnostics",
+    "files_changed": 1
+  },
+  {
+    "hash": "ea3aaa1a5c4c3e94b6dbce84772e34f0de970629",
+    "short_hash": "ea3aaa1",
+    "author": "bigmistqke",
+    "date": "2026-01-06T20:03:35+01:00",
+    "message": "refactor: add worker-to-worker frame transfer to compositor\n\n- Add connectPlaybackWorker/disconnectPlaybackWorker methods\n- Use expose() with MessagePort for direct frame transfer from playback workers\n- Remove create-slot.ts (replaced by playback workers)\n- Simplify create-debug-info.ts to use player state accessors",
+    "files_changed": 3
+  },
+  {
+    "hash": "3ca0f4470a3875049dc49eee0421bd6f6fbaf9a9",
+    "short_hash": "3ca0f44",
+    "author": "bigmistqke",
+    "date": "2026-01-06T20:03:21+01:00",
+    "message": "fix: resolve type errors in playback and deep-resource\n\n- Export StoreAccessor interface from deep-resource.ts\n- Add @types/audioworklet to app tsconfig\n- Fix type-only import in audio-scheduler.ts",
+    "files_changed": 3
+  },
+  {
+    "hash": "a363d7540cbe38309107109d4a00920731c83435",
+    "short_hash": "a363d75",
+    "author": "bigmistqke",
+    "date": "2026-01-06T19:04:55+01:00",
+    "message": "style: move track controls next to sliders to prevent layout shift\n\n- Controls now always reserve space (hidden when no clip)\n- Buttons stacked vertically next to vol/pan sliders",
+    "files_changed": 2
+  },
+  {
+    "hash": "41ce4fb5a3b2f8dd01347b7a1a9e81bf59deee44",
+    "short_hash": "41ce4fb",
+    "author": "bigmistqke",
+    "date": "2026-01-06T19:03:07+01:00",
+    "message": "feat: render Editor UI from project data (Ticket 5)\n\n- Use trackId strings instead of numeric indices throughout editor\n- Iterate project.tracks directly with Index for reactive updates\n- Dynamic CSS grid columns/rows from group.layout\n- Preserve all tracks when publishing (even empty ones)\n- Fail explicitly if clip has no local blob and no remote source\n- Track component accepts trackId + displayIndex props",
+    "files_changed": 5
+  },
+  {
+    "hash": "ecd1bbe61db6097529a8cd9dd498f16f82e04862",
+    "short_hash": "ecd1bbe",
+    "author": "bigmistqke",
+    "date": "2026-01-06T18:49:45+01:00",
+    "message": "fix: don't re-upload remote stems when publishing\n\n- Skip clips with existing stem source in publishAction\n- Only add local recordings to clipBlobs for upload\n- Fix layout-resolver type error ('stem' → 'clip')",
+    "files_changed": 2
+  },
+  {
+    "hash": "726da7dd0d475805fa9d13c51ddbfd990e8b6979",
+    "short_hash": "726da7d",
+    "author": "bigmistqke",
+    "date": "2026-01-06T18:45:44+01:00",
+    "message": "refactor: simplify SegmentSource to single clip type\n\nRemove stem/local distinction - blob storage location is an\nimplementation detail handled by getClipBlob(), not a concern\nof the timeline/rendering layer.\n\nSegmentSource is now: clip | timeline (for nested groups)",
+    "files_changed": 2
+  },
+  {
+    "hash": "3155f9db10fac65e1a7949bfb3c004b285c882ee",
+    "short_hash": "3155f9d",
+    "author": "bigmistqke",
+    "date": "2026-01-06T18:42:18+01:00",
+    "message": "feat: refactor compositor to use layout timeline (Ticket 3)\n\n- Add setTimeline() to compositor, remove setGrid()\n- Change setFrame/setPreviewStream to use trackId instead of index\n- render(time) queries timeline for active segments\n- Dynamic texture pool keyed by trackId\n- Add viewport to LayoutSlot for preview rendering without clips\n- Add SegmentSourceLocal for local recordings not yet uploaded\n- Update player to accept project accessor and compile timeline\n- Update slot/editor to use trackId-based API\n- Always include all tracks in timeline (even without clips)",
+    "files_changed": 10
+  },
+  {
+    "hash": "036f6e8067c938dba072747d7c2522f14e332cbf",
+    "short_hash": "036f6e8",
+    "author": "bigmistqke",
+    "date": "2026-01-06T18:20:18+01:00",
+    "message": "test: add layout-resolver tests\n\n- Add vitest to app package\n- Add vitest.config.ts with path aliases\n- Add comprehensive tests for layout-resolver:\n  - compileLayoutTimeline (grid, stacked, void members, rootGroup)\n  - getActiveSegments (timing, localTime calculation)\n  - getSegmentsInRange (overlapping segments)\n  - getNextTransition (start/end transitions)\n  - Multiple clips per track",
+    "files_changed": 4
+  },
+  {
+    "hash": "d04b8a04cd0a29a113416cc940d26a09d5a5f0bf",
+    "short_hash": "d04b8a0",
+    "author": "bigmistqke",
+    "date": "2026-01-06T18:20:10+01:00",
+    "message": "feat: add layout resolver (Ticket 2)\n\nCompiles hierarchical Project data into flat LayoutTimeline for compositor.\n\n- layout-types.ts: LayoutTimeline, LayoutSlot, LayoutSegment, Viewport types\n- layout-resolver.ts: compileLayoutTimeline() and query helpers\n  - getActiveSegments(time) - segments active at given time\n  - getSegmentsInRange(start, end) - for pre-buffering\n  - getNextTransition(time) - next start/end event\n\nSupports grid layout, stacked layout, void members, rootGroup selection.",
+    "files_changed": 2
+  },
+  {
+    "hash": "e8d321181d7a44796acba056aacf1fbcd7f0fd22",
+    "short_hash": "e8d3211",
+    "author": "bigmistqke",
+    "date": "2026-01-06T18:19:58+01:00",
+    "message": "chore: add root tsconfig.json and pnpm types script\n\n- Add root tsconfig.json with shared compiler options\n- All package tsconfigs now extend from root\n- Add missing tsconfigs for utils, mixer, compositor\n- Add \"types\": \"pnpm -r types\" script to root package.json\n- Update CLAUDE.md with TypeScript check workflow",
+    "files_changed": 10
+  },
+  {
+    "hash": "7d30ce39746f01d4dc9ce638de0a05fbf6d1c3ea",
+    "short_hash": "7d30ce3",
+    "author": "bigmistqke",
+    "date": "2026-01-06T18:04:03+01:00",
+    "message": "fix: prevent AudioContext from being closed when using shared context\n\nThe audio scheduler was incorrectly closing the AudioContext when\ndestroy() was called, even when the context was obtained from the\ndestination's context property (e.g., audioPipeline.gain.context).\n\nSimplified by removing redundant audioContext option - now just use\ndestination.context if destination is provided, otherwise create own.\n\nFixes InvalidStateError when switching projects while playing.",
+    "files_changed": 2
+  },
+  {
+    "hash": "f92133656da1d979b4848fd8bd032b7499e18f13",
+    "short_hash": "f921336",
+    "author": "bigmistqke",
+    "date": "2026-01-06T18:01:13+01:00",
+    "message": "refactor: update lexicons for data-driven timeline architecture\n\n- Add rootGroup field to project (references timeline root group)\n- Add clipSource.stem and clipSource.group union types\n- Change clip.stem to clip.source union for nested compositions\n- Update crud.ts and create-editor.ts to use new source field\n- Add REFACTOR_PLAN.md with full architecture design\n\nPart of Ticket 1 from the refactor plan.",
+    "files_changed": 8
+  },
+  {
+    "hash": "9ff1684954be1500b2f970f1ee84db09e22d6602",
+    "short_hash": "9ff1684",
+    "author": "bigmistqke",
+    "date": "2026-01-06T16:49:47+01:00",
+    "message": "refactor: improve action() API and add JSDoc examples\n\n- Rename result() to latest() for clarity\n- Add comprehensive JSDoc examples for defer() and hold()\n- Extract utility functions to utils.ts (isGeneratorFunction, isObject, assertedNotNullish)\n- Use assertedNotNullish for cleaner null checks\n- Remove debug console.log",
+    "files_changed": 4
+  },
+  {
+    "hash": "73d4e59b435ef0f8e60cb59ff4f16be569e26e41",
+    "short_hash": "73d4e59",
+    "author": "bigmistqke",
+    "date": "2026-01-06T15:00:58+01:00",
+    "message": "docs: update CLAUDE.md and consolidate architecture docs\n\n- Update CLAUDE.md to reflect current codebase structure\n- Add monorepo structure, tech stack, key patterns\n- Document audio routing workaround for Chrome bug\n- Remove outdated DESIGN.md and MVP.md (content moved to ARCHITECTURE.md)",
+    "files_changed": 4
+  },
+  {
+    "hash": "03ed3a53b498938c9ebea27b5169a50a30249a58",
+    "short_hash": "03ed3a5",
+    "author": "bigmistqke",
+    "date": "2026-01-06T15:00:46+01:00",
+    "message": "fix: audio quality degradation when recording while playing back\n\nSymptoms: Recording while simultaneously playing back previous clips caused\nsubsequent recordings to have thin audio with phasing-like artifacts that\nfaded in and out. First recording always sounded fine.\n\nRoot cause: Chrome has a known bug where audio routed to AudioContext.destination\ninterferes with getUserMedia capture, even when echoCancellation is enabled.\nThe exact mechanism is unclear, but appears related to Chrome's browser-wide\naudio processing pipeline.\n\nFix: Route playback audio through MediaStreamAudioDestinationNode → HTMLAudioElement\ninstead of AudioContext.destination during recording. This bypasses the internal\naudio processing conflict.\n\nReferences:\n- https://groups.google.com/a/chromium.org/g/chromium-discuss/c/6s2EnqdBERE\n- https://dev.to/focused_dot_io/echo-cancellation-with-web-audio-api-and-chromium-1f8m\n\nAdditional fixes included:\n- Session-based capture in worker to prevent race conditions\n- Proper handling of interleaved vs planar audio formats\n- Use planar format for AudioData in muxer (f32-planar)",
+    "files_changed": 4
+  },
+  {
+    "hash": "1580cca78c90c7a2b57129833c93f596cc9daeaf",
+    "short_hash": "1580cca",
+    "author": "bigmistqke",
+    "date": "2026-01-06T11:25:16+01:00",
+    "message": "feat: add download button to track UI\n\nAdd ability to download clip from each track for debugging audio quality",
+    "files_changed": 4
+  },
+  {
+    "hash": "2280d96e2d458dbd68e50883aa5cf1fc32005e47",
+    "short_hash": "2280d96",
+    "author": "bigmistqke",
+    "date": "2026-01-06T11:25:06+01:00",
+    "message": "refactor: extract audio worklet processor to separate file\n\n- Move RingBufferProcessor to audio-ring-buffer-processor.ts\n- Use @bigmistqke/rpc for worklet communication\n- Simplify playback.ts by removing duplicate scheduling prevention\n- Increase default buffer ahead to 2 seconds",
+    "files_changed": 7
+  },
+  {
+    "hash": "5e37ff1a782fef920ed805b7337ac2d099344ce4",
+    "short_hash": "5e37ff1",
+    "author": "bigmistqke",
+    "date": "2026-01-06T11:24:48+01:00",
+    "message": "chore: clean up worker files\n\nRemove doc comments and minor formatting adjustments",
+    "files_changed": 7
+  },
+  {
+    "hash": "ca079e82216ed494281e47f5270f9d88d358f34f",
+    "short_hash": "ca079e8",
+    "author": "bigmistqke",
+    "date": "2026-01-05T22:38:58+01:00",
+    "message": "fix: fix audio scheduling related noise with ring buffer",
+    "files_changed": 6
+  },
+  {
+    "hash": "b9c9b9e1919a02159d572ccbcb22521503417511",
+    "short_hash": "b9c9b9e",
+    "author": "bigmistqke",
+    "date": "2026-01-05T22:00:51+01:00",
+    "message": "feat: add audio capture and muxing to recording pipeline",
+    "files_changed": 3
+  },
+  {
+    "hash": "dd840ad975b408a0cf65080e5d9edd14ce5d9c1f",
+    "short_hash": "dd840ad",
+    "author": "bigmistqke",
+    "date": "2026-01-05T21:56:29+01:00",
+    "message": "refactor: rename action.resolve() to action.promise()",
+    "files_changed": 2
+  },
+  {
+    "hash": "602a450701b2da92391b2ed3793f54e4b873f01e",
+    "short_hash": "602a450",
+    "author": "bigmistqke",
+    "date": "2026-01-05T21:50:14+01:00",
+    "message": "chore(debug): remove per-frame logging spam in render loop",
+    "files_changed": 1
+  }
+]
