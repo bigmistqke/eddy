@@ -214,13 +214,13 @@ export async function decodeClipAudio(
     const demuxer = await makeDemuxer(buffer)
 
     // Check for audio track
-    if (demuxer.info.audioTracks.length === 0) {
+    if (demuxer.getInfo().audioTracks.length === 0) {
       log('no audio track found')
       demuxer.destroy()
       return null
     }
 
-    const audioTrack = demuxer.info.audioTracks[0]
+    const audioTrack = demuxer.getInfo().audioTracks[0]
     log('found audio track', {
       codec: audioTrack.codec,
       sampleRate: audioTrack.sampleRate,

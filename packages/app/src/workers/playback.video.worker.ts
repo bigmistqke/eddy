@@ -8,8 +8,8 @@
 
 import { expose, rpc, transfer, type RPC } from '@bigmistqke/rpc/messenger'
 import type { VideoTrackInfo } from '@eddy/media'
-import { debug } from '@eddy/utils'
-import { makeVideoPlayback, type VideoPlaybackState } from '@eddy/video'
+import { debug, pick } from '@eddy/utils'
+import { makeVideoPlayback, type VideoPlayback } from '@eddy/video'
 import { makeOPFSSource } from '~/opfs'
 import {
   makeScheduler,
@@ -28,7 +28,10 @@ interface CompositorFrameMethods {
   setFrame(clipId: string, frame: VideoFrame | null): void
 }
 
-export interface VideoPlaybackWorkerMethods {
+export interface VideoPlaybackWorkerMethods extends Pick<
+  VideoPlayback,
+  'getBufferRange' | 'getPerf' | 'getState' | 'pause' | 'play' | 'resetPerf' | 'seek'
+> {
   /** Set scheduler buffer for cross-worker coordination */
   setSchedulerBuffer(buffer: SchedulerBuffer): void
 
@@ -37,30 +40,6 @@ export interface VideoPlaybackWorkerMethods {
 
   /** Connect to compositor via MessagePort */
   connectToCompositor(id: string, port: MessagePort): void
-
-  /** Start playback from time at speed */
-  play(startTime: number, playbackSpeed?: number): void
-
-  /** Pause playback */
-  pause(): void
-
-  /** Seek to time (buffers from keyframe) */
-  seek(time: number): Promise<void>
-
-  /** Get current buffer range */
-  getBufferRange(): { start: number; end: number }
-
-  /** Get current state */
-  getState(): VideoPlaybackState
-
-  /** Get performance stats */
-  getPerf(): Record<
-    string,
-    { samples: number; avg: number; max: number; min: number; overThreshold: number }
-  >
-
-  /** Reset performance stats */
-  resetPerf(): void
 
   /** Get frame at specific time (for export) */
   getFrameAtTime(time: number): Promise<VideoFrame | null>
@@ -104,13 +83,15 @@ const playback = makeVideoPlayback({
 /**********************************************************************************/
 
 expose<VideoPlaybackWorkerMethods>({
-  getBufferRange: playback.getBufferRange,
-  getPerf: playback.getPerf,
-  getState: playback.getState,
-  pause: playback.pause,
-  play: playback.play,
-  resetPerf: playback.resetPerf,
-  seek: playback.seek,
+  ...pick(playback, [
+    'getBufferRange',
+    'getPerf',
+    'getState',
+    'pause',
+    'play',
+    'resetPerf',
+    'seek',
+  ]),
 
   setSchedulerBuffer(buffer) {
     log('setSchedulerBuffer')

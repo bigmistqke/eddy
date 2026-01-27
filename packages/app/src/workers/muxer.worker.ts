@@ -7,7 +7,7 @@
  */
 
 import { expose, handle, type Handled } from '@bigmistqke/rpc/messenger'
-import { makeMuxer, type AudioFrameData, type Muxer, type VideoFrameData } from '@eddy/media'
+import { makeMuxer, type AudioFrameData, type VideoFrameData } from '@eddy/media'
 import { debug } from '@eddy/utils'
 import { writeBlob } from '~/opfs'
 import {
@@ -138,15 +138,13 @@ expose<MuxerWorkerMethods>({
     log('initialization complete')
 
     return handle({
+      addAudioFrame: muxer.addAudioFrame,
+
       addVideoFrame(data) {
         muxer.addVideoFrame(data)
         if (scheduler) {
           scheduler.updateFromEncoder(muxer.videoQueueSize)
         }
-      },
-
-      addAudioFrame(data) {
-        muxer.addAudioFrame(data)
       },
 
       async finalize(clipId) {

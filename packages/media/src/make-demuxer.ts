@@ -63,7 +63,7 @@ export interface DemuxedSample {
 }
 
 export interface Demuxer {
-  readonly info: DemuxerInfo
+  getInfo(): DemuxerInfo
 
   /**
    * Get WebCodecs VideoDecoderConfig for the video track
@@ -222,7 +222,9 @@ export async function makeDemuxer(source: ArrayBuffer | Blob): Promise<Demuxer> 
   }
 
   return {
-    info,
+    getInfo() {
+      return info
+    },
 
     async getVideoConfig(): Promise<VideoDecoderConfig> {
       if (videoTracks.length === 0) {

@@ -4,7 +4,7 @@ import type { AbsoluteProject, AudioPipeline, Integer, Project } from '@eddy/lex
 import { createClock, type Clock } from '@eddy/solid'
 import { getProjectDuration } from '@eddy/timeline'
 import { debug, makeLoop, makeMonitor } from '@eddy/utils'
-import { createEffect, createMemo, createSignal, on, type Accessor } from 'solid-js'
+import { createEffect, createMemo, createSignal, type Accessor } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import { PREVIEW_CLIP_ID } from '~/constants'
 import { makeAheadScheduler, SCHEDULE_AHEAD } from '~/primitives/make-ahead-scheduler'
@@ -37,7 +37,7 @@ const counters: Array<{
 
 // Expose perf stats globally for console debugging
 if (typeof window !== 'undefined') {
-  ; (window as any).eddy = { monitor }
+  ;(window as any).eddy = { monitor }
 }
 
 /**********************************************************************************/
@@ -228,7 +228,13 @@ function injectPreviewClips<T extends Project>(project: T, previewTrackIds: Set<
  * Create a player that manages compositor, playback workers, and audio pipelines.
  * Uses direct worker-to-worker frame transfer for video.
  */
-export async function makePlayer({ canvas: canvasElement, width, height, project, schedulerBuffer }: CreatePlayerOptions): Promise<Player> {
+export async function makePlayer({
+  canvas: canvasElement,
+  width,
+  height,
+  project,
+  schedulerBuffer,
+}: CreatePlayerOptions): Promise<Player> {
   log('makePlayer', { width, height, schedulerBuffer })
 
   // Set canvas size and transfer to worker
@@ -248,6 +254,7 @@ export async function makePlayer({ canvas: canvasElement, width, height, project
   const compositor: Compositor = {
     canvas: canvasElement,
 
+    // ...pick(compositorRpc, ['setProject', 'setFrame', 'render', 'connectPlaybackWorker', 'disconnectPlaybackWorker', 'renderToCaptureCanvas', 'renderAndCapture', 'renderFramesAndCapture', ])
     // Delegate to worker methods
     setProject: compositorRpc.setProject,
     setFrame: compositorRpc.setFrame,
