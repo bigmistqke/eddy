@@ -1,4 +1,5 @@
 packages:
   - packages/*
+  - apps/*
 overrides:
-  "@bigmistqke/rpc": link:../rpc/packages/rpc
+  '@bigmistqke/rpc': link:../rpc/packages/rpc
