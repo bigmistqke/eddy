@@ -3,6 +3,7 @@ import { createTrackedEffect, omit } from "@solidjs/signals"
 import {
   ComponentProps,
   createContext,
+  createMemo,
   createSignal,
   createStore,
   For,
@@ -76,8 +77,36 @@ function NodeComponent(props: {
   onAddFrame(path: number[], direction: "top" | "bottom" | "left" | "right"): void
   path: Array<number>
 }) {
-  const context = useContext(Context)
+  const context = useContext(Context)!
   const isActive = () => isNodeActive(props.path, context.selection)
+
+  const handleDirections = createMemo(() => {
+    const s = context.selection
+    const m = context.mode()
+    const targetedPath = s.path.slice(0, s.path.length - s.depth)
+
+    let handlePath: number[]
+    if (m === "split") {
+      handlePath = targetedPath
+    } else {
+      try {
+        const targeted = resolveNode(context.layout, targetedPath)
+        handlePath =
+          targeted.type === "container" ? targetedPath : targetedPath.slice(0, -1)
+      } catch {
+        return []
+      }
+    }
+
+    if (!pathEquals(props.path, handlePath)) return []
+
+    if (m === "split") return ["top", "bottom", "left", "right"] as ("top" | "bottom" | "left" | "right")[]
+
+    const container = resolveNode(context.layout, handlePath) as Container
+    return container.direction === "horizontal"
+      ? (["left", "right"] as ("top" | "bottom" | "left" | "right")[])
+      : (["top", "bottom"] as ("top" | "bottom" | "left" | "right")[])
+  })
 
   return (
     <Switch>
@@ -85,6 +114,7 @@ function NodeComponent(props: {
         {layout => (
           <Frame
             active={isActive()}
+            handleDirections={handleDirections()}
             style={{ "flex-direction": layout().direction === "horizontal" ? "row" : "column" }}
             onAddFrame={direction => props.onAddFrame(props.path, direction)}
             class={styles.container}
@@ -106,15 +136,14 @@ function NodeComponent(props: {
           <EntityFrame
             entity={entity()}
             active={isActive()}
+            handleDirections={handleDirections()}
             onAddFrame={direction => props.onAddFrame(props.path, direction)}
             onClick={() => {
               if (isNodeActive(props.path, { ...context.selection, depth: 0 })) {
-                context.setSelection(selection => {
-                  return {
-                    ...selection,
-                    depth: (selection.depth + 1) % (selection.path.length + 1),
-                  }
-                })
+                context.setSelection(selection => ({
+                  ...selection,
+                  depth: (selection.depth + 1) % (selection.path.length + 1),
+                }))
               } else {
                 context.setSelection(() => ({ path: props.path, depth: 0 }))
               }
