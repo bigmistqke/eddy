@@ -1,4 +1,4 @@
-import { createMemo, For, Show, useContext } from "solid-js"
+import { ComponentProps, createMemo, For, Show, useContext } from "solid-js"
 import { Context } from "./app"
 import styles from "./layout-builder.module.css"
 import type { Container, Node } from "./types"
@@ -59,6 +59,41 @@ export function Breadcrumb() {
           </>
         )}
       </For>
+    </div>
+  )
+}
+
+export function LayoutBuilder(props: {
+  children: ComponentProps<"div">["children"]
+  onDone(): void
+}) {
+  const context = useContext(Context)!
+
+  return (
+    <div class={styles.layoutBuilder}>
+      <div class={styles.canvas}>
+        <Breadcrumb />
+        {props.children}
+      </div>
+      <div class={styles.bottomBar}>
+        <div class={styles.modeToggle}>
+          <button
+            class={context.mode() === "append" ? styles.active : ""}
+            onClick={() => context.setMode("append")}
+          >
+            ⊞ Append
+          </button>
+          <button
+            class={context.mode() === "split" ? styles.active : ""}
+            onClick={() => context.setMode("split")}
+          >
+            ÷ Split
+          </button>
+        </div>
+        <button class={styles.doneButton} onClick={props.onDone}>
+          Done
+        </button>
+      </div>
     </div>
   )
 }
