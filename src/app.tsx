@@ -89,7 +89,6 @@ function NodeComponent(props: {
     const targetedPath = s.path.slice(0, s.path.length - s.depth)
 
     if (m === "split") {
-      if (targetedPath.length === 0) return []
       if (!pathEquals(props.path, targetedPath)) return []
       return ["top", "bottom", "left", "right"] as ("top" | "bottom" | "left" | "right")[]
     }
@@ -140,13 +139,28 @@ function NodeComponent(props: {
             handleDirections={handleDirections()}
             onAddFrame={direction => props.onAddFrame(props.path, direction)}
             onClick={() => {
-              if (isNodeActive(props.path, { ...context.selection, depth: 0 })) {
-                context.setSelection(selection => ({
-                  ...selection,
-                  depth: (selection.depth + 1) % (selection.path.length + 1),
-                }))
+              const m = context.mode()
+              if (m === "append") {
+                if (isNodeActive(props.path, { ...context.selection, depth: 0 })) {
+                  // This entity is the leaf of current selection — cycle containers only (skip depth 0)
+                  context.setSelection(s => ({
+                    ...s,
+                    depth: (s.depth % s.path.length) + 1,
+                  }))
+                } else {
+                  // New entity tapped — immediately target parent container
+                  context.setSelection(() => ({ path: props.path, depth: 1 }))
+                }
               } else {
-                context.setSelection(() => ({ path: props.path, depth: 0 }))
+                // Split mode: original behavior, can select entity at depth 0
+                if (isNodeActive(props.path, { ...context.selection, depth: 0 })) {
+                  context.setSelection(s => ({
+                    ...s,
+                    depth: (s.depth + 1) % (s.path.length + 1),
+                  }))
+                } else {
+                  context.setSelection(() => ({ path: props.path, depth: 0 }))
+                }
               }
             }}
           />
@@ -188,16 +202,33 @@ export function App() {
   }
 
   function splitNode(nodePath: number[], direction: "top" | "bottom" | "left" | "right") {
-    if (nodePath.length === 0) return // cannot split root
-    const node = resolveNode(layout, nodePath)
+    const splitDir: "horizontal" | "vertical" =
+      direction === "left" || direction === "right" ? "horizontal" : "vertical"
+    const newEntityFirst = direction === "top" || direction === "left"
+    const newEntityIndex = newEntityFirst ? 0 : 1
     const newEntity = createEntity()
+
+    if (nodePath.length === 0) {
+      // Root has no parent — restructure root itself:
+      // wrap existing children in an inner container, then set root to the split direction
+      const inner: Container = {
+        type: "container",
+        direction: layout.direction,
+        children: layout.children.map(cloneNode) as (Entity | Container)[],
+      }
+      setLayout(proxy => {
+        proxy.direction = splitDir
+        proxy.children.splice(0, proxy.children.length, ...(newEntityFirst ? [newEntity, inner] : [inner, newEntity]))
+      })
+      setSelection(() => ({ path: [newEntityIndex], depth: 0 }))
+      return
+    }
+
+    const node = resolveNode(layout, nodePath)
     const newContainer: Container = {
       type: "container",
-      direction: direction === "left" || direction === "right" ? "horizontal" : "vertical",
-      children:
-        direction === "top" || direction === "left"
-          ? [newEntity, cloneNode(node)]
-          : [cloneNode(node), newEntity],
+      direction: splitDir,
+      children: newEntityFirst ? [newEntity, cloneNode(node)] : [cloneNode(node), newEntity],
     }
     const parentPath = nodePath.slice(0, -1)
     const nodeIndex = nodePath[nodePath.length - 1]
@@ -205,7 +236,6 @@ export function App() {
       const parent = resolveNode(proxy, parentPath) as Container
       parent.children.splice(nodeIndex, 1, newContainer)
     })
-    const newEntityIndex = direction === "top" || direction === "left" ? 0 : 1
     setSelection(() => ({ path: [...nodePath, newEntityIndex], depth: 0 }))
   }
 
