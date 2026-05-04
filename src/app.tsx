@@ -3,6 +3,7 @@ import { createTrackedEffect, omit, storePath } from "@solidjs/signals"
 import {
   ComponentProps,
   createContext,
+  createSignal,
   createStore,
   For,
   Match,
@@ -11,13 +12,16 @@ import {
 } from "solid-js"
 import styles from "./app.module.css"
 import { Frame } from "./frame"
-import type { Container, Entity, Node } from "./types"
+import type { Container, Entity, Mode, Node } from "./types"
 
 type Selection = { path: Array<number>; depth: number }
 
-const Context = createContext<{
+export const Context = createContext<{
+  layout: Container
   selection: Selection
   setSelection: StoreSetter<Selection>
+  mode: () => Mode
+  setMode: (mode: Mode) => void
 }>()
 
 function pathEquals(a: number[], b: number[]) {
@@ -134,10 +138,12 @@ export function App() {
     depth: 0,
   })
 
+  const [mode, setMode] = createSignal<Mode>("append")
+
   createTrackedEffect(() => console.log([...selection.path]))
 
   return (
-    <Context value={{ selection, setSelection }}>
+    <Context value={{ layout, selection, setSelection, mode, setMode }}>
       <div style={{ display: "flex", width: "100vw", height: "100%" }}>
         <NodeComponent
           layout={layout}
