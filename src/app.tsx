@@ -144,6 +144,9 @@ export function App() {
 
   function appendToContainer(containerPath: number[], insertAtStart: boolean) {
     const newEntity = createEntity()
+    const newIndex = insertAtStart
+      ? 0
+      : (resolveNode(layout, containerPath) as Container).children.length
     setLayout(proxy => {
       const container = resolveNode(proxy, containerPath) as Container
       if (insertAtStart) {
@@ -152,12 +155,7 @@ export function App() {
         container.children.push(newEntity)
       }
     })
-    if (insertAtStart) {
-      setSelection(() => ({ path: [...containerPath, 0], depth: 0 }))
-    } else {
-      const len = (resolveNode(layout, containerPath) as Container).children.length
-      setSelection(() => ({ path: [...containerPath, len - 1], depth: 0 }))
-    }
+    setSelection(() => ({ path: [...containerPath, newIndex], depth: 0 }))
   }
 
   function splitNode(nodePath: number[], direction: "top" | "bottom" | "left" | "right") {
