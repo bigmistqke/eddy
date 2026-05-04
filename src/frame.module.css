@@ -7,7 +7,7 @@
   --notch-bg: black;
   --radius: 20px;
 
-  height: 75px;
+  height: calc(75px + var(--extend, 0px));
   position: absolute;
   z-index: 1;
 
@@ -16,7 +16,6 @@
     bottom: 0px;
     rotate: 180deg;
     transform-origin: center center;
-    height: 120px;
   }
 
   &.top {

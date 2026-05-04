@@ -1,4 +1,4 @@
-import { ComponentProps, createMemo, For, Show, useContext } from "solid-js"
+import { ComponentProps, createMemo, For, onSettled, Show, useContext } from "solid-js"
 import { Context } from "./app"
 import styles from "./layout-builder.module.css"
 import type { Node } from "./types"
@@ -59,6 +59,12 @@ export function LayoutBuilder(props: {
   onDone(): void
 }) {
   const context = useContext(Context)!
+  let bottomBarRef!: HTMLDivElement
+
+  onSettled(() => {
+    context.setBottomBarEl(bottomBarRef)
+    return () => context.setBottomBarEl(undefined)
+  })
 
   return (
     <div class={styles.layoutBuilder}>
@@ -66,7 +72,7 @@ export function LayoutBuilder(props: {
         <Breadcrumb />
         {props.children}
       </div>
-      <div class={styles.bottomBar}>
+      <div class={styles.bottomBar} ref={bottomBarRef}>
         <div class={styles.modeToggle}>
           <button
             class={context.mode() === "append" ? styles.active : ""}

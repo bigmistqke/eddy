@@ -1,6 +1,7 @@
 import type { StoreSetter } from "@solidjs/signals"
 import { omit } from "@solidjs/signals"
 import {
+  type Accessor,
   ComponentProps,
   createContext,
   createMemo,
@@ -26,6 +27,8 @@ export const Context = createContext<{
   mode: () => Mode
   setMode: (mode: Mode) => void
   view: () => View
+  bottomBarEl: Accessor<HTMLElement | undefined>
+  setBottomBarEl: (el: HTMLElement | undefined) => void
 }>()
 
 function pathEquals(a: number[], b: number[]) {
@@ -183,6 +186,7 @@ export function App() {
 
   const [mode, setMode] = createSignal<Mode>("append")
   const [view, setView] = createSignal<View>("recording")
+  const [bottomBarEl, setBottomBarEl] = createSignal<HTMLElement | undefined>()
 
   function appendToContainer(containerPath: number[], insertAtStart: boolean) {
     const newEntity = createEntity()
@@ -251,7 +255,7 @@ export function App() {
   }
 
   return (
-    <Context value={{ layout, selection, setSelection, mode, setMode, view }}>
+    <Context value={{ layout, selection, setSelection, mode, setMode, view, bottomBarEl, setBottomBarEl }}>
       <div style={{ display: "flex", width: "100vw", height: "100%" }}>
         <Show when={view() === "recording"}>
           <div class={styles.recordingView}>

@@ -1,4 +1,5 @@
-import { Show, type JSX, type ParentProps } from "solid-js"
+import { createEffect, createSignal, Show, useContext, type JSX, type ParentProps } from "solid-js"
+import { Context } from "./app"
 import styles from "./frame.module.css"
 
 export function Arrow(props: { style: JSX.CSSProperties }) {
@@ -64,8 +65,58 @@ export function Frame(
   }>,
 ) {
   const dirs = () => props.handleDirections ?? []
+  const context = useContext(Context)
+  const [bottomExtend, setBottomExtend] = createSignal(0)
+  let frameRef!: HTMLDivElement
+
+  function checkOverlap(bar: HTMLElement | undefined) {
+    if (!bar || !frameRef) {
+      setBottomExtend(0)
+      return
+    }
+    const frameRect = frameRef.getBoundingClientRect()
+    const barRect = bar.getBoundingClientRect()
+    const verticalOverlap = frameRect.bottom > barRect.top + 1
+    const notchCenterX = (frameRect.left + frameRect.right) / 2
+    const horizontalOverlap = notchCenterX + 50 > barRect.left && notchCenterX - 50 < barRect.right
+    setBottomExtend(verticalOverlap && horizontalOverlap ? barRect.height : 0)
+  }
+
+  // Set up frame ResizeObserver once after mount (no tracked signals — runs once)
+  // Re-run whenever the bottom bar element changes
+  createEffect(
+    () => context?.bottomBarEl(),
+    bar => {
+      checkOverlap(bar)
+      const controller = new AbortController()
+      const observer = new ResizeObserver(() => checkOverlap(bar))
+      observer.observe(frameRef)
+
+      window.addEventListener("resize", () => checkOverlap(bar), controller)
+
+      if (!bar) {
+        return () => {
+          controller.abort()
+          observer.disconnect()
+        }
+      }
+
+      observer.observe(bar)
+
+      return () => {
+        observer.disconnect()
+        controller.abort()
+      }
+    },
+  )
+
   return (
-    <div onClick={props.onClick} style={props.style} class={[props.class, styles.frame]}>
+    <div
+      ref={frameRef}
+      onClick={props.onClick}
+      style={props.style}
+      class={[props.class, styles.frame]}
+    >
       <Show when={dirs().includes("top")}>
         <ArrowNotch
           class={styles.top}
@@ -76,7 +127,11 @@ export function Frame(
         />
       </Show>
       <Show when={dirs().includes("bottom")}>
-        <ArrowNotch class={styles.bottom} onClick={() => props.onAddFrame("bottom")} />
+        <ArrowNotch
+          class={styles.bottom}
+          style={bottomExtend() > 0 ? { "--extend": `${bottomExtend()}px` } : undefined}
+          onClick={() => props.onAddFrame("bottom")}
+        />
       </Show>
       <Show when={dirs().includes("left")}>
         <ArrowNotch class={styles.left} onClick={() => props.onAddFrame("left")} />
