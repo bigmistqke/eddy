@@ -37,11 +37,21 @@ Repeated tap on the same frame thus becomes a natural "climb the tree" gesture: 
 
 The selected node can be an entity or a container. Both render UI in layout mode (split-mode handles wrap whichever node is targeted; append-mode edge buttons live on children of the targeted container). The constraint check and the fit-with-padding calculation apply to whichever the selected node is — there is no special-casing per node type.
 
+### HUD: notched language everywhere
+
+All HUD chrome — mode bar, breadcrumb, contextual toolbar — uses the existing `Notch` component (the same one already in use for the bottom mode bar). This unifies the visual language: every floating HUD piece reads as a notch attached to a canvas edge.
+
+Three notch slots:
+
+| Slot | Position | Orientation | Contents |
+|---|---|---|---|
+| Bottom mode bar | bottom-center, attached to bottom | horizontal | existing mode/record buttons (unchanged) |
+| Breadcrumb | top-left, attached to top | horizontal | breadcrumb segments, growing rightward |
+| Contextual toolbar | top-right, attached to right edge | vertical | back button (first); future contextual actions append below |
+
 ### Back button
 
-A floating contextual toolbar sits at the top right of the canvas. It is reserved for canvas-context actions; future contextual buttons stack vertically below the first one.
-
-The first occupant is the **back button** — the supplied left-arrow SVG. It is visible whenever there is an active selection (i.e., the viewport is fit to a specific node, not the unselected root view). Tapping it clears the selection and animates the viewport to a "fit-all root" view, returning the editor to a neutral state from which the user can tap any frame to engage again.
+The back button is the first occupant of the top-right contextual toolbar notch. It is the supplied left-arrow SVG. It is visible whenever there is an active selection (i.e., the viewport is fit to a specific node, not the unselected root view). Tapping it clears the selection and animates the viewport to a "fit-all root" view, returning the editor to a neutral state from which the user can tap any frame to engage again.
 
 Note this is semantically distinct from depth-cycling to the root container. Depth-cycle ends at "root container selected," which is still a selection. The back button ends at "no selection," which matters for tools and modes that only act when a selection exists.
 
@@ -72,7 +82,7 @@ All viewport changes — pan, zoom-in, return-to-root — animate. The animation
 
 - Manual pan and zoom gestures (pinch, scroll-wheel, drag-to-pan).
 - Keyboard shortcuts (Esc, arrows). The app is mobile-first; keyboard is not a baseline.
-- Breadcrumb-as-primary navigation. The breadcrumb may continue to exist as informational UI but no interaction in this design depends on it.
+- Breadcrumb-as-primary navigation. The breadcrumb is now rendered in the top-left notch as part of the unified HUD language; it remains informational and no core interaction in this design depends on it.
 - Double-tap-to-zoom (opt-in zoom on frames that already fit). Considered and dropped — it solved a problem that didn't exist given the constraint-driven model.
 - Intermediate scope-up via back button. Back always clears selection and returns to fit-all root view; intermediate climbing happens via repeated tap (depth cycling).
 
@@ -81,5 +91,6 @@ All viewport changes — pan, zoom-in, return-to-root — animate. The animation
 - The viewport transform belongs at the layout root (the existing `LayoutBuilder` container or its child), implemented as a CSS `transform: scale(s) translate(x, y)`. The layout tree underneath does not need to know it's being scaled.
 - The constraint detection runs on the *currently selected node's* rendered size — entity or container. It does not run on every frame; only the selected node matters. The shared `ResizeObserver` in `App` already provides the measurement plumbing for this.
 - The viewport state is derived (not stored): given the current selection and the layout dimensions, there is exactly one constraint-correct viewport. Driving the viewport from a derived value (e.g., a `createMemo` over `selection`) keeps the system stateless and removes any chance of viewport and selection drifting out of sync.
-- The back button is a sibling of the layout root in the DOM, positioned absolutely. It listens to whether a selection exists; when there is one, it renders.
-- The top-right contextual toolbar is a slot — a flex column container — that the back button is the first child of. Future contextual actions append.
+- The breadcrumb and contextual toolbar are siblings of the layout root in the DOM, each rendered inside a `Notch` (top-orientation for breadcrumb, right-orientation for the toolbar). Their positioning is handled by the existing notch CSS.
+- The contextual toolbar notch contains a flex column of buttons. The back button is the first child and is rendered conditionally on whether a selection exists. Future contextual actions append.
+- The breadcrumb notch contains the existing breadcrumb segments laid out horizontally; the segments themselves stay informational.
