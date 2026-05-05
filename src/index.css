@@ -5,4 +5,10 @@
 
   --hud-radius: 20px;
   --hud-height-notch: 60px;
+
+  --z-selection-overlay: 100;
+  --z-hud: 10;
+  --z-notch: 1;
+  --z-notch-handle: 2;
+  --z-notch-backdrop: -1;
 }

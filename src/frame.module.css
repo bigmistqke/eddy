@@ -3,10 +3,19 @@
   flex: 1;
 }
 
+[data-selection="targeted"] {
+  border: 2px solid black;
+  overflow: hidden;
+}
+
+[data-selection="trail"] {
+  border: 2px solid grey;
+}
+
 .notch {
   height: calc(var(--hud-height-notch) + var(--extend, 0px));
   position: absolute;
-  z-index: 1;
+  z-index: var(--z-notch);
 
   &.bottom {
     left: 50%;
@@ -42,7 +51,7 @@
   display: flex;
   position: absolute;
   flex-direction: column;
-  z-index: -1;
+  z-index: var(--z-notch-backdrop);
   width: var(--backdrop-width, 100px);
   height: 100%;
 
@@ -84,7 +93,7 @@
   translate: -50% 0;
   top: calc(var(--hud-radius) / 2);
   transform-origin: center bottom;
-  z-index: 2;
+  z-index: var(--z-notch-handle);
   pointer-events: none;
 }
 
@@ -99,7 +108,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 2;
+  z-index: var(--z-notch-handle);
   padding: 0;
 
   &.left {

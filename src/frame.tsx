@@ -83,6 +83,7 @@ export function Frame(
     onClick?: JSX.EventHandlersElement<HTMLDivElement>["onClick"]
     handleDirections?: ("top" | "bottom" | "left" | "right")[]
     buttonDirections?: ("top" | "bottom" | "left" | "right")[]
+    selection?: "targeted" | "trail"
     style?: JSX.CSSProperties
     class?: string
     onAddFrame(direction: "top" | "bottom" | "left" | "right"): void
@@ -141,6 +142,7 @@ export function Frame(
       onClick={props.onClick}
       style={props.style}
       class={[props.class, styles.frame]}
+      data-selection={props.selection}
     >
       <Show when={dirs().includes("top")}>
         <Show

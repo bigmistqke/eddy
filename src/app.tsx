@@ -195,6 +195,20 @@ function NodeComponent(props: {
       ? (context.appState.view as { type: "layout"; mode: "append" | "split" })
       : null
 
+  const selection = createMemo((): "targeted" | "trail" | undefined => {
+    if (context.appState.view.type !== "layout") return undefined
+    const { path, depth } = context.selection
+    const targetedPath = path.slice(0, path.length - depth)
+    if (pathEquals(props.path, targetedPath)) return "targeted"
+    // trail: any node whose path is a prefix of the full selection path (ancestors above or descendants below the target)
+    if (
+      props.path.length <= path.length &&
+      pathEquals(props.path, path.slice(0, props.path.length))
+    )
+      return "trail"
+    return undefined
+  })
+
   return (
     <Switch>
       <Match when={props.layout?.type === "container" && props.layout}>
@@ -202,6 +216,7 @@ function NodeComponent(props: {
           <Frame
             handleDirections={handles().directions}
             buttonDirections={handles().buttons}
+            selection={selection()}
             style={{ "flex-direction": layout().direction === "horizontal" ? "row" : "column" }}
             onAddFrame={direction =>
               layoutView()?.mode === "append"
@@ -229,6 +244,7 @@ function NodeComponent(props: {
             entity={entity()}
             handleDirections={handles().directions}
             buttonDirections={handles().buttons}
+            selection={selection()}
             onAddFrame={direction =>
               layoutView()?.mode === "append"
                 ? props.onAppend(props.path, direction)
