@@ -11,18 +11,18 @@
 
   &.bottom {
     left: 50%;
-    bottom: 0px;
+    bottom: var(--frame-padding, 0px);
   }
 
   &.top {
     left: 50%;
-    top: 0px;
+    top: var(--frame-padding, 0px);
     rotate: 180deg;
     transform-origin: center center;
   }
 
   &.left {
-    left: 0px;
+    left: var(--frame-padding, 0px);
     top: 50%;
     rotate: 90deg;
     transform-origin: top;
@@ -30,7 +30,7 @@
   }
 
   &.right {
-    right: 0px;
+    right: var(--frame-padding, 0px);
     top: 50%;
     rotate: -90deg;
     transform-origin: top;

@@ -201,12 +201,12 @@ function NodeComponent(props: {
   const layoutContainerStyle = (): JSX.CSSProperties => {
     if (!inLayoutView()) return {}
     return props.path.length === 0
-      ? { padding: "8px", gap: "8px", "border-radius": "8px" }
-      : { gap: "8px", "border-radius": "8px" }
+      ? { "--frame-padding": "var(--padding)", padding: "var(--padding)", gap: "var(--padding)", "border-radius": "8px" }
+      : { "--frame-padding": "0px", gap: "var(--padding)", "border-radius": "8px" }
   }
 
   const layoutEntityStyle = (): JSX.CSSProperties =>
-    inLayoutView() ? { "border-radius": "8px" } : {}
+    inLayoutView() ? { "--frame-padding": "0px", "border-radius": "8px" } : {}
 
   return (
     <Switch>
