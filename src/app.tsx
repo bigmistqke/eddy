@@ -301,7 +301,7 @@ export function App() {
       const container = resolveNode(proxy, containerPath) as Container
       container.children.splice(insertIndex, 0, newEntity)
     })
-    setSelection(() => ({ path: [...containerPath, insertIndex], depth: 0 }))
+    setSelection(() => ({ path: [...containerPath, insertIndex], depth: 1 }))
   }
 
   function splitNode(nodePath: number[], direction: "top" | "bottom" | "left" | "right") {
@@ -364,6 +364,11 @@ export function App() {
     appendToContainer(containerPath, insertAfter ? childIndex + 1 : childIndex)
   }
 
+  function enterAppendMode() {
+    setAppState(() => ({ view: { type: "layout", mode: "append" } }))
+    if (selection.depth === 0) setSelection(s => ({ ...s, depth: 1 }))
+  }
+
   const layoutView = () =>
     appState.view.type === "layout"
       ? (appState.view as { type: "layout"; mode: "append" | "split" })
@@ -404,7 +409,7 @@ export function App() {
                       layoutView()?.mode === "append" ? styles.active : "",
                     ]}
                     onClick={() =>
-                      setAppState(() => ({ view: { type: "layout", mode: "append" } }))
+                      enterAppendMode()
                     }
                   >
                     <PlusIcon />
@@ -426,7 +431,7 @@ export function App() {
             >
               <button
                 class={styles.barButton}
-                onClick={() => setAppState(() => ({ view: { type: "layout", mode: "append" } }))}
+                onClick={() => enterAppendMode()}
               >
                 <PlusIcon />
               </button>
