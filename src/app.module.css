@@ -23,6 +23,24 @@
   flex: 1;
 }
 
+.layoutContainerRoot {
+  --frame-padding: var(--padding);
+  padding: var(--padding);
+  gap: var(--padding);
+  border-radius: 8px;
+}
+
+.layoutContainer {
+  --frame-padding: 0px;
+  gap: var(--padding);
+  border-radius: 8px;
+}
+
+.layoutEntity {
+  --frame-padding: 0px;
+  border-radius: 8px;
+}
+
 .recordingView {
   display: flex;
   flex: 1;

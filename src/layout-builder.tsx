@@ -1,5 +1,5 @@
 import { ComponentProps, createMemo, For, Show, useContext } from "solid-js"
-import { Context } from "./app"
+import { Context } from "./context"
 import styles from "./layout-builder.module.css"
 import type { Node } from "./types"
 

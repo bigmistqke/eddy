@@ -1,5 +1,5 @@
 import { createEffect, createSignal, Show, useContext, type JSX, type ParentProps } from "solid-js"
-import { Context } from "./app"
+import { Context } from "./context"
 import styles from "./frame.module.css"
 
 export function Arrow(props: { style?: JSX.CSSProperties; class?: string }) {
