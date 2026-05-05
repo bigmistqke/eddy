@@ -4,7 +4,6 @@
   box-sizing: border-box;
 }
 
-
 .notch {
   height: calc(var(--hud-height-notch) + var(--extend, 0px));
   position: absolute;
@@ -105,22 +104,22 @@
   padding: 0;
 
   &.left {
-    left: 0;
+    left: calc(var(--padding) * -0.5);
     top: 50%;
     translate: -50% -50%;
   }
   &.right {
-    right: 0;
+    right: calc(var(--padding) * -0.5);
     top: 50%;
     translate: 50% -50%;
   }
   &.top {
-    top: 0;
+    top: calc(var(--padding) * -0.5);
     left: 50%;
     translate: -50% -50%;
   }
   &.bottom {
-    bottom: 0;
+    bottom: calc(var(--padding) * -0.5);
     left: 50%;
     translate: -50% 50%;
   }
