@@ -198,8 +198,12 @@ function NodeComponent(props: {
 
   const inLayoutView = () => context.appState.view.type === "layout"
 
-  const layoutContainerStyle = (): JSX.CSSProperties =>
-    inLayoutView() ? { padding: "8px", gap: "8px", "border-radius": "8px" } : {}
+  const layoutContainerStyle = (): JSX.CSSProperties => {
+    if (!inLayoutView()) return {}
+    return props.path.length === 0
+      ? { padding: "8px", gap: "8px", "border-radius": "8px" }
+      : { gap: "8px", "border-radius": "8px" }
+  }
 
   const layoutEntityStyle = (): JSX.CSSProperties =>
     inLayoutView() ? { "border-radius": "8px" } : {}
