@@ -2,7 +2,6 @@ import {
   createEffect,
   createSignal,
   createStore,
-  getOwner,
   Match,
   onCleanup,
   runWithOwner,
@@ -33,7 +32,6 @@ function createEntity(): Entity {
 }
 
 export function App() {
-  const owner = getOwner()
   const [selection, setSelection] = createStore({ path: [0] as Array<number>, depth: 0 })
   const [app, setApp] = createStore<AppState>({
     view: {
@@ -189,6 +187,14 @@ export function App() {
     }
   })
 
+  // Register the bottom bar as collidable. Signal-driven lifecycle: the ref
+  // just calls setBottomBarEl, this effect's cleanup auto-fires on owner
+  // disposal (no manual runWithOwner / onCleanup gymnastics).
+  createEffect(bottomBarEl, bar => {
+    if (!bar) return
+    return registerCollidable(bar, "hud")
+  })
+
   return (
     <Context
       value={{
@@ -231,19 +237,7 @@ export function App() {
             />
           </LayoutBuilder>
         </Show>
-        <Notch
-          ref={el => {
-            setBottomBarEl(el)
-            // Register OUTSIDE runWithOwner — registerCollidable bumps a signal,
-            // and signal writes are forbidden in owned reactive scopes. The
-            // ref callback itself runs unowned (per @solidjs/web ref()), so
-            // it's the right place to write. Only re-enter the component
-            // owner to attach onCleanup, which is just a registration call.
-            const unregister = registerCollidable(el, "hud")
-            runWithOwner(owner, () => onCleanup(unregister))
-          }}
-          class={styles.bottomBar}
-        >
+        <Notch ref={setBottomBarEl} class={styles.bottomBar}>
           <div class={styles.bottomBarContent}>
             <Switch>
               <Match when={app.view.type === "recording"}>

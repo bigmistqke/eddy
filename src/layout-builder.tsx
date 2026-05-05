@@ -4,10 +4,7 @@ import {
   createMemo,
   createSignal,
   For,
-  getOwner,
-  onCleanup,
   onSettled,
-  runWithOwner,
   Show,
   useContext,
 } from "solid-js"
@@ -25,7 +22,13 @@ import {
 
 export function Breadcrumb() {
   const context = useContext(Context)!
-  const owner = getOwner()
+
+  // Signal-driven collidable registration: ref just sets the signal, this
+  // effect owns the lifecycle.
+  createEffect(context.breadcrumbEl, el => {
+    if (!el) return
+    return context.registerCollidable(el, "hud")
+  })
 
   const segments = createMemo(() => {
     const { path } = context.selection
@@ -59,12 +62,7 @@ export function Breadcrumb() {
 
   return (
     <Notch
-      ref={el => {
-        context.setBreadcrumbEl(el)
-        // See app.tsx for why register runs outside runWithOwner.
-        const unregister = context.registerCollidable(el, "hud")
-        runWithOwner(owner, () => onCleanup(unregister))
-      }}
+      ref={context.setBreadcrumbEl}
       class={styles.breadcrumbNotch}
       orientation="top"
     >

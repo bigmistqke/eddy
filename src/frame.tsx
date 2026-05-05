@@ -2,10 +2,7 @@ import {
   createEffect,
   createSignal,
   createStore,
-  getOwner,
-  onCleanup,
   onSettled,
-  runWithOwner,
   Show,
   useContext,
   type JSX,
@@ -91,12 +88,6 @@ export function Frame(
   const context = useContext(Context)
   type Direction = "top" | "bottom" | "left" | "right"
 
-  // Captured at component scope so we can re-enter it inside unowned ref callbacks.
-  // See node_modules/@solidjs/web/dist/web.js:268 — `ref(fn, el)` runs the user
-  // callback under `runWithOwner(null, ...)`, so onCleanup inside a ref is a no-op
-  // unless we restore the component owner first.
-  const owner = getOwner()
-
   const [extendByDir, setExtendByDir] = createStore<Record<Direction, number>>({
     top: 0,
     bottom: 0,
@@ -105,27 +96,43 @@ export function Frame(
   })
   const [handlesHidden, setHandlesHidden] = createSignal(false)
   let frameRef!: HTMLDivElement
-  const handleRefs: Partial<Record<Direction, HTMLElement>> = {}
 
-  function registerHandle(dir: Direction) {
-    return (el: HTMLElement) => {
-      // ArrowNotch's wrapper has zero in-flow width because both children
-      // (.notch-backdrop and .arrow) are absolute-positioned. Use the visible
-      // .notch-backdrop child for collision detection so its rect actually
-      // overlaps with HUDs and other handles. EdgeButton has explicit CSS
-      // dimensions, so the button itself is correct. Store the same element
-      // we register so checkAllHandles queries with the correct bbox.
-      const collidableEl =
-        el.tagName === "BUTTON"
-          ? el
-          : ((el.firstElementChild as HTMLElement) ?? el)
-      handleRefs[dir] = collidableEl
-      // Register outside runWithOwner — see app.tsx. The ref callback is
-      // unowned, so signal writes inside registerCollidable are allowed.
-      const unregister = context.registerCollidable(collidableEl, "handle")
-      runWithOwner(owner, () => onCleanup(unregister))
-    }
+  // Per-direction signal-driven handle registration. Each ref just calls a
+  // setter; a createEffect at component scope owns the lifecycle (registering
+  // when the element appears, unregistering when it changes or the component
+  // disposes). Replaces the previous runWithOwner+onCleanup-in-ref dance.
+  const [topEl, setTopEl] = createSignal<HTMLElement>()
+  const [bottomEl, setBottomEl] = createSignal<HTMLElement>()
+  const [leftEl, setLeftEl] = createSignal<HTMLElement>()
+  const [rightEl, setRightEl] = createSignal<HTMLElement>()
+  const handleEls: Record<Direction, () => HTMLElement | undefined> = {
+    top: topEl,
+    bottom: bottomEl,
+    left: leftEl,
+    right: rightEl,
   }
+
+  // ArrowNotch's wrapper has zero in-flow width (both children are absolute-
+  // positioned). Use the visible .notch-backdrop child for collision so its
+  // rect actually overlaps with HUDs and other handles. EdgeButton has an
+  // explicit CSS size, so the button itself is correct.
+  function visibleCollidable(el: HTMLElement): HTMLElement {
+    return el.tagName === "BUTTON"
+      ? el
+      : ((el.firstElementChild as HTMLElement) ?? el)
+  }
+
+  function registerDirection(dir: Direction) {
+    createEffect(handleEls[dir], el => {
+      if (!el) return
+      const collidableEl = visibleCollidable(el)
+      return context.registerCollidable(collidableEl, "handle")
+    })
+  }
+  registerDirection("top")
+  registerDirection("bottom")
+  registerDirection("left")
+  registerDirection("right")
 
   function overlapAmount(handle: DOMRect, hud: DOMRect, dir: Direction): number {
     switch (dir) {
@@ -146,8 +153,9 @@ export function Frame(
     const newExtends: Record<Direction, number> = { top: 0, bottom: 0, left: 0, right: 0 }
 
     for (const dir of directions) {
-      const handle = handleRefs[dir]
-      if (!handle) continue
+      const wrapper = handleEls[dir]()
+      if (!wrapper) continue
+      const handle = visibleCollidable(wrapper)
 
       const hits = context.findCollisions(handle)
       if (hits.length === 0) continue
@@ -211,7 +219,7 @@ export function Frame(
             when={buttonDirs().includes("top")}
             fallback={
               <ArrowNotch
-                ref={registerHandle("top")}
+                ref={setTopEl}
                 class={styles.top}
                 style={extendByDir.top > 0 ? { "--extend": `${extendByDir.top}px` } : undefined}
                 onClick={() => props.onAddFrame("top")}
@@ -219,7 +227,7 @@ export function Frame(
             }
           >
             <EdgeButton
-              ref={registerHandle("top")}
+              ref={setTopEl}
               class={styles.top}
               onClick={() => props.onAddFrame("top")}
             />
@@ -230,7 +238,7 @@ export function Frame(
             when={buttonDirs().includes("bottom")}
             fallback={
               <ArrowNotch
-                ref={registerHandle("bottom")}
+                ref={setBottomEl}
                 class={styles.bottom}
                 style={extendByDir.bottom > 0 ? { "--extend": `${extendByDir.bottom}px` } : undefined}
                 onClick={() => props.onAddFrame("bottom")}
@@ -238,7 +246,7 @@ export function Frame(
             }
           >
             <EdgeButton
-              ref={registerHandle("bottom")}
+              ref={setBottomEl}
               class={styles.bottom}
               onClick={() => props.onAddFrame("bottom")}
             />
@@ -249,7 +257,7 @@ export function Frame(
             when={buttonDirs().includes("left")}
             fallback={
               <ArrowNotch
-                ref={registerHandle("left")}
+                ref={setLeftEl}
                 class={styles.left}
                 style={extendByDir.left > 0 ? { "--extend": `${extendByDir.left}px` } : undefined}
                 onClick={() => props.onAddFrame("left")}
@@ -257,7 +265,7 @@ export function Frame(
             }
           >
             <EdgeButton
-              ref={registerHandle("left")}
+              ref={setLeftEl}
               class={styles.left}
               onClick={() => props.onAddFrame("left")}
             />
@@ -268,7 +276,7 @@ export function Frame(
             when={buttonDirs().includes("right")}
             fallback={
               <ArrowNotch
-                ref={registerHandle("right")}
+                ref={setRightEl}
                 class={styles.right}
                 style={extendByDir.right > 0 ? { "--extend": `${extendByDir.right}px` } : undefined}
                 onClick={() => props.onAddFrame("right")}
@@ -276,7 +284,7 @@ export function Frame(
             }
           >
             <EdgeButton
-              ref={registerHandle("right")}
+              ref={setRightEl}
               class={styles.right}
               onClick={() => props.onAddFrame("right")}
             />
