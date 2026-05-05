@@ -60,7 +60,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--hud-color-front);
+  color: var(--color-front);
 }
 
 .modeButton {
@@ -71,7 +71,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--hud-color-front);
+  color: var(--color-front);
+
+  &.active {
+    color: var(--color-selection);
+  }
 }
 
 .closeButton {

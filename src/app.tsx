@@ -313,17 +313,30 @@ export function App() {
       return
     }
 
+    const parentPath = nodePath.slice(0, -1)
+    const nodeIndex = nodePath[nodePath.length - 1]
+    const parent = resolveNode(layout, parentPath) as Container
+
+    if (parent.children.length === 1) {
+      // Only child: reuse parent container instead of wrapping to avoid redundant nesting
+      setLayout(proxy => {
+        const p = resolveNode(proxy, parentPath) as Container
+        p.direction = splitDir
+        p.children.splice(newEntityFirst ? 0 : 1, 0, newEntity)
+      })
+      setSelection(() => ({ path: [...parentPath, newEntityIndex], depth: 0 }))
+      return
+    }
+
     const node = resolveNode(layout, nodePath)
     const newContainer: Container = {
       type: "container",
       direction: splitDir,
       children: newEntityFirst ? [newEntity, cloneNode(node)] : [cloneNode(node), newEntity],
     }
-    const parentPath = nodePath.slice(0, -1)
-    const nodeIndex = nodePath[nodePath.length - 1]
     setLayout(proxy => {
-      const parent = resolveNode(proxy, parentPath) as Container
-      parent.children.splice(nodeIndex, 1, newContainer)
+      const p = resolveNode(proxy, parentPath) as Container
+      p.children.splice(nodeIndex, 1, newContainer)
     })
     setSelection(() => ({ path: [...nodePath, newEntityIndex], depth: 0 }))
   }

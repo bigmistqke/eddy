@@ -1,7 +1,8 @@
 #root {
-  --hud-color-back: black;
-  --hud-color-front: white;
+  --color-back: black;
+  --color-front: white;
+  --color-selection: white;
+
   --hud-radius: 20px;
   --hud-height-notch: 60px;
-  --color-selection: yellow;
 }
