@@ -74,13 +74,21 @@ export function App() {
   // collision checks whenever the registry changes.
   const [collisionVersion, setCollisionVersion] = createSignal(0)
 
+  function bumpCollisionVersion() {
+    // Both register and unregister can be called from owned reactive scopes
+    // (cleanups fire during disposal of effects/computations). Solid 2.x
+    // forbids signal writes there, so escape to a null owner — this is
+    // exactly the "intentional, set ownedWrite" case the error references.
+    runWithOwner(null, () => setCollisionVersion(v => v + 1))
+  }
+
   function registerCollidable(el: HTMLElement, kind: CollisionKind) {
     const entry: Collidable = { el, kind }
     collidables.add(entry)
-    setCollisionVersion(v => v + 1)
+    bumpCollisionVersion()
     return () => {
       collidables.delete(entry)
-      setCollisionVersion(v => v + 1)
+      bumpCollisionVersion()
     }
   }
 
