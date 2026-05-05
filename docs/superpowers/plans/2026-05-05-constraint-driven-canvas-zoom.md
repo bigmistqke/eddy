@@ -494,24 +494,28 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
   const [transform, setTransform] = createSignal<ViewportTransform>(IDENTITY_VIEWPORT)
 
   // Recompute viewport whenever selection changes.
-  createEffect(() => {
-    const key = selectedPathKey(context.selection)
-    if (!innerEl || !canvasEl) return
+  // Solid 2.x requires the two-arg createEffect form; the compute function
+  // tracks reactivity, the effect function performs side effects.
+  createEffect(
+    () => selectedPathKey(context.selection),
+    key => {
+      if (!innerEl || !canvasEl) return
 
-    if (key === "") {
-      setTransform(IDENTITY_VIEWPORT)
-      return
-    }
+      if (key === "") {
+        setTransform(IDENTITY_VIEWPORT)
+        return
+      }
 
-    const node = innerEl.querySelector<HTMLElement>(`[data-path="${key}"]`)
-    if (!node) {
-      setTransform(IDENTITY_VIEWPORT)
-      return
-    }
+      const node = innerEl.querySelector<HTMLElement>(`[data-path="${key}"]`)
+      if (!node) {
+        setTransform(IDENTITY_VIEWPORT)
+        return
+      }
 
-    const rect = canvasEl.getBoundingClientRect()
-    setTransform(computeViewportTransform(node, innerEl, rect.width, rect.height))
-  })
+      const rect = canvasEl.getBoundingClientRect()
+      setTransform(computeViewportTransform(node, innerEl, rect.width, rect.height))
+    },
+  )
 
   return (
     <div class={styles.layoutBuilder}>
@@ -1100,13 +1104,16 @@ function checkAllHandles() {
   }
 }
 
-// Re-run when any HUD ref changes or any registered collidable shifts.
-createEffect(() => {
-  context.bottomBarEl()
-  context.breadcrumbEl()
-  context.contextualToolbarEl()
-  checkAllHandles()
-})
+// Re-run when any HUD ref changes. Compute tracks; effect runs the check.
+// Solid 2.x: two-arg createEffect form is mandatory.
+createEffect(
+  () => {
+    context.bottomBarEl()
+    context.breadcrumbEl()
+    context.contextualToolbarEl()
+  },
+  () => checkAllHandles(),
+)
 onSettled(() => context.observeFrame(frameRef, checkAllHandles))
 ```
 
@@ -1170,39 +1177,44 @@ git commit -m "feat(frame): generic collision-driven handle visibility and exten
 
 - [ ] **Step 1: Track resize via observeFrame**
 
-In `LayoutBuilder`, add a resize tick and tie it into the viewport effect:
+In `LayoutBuilder`, add a resize tick and tie it into the viewport effect. Use `onSettled` for the one-shot observer registration; use the two-arg `createEffect` for the viewport recomputation (Solid 2.x requires the two-arg form):
 
 ```tsx
 const [resizeTick, setResizeTick] = createSignal(0)
 
-createEffect(() => {
+onSettled(() => {
   if (!canvasEl) return
-  const cleanup = context.observeFrame(canvasEl, () => setResizeTick(t => t + 1))
-  return cleanup
+  return context.observeFrame(canvasEl, () => setResizeTick(t => t + 1))
 })
 
-createEffect(() => {
-  resizeTick()
-  const key = selectedPathKey(context.selection)
-  if (!innerEl || !canvasEl) return
+createEffect(
+  () => {
+    resizeTick()
+    return selectedPathKey(context.selection)
+  },
+  key => {
+    if (!innerEl || !canvasEl) return
 
-  if (key === "") {
-    setTransform(IDENTITY_VIEWPORT)
-    return
-  }
+    if (key === "") {
+      setTransform(IDENTITY_VIEWPORT)
+      return
+    }
 
-  const node = innerEl.querySelector<HTMLElement>(`[data-path="${key}"]`)
-  if (!node) {
-    setTransform(IDENTITY_VIEWPORT)
-    return
-  }
+    const node = innerEl.querySelector<HTMLElement>(`[data-path="${key}"]`)
+    if (!node) {
+      setTransform(IDENTITY_VIEWPORT)
+      return
+    }
 
-  const rect = canvasEl.getBoundingClientRect()
-  setTransform(computeViewportTransform(node, innerEl, rect.width, rect.height))
-})
+    const rect = canvasEl.getBoundingClientRect()
+    setTransform(computeViewportTransform(node, innerEl, rect.width, rect.height))
+  },
+)
 ```
 
-(This replaces the single existing `createEffect` block from Task 9.)
+(This replaces the existing viewport `createEffect` from Task 9.)
+
+> Add `onSettled` to the imports from `solid-js`.
 
 - [ ] **Step 2: Type-check**
 
@@ -1242,7 +1254,7 @@ git commit -m "feat(layout-builder): recompute viewport on canvas resize"
 ## Notes for Implementer
 
 - Solid 2.x. No test framework — verification is `npx tsc --noEmit` plus browser smoke-checks.
-- The two-arg `createEffect(source, callback)` form is used elsewhere in this codebase; preserve it where it already works. Use the single-arg form when an effect needs to track multiple sources.
+- **Solid 2.x `createEffect` is two-arg only.** The single-arg form `createEffect(fn)` is explicitly deprecated in `@solidjs/signals` and will be a type error. Always use `createEffect(compute, effect)`. To track multiple sources, read them all inside the `compute` function. For "run once after mount" patterns, use `onSettled(callback)` instead of a no-tracking `createEffect`.
 - The `--extend` CSS variable convention is already in `frame.module.css` — uniform across all four directions; no new CSS variables needed for it.
 - When tuning `HANDLE_VIEWPORT_W` / `HANDLE_VIEWPORT_H` in `viewport.ts`, measure the rendered notch dimensions at scale 1 and update the constants if the CSS changes.
 - When committing, never add `Co-Authored-By` lines.
