@@ -49,6 +49,8 @@ Three notch slots:
 | Breadcrumb | top-left, attached to top | horizontal | breadcrumb segments, growing rightward |
 | Contextual toolbar | top-right, attached to right edge | vertical | back button (first); future contextual actions append below |
 
+The contextual toolbar notch only renders when at least one contextual button has something to show. When there are no contextual tools active (e.g., no selection → no back button, no other tools applicable), the entire notch is hidden — not just its contents. The notch is a consequence of having context, not a permanent fixture.
+
 ### Back button
 
 The back button is the first occupant of the top-right contextual toolbar notch. It is the supplied left-arrow SVG. It is visible whenever there is an active selection (i.e., the viewport is fit to a specific node, not the unselected root view). Tapping it clears the selection and animates the viewport to a "fit-all root" view, returning the editor to a neutral state from which the user can tap any frame to engage again.
@@ -92,5 +94,5 @@ All viewport changes — pan, zoom-in, return-to-root — animate. The animation
 - The constraint detection runs on the *currently selected node's* rendered size — entity or container. It does not run on every frame; only the selected node matters. The shared `ResizeObserver` in `App` already provides the measurement plumbing for this.
 - The viewport state is derived (not stored): given the current selection and the layout dimensions, there is exactly one constraint-correct viewport. Driving the viewport from a derived value (e.g., a `createMemo` over `selection`) keeps the system stateless and removes any chance of viewport and selection drifting out of sync.
 - The breadcrumb and contextual toolbar are siblings of the layout root in the DOM, each rendered inside a `Notch` (top-orientation for breadcrumb, right-orientation for the toolbar). Their positioning is handled by the existing notch CSS.
-- The contextual toolbar notch contains a flex column of buttons. The back button is the first child and is rendered conditionally on whether a selection exists. Future contextual actions append.
+- The contextual toolbar notch contains a flex column of buttons. The notch itself renders only when at least one button is active; otherwise it is not in the DOM. The back button is the first child and renders when a selection exists. Future contextual actions append.
 - The breadcrumb notch contains the existing breadcrumb segments laid out horizontally; the segments themselves stay informational.
