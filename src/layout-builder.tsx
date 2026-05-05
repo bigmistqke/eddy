@@ -92,33 +92,35 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
   let canvasEl!: HTMLDivElement
   let innerEl!: HTMLDivElement
   const [transform, setTransform] = createSignal(IDENTITY_VIEWPORT)
-  // Bumped whenever the canvas resizes, so the viewport effect re-runs.
-  const [resizeTick, setResizeTick] = createSignal(0)
+  const [canvasSize, setCanvasSize] = createSignal({ w: 0, h: 0 })
 
-  onSettled(() => context.observeFrame(canvasEl, () => setResizeTick(t => t + 1)))
+  function recompute() {
+    if (!innerEl || !canvasEl) return
+    const rect = canvasEl.getBoundingClientRect()
+    setCanvasSize({ w: rect.width, h: rect.height })
 
+    const key = selectedPathKey(context.selection)
+    if (key === "") {
+      setTransform(IDENTITY_VIEWPORT)
+      return
+    }
+    const node = innerEl.querySelector<HTMLElement>(`[data-path="${key}"]`)
+    if (!node) {
+      setTransform(IDENTITY_VIEWPORT)
+      return
+    }
+    setTransform(computeViewportTransform(node, innerEl, rect.width, rect.height))
+  }
+
+  onSettled(() => context.observeFrame(canvasEl, recompute))
+
+  createEffect(() => selectedPathKey(context.selection), recompute)
+
+  // Expose "is the canvas currently zoomed" so the contextual back button
+  // can hide itself when there is nothing to zoom out of.
   createEffect(
-    () => {
-      resizeTick()
-      return selectedPathKey(context.selection)
-    },
-    key => {
-      if (!innerEl || !canvasEl) return
-
-      if (key === "") {
-        setTransform(IDENTITY_VIEWPORT)
-        return
-      }
-
-      const node = innerEl.querySelector<HTMLElement>(`[data-path="${key}"]`)
-      if (!node) {
-        setTransform(IDENTITY_VIEWPORT)
-        return
-      }
-
-      const rect = canvasEl.getBoundingClientRect()
-      setTransform(computeViewportTransform(node, innerEl, rect.width, rect.height))
-    },
+    () => transform().scale > 1,
+    zoomed => context.setIsCanvasZoomed(zoomed),
   )
 
   return (
@@ -128,8 +130,9 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
           class={styles.canvasInner}
           ref={innerEl}
           style={{
+            width: `${canvasSize().w * transform().scale}px`,
+            height: `${canvasSize().h * transform().scale}px`,
             transform: transformToCss(transform()),
-            "--canvas-scale": String(transform().scale),
           }}
         >
           {props.children}

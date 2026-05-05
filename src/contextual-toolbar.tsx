@@ -7,8 +7,9 @@ import styles from "./contextual-toolbar.module.css"
 export function ContextualToolbar() {
   const context = useContext(Context)!
   const owner = getOwner()
-  const hasSelection = () => context.selection.path.length > 0
-  const hasAnyButton = () => hasSelection()
+  // Back button only makes sense when the canvas is actually zoomed in.
+  // Future buttons would OR their own conditions in here.
+  const hasAnyButton = () => context.isCanvasZoomed()
 
   return (
     <Show when={hasAnyButton()}>
@@ -21,7 +22,7 @@ export function ContextualToolbar() {
         orientation="right"
       >
         <div class={styles.toolbarContent}>
-          <Show when={hasSelection()}>
+          <Show when={context.isCanvasZoomed()}>
             <button
               class={styles.toolbarButton}
               onClick={() => context.setSelection(() => ({ path: [], depth: 0 }))}

@@ -1,4 +1,14 @@
-import { createEffect, createSignal, createStore, Match, onCleanup, Show, Switch } from "solid-js"
+import {
+  createEffect,
+  createSignal,
+  createStore,
+  getOwner,
+  Match,
+  onCleanup,
+  runWithOwner,
+  Show,
+  Switch,
+} from "solid-js"
 import styles from "./app.module.css"
 import type { Collidable, CollisionHit, CollisionKind } from "./collision"
 import { rectsOverlap } from "./collision"
@@ -23,6 +33,7 @@ function createEntity(): Entity {
 }
 
 export function App() {
+  const owner = getOwner()
   const [selection, setSelection] = createStore({ path: [0] as Array<number>, depth: 0 })
   const [app, setApp] = createStore<AppState>({
     view: {
@@ -37,6 +48,7 @@ export function App() {
   const [bottomBarEl, setBottomBarEl] = createSignal<HTMLElement | undefined>()
   const [breadcrumbEl, setBreadcrumbEl] = createSignal<HTMLElement | undefined>()
   const [contextualToolbarEl, setContextualToolbarEl] = createSignal<HTMLElement | undefined>()
+  const [isCanvasZoomed, setIsCanvasZoomed] = createSignal(false)
 
   const frameCallbacks = new Set<() => void>()
   const controller = new AbortController()
@@ -180,6 +192,8 @@ export function App() {
         observeFrame,
         registerCollidable,
         findCollisions,
+        isCanvasZoomed,
+        setIsCanvasZoomed,
       }}
     >
       <div style={{ display: "flex", width: "100vw", height: "100%", position: "relative" }}>
@@ -203,7 +217,13 @@ export function App() {
             />
           </LayoutBuilder>
         </Show>
-        <Notch ref={setBottomBarEl} class={styles.bottomBar}>
+        <Notch
+          ref={el => {
+            setBottomBarEl(el)
+            runWithOwner(owner, () => onCleanup(registerCollidable(el, "hud")))
+          }}
+          class={styles.bottomBar}
+        >
           <div class={styles.bottomBarContent}>
             <Switch>
               <Match when={app.view.type === "recording"}>

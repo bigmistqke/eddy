@@ -1,5 +1,4 @@
 import type { Selection } from "./types"
-import { VIEWPORT_PADDING } from "./ui-constants"
 
 // Handle dimensions in CSS pixels — derived from frame.module.css and index.css.
 // `--hud-height-notch` is 60px; the notch backdrop default width is 100px.
@@ -8,6 +7,17 @@ import { VIEWPORT_PADDING } from "./ui-constants"
 const HANDLE_VIEWPORT_W = 100
 const HANDLE_VIEWPORT_H = 60
 
+/**
+ * `scale` is the *size multiplier* applied to the canvas by setting
+ * `width = canvasW * scale; height = canvasH * scale` on the layout root —
+ * NOT a CSS `transform: scale()`. We expand the layout to its real pixel
+ * dimensions so flex children grow at native resolution; text and SVG stay
+ * crisp. Handles (with fixed CSS sizes) automatically stay at viewport size
+ * because they are not scaled by anything — there is no inverse-scale needed.
+ *
+ * `x`/`y` are the translation applied to the (now-larger) layout root so the
+ * selected node lands at the canvas viewport center.
+ */
 export type ViewportTransform = { scale: number; x: number; y: number }
 
 export const IDENTITY_VIEWPORT: ViewportTransform = { scale: 1, x: 0, y: 0 }
@@ -35,16 +45,10 @@ function offsetRelativeToRoot(el: HTMLElement, root: HTMLElement) {
 /**
  * Compute the constraint-correct viewport transform for a selected DOM element.
  *
- * scale = max(handleScale, fitScale) where:
- * - handleScale = smallest scale at which two handles (left+right or top+bottom)
- *   no longer overlap on the selected node — derived from HANDLE_VIEWPORT_*.
- * - fitScale = scale that exactly fills the canvas with VIEWPORT_PADDING margin.
- *
- * If handleScale > fitScale (frame is too small to fit handles AND fit canvas),
- * we use handleScale and let the frame overflow the canvas — handle visibility wins.
- *
- * `node` should be queried *while* the layout root is at the previous transform —
- * `offsetWidth/Height` and `offsetLeft/Top` ignore CSS transforms, so this is safe.
+ * The viewport only enlarges the canvas when *handles would not fit* at native
+ * size — i.e., the selected node would render smaller than the worst-case
+ * handle footprint. Otherwise we return identity (no scale, no pan), so a
+ * normal-sized selection doesn't move the camera at all.
  */
 export function computeViewportTransform(
   node: HTMLElement,
@@ -55,21 +59,23 @@ export function computeViewportTransform(
   const { x: nx, y: ny, width: nw, height: nh } = offsetRelativeToRoot(node, layoutRoot)
   if (nw === 0 || nh === 0) return IDENTITY_VIEWPORT
 
+  // Smallest multiplier at which two opposing handles no longer overlap.
   const handleScale = Math.max((2 * HANDLE_VIEWPORT_W) / nw, (2 * HANDLE_VIEWPORT_H) / nh)
-  const fitScale = Math.min(
-    (canvasW - 2 * VIEWPORT_PADDING) / nw,
-    (canvasH - 2 * VIEWPORT_PADDING) / nh,
-  )
-  const scale = Math.max(handleScale, fitScale)
 
-  const nodeCenterX = nx + nw / 2
-  const nodeCenterY = ny + nh / 2
-  const x = canvasW / 2 - nodeCenterX * scale
-  const y = canvasH / 2 - nodeCenterY * scale
+  // Below 1 means the handles already fit at native size; nothing to do.
+  if (handleScale <= 1) return IDENTITY_VIEWPORT
+
+  const scale = handleScale
+  const nodeCenterX = (nx + nw / 2) * scale
+  const nodeCenterY = (ny + nh / 2) * scale
+  const x = canvasW / 2 - nodeCenterX
+  const y = canvasH / 2 - nodeCenterY
 
   return { scale, x, y }
 }
 
+/** CSS translate string for `transform`. Caller applies the size multiplier
+ *  separately via `width`/`height`. */
 export function transformToCss(t: ViewportTransform) {
-  return `translate(${t.x}px, ${t.y}px) scale(${t.scale})`
+  return `translate(${t.x}px, ${t.y}px)`
 }

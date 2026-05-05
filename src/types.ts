@@ -30,4 +30,6 @@ export type AppContext = {
   observeFrame: (el: HTMLElement, onResize: () => void) => () => void
   registerCollidable: (el: HTMLElement, kind: CollisionKind) => () => void
   findCollisions: (el: HTMLElement) => CollisionHit[]
+  isCanvasZoomed: Accessor<boolean>
+  setIsCanvasZoomed: (zoomed: boolean) => void
 }
