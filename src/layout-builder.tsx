@@ -6,6 +6,7 @@ import {
   For,
   getOwner,
   onCleanup,
+  onSettled,
   runWithOwner,
   Show,
   useContext,
@@ -91,9 +92,16 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
   let canvasEl!: HTMLDivElement
   let innerEl!: HTMLDivElement
   const [transform, setTransform] = createSignal(IDENTITY_VIEWPORT)
+  // Bumped whenever the canvas resizes, so the viewport effect re-runs.
+  const [resizeTick, setResizeTick] = createSignal(0)
+
+  onSettled(() => context.observeFrame(canvasEl, () => setResizeTick(t => t + 1)))
 
   createEffect(
-    () => selectedPathKey(context.selection),
+    () => {
+      resizeTick()
+      return selectedPathKey(context.selection)
+    },
     key => {
       if (!innerEl || !canvasEl) return
 
