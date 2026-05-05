@@ -87,41 +87,74 @@ export function Breadcrumb() {
   )
 }
 
+type ViewportState = ReturnType<typeof computeViewportTransform> & {
+  // canvas viewport dimensions captured at the time of computation —
+  // used to size canvasInner explicitly when zoomed.
+  baseW: number
+  baseH: number
+}
+
+const INITIAL_VIEWPORT: ViewportState = { ...IDENTITY_VIEWPORT, baseW: 0, baseH: 0 }
+
 export function LayoutBuilder(props: { children: ComponentProps<"div">["children"] }) {
   const context = useContext(Context)!
   let canvasEl!: HTMLDivElement
   let innerEl!: HTMLDivElement
-  const [transform, setTransform] = createSignal(IDENTITY_VIEWPORT)
-  const [canvasSize, setCanvasSize] = createSignal({ w: 0, h: 0 })
+  const [viewport, setViewport] = createSignal<ViewportState>(INITIAL_VIEWPORT)
+  const [resizeTick, setResizeTick] = createSignal(0)
 
-  function recompute() {
-    if (!innerEl || !canvasEl) return
-    const rect = canvasEl.getBoundingClientRect()
-    setCanvasSize({ w: rect.width, h: rect.height })
+  onSettled(() => {
+    if (!canvasEl) return
+    return context.observeFrame(canvasEl, () => setResizeTick(t => t + 1))
+  })
 
-    const key = selectedPathKey(context.selection)
-    if (key === "") {
-      setTransform(IDENTITY_VIEWPORT)
-      return
-    }
-    const node = innerEl.querySelector<HTMLElement>(`[data-path="${key}"]`)
-    if (!node) {
-      setTransform(IDENTITY_VIEWPORT)
-      return
-    }
-    setTransform(computeViewportTransform(node, innerEl, rect.width, rect.height))
-  }
+  createEffect(
+    () => {
+      resizeTick()
+      return selectedPathKey(context.selection)
+    },
+    key => {
+      if (!innerEl || !canvasEl) return
+      const rect = canvasEl.getBoundingClientRect()
+      const baseW = rect.width
+      const baseH = rect.height
 
-  onSettled(() => context.observeFrame(canvasEl, recompute))
-
-  createEffect(() => selectedPathKey(context.selection), recompute)
+      if (key === "") {
+        setViewport({ ...IDENTITY_VIEWPORT, baseW, baseH })
+        return
+      }
+      const node = innerEl.querySelector<HTMLElement>(`[data-path="${key}"]`)
+      if (!node) {
+        setViewport({ ...IDENTITY_VIEWPORT, baseW, baseH })
+        return
+      }
+      const t = computeViewportTransform(node, innerEl, baseW, baseH)
+      setViewport({ ...t, baseW, baseH })
+    },
+  )
 
   // Expose "is the canvas currently zoomed" so the contextual back button
-  // can hide itself when there is nothing to zoom out of.
+  // can hide itself when there is nothing to zoom out of. Wrapped in a block
+  // so the setter's return value isn't treated as a cleanup function.
   createEffect(
-    () => transform().scale > 1,
-    zoomed => context.setIsCanvasZoomed(zoomed),
+    () => viewport().scale > 1,
+    zoomed => {
+      context.setIsCanvasZoomed(zoomed)
+    },
   )
+
+  // Only set explicit width/height when zoomed. At scale = 1, leave it
+  // unset so the .canvasInner CSS `inset: 0` fills the parent naturally —
+  // initial render (scale = 1, baseW/H = 0) wouldn't otherwise have
+  // measured the canvas yet.
+  const sizing = () => {
+    const v = viewport()
+    if (v.scale <= 1) return { width: undefined, height: undefined }
+    return {
+      width: `${v.baseW * v.scale}px`,
+      height: `${v.baseH * v.scale}px`,
+    }
+  }
 
   return (
     <div class={styles.layoutBuilder}>
@@ -130,9 +163,9 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
           class={styles.canvasInner}
           ref={innerEl}
           style={{
-            width: `${canvasSize().w * transform().scale}px`,
-            height: `${canvasSize().h * transform().scale}px`,
-            transform: transformToCss(transform()),
+            transform: transformToCss(viewport()),
+            width: sizing().width,
+            height: sizing().height,
           }}
         >
           {props.children}
