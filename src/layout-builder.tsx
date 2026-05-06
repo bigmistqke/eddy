@@ -142,17 +142,23 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
       const node = innerEl.querySelector<HTMLElement>(`[data-path="${key}"]`)
       if (!node) return
 
-      // Pass the current scale so the math can recover base-size measurements
-      // from the currently-rendered (zoom-multiplied) ones. Read via untrack
-      // because we're in an effect callback (unowned, untracked scope).
+      // Read prev via untrack (effect callback is untracked scope).
       const prev = untrack(() => viewport())
-      const t = computeViewportTransform(node, innerEl, baseW, baseH, prev.scale)
-      // If the new selection doesn't need zoom (identity returned), preserve
-      // the current viewport rather than resetting to identity. Selecting a
-      // normal-sized frame should not move the camera — the back button is
-      // what returns to root.
-      const isIdentity = t.scale === 1 && t.x === 0 && t.y === 0
-      setViewport(isIdentity ? { ...prev, baseW, baseH } : { ...t, baseW, baseH })
+
+      // When already zoomed, taps should pan/zoom *toward* the new selection
+      // without ever zooming out — pass minScale = prev.scale so the math
+      // keeps at least the current zoom. Only the back button (which clears
+      // selection) returns to identity. When at scale 1, selecting a frame
+      // that doesn't need zoom returns identity → no movement.
+      const minScale = prev.scale > 1 ? prev.scale : 1
+      const t = computeViewportTransform(node, innerEl, baseW, baseH, prev.scale, minScale)
+
+      if (t.scale <= 1) {
+        // No zoom needed and we weren't zoomed — preserve prev (identity).
+        setViewport({ ...prev, baseW, baseH })
+      } else {
+        setViewport({ ...t, baseW, baseH })
+      }
     },
   )
 

@@ -1,11 +1,25 @@
 import type { Selection } from "./types"
 
-// Handle dimensions in CSS pixels — derived from frame.module.css and index.css.
-// `--hud-height-notch` is 60px; the notch backdrop default width is 100px.
-// These give the worst-case footprint of one handle in viewport units.
-// If frame.module.css changes, update these to match.
-const HANDLE_VIEWPORT_W = 100
-const HANDLE_VIEWPORT_H = 60
+// Handle dimensions in CSS pixels — derived from frame.module.css.
+// Top / bottom handles are HANDLE_W wide × HANDLE_H tall, centered on the
+// frame's top/bottom edge. Left / right handles are 90° rotated, so they
+// occupy HANDLE_H × HANDLE_W centered on the frame's left/right edge.
+const HANDLE_W = 100
+const HANDLE_H = 60
+
+// For all 4 handles to fit on a frame with no pairwise overlap:
+//
+//   • Top vs bottom (vertical pair):    frameH ≥ 2·HANDLE_H = 120
+//   • Left vs right (horizontal pair):  frameW ≥ 2·HANDLE_H = 120
+//   • Corner pairs (top vs left, etc.): frameW ≥ HANDLE_W + 2·HANDLE_H = 220
+//                                       OR frameH ≥ HANDLE_W + 2·HANDLE_H
+//
+// Derivation for the corner case: top handle's horizontal range is
+// [c − HANDLE_W/2, c + HANDLE_W/2]; the (rotated) left handle's horizontal
+// range is [0, HANDLE_H]. For non-overlap, c − HANDLE_W/2 ≥ HANDLE_H
+// → frameW ≥ HANDLE_W + 2·HANDLE_H.
+const SAME_AXIS_MIN = 2 * HANDLE_H
+const CROSS_PAIR_MIN = HANDLE_W + 2 * HANDLE_H
 
 /**
  * `scale` is the *size multiplier* applied to the canvas by setting
@@ -45,17 +59,15 @@ function offsetRelativeToRoot(el: HTMLElement, root: HTMLElement) {
 /**
  * Compute the constraint-correct viewport transform for a selected DOM element.
  *
- * The viewport only enlarges the canvas when *handles would not fit* at native
- * size — i.e., the selected node would render smaller than the worst-case
- * handle footprint. Otherwise we return identity (no scale, no pan), so a
- * normal-sized selection doesn't move the camera at all.
+ * `currentScale`: the canvas's current size multiplier — used to recover the
+ * node's base (un-zoomed) measurements from `offsetWidth/Top`, which reflect
+ * the currently rendered size (`base × currentScale`).
  *
- * `currentScale` must be passed when the canvas is already enlarged so we can
- * recover the node's *base* (un-zoomed) dimensions: `offsetWidth`/`offsetTop`
- * reflect the currently rendered size, which is `base * currentScale`. Without
- * this, recomputing the viewport while already zoomed would oscillate between
- * scale 1 and the target scale (the rendered size hits the threshold from
- * different sides at different scales).
+ * `minScale`: minimum scale to apply regardless of handle-fit needs. When
+ * already zoomed, callers pass `currentScale` here so the viewport never
+ * zooms *out* on tap — only the back button does that. At minScale > 1 we
+ * always return a non-identity transform that pans the new selection to
+ * the canvas center at the chosen scale.
  */
 export function computeViewportTransform(
   node: HTMLElement,
@@ -63,6 +75,7 @@ export function computeViewportTransform(
   canvasW: number,
   canvasH: number,
   currentScale = 1,
+  minScale = 1,
 ): ViewportTransform {
   const { x: rawX, y: rawY, width: rawW, height: rawH } = offsetRelativeToRoot(node, layoutRoot)
   if (rawW === 0 || rawH === 0) return IDENTITY_VIEWPORT
@@ -73,13 +86,20 @@ export function computeViewportTransform(
   const nx = rawX / currentScale
   const ny = rawY / currentScale
 
-  // Smallest multiplier at which two opposing handles no longer overlap.
-  const handleScale = Math.max((2 * HANDLE_VIEWPORT_W) / nw, (2 * HANDLE_VIEWPORT_H) / nh)
+  // Smallest multiplier at which all 4 handles fit without pairwise overlap.
+  // Same-axis (top/bottom and left/right) requires both dims ≥ SAME_AXIS_MIN.
+  // Corner pairs (top-vs-left, etc.) require at least ONE dim ≥ CROSS_PAIR_MIN.
+  const handleScale = Math.max(
+    SAME_AXIS_MIN / nw,
+    SAME_AXIS_MIN / nh,
+    Math.min(CROSS_PAIR_MIN / nw, CROSS_PAIR_MIN / nh),
+  )
 
-  // Below 1 means the handles already fit at native size; nothing to do.
-  if (handleScale <= 1) return IDENTITY_VIEWPORT
+  const scale = Math.max(handleScale, minScale)
 
-  const scale = handleScale
+  // Identity: handles fit at native and caller didn't enforce a minimum.
+  if (scale <= 1) return IDENTITY_VIEWPORT
+
   const nodeCenterX = (nx + nw / 2) * scale
   const nodeCenterY = (ny + nh / 2) * scale
   const x = canvasW / 2 - nodeCenterX

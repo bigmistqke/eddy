@@ -34,11 +34,11 @@
 .breadcrumbContent {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 6pt;
   padding-inline: calc(var(--hud-radius) * 2);
   height: 100%;
   color: var(--color-front);
-  font-size: 13px;
+  font-size: 12pt;
   white-space: nowrap;
 }
 
