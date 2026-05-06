@@ -5,6 +5,10 @@
   position: absolute;
   top: 0;
   left: 12px;
+  /* Cap width so the breadcrumb never crosses into the contextual
+     toolbar's territory (top-right, hud-height wide). Width is otherwise
+     content-driven; long chains scroll within .content. */
+  max-width: calc(100% - var(--hud-height) - 24px);
   height: var(--hud-height);
   z-index: var(--z-hud);
 }
@@ -17,6 +21,9 @@
   height: 100%;
   color: var(--color-front);
   white-space: nowrap;
+  /* Long breadcrumb chains scroll horizontally rather than overflowing. */
+  overflow-x: auto;
+  overflow-y: hidden;
 
   & .button {
     background: none;
