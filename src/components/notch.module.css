@@ -39,7 +39,7 @@
   position: absolute;
   flex-direction: column;
   z-index: var(--z-notch-backdrop);
-  width: var(--backdrop-width, 75px);
+  width: var(--backdrop-width, 60px);
   height: 100%;
 
   & > .root,
@@ -71,7 +71,7 @@
 .arrow {
   position: absolute;
   translate: -50% 0;
-  top: var(--radius);
+  top: calc(var(--radius) / 2);
   transform-origin: center bottom;
   z-index: var(--z-notch-handle);
   pointer-events: none;

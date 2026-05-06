@@ -1,4 +1,13 @@
-import { Accessor, createEffect, createMemo, For, untrack, useContext } from "solid-js"
+import {
+  Accessor,
+  createEffect,
+  createMemo,
+  createSignal,
+  For,
+  onSettled,
+  untrack,
+  useContext,
+} from "solid-js"
 import { Notch } from "../components/notch"
 import { Context } from "../context"
 import type { Container, Node } from "../types"
@@ -51,33 +60,54 @@ function drawNode(
   }
 }
 
-function Minimap(props: {
-  layout: Container
-  highlightPath: number[]
-  width: number
-  height: number
-}) {
+function Minimap(props: { layout: Container; highlightPath: number[]; aspect: number }) {
   let canvasEl!: HTMLCanvasElement
+  // Canvas display size is CSS-driven (height: 100%; aspect-ratio). When
+  // the breadcrumb's scrollbar appears, the button shrinks vertically and
+  // the canvas's CSS height shrinks too — we observe that and resize the
+  // bitmap to match. Width is locked at the full-size canvas width on
+  // .button itself, so total content width stays stable across scrollbar
+  // toggles (no resize-loop).
+  const [size, setSize] = createSignal({ w: 0, h: 0 })
+  onSettled(() => {
+    if (!canvasEl) return
+    const ro = new ResizeObserver(() => {
+      const r = canvasEl.getBoundingClientRect()
+      setSize({ w: r.width, h: r.height })
+    })
+    ro.observe(canvasEl)
+    return () => ro.disconnect()
+  })
   createEffect(
-    () => [props.layout, props.highlightPath, props.width, props.height] as const,
-    ([layout, highlightPath, width, height]) => {
-      if (!canvasEl) return
+    () => [props.layout, props.highlightPath, props.aspect, size()] as const,
+    ([layout, highlightPath, aspect, sz]) => {
+      if (!canvasEl || sz.w < 1 || sz.h < 1) return
       const dpr = window.devicePixelRatio || 1
-      canvasEl.width = width * dpr
-      canvasEl.height = height * dpr
+      canvasEl.width = sz.w * dpr
+      canvasEl.height = sz.h * dpr
       const ctx = canvasEl.getContext("2d")!
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      ctx.clearRect(0, 0, width, height)
-      // drawNode walks the layout tree (a Solid store proxy). Reads inside
-      // an effect callback warn STRICT_READ_UNTRACKED — wrap in untrack
-      // since the createEffect compute already tracks `layout` for us.
-      untrack(() => drawNode(ctx, layout, highlightPath, 0, 0, width, height))
+      ctx.clearRect(0, 0, sz.w, sz.h)
+      // Letterbox the layout inside the canvas box — same idea as
+      // object-fit: contain, done in the draw call so the bitmap matches
+      // the canvas's actual pixel size with no wasted resolution.
+      let dw: number, dh: number
+      if (sz.w / sz.h > aspect) {
+        dh = sz.h
+        dw = dh * aspect
+      } else {
+        dw = sz.w
+        dh = dw / aspect
+      }
+      const dx = (sz.w - dw) / 2
+      const dy = (sz.h - dh) / 2
+      untrack(() => drawNode(ctx, layout, highlightPath, dx, dy, dw, dh))
     },
   )
   return (
     <canvas
       ref={canvasEl}
-      style={{ width: `${props.width}px`, height: `${props.height}px`, display: "block" }}
+      style={{ width: "100%", height: "100%", display: "block" }}
     />
   )
 }
@@ -107,15 +137,33 @@ export function Breadcrumb(props: { canvasAspect: Accessor<number> }) {
     return segs
   })
 
-  // Canvas dictates the size; the button wraps it with its own padding
-  // and margin (4 + 4 = 8 each side, see breadcrumb.module.css). Pick the
-  // canvas height so the button outer = hud height: 60 − (margin 4 + padding 4) × 2 = 44.
-  const CANVAS_HEIGHT = 44
-  const canvasWidth = () => Math.max(8, Math.round(CANVAS_HEIGHT * props.canvasAspect()))
+  // Lock the button's inner width to the canvas's full-size width via a
+  // CSS var. Total content width stays constant whether the scrollbar is
+  // showing or not — without this, canvas width would track height
+  // (aspect-ratio), causing scrollbar-toggle resize loops. Full height
+  // (no scrollbar) = hud-height(60) - padding-block-end(--radius=12) -
+  // button margin(2*2) - button padding(2*2) = 40.
+  const FULL_CANVAS_H = 40
+  const buttonWidth = () =>
+    `${Math.max(8, Math.round(FULL_CANVAS_H * props.canvasAspect()))}px`
+
+  let contentEl!: HTMLDivElement
+  // Scroll the trailing breadcrumb into view whenever the chain grows.
+  createEffect(
+    () => segments().length,
+    n => {
+      if (!contentEl || n === 0) return
+      contentEl.scrollTo({ left: contentEl.scrollWidth, behavior: "smooth" })
+    },
+  )
 
   return (
     <Notch ref={context.setBreadcrumbEl} class={styles.notch} orientation="top">
-      <div class={styles.content}>
+      <div
+        ref={contentEl}
+        class={styles.content}
+        style={{ "--breadcrumb-button-width": buttonWidth() }}
+      >
         <For each={segments()}>
           {(seg, i) => (
             <button
@@ -131,8 +179,7 @@ export function Breadcrumb(props: { canvasAspect: Accessor<number> }) {
               <Minimap
                 layout={context.app.layout}
                 highlightPath={seg().highlightPath}
-                width={canvasWidth()}
-                height={CANVAS_HEIGHT}
+                aspect={props.canvasAspect()}
               />
             </button>
           )}

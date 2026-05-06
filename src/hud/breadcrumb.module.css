@@ -15,16 +15,15 @@
 
 .content {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: var(--padding);
-  padding-inline: calc(var(--radius) * 2);
+  margin-inline: calc(var(--radius) + var(--padding));
   /* Inset the scrollbar from the backdrop's bottom by --radius. The
      scrollbar appears at the content-box's bottom edge; padding-block-end
      pulls it up. box-sizing: border-box keeps the total .content height
      equal to the notch's hud-height so it never overlaps the canvas
-     below. align-items: center keeps the buttons vertically centered
-     within the (smaller) content-box. */
-  padding-block-end: var(--radius);
+     below. */
+  padding-block: var(--padding);
   box-sizing: border-box;
   height: 100%;
   color: var(--color-front);
@@ -39,13 +38,18 @@
   & .button {
     background: none;
     border: none;
-    padding: var(--padding);
+    padding: calc(var(--padding) * 2);
     cursor: pointer;
+    /* Fixed width = full-size canvas width. Locking width independent of
+       height keeps total content width constant when the scrollbar
+       toggles, avoiding a resize loop. The canvas inside scales down
+       (height + aspect-ratio) and centers when button height shrinks. */
+    width: calc(var(--breadcrumb-button-width) + var(--padding) * 2);
+    flex: none;
     display: flex;
-    align-items: stretch;
-    justify-content: stretch;
-    border-radius: var(--padding);
-    margin: var(--padding);
+    align-items: center;
+    justify-content: center;
+    border-radius: calc(var(--radius) - var(--padding));
     transition: background 120ms ease;
 
     &:hover {
@@ -57,4 +61,3 @@
     }
   }
 }
-

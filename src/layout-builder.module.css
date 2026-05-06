@@ -12,6 +12,8 @@
 }
 
 .canvasInner {
+  --hud-height: 48px;
+
   position: absolute;
   inset: 0;
   display: flex;
@@ -24,4 +26,3 @@
      WAAPI animation applies a single time-fraction to all keyframe
      properties. */
 }
-
