@@ -192,8 +192,7 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
     const baseRect = frameRect(context.app.layout, selectedPath, canvas)
 
     const hudInsets = computeHudInsets(canvasRect)
-    const prev = untrack(() => viewport())
-    const transform = computeViewportTransform(baseRect, canvas, prev.scale, hudInsets)
+    const transform = computeViewportTransform(baseRect, canvas, 1, hudInsets)
 
     const postRect = applyTransform(baseRect, transform.scale, {
       x: transform.x,
