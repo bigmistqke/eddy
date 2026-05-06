@@ -19,9 +19,16 @@ export function ArrowIcon(props: { style?: JSX.CSSProperties; class?: string }) 
   )
 }
 
-export function PlusIcon() {
+export function PlusIcon(props: { class?: string }) {
   return (
-    <svg width="35" height="35" viewBox="0 0 35 35" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      class={props.class}
+      width="35"
+      height="35"
+      viewBox="0 0 35 35"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <path
         d="M33 19L19.5 19L19.5 33C19.5 34.1046 18.6046 35 17.5 35C16.3954 35 15.5 34.1046 15.5 33L15.5 19L2 19C0.895431 19 -8.69891e-07 18.1046 -8.16818e-07 17C-7.63746e-07 15.8954 0.895431 15 2 15L15.5 15L15.5 2C15.5 0.89543 16.3954 -7.39833e-07 17.5 -6.95908e-07C18.6046 -6.51984e-07 19.5 0.89543 19.5 2L19.5 15L33 15C34.1046 15 35 15.8954 35 17C35 18.1046 34.1046 19 33 19Z"
         fill="currentColor"
@@ -30,9 +37,16 @@ export function PlusIcon() {
   )
 }
 
-export function SplitIcon() {
+export function SplitIcon(props: { class?: string }) {
   return (
-    <svg width="35" height="27" viewBox="0 0 35 27" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      class={props.class}
+      width="35"
+      height="27"
+      viewBox="0 0 35 27"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <path
         fill-rule="evenodd"
         clip-rule="evenodd"
@@ -89,6 +103,36 @@ export function BackIcon(props: { class?: string }) {
       <path
         d="M32.8281 22.4998L16.3281 22.4998C15.2236 22.4998 14.3281 21.6043 14.3281 20.4998C14.3281 19.3952 15.2236 18.4998 16.3281 18.4998L32.8281 18.4998C35.0373 18.4998 36.8281 16.7089 36.8281 14.4998C36.8281 12.2907 35.0373 10.4998 32.8281 10.4998L7.65625 10.4998L10.7422 13.5857C11.5232 14.3667 11.5232 15.6328 10.7422 16.4138C9.96114 17.1949 8.69511 17.1949 7.91406 16.4138L-6.11959e-07 8.49976L7.91406 0.585693C8.6951 -0.195309 9.96115 -0.195308 10.7422 0.585693C11.5232 1.36673 11.5232 2.63277 10.7422 3.41382L7.65625 6.49976L32.8281 6.49975C37.2464 6.49975 40.8281 10.0814 40.8281 14.4998C40.8281 18.918 37.2464 22.4998 32.8281 22.4998Z"
         fill="currentColor"
+      />
+    </svg>
+  )
+}
+
+export function SwapIcon(props: { class?: string }) {
+  return (
+    <svg
+      class={props.class}
+      width="35"
+      height="35"
+      viewBox="0 0 35 35"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M2 17.5 L33 17.5 M2 17.5 L8 11.5 M2 17.5 L8 23.5 M33 17.5 L27 11.5 M33 17.5 L27 23.5"
+        stroke="currentColor"
+        stroke-width="3"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        fill="none"
+      />
+      <path
+        d="M17.5 2 L17.5 33 M17.5 2 L11.5 8 M17.5 2 L23.5 8 M17.5 33 L11.5 27 M17.5 33 L23.5 27"
+        stroke="currentColor"
+        stroke-width="3"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        fill="none"
       />
     </svg>
   )
