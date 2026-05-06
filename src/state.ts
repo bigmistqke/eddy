@@ -1,4 +1,5 @@
-import { createSignal, createStore } from "solid-js"
+import { StoreSetter } from "@solidjs/signals"
+import { createSignal, createStore, untrack } from "solid-js"
 import type {
   AppContext,
   AppState,
@@ -7,10 +8,13 @@ import type {
   Direction,
   Entity,
   HandleOp,
+  HudKind,
   Node,
   SelectedHandlesState,
+  Selection,
 } from "./types"
 import { resolveNode } from "./utils"
+import type { Rect } from "./viewport"
 
 function cloneNode(node: Node): Node {
   if (node.type === "entity") {
@@ -35,7 +39,6 @@ const ZERO_BY_DIR: Record<Direction, number> = { top: 0, bottom: 0, left: 0, rig
  * Context provider.
  */
 export function createAppState(): AppContext {
-  const [selection, setSelection] = createStore({ path: [0] as Array<number>, depth: 0 })
   const [app, setApp] = createStore<AppState>({
     view: { type: "recording" },
     layout: {
@@ -43,17 +46,64 @@ export function createAppState(): AppContext {
       direction: "horizontal",
       children: [createEntity()],
     },
+    selection: { path: [0] as Array<number>, depth: 0 },
   })
 
-  const [bottomBarEl, setBottomBarEl] = createSignal<HTMLElement | undefined>()
-  const [breadcrumbEl, setBreadcrumbEl] = createSignal<HTMLElement | undefined>()
-  const [contextualToolbarEl, setContextualToolbarEl] = createSignal<HTMLElement | undefined>()
+  // HUD element refs — kept internal. Consumers register a ref via
+  // setHudElement(kind) and read overlap rects via computeHudRects.
+  const hudSignals: Record<
+    HudKind,
+    ReturnType<typeof createSignal<HTMLElement | undefined>>
+  > = {
+    main: createSignal<HTMLElement | undefined>(),
+    breadcrumb: createSignal<HTMLElement | undefined>(),
+    contextual: createSignal<HTMLElement | undefined>(),
+  }
+
+  const setHudElement = (kind: HudKind) => hudSignals[kind][1]
+
+  /**
+   * Read each HUD's bounding rect in canvas-relative coords, skipping
+   * detached refs. HUDs are partial-edge rectangles (corners, center
+   * strips), not full-edge insets — model them as rects so per-handle
+   * overlap detection can be precise.
+   */
+  function computeHudRects(canvasRect: DOMRect): Rect[] {
+    const elements = [
+      untrack(hudSignals.breadcrumb[0]),
+      untrack(hudSignals.main[0]),
+      untrack(hudSignals.contextual[0]),
+    ]
+    const out: Rect[] = []
+    for (const element of elements) {
+      if (!element?.isConnected) continue
+      const r = element.getBoundingClientRect()
+      out.push({
+        x: r.left - canvasRect.left,
+        y: r.top - canvasRect.top,
+        w: r.width,
+        h: r.height,
+      })
+    }
+    return out
+  }
+
   const [isCanvasZoomed, setIsCanvasZoomed] = createSignal(false)
   const [isAnimating, setIsAnimating] = createSignal(false, { ownedWrite: true })
   const [selectedHandlesState, setSelectedHandlesState] = createSignal<SelectedHandlesState>(
     { extend: ZERO_BY_DIR, stick: ZERO_BY_DIR },
     { ownedWrite: true },
   )
+
+  const setSelection: StoreSetter<Selection> = function (fn) {
+    setApp(app => {
+      const _selection = fn(app.selection)
+      if (_selection) {
+        app.selection = _selection
+        return app
+      }
+    })
+  }
 
   function appendToContainer(containerPath: number[], insertIndex: number) {
     const newEntity = createEntity()
@@ -85,7 +135,10 @@ export function createAppState(): AppContext {
           ...(newEntityFirst ? [newEntity, inner] : [inner, newEntity]),
         )
       })
-      setSelection(() => ({ path: [newEntityIndex], depth: 0 }))
+      setApp(app => {
+        app.selection = { path: [newEntityIndex], depth: 0 }
+      })
+
       return
     }
 
@@ -99,7 +152,10 @@ export function createAppState(): AppContext {
         p.direction = splitDir
         p.children.splice(newEntityFirst ? 0 : 1, 0, newEntity)
       })
-      setSelection(() => ({ path: [...parentPath, newEntityIndex], depth: 0 }))
+      setApp(app => {
+        app.selection = { path: [...parentPath, newEntityIndex], depth: 0 }
+      })
+
       return
     }
 
@@ -156,16 +212,10 @@ export function createAppState(): AppContext {
   }
 
   return {
-    selection,
-    setSelection,
     app,
-    setApp,
-    bottomBarEl,
-    setBottomBarEl,
-    breadcrumbEl,
-    setBreadcrumbEl,
-    contextualToolbarEl,
-    setContextualToolbarEl,
+    setSelection,
+    setHudElement,
+    computeHudRects,
     isCanvasZoomed,
     setIsCanvasZoomed,
     isAnimating,

@@ -74,32 +74,8 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
   // while the canvas is mid-transition (ResizeObserver fires repeatedly as
   // canvasInner's width/height interpolate, and any setViewport call here
   // would retarget the CSS transition mid-flight).
-  // Read each HUD's bounding rect in canvas-relative coords, skipping
-  // detached refs. HUDs are partial-edge rectangles (corners, center
-  // strips), not full-edge insets — model them as rects so per-handle
-  // overlap detection can be precise.
-  function computeHudRects(canvasRect: DOMRect): Rect[] {
-    const hudEls = [
-      untrack(() => context.breadcrumbEl()),
-      untrack(() => context.bottomBarEl()),
-      untrack(() => context.contextualToolbarEl()),
-    ]
-    const out: Rect[] = []
-    for (const el of hudEls) {
-      if (!el?.isConnected) continue
-      const r = el.getBoundingClientRect()
-      out.push({
-        x: r.left - canvasRect.left,
-        y: r.top - canvasRect.top,
-        w: r.width,
-        h: r.height,
-      })
-    }
-    return out
-  }
-
   function layoutPass() {
-    if (untrack(() => context.isAnimating())) return
+    if (untrack(context.isAnimating)) return
     if (!canvasEl) return
     const canvasRect = canvasEl.getBoundingClientRect()
     const canvas = { w: canvasRect.width, h: canvasRect.height }
@@ -109,8 +85,8 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
     // reads still warn STRICT_READ_UNTRACKED. Re-firing is driven by the
     // compute via layoutSignature, so untrack is correct here.
     const sel = untrack(() => ({
-      path: context.selection.path.slice(),
-      depth: context.selection.depth,
+      path: context.app.selection.path.slice(),
+      depth: context.app.selection.depth,
     }))
     // Empty selection (back button cleared) is treated as "root scope" —
     // root frame still renders handles via NodeComponent.handles() because
@@ -120,7 +96,7 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
     const len = sel.path.length - sel.depth
     const selectedPath = sel.path.slice(0, Math.max(0, len))
 
-    const hudRects = computeHudRects(canvasRect)
+    const hudRects = context.computeHudRects(canvasRect)
     const transform = untrack(() =>
       computeViewportTransform(context.app.layout, selectedPath, canvas, 1, hudRects),
     )
@@ -166,7 +142,7 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
 
   // Selection or layout-topology change drives viewport recomputes.
   createEffect(
-    () => layoutSignature(context.app.layout, context.selection),
+    () => layoutSignature(context.app.layout, context.app.selection),
     () => layoutPass(),
   )
 

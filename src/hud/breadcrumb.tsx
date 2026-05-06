@@ -104,12 +104,7 @@ function Minimap(props: { layout: Container; highlightPath: number[]; aspect: nu
       untrack(() => drawNode(ctx, layout, highlightPath, dx, dy, dw, dh))
     },
   )
-  return (
-    <canvas
-      ref={canvasEl}
-      style={{ width: "100%", height: "100%", display: "block" }}
-    />
-  )
+  return <canvas ref={canvasEl} style={{ width: "100%", height: "100%", display: "block" }} />
 }
 
 export function Breadcrumb(props: { canvasAspect: Accessor<number> }) {
@@ -119,7 +114,7 @@ export function Breadcrumb(props: { canvasAspect: Accessor<number> }) {
   // node-in-scope at that segment's depth. `depth` is the value
   // `selection.depth` should take when this segment is tapped.
   const segments = createMemo(() => {
-    const { path } = context.selection
+    const { path } = context.app.selection
     const segs: Array<{ highlightPath: number[]; depth: number }> = []
 
     // Segment 0: root scope — empty highlight path means "this node (root)
@@ -144,8 +139,7 @@ export function Breadcrumb(props: { canvasAspect: Accessor<number> }) {
   // (no scrollbar) = hud-height(60) - padding-block-end(--radius=12) -
   // button margin(2*2) - button padding(2*2) = 40.
   const FULL_CANVAS_H = 40
-  const buttonWidth = () =>
-    `${Math.max(8, Math.round(FULL_CANVAS_H * props.canvasAspect()))}px`
+  const buttonWidth = () => `${Math.max(8, Math.round(FULL_CANVAS_H * props.canvasAspect()))}px`
 
   let contentEl!: HTMLDivElement
   // Scroll the trailing breadcrumb into view whenever the chain grows.
@@ -158,27 +152,29 @@ export function Breadcrumb(props: { canvasAspect: Accessor<number> }) {
   )
 
   return (
-    <Notch ref={context.setBreadcrumbEl} class={styles.notch} orientation="top">
+    <Notch ref={context.setHudElement("breadcrumb")} class={styles.notch} orientation="top">
       <div
         ref={contentEl}
         class={styles.content}
         style={{ "--breadcrumb-button-width": buttonWidth() }}
       >
         <For each={segments()}>
-          {(seg, i) => (
+          {(segment, i) => (
             <button
               class={[
                 styles.button,
-                seg().depth === context.selection.depth ? styles.active : "",
+                segment().depth === context.app.selection.depth ? styles.active : "",
               ].join(" ")}
               onClick={() => {
-                logAction("tap-breadcrumb", { depth: seg().depth, segmentIndex: i() })
-                context.setSelection(s => ({ ...s, depth: seg().depth }))
+                logAction("tap-breadcrumb", { depth: segment().depth, segmentIndex: i() })
+                context.setSelection(selection => {
+                  selection.depth = segment().depth
+                })
               }}
             >
               <Minimap
                 layout={context.app.layout}
-                highlightPath={seg().highlightPath}
+                highlightPath={segment().highlightPath}
                 aspect={props.canvasAspect()}
               />
             </button>

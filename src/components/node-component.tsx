@@ -82,7 +82,7 @@ export function NodeComponent(props: {
       return []
     }
 
-    const selection = context.selection
+    const selection = context.app.selection
     const targetedPath = selection.path.slice(0, selection.path.length - selection.depth)
 
     if (!pathEquals(props.path, targetedPath)) {

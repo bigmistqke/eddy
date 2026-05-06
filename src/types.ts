@@ -1,5 +1,6 @@
 import type { StoreSetter } from "@solidjs/signals"
 import type { Accessor } from "solid-js"
+import type { Rect } from "./viewport"
 
 export type Container = {
   type: "container"
@@ -10,9 +11,14 @@ export type Entity = { type: "entity"; color: string }
 export type Node = Container | Entity
 
 export type AppView = { type: "recording" } | { type: "layout"; mode: "append" | "split" }
-export type AppState = { view: AppView; layout: Container }
+export type AppState = {
+  view: AppView
+  layout: Container
+  selection: Selection
+}
 
 export type Direction = "top" | "bottom" | "left" | "right"
+export type HudKind = "main" | "breadcrumb" | "contextual"
 export type Selection = { path: Array<number>; depth: number }
 
 /** Operation a directional handle performs when tapped. */
@@ -28,18 +34,20 @@ export type SelectedHandlesState = {
 }
 
 export type AppContext = {
-  selection: Selection
-  setSelection: StoreSetter<Selection>
   app: AppState
-  setApp: StoreSetter<AppState>
-  bottomBarEl: Accessor<HTMLElement | undefined>
-  setBottomBarEl: (el: HTMLElement | undefined) => void
-  breadcrumbEl: Accessor<HTMLElement | undefined>
-  setBreadcrumbEl: (el: HTMLElement | undefined) => void
-  contextualToolbarEl: Accessor<HTMLElement | undefined>
-  setContextualToolbarEl: (el: HTMLElement | undefined) => void
+  setSelection: StoreSetter<Selection>
+
   isCanvasZoomed: Accessor<boolean>
   setIsCanvasZoomed: (zoomed: boolean) => void
+
+  /** Returns a ref-setter for the named HUD slot. Wire as
+   *  `ref={context.setHudElement("breadcrumb")}` etc. */
+  setHudElement: (kind: HudKind) => (el: HTMLElement | undefined) => void
+
+  /** Bounding rects of all mounted HUDs in canvas-relative coords. Used
+   *  by viewport math to detect handle/HUD overlap. */
+  computeHudRects: (canvasRect: DOMRect) => Rect[]
+
   /** True while the canvas viewport is mid-transition. Frames hide their
    *  handles during this window so ResizeObserver-driven collision rechecks
    *  don't toggle handle visibility under the animation. */

@@ -13,7 +13,7 @@ export function Main() {
       : null
 
   return (
-    <Notch ref={context.setBottomBarEl} class={styles.notch}>
+    <Notch ref={context.setHudElement("main")} class={styles.notch}>
       <div class={styles.content}>
         <Switch>
           <Match when={context.app.view.type === "recording"}>

@@ -6,14 +6,14 @@ import { logAction } from "../utils"
 import styles from "./contextual.module.css"
 
 export function Contextual() {
-  const context = useContext(Context)!
+  const context = useContext(Context)
   // Back button only makes sense when the canvas is actually zoomed in.
   // Future buttons would OR their own conditions in here.
   const hasAnyButton = () => context.isCanvasZoomed()
 
   return (
     <Show when={hasAnyButton()}>
-      <Notch ref={context.setContextualToolbarEl} class={styles.notch} orientation="right">
+      <Notch ref={context.setHudElement("contextual")} class={styles.notch} orientation="right">
         <div class={styles.content}>
           <Show when={context.isCanvasZoomed()}>
             <button
