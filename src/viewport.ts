@@ -43,6 +43,37 @@ export function selectedPathKey(selection: Selection): string {
  * induced same-axis-pair overlap occurs, pan to canvas center. Otherwise
  * identity — preserves "no pan when not needed" UX.
  */
+/** Find the smallest scale s such that frameRect at scale s satisfies the
+ *  handle-fit constraints. Iterative because CSS padding/gap are fixed
+ *  pixels: at deep nesting they consume most of the parent's space, and
+ *  baseRect.w can go *negative* — making an analytical (SAME_AXIS_MIN /
+ *  baseRect.w) calculation either wrong or undefined. Each step grows
+ *  scale by the current deficit ratio; converges in 1–3 iterations
+ *  typically, capped to avoid runaway. */
+const MAX_SCALE = 10000
+const MAX_FIT_ITER = 20
+function findHandleFitScale(
+  layout: Container,
+  path: number[],
+  canvas: { w: number; h: number },
+): number {
+  let scale = 1
+  for (let i = 0; i < MAX_FIT_ITER; i++) {
+    const r = frameRect(layout, path, { w: canvas.w * scale, h: canvas.h * scale })
+    const minDim = Math.min(r.w, r.h)
+    const maxDim = Math.max(r.w, r.h)
+    const sameAxisOk = minDim >= SAME_AXIS_MIN
+    const crossPairOk = maxDim >= CROSS_PAIR_MIN
+    if (sameAxisOk && crossPairOk) return scale
+    let needed = 1
+    if (!sameAxisOk) needed = Math.max(needed, minDim > 0 ? SAME_AXIS_MIN / minDim : 4)
+    if (!crossPairOk) needed = Math.max(needed, maxDim > 0 ? CROSS_PAIR_MIN / maxDim : 4)
+    scale *= needed
+    if (scale >= MAX_SCALE) return MAX_SCALE
+  }
+  return Math.min(scale, MAX_SCALE)
+}
+
 export function computeViewportTransform(
   layout: Container,
   path: number[],
@@ -50,19 +81,14 @@ export function computeViewportTransform(
   minScale = 1,
   hudRects: Rect[] = [],
 ): ViewportTransform {
-  // Base rect at scale=1 — used for handle-fit constraint and natural-fit
-  // check. CSS `padding` and `gap` are *fixed pixels*, so the rect at
-  // scale s is NOT just the base rect × s; we recompute via flex math at
-  // the scaled canvasInner size below for accurate centering.
+  // Base rect at scale=1 — used for the natural-fit short-circuit only.
+  // CSS `padding` and `gap` are *fixed pixels*, so the rect at scale s
+  // is NOT baseRect × s; we recompute via flex math at the scaled
+  // canvasInner size for both handle-fit decisions and centering.
   const baseRect = frameRect(layout, path, canvas)
   if (baseRect.w === 0 || baseRect.h === 0) return IDENTITY_VIEWPORT
 
-  const handleScale = Math.max(
-    SAME_AXIS_MIN / baseRect.w,
-    SAME_AXIS_MIN / baseRect.h,
-    Math.min(CROSS_PAIR_MIN / baseRect.w, CROSS_PAIR_MIN / baseRect.h),
-  )
-
+  const handleScale = findHandleFitScale(layout, path, canvas)
   const scale = Math.max(handleScale, minScale)
 
   // Identity-eligible (no zoom needed) — but check whether the frame's
@@ -77,9 +103,6 @@ export function computeViewportTransform(
   }
 
   // Pan to canvas center using REAL flex-math at the scaled canvasInner.
-  // Without this, fixed-pixel padding/gap cause the analytical
-  // (baseRect × scale) center to drift from where the DOM actually places
-  // the frame — by tens of pixels at deep nesting.
   const realRect = frameRect(layout, path, { w: canvas.w * scale, h: canvas.h * scale })
   const x = canvas.w / 2 - (realRect.x + realRect.w / 2)
   const y = canvas.h / 2 - (realRect.y + realRect.h / 2)
