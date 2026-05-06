@@ -37,28 +37,35 @@
 .breadcrumbContent {
   display: flex;
   align-items: center;
-  gap: 6pt;
+  gap: 4px;
   padding-inline: calc(var(--hud-radius) * 2);
   height: 100%;
   color: var(--color-front);
-  font-size: 12pt;
   white-space: nowrap;
 }
 
-.breadcrumbContent button {
+.breadcrumbContent .minimapButton {
   background: none;
   border: none;
-  padding: 0;
-  color: var(--color-front);
-  font-size: inherit;
+  padding: 4px;
   cursor: pointer;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  border-radius: 4px;
+  transition: background 120ms ease;
 }
 
-.breadcrumbContent button.active {
-  color: var(--color-active);
-  text-decoration: underline;
+.breadcrumbContent .minimapButton:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.breadcrumbContent .minimapButton.active {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .breadcrumbContent .separator {
   user-select: none;
+  color: #666;
+  align-self: center;
 }
