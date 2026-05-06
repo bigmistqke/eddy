@@ -16,6 +16,10 @@ export type AppState = { view: AppView; layout: Container }
 export type Direction = "top" | "bottom" | "left" | "right"
 export type Selection = { path: Array<number>; depth: number }
 
+/** Operation a directional handle performs when tapped. */
+export type HandleOp = "append" | "split"
+export type HandleSpec = { dir: Direction; op: HandleOp }
+
 export type AppContext = {
   selection: Selection
   setSelection: StoreSetter<Selection>

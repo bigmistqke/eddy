@@ -15,7 +15,7 @@ import { Notch } from "./frame"
 import { CloseIcon, PlayIcon, PlusIcon, RecordIcon, SplitIcon } from "./icons"
 import { LayoutBuilder } from "./layout-builder"
 import { NodeComponent } from "./node-component"
-import type { AppState, Container, Direction, Entity, Node } from "./types"
+import type { AppState, Container, Direction, Entity, HandleOp, Node } from "./types"
 import { resolveNode } from "./utils"
 
 function cloneNode(node: Node): Node {
@@ -118,7 +118,7 @@ export function App() {
       const container = resolveNode(proxy.layout, containerPath) as Container
       container.children.splice(insertIndex, 0, newEntity)
     })
-    setSelection(() => ({ path: [...containerPath, insertIndex], depth: 1 }))
+    setSelection(() => ({ path: [...containerPath, insertIndex], depth: 0 }))
   }
 
   function splitNode(nodePath: number[], direction: Direction) {
@@ -184,7 +184,33 @@ export function App() {
     setApp(store => {
       store.view = { type: "layout", mode: "append" }
     })
-    if (selection.depth === 0) setSelection(s => ({ ...s, depth: 1 }))
+  }
+
+  function handleAddFrame(path: number[], direction: Direction, op: HandleOp) {
+    if (op === "split") {
+      splitNode(path, direction)
+      return
+    }
+    // op === "append" — but if the requested direction is perpendicular to
+    // the parent's flex axis, a sibling-insert is meaningless. Wrap the
+    // entity instead (delegating to splitNode, which already does this).
+    const parentDirection: "horizontal" | "vertical" =
+      path.length === 0
+        ? app.layout.direction
+        : (resolveNode(app.layout, path.slice(0, -1)) as Container).direction
+    const dirAxis = direction === "left" || direction === "right" ? "horizontal" : "vertical"
+    if (dirAxis !== parentDirection) {
+      splitNode(path, direction)
+      return
+    }
+    // Parent-axis append.
+    if (path.length === 0) {
+      // Root: append a child to root itself.
+      const insertAfter = direction === "right" || direction === "bottom"
+      appendToContainer([], insertAfter ? app.layout.children.length : 0)
+      return
+    }
+    handleAppend(path, direction)
   }
 
   const layoutView = () =>
@@ -238,8 +264,7 @@ export function App() {
             <NodeComponent
               layout={app.layout}
               path={[]}
-              onAppend={handleAppend}
-              onSplit={splitNode}
+              onAddFrame={handleAddFrame}
             />
           </div>
         </Show>
@@ -248,8 +273,7 @@ export function App() {
             <NodeComponent
               layout={app.layout}
               path={[]}
-              onAppend={handleAppend}
-              onSplit={splitNode}
+              onAddFrame={handleAddFrame}
             />
           </LayoutBuilder>
         </Show>

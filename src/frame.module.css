@@ -8,6 +8,7 @@
   height: calc(var(--hud-height) + var(--extend, 0px));
   position: absolute;
   z-index: var(--z-notch);
+  color: var(--color-front);
 
   &.bottom {
     left: 50%;
