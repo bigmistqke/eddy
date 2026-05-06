@@ -9,28 +9,38 @@ import {
   untrack,
   useContext,
 } from "solid-js"
+import { logAction } from "./actions-log"
 import { MiniNode } from "./breadcrumb-minimap"
 import { Context } from "./context"
 import { ContextualToolbar } from "./contextual-toolbar"
 import { Notch } from "./frame"
 import styles from "./layout-builder.module.css"
-import type { Node } from "./types"
+import type { Container, Node, Selection } from "./types"
 import {
+  applyTransform,
+  computeExtends,
+  computeSticks,
   computeViewportTransform,
+  frameRect,
   IDENTITY_VIEWPORT,
-  selectedPathKey,
   transformToCss,
+  type Rect,
 } from "./viewport"
+
+/** Produce a string signature of the layout tree + selection. Reading this
+ *  in a createEffect compute makes the effect re-fire whenever any
+ *  container's children list, any container's direction, or the selection
+ *  path/depth changes. */
+function layoutSignature(layout: Container, selection: Selection): string {
+  function nodeSignature(node: Node): string {
+    if (node.type === "entity") return "e"
+    return `${node.direction[0]}(${node.children.map(nodeSignature).join(",")})`
+  }
+  return `${nodeSignature(layout)}|${selection.path.join(".")}/${selection.depth}`
+}
 
 export function Breadcrumb(props: { canvasAspect: Accessor<number> }) {
   const context = useContext(Context)!
-
-  // Signal-driven collidable registration: ref just sets the signal, this
-  // effect owns the lifecycle.
-  createEffect(context.breadcrumbEl, el => {
-    if (!el) return
-    return context.registerCollidable(el, "hud")
-  })
 
   // Each segment carries the highlight path from the layout root to the
   // node-in-scope at that segment's depth. `depth` is the value
@@ -78,7 +88,10 @@ export function Breadcrumb(props: { canvasAspect: Accessor<number> }) {
               style={{
                 "aspect-ratio": props.canvasAspect(),
               }}
-              onClick={() => context.setSelection(s => ({ ...s, depth: seg().depth }))}
+              onClick={() => {
+                logAction("tap-breadcrumb", { depth: seg().depth, segmentIndex: i() })
+                context.setSelection(s => ({ ...s, depth: seg().depth }))
+              }}
             >
               <MiniNode node={context.app.layout} highlightPath={seg().highlightPath} />
             </button>
@@ -130,58 +143,104 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
   // while the canvas is mid-transition (ResizeObserver fires repeatedly as
   // canvasInner's width/height interpolate, and any setViewport call here
   // would retarget the CSS transition mid-flight).
-  function recomputeViewport() {
-    if (untrack(() => context.isAnimating())) return
-    if (!innerEl || !canvasEl) return
-    const rect = canvasEl.getBoundingClientRect()
-    const baseW = rect.width
-    const baseH = rect.height
+  // Read each HUD's bounding rect in canvas-relative coords, skipping
+  // detached refs. HUDs are partial-edge rectangles (corners, center
+  // strips), not full-edge insets — model them as rects so per-handle
+  // overlap detection can be precise.
+  function computeHudRects(canvasRect: DOMRect): Rect[] {
+    const hudEls = [
+      untrack(() => context.breadcrumbEl()),
+      untrack(() => context.bottomBarEl()),
+      untrack(() => context.contextualToolbarEl()),
+    ]
+    const out: Rect[] = []
+    for (const el of hudEls) {
+      if (!el?.isConnected) continue
+      const r = el.getBoundingClientRect()
+      out.push({
+        x: r.left - canvasRect.left,
+        y: r.top - canvasRect.top,
+        w: r.width,
+        h: r.height,
+      })
+    }
+    return out
+  }
 
-    const key = untrack(() => selectedPathKey(context.selection))
-    // Empty key = no selection (back button cleared it). Reset to identity.
-    if (key === "") {
-      setViewport({ ...IDENTITY_VIEWPORT, baseW, baseH })
+  function layoutPass() {
+    if (untrack(() => context.isAnimating())) return
+    if (!canvasEl) return
+    const canvasRect = canvasEl.getBoundingClientRect()
+    const canvas = { w: canvasRect.width, h: canvasRect.height }
+
+    // Read selection inside untrack — layoutPass is the createEffect
+    // callback (non-tracking by default in Solid 2.x), but the store-proxy
+    // reads still warn STRICT_READ_UNTRACKED. Re-firing is driven by the
+    // compute via layoutSignature, so untrack is correct here.
+    const sel = untrack(() => ({
+      path: context.selection.path.slice(),
+      depth: context.selection.depth,
+    }))
+    // Cleared selection (back button) — reset everything.
+    if (sel.path.length === 0) {
+      setViewport({ ...IDENTITY_VIEWPORT, baseW: canvas.w, baseH: canvas.h })
+      context.setSelectedHandlesState({
+        extend: { top: 0, bottom: 0, left: 0, right: 0 },
+        stick: { top: 0, bottom: 0, left: 0, right: 0 },
+      })
       return
     }
-    const node = innerEl.querySelector<HTMLElement>(`[data-path="${key}"]`)
-    if (!node) return
 
-    // Always fit the new selection. The viewport signal's `equals` is
-    // epsilon-based — identity→identity is a no-op, sub-pixel drift from
-    // recomputing against settled geometry is also a no-op, but a real
-    // change (different selection, real resize) does propagate.
-    const prev = untrack(() => viewport())
-    const t = computeViewportTransform(node, innerEl, baseW, baseH, prev.scale)
-    setViewport({ ...t, baseW, baseH })
+    const len = sel.path.length - sel.depth
+    const selectedPath = sel.path.slice(0, Math.max(0, len))
+    const baseRect = untrack(() => frameRect(context.app.layout, selectedPath, canvas))
+
+    const hudRects = computeHudRects(canvasRect)
+    const transform = computeViewportTransform(baseRect, canvas, 1, hudRects)
+
+    const postRect = applyTransform(baseRect, transform.scale, {
+      x: transform.x,
+      y: transform.y,
+    })
+    const extend = computeExtends(postRect, hudRects)
+    const stick = computeSticks(postRect, canvas)
+
+    setViewport({ ...transform, baseW: canvas.w, baseH: canvas.h })
+    context.setSelectedHandlesState({ extend, stick })
   }
 
   onSettled(() => {
     if (!canvasEl) return
-    context.setCanvasEl(canvasEl)
     // Seed baseW/baseH so the first render has explicit pixel dimensions
     // on canvasInner — required for width/height transitions to animate
     // (browsers won't interpolate between auto and a pixel value).
     const rect = canvasEl.getBoundingClientRect()
     setViewport(v => ({ ...v, baseW: rect.width, baseH: rect.height }))
     setCanvasAspect(rect.height > 0 ? rect.width / rect.height : 1)
-    return context.observeFrame(canvasEl, () => {
+    const ro = new ResizeObserver(() => {
       const r = canvasEl.getBoundingClientRect()
       if (r.height > 0) setCanvasAspect(r.width / r.height)
-      recomputeViewport()
+      layoutPass()
     })
+    ro.observe(canvasEl)
+    return () => ro.disconnect()
   })
 
-  // Selection changes drive viewport recomputes via this effect.
+  // Selection or layout-topology change drives viewport recomputes.
   createEffect(
-    () => selectedPathKey(context.selection),
-    () => recomputeViewport(),
+    () => layoutSignature(context.app.layout, context.selection),
+    () => layoutPass(),
   )
 
   // Expose "is the canvas currently zoomed" so the contextual back button
   // can hide itself when there is nothing to zoom out of. Wrapped in a block
   // so the setter's return value isn't treated as a cleanup function.
   createEffect(
-    () => viewport().scale > 1,
+    () => {
+      const v = viewport()
+      // Any non-identity transform — including pan-only (scale=1, x or y != 0).
+      return v.scale > 1 || Math.abs(v.x) > 0.5 || Math.abs(v.y) > 0.5
+    },
     zoomed => {
       context.setIsCanvasZoomed(zoomed)
     },
@@ -207,10 +266,7 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
       // that happened during the animation. Epsilon equals on the viewport
       // signal short-circuits the no-drift case so a stable result doesn't
       // kick a new animation.
-      recomputeViewport()
-      // Ask each frame to refresh its handle/HUD collision state now that
-      // the canvas has settled.
-      context.requestCollisionUpdate()
+      layoutPass()
     }, 240) // 220ms transition + 20ms buffer
   })
 
@@ -229,9 +285,10 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
 
   return (
     <div class={styles.layoutBuilder}>
-      <div class={styles.canvas} ref={canvasEl}>
+      <div class={styles.canvas} ref={canvasEl} data-canvas="true">
         <div
           class={styles.canvasInner}
+          data-canvas-inner="true"
           ref={innerEl}
           style={{
             transform: transformToCss(viewport()),

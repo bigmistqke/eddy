@@ -1,21 +1,12 @@
-import {
-  createEffect,
-  createSignal,
-  createStore,
-  Match,
-  onCleanup,
-  Show,
-  Switch,
-} from "solid-js"
+import { createSignal, createStore, Match, Show, Switch } from "solid-js"
+import { logAction } from "./actions-log"
 import styles from "./app.module.css"
-import type { Collidable, CollisionHit, CollisionKind } from "./collision"
-import { rectsOverlap } from "./collision"
 import { Context } from "./context"
 import { Notch } from "./frame"
 import { CloseIcon, PlayIcon, PlusIcon, RecordIcon, SplitIcon } from "./icons"
 import { LayoutBuilder } from "./layout-builder"
 import { NodeComponent } from "./node-component"
-import type { AppState, Container, Direction, Entity, HandleOp, Node } from "./types"
+import type { AppState, Container, Direction, Entity, HandleOp, Node, SelectedHandlesState } from "./types"
 import { resolveNode } from "./utils"
 
 function cloneNode(node: Node): Node {
@@ -45,72 +36,13 @@ export function App() {
   const [bottomBarEl, setBottomBarEl] = createSignal<HTMLElement | undefined>()
   const [breadcrumbEl, setBreadcrumbEl] = createSignal<HTMLElement | undefined>()
   const [contextualToolbarEl, setContextualToolbarEl] = createSignal<HTMLElement | undefined>()
-  const [canvasEl, setCanvasEl] = createSignal<HTMLElement | undefined>()
   const [isCanvasZoomed, setIsCanvasZoomed] = createSignal(false)
   const [isAnimating, setIsAnimating] = createSignal(false, { ownedWrite: true })
-
-  const frameCallbacks = new Set<() => void>()
-  const controller = new AbortController()
-  const resizeObserver = new ResizeObserver(() => frameCallbacks.forEach(cb => cb()))
-  window.addEventListener("resize", () => frameCallbacks.forEach(cb => cb()), controller)
-
-  onCleanup(() => {
-    resizeObserver.disconnect()
-    controller.abort()
-  })
-
-  function observeFrame(el: HTMLElement, cb: () => void) {
-    frameCallbacks.add(cb)
-    resizeObserver.observe(el)
-    return () => {
-      frameCallbacks.delete(cb)
-      resizeObserver.unobserve(el)
-    }
-  }
-
-  const collidables = new Set<Collidable>()
-  // Subscribers re-run their collision checks whenever the registry changes.
-  // Plain Set + iteration — no Solid signal — so register/unregister can be
-  // called freely from owned scopes (cleanups, effect callbacks, etc.) with
-  // no SIGNAL_WRITE_IN_OWNED_SCOPE concerns.
-  const updateSubscribers = new Set<() => void>()
-
-  function registerUpdateCollision(cb: () => void) {
-    updateSubscribers.add(cb)
-    return () => {
-      updateSubscribers.delete(cb)
-    }
-  }
-
-  function notifyCollisionUpdate() {
-    for (const cb of updateSubscribers) cb()
-  }
-  // Public form — exposed via context so layout-builder can request a
-  // recompute after the viewport changes (e.g. on back-button press, the
-  // canvas snaps from zoomed back to fit-parent and frames need to re-check
-  // their handle/HUD overlaps).
-  const requestCollisionUpdate = notifyCollisionUpdate
-
-  function registerCollidable(el: HTMLElement, kind: CollisionKind) {
-    const entry: Collidable = { el, kind }
-    collidables.add(entry)
-    notifyCollisionUpdate()
-    return () => {
-      collidables.delete(entry)
-      notifyCollisionUpdate()
-    }
-  }
-
-  function findCollisions(el: HTMLElement): CollisionHit[] {
-    const target = el.getBoundingClientRect()
-    const hits: CollisionHit[] = []
-    for (const c of collidables) {
-      if (c.el === el) continue
-      const rect = c.el.getBoundingClientRect()
-      if (rectsOverlap(target, rect)) hits.push({ el: c.el, kind: c.kind, rect })
-    }
-    return hits
-  }
+  const ZERO_BY_DIR: Record<Direction, number> = { top: 0, bottom: 0, left: 0, right: 0 }
+  const [selectedHandlesState, setSelectedHandlesState] = createSignal<SelectedHandlesState>(
+    { extend: ZERO_BY_DIR, stick: ZERO_BY_DIR },
+    { ownedWrite: true },
+  )
 
   function appendToContainer(containerPath: number[], insertIndex: number) {
     const newEntity = createEntity()
@@ -216,22 +148,6 @@ export function App() {
   const layoutView = () =>
     app.view.type === "layout" ? (app.view as { type: "layout"; mode: "append" | "split" }) : null
 
-  createEffect(bottomBarEl, bar => {
-    if (!bar) return
-    resizeObserver.observe(bar)
-    return () => {
-      resizeObserver.unobserve(bar)
-    }
-  })
-
-  // Register the bottom bar as collidable. Signal-driven lifecycle: the ref
-  // just calls setBottomBarEl, this effect's cleanup auto-fires on owner
-  // disposal (no manual runWithOwner / onCleanup gymnastics).
-  createEffect(bottomBarEl, bar => {
-    if (!bar) return
-    return registerCollidable(bar, "hud")
-  })
-
   return (
     <Context
       value={{
@@ -245,17 +161,12 @@ export function App() {
         setBreadcrumbEl,
         contextualToolbarEl,
         setContextualToolbarEl,
-        canvasEl,
-        setCanvasEl,
-        observeFrame,
-        registerCollidable,
-        findCollisions,
-        registerUpdateCollision,
-        requestCollisionUpdate,
         isCanvasZoomed,
         setIsCanvasZoomed,
         isAnimating,
         setIsAnimating,
+        selectedHandlesState,
+        setSelectedHandlesState,
       }}
     >
       <div style={{ display: "flex", width: "100vw", height: "100%", position: "relative" }}>
@@ -281,7 +192,14 @@ export function App() {
           <div class={styles.bottomBarContent}>
             <Switch>
               <Match when={app.view.type === "recording"}>
-                <button class={styles.barButton} onClick={() => enterAppendMode()}>
+                <button
+                  class={styles.barButton}
+                  data-action="enter-layout"
+                  onClick={() => {
+                    logAction("enter-layout")
+                    enterAppendMode()
+                  }}
+                >
                   <PlusIcon />
                 </button>
                 <button class={styles.barButton}>
@@ -294,13 +212,19 @@ export function App() {
               <Match when={app.view.type === "layout"}>
                 <button
                   class={[styles.modeButton, layoutView()?.mode === "append" ? styles.active : ""]}
-                  onClick={() => enterAppendMode()}
+                  data-action="set-mode-append"
+                  onClick={() => {
+                    logAction("set-mode", { mode: "append" })
+                    enterAppendMode()
+                  }}
                 >
                   <PlusIcon />
                 </button>
                 <button
                   class={[styles.modeButton, layoutView()?.mode === "split" ? styles.active : ""]}
+                  data-action="set-mode-split"
                   onClick={() => {
+                    logAction("set-mode", { mode: "split" })
                     setApp(app => {
                       app.view = { type: "layout", mode: "split" }
                     })
@@ -310,7 +234,9 @@ export function App() {
                 </button>
                 <button
                   class={styles.closeButton}
+                  data-action="exit-layout"
                   onClick={() => {
+                    logAction("exit-layout")
                     setApp(app => {
                       app.view = { type: "recording" }
                     })

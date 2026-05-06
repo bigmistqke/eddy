@@ -1,4 +1,5 @@
-import { createEffect, Show, useContext } from "solid-js"
+import { Show, useContext } from "solid-js"
+import { logAction } from "./actions-log"
 import { Context } from "./context"
 import { Notch } from "./frame"
 import { BackIcon } from "./icons"
@@ -9,14 +10,6 @@ export function ContextualToolbar() {
   // Back button only makes sense when the canvas is actually zoomed in.
   // Future buttons would OR their own conditions in here.
   const hasAnyButton = () => context.isCanvasZoomed()
-
-  // Signal-driven collidable registration: ref just sets the signal, this
-  // effect owns the lifecycle. Cleanup is the effect callback's return
-  // value and fires automatically on owner disposal or signal change.
-  createEffect(context.contextualToolbarEl, el => {
-    if (!el) return
-    return context.registerCollidable(el, "hud")
-  })
 
   return (
     <Show when={hasAnyButton()}>
@@ -29,7 +22,11 @@ export function ContextualToolbar() {
           <Show when={context.isCanvasZoomed()}>
             <button
               class={styles.toolbarButton}
-              onClick={() => context.setSelection(() => ({ path: [], depth: 0 }))}
+              data-action="back"
+              onClick={() => {
+                logAction("back")
+                context.setSelection(() => ({ path: [], depth: 0 }))
+              }}
             >
               <BackIcon />
             </button>
