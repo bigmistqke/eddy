@@ -11,7 +11,7 @@ import {
 } from "solid-js"
 import { Context } from "./context"
 import styles from "./frame.module.css"
-import { PlusIcon, SplitIcon } from "./icons"
+import { ArrowIcon } from "./icons"
 import type { Direction, HandleSpec } from "./types"
 
 export function Notch(props: {
@@ -261,13 +261,7 @@ export function Frame(
                 else setRightEl(el)
               }}
               class={styles[h().dir]}
-              icon={
-                h().op === "append" ? (
-                  <PlusIcon class={styles.arrow} />
-                ) : (
-                  <SplitIcon class={styles.arrow} />
-                )
-              }
+              icon={<ArrowIcon class={styles.arrow} />}
               style={handleStyle(h().dir)}
               onClick={() => props.onAddFrame(h().dir, h().op)}
             />
