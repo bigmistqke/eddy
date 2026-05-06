@@ -106,14 +106,18 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
   // opt-in in case any caller path is owned).
   // equals: short-circuits no-op updates so re-running the effect with an
   // identical viewport doesn't trigger a JSX re-render or CSS transition.
+  // Uses epsilon comparison because computeViewportTransform can produce
+  // sub-pixel floating-point drift between calls — without this, a recompute
+  // post-animation would be flagged as "changed" and start a new animation.
+  const eq = (a: number, b: number, eps = 0.5) => Math.abs(a - b) < eps
   const [viewport, setViewport] = createSignal<ViewportState>(INITIAL_VIEWPORT, {
     ownedWrite: true,
     equals: (a, b) =>
-      a.scale === b.scale &&
-      a.x === b.x &&
-      a.y === b.y &&
-      a.baseW === b.baseW &&
-      a.baseH === b.baseH,
+      eq(a.scale, b.scale, 0.001) &&
+      eq(a.x, b.x) &&
+      eq(a.y, b.y) &&
+      eq(a.baseW, b.baseW) &&
+      eq(a.baseH, b.baseH),
   })
   const [resizeTick, setResizeTick] = createSignal(0)
 
@@ -190,11 +194,11 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
     if (animationTimer) clearTimeout(animationTimer)
     animationTimer = setTimeout(() => {
       context.setIsAnimating(false)
-      // Animation settled. Nudge resizeTick so the viewport effect re-runs
-      // against the now-stable geometry (any selection changes that
-      // happened during animation were dropped — the user can re-click).
-      setResizeTick(t => t + 1)
-      // And ask each frame to recompute its handle/HUD overlaps.
+      // No setResizeTick / no recompute. The geometry already matches the
+      // viewport we set on click; any recompute would only introduce
+      // floating-point drift and trigger a fresh animation. Just ask each
+      // frame to refresh its handle/HUD collision state once now that the
+      // canvas has settled at its target size.
       context.requestCollisionUpdate()
     }, 240) // 220ms transition + 20ms buffer
   })
