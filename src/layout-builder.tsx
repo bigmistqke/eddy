@@ -285,9 +285,10 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
 
   return (
     <div class={styles.layoutBuilder}>
-      <div class={styles.canvas} ref={canvasEl}>
+      <div class={styles.canvas} ref={canvasEl} data-canvas="true">
         <div
           class={styles.canvasInner}
+          data-canvas-inner="true"
           ref={innerEl}
           style={{
             transform: transformToCss(viewport()),
