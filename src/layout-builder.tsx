@@ -40,13 +40,6 @@ function layoutSignature(layout: Container, selection: Selection): string {
 export function Breadcrumb(props: { canvasAspect: Accessor<number> }) {
   const context = useContext(Context)!
 
-  // Signal-driven collidable registration: ref just sets the signal, this
-  // effect owns the lifecycle.
-  createEffect(context.breadcrumbEl, el => {
-    if (!el) return
-    return context.registerCollidable(el, "hud")
-  })
-
   // Each segment carries the highlight path from the layout root to the
   // node-in-scope at that segment's depth. `depth` is the value
   // `selection.depth` should take when this segment is tapped.
@@ -214,18 +207,19 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
 
   onSettled(() => {
     if (!canvasEl) return
-    context.setCanvasEl(canvasEl)
     // Seed baseW/baseH so the first render has explicit pixel dimensions
     // on canvasInner — required for width/height transitions to animate
     // (browsers won't interpolate between auto and a pixel value).
     const rect = canvasEl.getBoundingClientRect()
     setViewport(v => ({ ...v, baseW: rect.width, baseH: rect.height }))
     setCanvasAspect(rect.height > 0 ? rect.width / rect.height : 1)
-    return context.observeFrame(canvasEl, () => {
+    const ro = new ResizeObserver(() => {
       const r = canvasEl.getBoundingClientRect()
       if (r.height > 0) setCanvasAspect(r.width / r.height)
       layoutPass()
     })
+    ro.observe(canvasEl)
+    return () => ro.disconnect()
   })
 
   // Selection or layout-topology change drives viewport recomputes.
@@ -269,9 +263,6 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
       // signal short-circuits the no-drift case so a stable result doesn't
       // kick a new animation.
       layoutPass()
-      // Ask each frame to refresh its handle/HUD collision state now that
-      // the canvas has settled. (Removed in T7 once the registry is gone.)
-      context.requestCollisionUpdate()
     }, 240) // 220ms transition + 20ms buffer
   })
 
