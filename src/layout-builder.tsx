@@ -1,4 +1,5 @@
 import {
+  Accessor,
   ComponentProps,
   createEffect,
   createMemo,
@@ -12,6 +13,7 @@ import {
 import { Context } from "./context"
 import { Notch } from "./frame"
 import { ContextualToolbar } from "./contextual-toolbar"
+import { MiniNode } from "./breadcrumb-minimap"
 import styles from "./layout-builder.module.css"
 import type { Node } from "./types"
 import {
@@ -21,7 +23,7 @@ import {
   transformToCss,
 } from "./viewport"
 
-export function Breadcrumb() {
+export function Breadcrumb(props: { canvasAspect: Accessor<number> }) {
   const context = useContext(Context)!
 
   // Signal-driven collidable registration: ref just sets the signal, this
@@ -31,35 +33,38 @@ export function Breadcrumb() {
     return context.registerCollidable(el, "hud")
   })
 
+  // Each segment carries the highlight path from the layout root to the
+  // node-in-scope at that segment's depth. `depth` is the value
+  // `selection.depth` should take when this segment is tapped.
   const segments = createMemo(() => {
     const { path } = context.selection
-    const segs: Array<{ label: string; depth: number }> = []
+    const segs: Array<{ highlightPath: number[]; depth: number }> = []
 
-    segs.push({
-      label: context.app.layout.direction === "vertical" ? "col" : "row",
-      depth: path.length,
-    })
+    // Segment 0: root scope — empty highlight path means "this node (root)
+    // is highlighted." Visually the entire minimap is outlined.
+    segs.push({ highlightPath: [], depth: path.length })
 
     let current: Node = context.app.layout
     for (let i = 0; i < path.length; i++) {
       if (current.type !== "container") break
       current = current.children[path[i]]
       const depth = path.length - 1 - i
-      if (current.type === "container") {
-        segs.push({
-          label: current.direction === "vertical" ? "col" : "row",
-          depth,
-        })
-      } else {
-        segs.push({
-          label: String(path[i] + 1),
-          depth: 0,
-        })
-      }
+      segs.push({ highlightPath: path.slice(0, i + 1), depth })
     }
 
     return segs
   })
+
+  // Segment dimensions: fixed height, width = height * canvas aspect, capped.
+  const SEGMENT_HEIGHT = 36
+  const MAX_SEGMENT_WIDTH = 80
+  const segmentSize = () => {
+    const w = SEGMENT_HEIGHT * props.canvasAspect()
+    return {
+      height: `${SEGMENT_HEIGHT}px`,
+      width: `${Math.min(MAX_SEGMENT_WIDTH, w)}px`,
+    }
+  }
 
   return (
     <Notch
@@ -75,10 +80,14 @@ export function Breadcrumb() {
                 <span class={styles.separator}>&gt;</span>
               </Show>
               <button
-                class={seg().depth === context.selection.depth ? styles.active : ""}
+                class={[
+                  styles.minimapButton,
+                  seg().depth === context.selection.depth ? styles.active : "",
+                ].join(" ")}
+                style={{ height: segmentSize().height, width: segmentSize().width }}
                 onClick={() => context.setSelection(s => ({ ...s, depth: seg().depth }))}
               >
-                {seg().label}
+                <MiniNode node={context.app.layout} highlightPath={seg().highlightPath} />
               </button>
             </>
           )}
@@ -110,6 +119,11 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
   // sub-pixel floating-point drift between calls — without this, a recompute
   // post-animation would be flagged as "changed" and start a new animation.
   const eq = (a: number, b: number, eps = 0.5) => Math.abs(a - b) < eps
+  // Canvas aspect ratio (width / height) — driven by the canvas ResizeObserver
+  // and consumed by Breadcrumb to size minimap segments. Defaults to 1 until
+  // the first measurement; the breadcrumb briefly renders square segments and
+  // snaps once the observer fires.
+  const [canvasAspect, setCanvasAspect] = createSignal(1, { ownedWrite: true })
   const [viewport, setViewport] = createSignal<ViewportState>(INITIAL_VIEWPORT, {
     ownedWrite: true,
     equals: (a, b) =>
@@ -156,7 +170,12 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
     // (browsers won't interpolate between auto and a pixel value).
     const rect = canvasEl.getBoundingClientRect()
     setViewport(v => ({ ...v, baseW: rect.width, baseH: rect.height }))
-    return context.observeFrame(canvasEl, recomputeViewport)
+    setCanvasAspect(rect.height > 0 ? rect.width / rect.height : 1)
+    return context.observeFrame(canvasEl, () => {
+      const r = canvasEl.getBoundingClientRect()
+      if (r.height > 0) setCanvasAspect(r.width / r.height)
+      recomputeViewport()
+    })
   })
 
   // Selection changes drive viewport recomputes via this effect.
@@ -229,7 +248,7 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
         >
           {props.children}
         </div>
-        <Breadcrumb />
+        <Breadcrumb canvasAspect={canvasAspect} />
         <ContextualToolbar />
       </div>
     </div>
