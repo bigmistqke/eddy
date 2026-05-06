@@ -1,30 +1,5 @@
+import { HANDLE_BUFFER, HANDLE_H, HANDLE_W, SAME_AXIS_MIN, CROSS_PAIR_MIN } from "./ui-constants"
 import type { Selection } from "./types"
-
-// Handle dimensions in CSS pixels — derived from frame.module.css.
-// Top / bottom handles are HANDLE_W wide × HANDLE_H tall, centered on the
-// frame's top/bottom edge. Left / right handles are 90° rotated, so they
-// occupy HANDLE_H × HANDLE_W centered on the frame's left/right edge.
-const HANDLE_W = 100
-const HANDLE_H = 60
-
-// For all 4 handles to fit on a frame with no pairwise overlap:
-//
-//   • Top vs bottom (vertical pair):    frameH ≥ 2·HANDLE_H = 120
-//   • Left vs right (horizontal pair):  frameW ≥ 2·HANDLE_H = 120
-//   • Corner pairs (top vs left, etc.): frameW ≥ HANDLE_W + 2·HANDLE_H = 220
-//                                       OR frameH ≥ HANDLE_W + 2·HANDLE_H
-//
-// Derivation for the corner case: top handle's horizontal range is
-// [c − HANDLE_W/2, c + HANDLE_W/2]; the (rotated) left handle's horizontal
-// range is [0, HANDLE_H]. For non-overlap, c − HANDLE_W/2 ≥ HANDLE_H
-// → frameW ≥ HANDLE_W + 2·HANDLE_H.
-// Buffer added to both bounds so frames are slightly bigger than the strict
-// minimum — avoids floating-point drift flipping the same-frame rectsOverlap
-// check from "touch" (no overlap) to "0.0001px overlap" (collision) at the
-// boundary, which made handles inconsistently hidden.
-const HANDLE_BUFFER = 20
-const SAME_AXIS_MIN = 2 * HANDLE_H + HANDLE_BUFFER
-const CROSS_PAIR_MIN = HANDLE_W + 2 * HANDLE_H + HANDLE_BUFFER
 
 /**
  * `scale` is the *size multiplier* applied to the canvas by setting
