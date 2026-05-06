@@ -1,5 +1,4 @@
 import { createSignal, createStore, Show } from "solid-js"
-import styles from "./app.module.css"
 import { Context } from "./context"
 import { Main } from "./hud/main"
 import { LayoutBuilder } from "./layout-builder"
@@ -166,7 +165,7 @@ export function App() {
     >
       <div style={{ display: "flex", width: "100vw", height: "100%", position: "relative" }}>
         <Show when={app.view.type === "recording"}>
-          <div class={styles.recordingView}>
+          <div style={{ display: "flex", flex: 1, position: "relative" }}>
             <NodeComponent
               layout={app.layout}
               path={[]}

@@ -1,7 +1,7 @@
 import { omit } from "@solidjs/signals"
 import type { ComponentProps, JSX } from "solid-js"
 import { createMemo, For, Match, Switch, useContext } from "solid-js"
-import styles from "./app.module.css"
+import styles from "./node-component.module.css"
 import { Context } from "./context"
 import { Frame } from "./frame"
 import type { Container, Direction, Entity, HandleOp, HandleSpec } from "./types"
