@@ -119,53 +119,50 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
       eq(a.baseW, b.baseW) &&
       eq(a.baseH, b.baseH),
   })
-  const [resizeTick, setResizeTick] = createSignal(0)
+  // Imperative recompute: called from the selection-change effect, the
+  // canvas-resize observer, and the post-animation settle. Short-circuits
+  // while the canvas is mid-transition (ResizeObserver fires repeatedly as
+  // canvasInner's width/height interpolate, and any setViewport call here
+  // would retarget the CSS transition mid-flight).
+  function recomputeViewport() {
+    if (untrack(() => context.isAnimating())) return
+    if (!innerEl || !canvasEl) return
+    const rect = canvasEl.getBoundingClientRect()
+    const baseW = rect.width
+    const baseH = rect.height
+
+    const key = untrack(() => selectedPathKey(context.selection))
+    // Empty key = no selection (back button cleared it). Reset to identity.
+    if (key === "") {
+      setViewport({ ...IDENTITY_VIEWPORT, baseW, baseH })
+      return
+    }
+    const node = innerEl.querySelector<HTMLElement>(`[data-path="${key}"]`)
+    if (!node) return
+
+    // Always fit the new selection. The viewport signal's `equals` is
+    // epsilon-based — identity→identity is a no-op, sub-pixel drift from
+    // recomputing against settled geometry is also a no-op, but a real
+    // change (different selection, real resize) does propagate.
+    const prev = untrack(() => viewport())
+    const t = computeViewportTransform(node, innerEl, baseW, baseH, prev.scale)
+    setViewport({ ...t, baseW, baseH })
+  }
 
   onSettled(() => {
     if (!canvasEl) return
-    // Seed baseW/baseH immediately so the very first render has explicit
-    // pixel dimensions on canvasInner — required for width/height transitions
-    // to animate (browsers won't interpolate between auto and a pixel value).
+    // Seed baseW/baseH so the first render has explicit pixel dimensions
+    // on canvasInner — required for width/height transitions to animate
+    // (browsers won't interpolate between auto and a pixel value).
     const rect = canvasEl.getBoundingClientRect()
     setViewport(v => ({ ...v, baseW: rect.width, baseH: rect.height }))
-    return context.observeFrame(canvasEl, () => setResizeTick(t => t + 1))
+    return context.observeFrame(canvasEl, recomputeViewport)
   })
 
-  // Returns a tuple so the effect re-runs whenever either dep changes.
-  // (Solid 2.x's createEffect memoizes on the compute's return value, so
-  // returning a string would skip the effect when resizeTick changes but
-  // the selection key happens to be the same.)
+  // Selection changes drive viewport recomputes via this effect.
   createEffect(
-    () => [resizeTick(), selectedPathKey(context.selection)] as const,
-    ([, key]) => {
-      // Lockdown during animation: ResizeObserver fires multiple times as
-      // canvasInner's width/height transition, which would otherwise
-      // re-trigger setViewport with a moving target and stutter the CSS
-      // transition. Drop these intermediate updates entirely; after the
-      // animation timer fires we explicitly nudge resizeTick to force one
-      // clean recomputation against the settled geometry.
-      if (untrack(() => context.isAnimating())) return
-      if (!innerEl || !canvasEl) return
-      const rect = canvasEl.getBoundingClientRect()
-      const baseW = rect.width
-      const baseH = rect.height
-
-      // Empty key = no selection (back button cleared it). Reset to identity.
-      if (key === "") {
-        setViewport({ ...IDENTITY_VIEWPORT, baseW, baseH })
-        return
-      }
-      const node = innerEl.querySelector<HTMLElement>(`[data-path="${key}"]`)
-      if (!node) return
-
-      // Always fit the new selection. The viewport signal's `equals` short-
-      // circuits identity→identity (so tapping a normal frame at scale 1 is
-      // a no-op), but tapping a normal/large frame while zoomed correctly
-      // animates back out to fit it.
-      const prev = untrack(() => viewport())
-      const t = computeViewportTransform(node, innerEl, baseW, baseH, prev.scale)
-      setViewport({ ...t, baseW, baseH })
-    },
+    () => selectedPathKey(context.selection),
+    () => recomputeViewport(),
   )
 
   // Expose "is the canvas currently zoomed" so the contextual back button
@@ -194,11 +191,13 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
     if (animationTimer) clearTimeout(animationTimer)
     animationTimer = setTimeout(() => {
       context.setIsAnimating(false)
-      // No setResizeTick / no recompute. The geometry already matches the
-      // viewport we set on click; any recompute would only introduce
-      // floating-point drift and trigger a fresh animation. Just ask each
-      // frame to refresh its handle/HUD collision state once now that the
-      // canvas has settled at its target size.
+      // Recompute against settled geometry — picks up any window resize
+      // that happened during the animation. Epsilon equals on the viewport
+      // signal short-circuits the no-drift case so a stable result doesn't
+      // kick a new animation.
+      recomputeViewport()
+      // Ask each frame to refresh its handle/HUD collision state now that
+      // the canvas has settled.
       context.requestCollisionUpdate()
     }, 240) // 220ms transition + 20ms buffer
   })
