@@ -1,6 +1,6 @@
-import type { Container, Entity } from "./types"
+import type { Container, Entity, Node } from "./types"
 
-export function resolveNode(layout: Container, path: number[]): Entity | Container {
+export function resolveNode(layout: Node, path: number[]): Entity | Container {
   let current: Entity | Container = layout
   for (let index = 0; index < path.length; index++) {
     if (current.type !== "container") {

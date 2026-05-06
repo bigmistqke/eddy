@@ -11,7 +11,7 @@ import {
 } from "solid-js"
 import { Notch } from "../components/notch"
 import { Context } from "../context"
-import type { Container, Node } from "../types"
+import type { Node } from "../types"
 import { logAction } from "../utils"
 import styles from "./breadcrumb.module.css"
 
@@ -82,7 +82,7 @@ function drawNode(
   }
 }
 
-function Minimap(props: { layout: Container; highlightPath: number[]; aspect: number }) {
+function Minimap(props: { layout: Node; highlightPath: number[]; aspect: number }) {
   let canvasElement!: HTMLCanvasElement
   // Canvas display size is CSS-driven (width/height: 100%). When the
   // breadcrumb's scrollbar appears the button shrinks vertically and the

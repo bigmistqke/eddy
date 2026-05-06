@@ -39,21 +39,14 @@ const ZERO_BY_DIR: Record<Direction, number> = { top: 0, bottom: 0, left: 0, rig
  */
 export function createAppState(): AppContext {
   const [app, setApp] = createStore<AppState>({
-    layout: {
-      type: "container",
-      direction: "horizontal",
-      children: [createEntity()],
-    },
+    layout: createEntity(),
     tool: null,
     selection: null,
   })
 
   // HUD element refs — kept internal. Consumers register a ref via
   // setHudElement(kind) and read overlap rects via computeHudRects.
-  const hudSignals: Record<
-    HudKind,
-    ReturnType<typeof createSignal<HTMLElement | undefined>>
-  > = {
+  const hudSignals: Record<HudKind, ReturnType<typeof createSignal<HTMLElement | undefined>>> = {
     main: createSignal<HTMLElement | undefined>(),
     breadcrumb: createSignal<HTMLElement | undefined>(),
     contextual: createSignal<HTMLElement | undefined>(),
@@ -119,18 +112,26 @@ export function createAppState(): AppContext {
     const newEntity = createEntity()
 
     if (nodePath.length === 0) {
-      const inner: Container = {
+      // Root may be an Entity (initial state, or after future delete
+      // collapses the tree). Wrap it in a fresh container alongside the
+      // new entity. If it's already a container, clone it and replace
+      // root with [new, old] (or [old, new]) under the split direction.
+      const oldRoot = app.layout
+      const wrapped: Node =
+        oldRoot.type === "entity"
+          ? cloneNode(oldRoot)
+          : {
+              type: "container",
+              direction: oldRoot.direction,
+              children: oldRoot.children.map(cloneNode) as (Entity | Container)[],
+            }
+      const nextRoot: Container = {
         type: "container",
-        direction: app.layout.direction,
-        children: app.layout.children.map(cloneNode) as (Entity | Container)[],
+        direction: splitDirection,
+        children: newEntityFirst ? [newEntity, wrapped] : [wrapped, newEntity],
       }
       setApp(app => {
-        app.layout.direction = splitDirection
-        app.layout.children.splice(
-          0,
-          app.layout.children.length,
-          ...(newEntityFirst ? [newEntity, inner] : [inner, newEntity]),
-        )
+        app.layout = nextRoot
       })
       setApp(app => {
         app.selection = { path: [newEntityIndex], depth: 0 }
@@ -193,13 +194,19 @@ export function createAppState(): AppContext {
       splitNode(path, direction)
       return
     }
+    // Root is an Entity — there's no parent to append to, so the only
+    // valid append at path=[] is a wrap (delegate to splitNode).
+    if (path.length === 0 && app.layout.type === "entity") {
+      splitNode(path, direction)
+      return
+    }
     // operation === "append" — but if the requested direction is
     // perpendicular to the parent's flex axis, a sibling-insert is
     // meaningless. Wrap the entity instead (delegating to splitNode,
     // which already does this).
     const parentDirection: "horizontal" | "vertical" =
       path.length === 0
-        ? app.layout.direction
+        ? (app.layout as Container).direction
         : (resolveNode(app.layout, path.slice(0, -1)) as Container).direction
     const directionAxis = direction === "left" || direction === "right" ? "horizontal" : "vertical"
     if (directionAxis !== parentDirection) {
@@ -207,9 +214,9 @@ export function createAppState(): AppContext {
       return
     }
     if (path.length === 0) {
-      // Root: append a child to root itself.
+      // Root: append a child to root itself (root is a Container here).
       const insertAfter = direction === "right" || direction === "bottom"
-      appendToContainer([], insertAfter ? app.layout.children.length : 0)
+      appendToContainer([], insertAfter ? (app.layout as Container).children.length : 0)
       return
     }
     handleAppend(path, direction)

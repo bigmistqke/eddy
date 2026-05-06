@@ -13,7 +13,9 @@ export type Node = Container | Entity
  *  render and tapping a frame is a no-op. */
 export type Tool = "append" | "split" | null
 export type AppState = {
-  layout: Container
+  /** Root of the layout tree. Starts as a single Entity; becomes a
+   *  Container as soon as the user splits/appends. */
+  layout: Node
   tool: Tool
   /** `null` means no frame is selected — no handles render and the
    *  canvas sits at identity. Cleared by the contextual close button. */

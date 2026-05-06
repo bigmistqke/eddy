@@ -6,7 +6,7 @@ import {
   SAME_AXIS_MIN,
   SIBLING_GAP,
 } from "./constants"
-import type { Container, Direction, Node, Selection } from "./types"
+import type { Direction, Node, Selection } from "./types"
 
 /**
  * `scale` is the *size multiplier* applied to the canvas by setting
@@ -55,7 +55,7 @@ export function selectedPathKey(selection: Selection): string {
 const MAX_SCALE = 10000
 const MAX_FIT_ITER = 20
 function findHandleFitScale(
-  layout: Container,
+  layout: Node,
   path: number[],
   canvas: { width: number; height: number },
 ): number {
@@ -88,7 +88,7 @@ function findHandleFitScale(
 }
 
 export function computeViewportTransform(
-  layout: Container,
+  layout: Node,
   path: number[],
   canvas: { width: number; height: number },
   minScale = 1,
@@ -150,7 +150,7 @@ export type Rect = { x: number; y: number; width: number; height: number }
  * the target frame (empty path = root container).
  */
 export function frameRect(
-  layout: Container,
+  layout: Node,
   path: number[],
   canvas: { width: number; height: number },
 ): Rect {

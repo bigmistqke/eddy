@@ -1,9 +1,11 @@
-// Handle dimensions in CSS pixels — mirror frame.module.css notch geometry.
-// Top/bottom handles are HANDLE_W wide × HANDLE_H tall, centered on the
-// frame's top/bottom edge. Left/right handles are 90° rotated, so they
-// occupy HANDLE_H × HANDLE_W centered on the frame's left/right edge.
-export const HANDLE_W = 100
-export const HANDLE_H = 60
+// Handle dimensions in CSS pixels — mirror notch.module.css geometry
+// inside .canvasInner (where --hud-height is 48px and backdrop width is
+// 60px). Top/bottom handles are HANDLE_W wide × HANDLE_H tall, centered
+// on the frame's top/bottom edge. Left/right handles are 90° rotated,
+// so they occupy HANDLE_H × HANDLE_W centered on the frame's left/right
+// edge.
+export const HANDLE_W = 60
+export const HANDLE_H = 48
 
 // Buffer added to handle-fit minimums so frames are slightly bigger than
 // the strict minimum — avoids floating-point drift flipping rectsOverlap
@@ -24,5 +26,5 @@ export const CROSS_PAIR_MIN = HANDLE_W + 2 * HANDLE_H + HANDLE_BUFFER
 // .layoutContainerRoot/.layoutContainer rules in node-component.module.css.
 // Root container has padding on all sides plus gap between children.
 // Non-root containers have only gap.
-export const ROOT_PADDING = 4
-export const SIBLING_GAP = 4
+export const ROOT_PADDING = 2
+export const SIBLING_GAP = 2

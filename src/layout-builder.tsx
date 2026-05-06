@@ -10,7 +10,7 @@ import { Context } from "./context"
 import { Breadcrumb } from "./hud/breadcrumb"
 import { Contextual } from "./hud/contextual"
 import styles from "./layout-builder.module.css"
-import type { Container, Node, Selection } from "./types"
+import type { Node, Selection } from "./types"
 import {
   computeExtends,
   computeSticks,
@@ -25,7 +25,7 @@ import {
  *  in a createEffect compute makes the effect re-fire whenever any
  *  container's children list, any container's direction, or the selection
  *  path/depth changes. */
-function layoutSignature(layout: Container, selection: Selection | null): string {
+function layoutSignature(layout: Node, selection: Selection | null): string {
   function nodeSignature(node: Node): string {
     if (node.type === "entity") {
       return "e"
