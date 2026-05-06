@@ -46,11 +46,12 @@ function ArrowNotch(props: { ref?: (el: HTMLDivElement) => void; style?: JSX.CSS
   )
 }
 
-function EdgeButton(props: { ref?: (el: HTMLButtonElement) => void; class: string; onClick?(): void }) {
+function EdgeButton(props: { ref?: (el: HTMLButtonElement) => void; class: string; style?: JSX.CSSProperties; onClick?(): void }) {
   return (
     <button
       ref={props.ref}
       class={[styles["edge-button"], props.class]}
+      style={props.style}
       onClick={e => {
         e.stopPropagation()
         props.onClick?.()
@@ -94,6 +95,15 @@ export function Frame(
   // (Plain createStore doesn't expose ownedWrite, so extendByDir is a
   // signal of the whole record rather than a store.)
   const [extendByDir, setExtendByDir] = createSignal<Record<Direction, number>>(
+    { top: 0, bottom: 0, left: 0, right: 0 },
+    { ownedWrite: true },
+  )
+  // How far to push each handle inward along its primary axis to keep it
+  // inside the canvas viewport. Non-zero only when the frame extends past the
+  // viewport — typical when a frame's aspect is much more extreme than the
+  // viewport's, leaving one pair of handles off-screen post-zoom. Stuck handles
+  // sit flush against the viewport edge instead.
+  const [stickByDir, setStickByDir] = createSignal<Record<Direction, number>>(
     { top: 0, bottom: 0, left: 0, right: 0 },
     { ownedWrite: true },
   )
@@ -194,10 +204,29 @@ export function Frame(
     if (anyStillCollides) {
       setHandlesHidden(true)
       setExtendByDir(() => ({ top: 0, bottom: 0, left: 0, right: 0 }))
-    } else {
-      setHandlesHidden(false)
-      setExtendByDir(() => newExtends)
+      setStickByDir(() => ({ top: 0, bottom: 0, left: 0, right: 0 }))
+      return
     }
+
+    setHandlesHidden(false)
+    setExtendByDir(() => newExtends)
+
+    // Compute per-direction sticking against the canvas viewport. Uses the
+    // frame's bounding rect (stable across renders — applying --stick to the
+    // handle doesn't move the frame), so this converges in one pass.
+    const canvas = untrack(() => context.canvasEl())
+    if (!canvas) {
+      setStickByDir(() => ({ top: 0, bottom: 0, left: 0, right: 0 }))
+      return
+    }
+    const frameRect = frameRef.getBoundingClientRect()
+    const canvasRect = canvas.getBoundingClientRect()
+    setStickByDir(() => ({
+      top: Math.max(0, canvasRect.top - frameRect.top),
+      bottom: Math.max(0, frameRect.bottom - canvasRect.bottom),
+      left: Math.max(0, canvasRect.left - frameRect.left),
+      right: Math.max(0, frameRect.right - canvasRect.right),
+    }))
   }
 
   // Drive checkAllHandles via a createEffect that tracks every signal it
@@ -217,11 +246,22 @@ export function Frame(
       context.bottomBarEl(),
       context.breadcrumbEl(),
       context.contextualToolbarEl(),
+      context.canvasEl(),
       context.isAnimating(),
     ],
     () => checkAllHandles(),
   )
   onSettled(() => context.observeFrame(frameRef, checkAllHandles))
+
+  function handleStyle(dir: Direction): JSX.CSSProperties | undefined {
+    const e = extendByDir()[dir]
+    const s = stickByDir()[dir]
+    if (e === 0 && s === 0) return undefined
+    const out: Record<string, string> = {}
+    if (e > 0) out["--extend"] = `${e}px`
+    if (s > 0) out["--stick"] = `${s}px`
+    return out as JSX.CSSProperties
+  }
 
   return (
     <div
@@ -239,7 +279,7 @@ export function Frame(
               <ArrowNotch
                 ref={setTopEl}
                 class={styles.top}
-                style={extendByDir().top > 0 ? { "--extend": `${extendByDir().top}px` } : undefined}
+                style={handleStyle("top")}
                 onClick={() => props.onAddFrame("top")}
               />
             }
@@ -247,6 +287,7 @@ export function Frame(
             <EdgeButton
               ref={setTopEl}
               class={styles.top}
+              style={handleStyle("top")}
               onClick={() => props.onAddFrame("top")}
             />
           </Show>
@@ -258,7 +299,7 @@ export function Frame(
               <ArrowNotch
                 ref={setBottomEl}
                 class={styles.bottom}
-                style={extendByDir().bottom > 0 ? { "--extend": `${extendByDir().bottom}px` } : undefined}
+                style={handleStyle("bottom")}
                 onClick={() => props.onAddFrame("bottom")}
               />
             }
@@ -266,6 +307,7 @@ export function Frame(
             <EdgeButton
               ref={setBottomEl}
               class={styles.bottom}
+              style={handleStyle("bottom")}
               onClick={() => props.onAddFrame("bottom")}
             />
           </Show>
@@ -277,7 +319,7 @@ export function Frame(
               <ArrowNotch
                 ref={setLeftEl}
                 class={styles.left}
-                style={extendByDir().left > 0 ? { "--extend": `${extendByDir().left}px` } : undefined}
+                style={handleStyle("left")}
                 onClick={() => props.onAddFrame("left")}
               />
             }
@@ -285,6 +327,7 @@ export function Frame(
             <EdgeButton
               ref={setLeftEl}
               class={styles.left}
+              style={handleStyle("left")}
               onClick={() => props.onAddFrame("left")}
             />
           </Show>
@@ -296,7 +339,7 @@ export function Frame(
               <ArrowNotch
                 ref={setRightEl}
                 class={styles.right}
-                style={extendByDir().right > 0 ? { "--extend": `${extendByDir().right}px` } : undefined}
+                style={handleStyle("right")}
                 onClick={() => props.onAddFrame("right")}
               />
             }
@@ -304,6 +347,7 @@ export function Frame(
             <EdgeButton
               ref={setRightEl}
               class={styles.right}
+              style={handleStyle("right")}
               onClick={() => props.onAddFrame("right")}
             />
           </Show>

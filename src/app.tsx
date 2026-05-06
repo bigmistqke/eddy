@@ -45,6 +45,7 @@ export function App() {
   const [bottomBarEl, setBottomBarEl] = createSignal<HTMLElement | undefined>()
   const [breadcrumbEl, setBreadcrumbEl] = createSignal<HTMLElement | undefined>()
   const [contextualToolbarEl, setContextualToolbarEl] = createSignal<HTMLElement | undefined>()
+  const [canvasEl, setCanvasEl] = createSignal<HTMLElement | undefined>()
   const [isCanvasZoomed, setIsCanvasZoomed] = createSignal(false)
   const [isAnimating, setIsAnimating] = createSignal(false, { ownedWrite: true })
 
@@ -218,6 +219,8 @@ export function App() {
         setBreadcrumbEl,
         contextualToolbarEl,
         setContextualToolbarEl,
+        canvasEl,
+        setCanvasEl,
         observeFrame,
         registerCollidable,
         findCollisions,

@@ -11,18 +11,18 @@
 
   &.bottom {
     left: 50%;
-    bottom: var(--frame-padding, 0px);
+    bottom: calc(var(--frame-padding, 0px) + var(--stick, 0px));
   }
 
   &.top {
     left: 50%;
-    top: var(--frame-padding, 0px);
+    top: calc(var(--frame-padding, 0px) + var(--stick, 0px));
     rotate: 180deg;
     transform-origin: center center;
   }
 
   &.left {
-    left: var(--frame-padding, 0px);
+    left: calc(var(--frame-padding, 0px) + var(--stick, 0px));
     top: 50%;
     rotate: 90deg;
     transform-origin: top;
@@ -30,7 +30,7 @@
   }
 
   &.right {
-    right: var(--frame-padding, 0px);
+    right: calc(var(--frame-padding, 0px) + var(--stick, 0px));
     top: 50%;
     rotate: -90deg;
     transform-origin: top;
@@ -97,22 +97,22 @@
   padding: 0;
 
   &.left {
-    left: calc(var(--padding) * -0.5);
+    left: calc(var(--padding) * -0.5 + var(--stick, 0px));
     top: 50%;
     translate: -50% -50%;
   }
   &.right {
-    right: calc(var(--padding) * -0.5);
+    right: calc(var(--padding) * -0.5 + var(--stick, 0px));
     top: 50%;
     translate: 50% -50%;
   }
   &.top {
-    top: calc(var(--padding) * -0.5);
+    top: calc(var(--padding) * -0.5 + var(--stick, 0px));
     left: 50%;
     translate: -50% -50%;
   }
   &.bottom {
-    bottom: calc(var(--padding) * -0.5);
+    bottom: calc(var(--padding) * -0.5 + var(--stick, 0px));
     left: 50%;
     translate: -50% 50%;
   }

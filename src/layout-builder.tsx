@@ -157,6 +157,7 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
 
   onSettled(() => {
     if (!canvasEl) return
+    context.setCanvasEl(canvasEl)
     // Seed baseW/baseH so the first render has explicit pixel dimensions
     // on canvasInner — required for width/height transitions to animate
     // (browsers won't interpolate between auto and a pixel value).

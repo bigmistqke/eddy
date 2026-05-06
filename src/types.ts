@@ -27,6 +27,11 @@ export type AppContext = {
   setBreadcrumbEl: (el: HTMLElement | undefined) => void
   contextualToolbarEl: Accessor<HTMLElement | undefined>
   setContextualToolbarEl: (el: HTMLElement | undefined) => void
+  /** The canvas viewport element (the visible scrollport — NOT the layout
+   *  inner that gets translated/scaled). Used by frames to compute "is my
+   *  handle off-screen?" sticking. */
+  canvasEl: Accessor<HTMLElement | undefined>
+  setCanvasEl: (el: HTMLElement | undefined) => void
   observeFrame: (el: HTMLElement, onResize: () => void) => () => void
   registerCollidable: (el: HTMLElement, kind: CollisionKind) => () => void
   findCollisions: (el: HTMLElement) => CollisionHit[]
