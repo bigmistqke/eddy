@@ -176,7 +176,14 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
     const canvasRect = canvasEl.getBoundingClientRect()
     const canvas = { w: canvasRect.width, h: canvasRect.height }
 
-    const sel = context.selection
+    // Read selection inside untrack — layoutPass is the createEffect
+    // callback (non-tracking by default in Solid 2.x), but the store-proxy
+    // reads still warn STRICT_READ_UNTRACKED. Re-firing is driven by the
+    // compute via layoutSignature, so untrack is correct here.
+    const sel = untrack(() => ({
+      path: context.selection.path.slice(),
+      depth: context.selection.depth,
+    }))
     // Cleared selection (back button) — reset everything.
     if (sel.path.length === 0) {
       setViewport({ ...IDENTITY_VIEWPORT, baseW: canvas.w, baseH: canvas.h })
@@ -189,7 +196,7 @@ export function LayoutBuilder(props: { children: ComponentProps<"div">["children
 
     const len = sel.path.length - sel.depth
     const selectedPath = sel.path.slice(0, Math.max(0, len))
-    const baseRect = frameRect(context.app.layout, selectedPath, canvas)
+    const baseRect = untrack(() => frameRect(context.app.layout, selectedPath, canvas))
 
     const hudInsets = computeHudInsets(canvasRect)
     const transform = computeViewportTransform(baseRect, canvas, 1, hudInsets)
