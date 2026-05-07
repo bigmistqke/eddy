@@ -89,12 +89,14 @@ function findFitInsideScale(
     if (Math.abs(factor - 1) < 0.001) {
       return scale
     }
-    scale *= factor
-    if (scale >= MAX_SCALE) {
-      return MAX_SCALE
-    }
+    // Clamp at MAX_SCALE but DON'T early-return — at very deep nesting
+    // the first growth iteration can overshoot far past MAX_SCALE, after
+    // which subsequent iterations shrink back toward target. Returning
+    // here would freeze us at MAX_SCALE before convergence. The
+    // MAX_FIT_ITER cap is what prevents real runaway.
+    scale = Math.min(scale * factor, MAX_SCALE)
   }
-  return Math.min(scale, MAX_SCALE)
+  return scale
 }
 
 function findClampOverflowScale(
@@ -130,12 +132,14 @@ function findClampOverflowScale(
     if (Math.abs(factor - 1) < 0.001) {
       return scale
     }
-    scale *= factor
-    if (scale >= MAX_SCALE) {
-      return MAX_SCALE
-    }
+    // Clamp at MAX_SCALE but DON'T early-return — at very deep nesting
+    // the first growth iteration can overshoot far past MAX_SCALE, after
+    // which subsequent iterations shrink back toward target. Returning
+    // here would freeze us at MAX_SCALE before convergence. The
+    // MAX_FIT_ITER cap is what prevents real runaway.
+    scale = Math.min(scale * factor, MAX_SCALE)
   }
-  return Math.min(scale, MAX_SCALE)
+  return scale
 }
 
 /** Minimum dimension required for both same-axis and cross-pair handle

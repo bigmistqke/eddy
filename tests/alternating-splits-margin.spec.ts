@@ -31,6 +31,39 @@ test("alternating right/top splits: frame fits target with FRAME_PADDING margin"
 })
 
 /**
+ * 13 cascading top splits — frame is full-canvas wide × extremely thin
+ * (height divided by 2^13). Stress test for the iterative scale solver
+ * at very high scale where flex-math non-linearity is most pronounced.
+ */
+test("very-deep top-split chain: frame still respects margin", async ({ page }) => {
+  await page.goto("/")
+  const actions: Action[] = [
+    { type: "set-tool", tool: "split" },
+    { type: "tap-frame", path: [] },
+    { type: "add-frame", path: [], direction: "top", op: "split" },
+    { type: "add-frame", path: [0], direction: "top", op: "split" },
+    { type: "add-frame", path: [0, 0], direction: "top", op: "split" },
+    { type: "add-frame", path: [0, 0, 0], direction: "top", op: "split" },
+    { type: "add-frame", path: [0, 0, 0, 0], direction: "top", op: "split" },
+    { type: "add-frame", path: [0, 0, 0, 0, 0], direction: "top", op: "split" },
+    { type: "add-frame", path: [0, 0, 0, 0, 0, 0], direction: "top", op: "split" },
+    { type: "add-frame", path: [0, 0, 0, 0, 0, 0, 0], direction: "top", op: "split" },
+    { type: "add-frame", path: [0, 0, 0, 0, 0, 0, 0, 0], direction: "top", op: "split" },
+    { type: "add-frame", path: [0, 0, 0, 0, 0, 0, 0, 0, 0], direction: "top", op: "split" },
+    { type: "add-frame", path: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0], direction: "top", op: "split" },
+    { type: "add-frame", path: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], direction: "top", op: "split" },
+    {
+      type: "add-frame",
+      path: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      direction: "top",
+      op: "split",
+    },
+  ]
+  await runActions(page, actions)
+  await expectFrameRespectsMargin(page, "clamp-overflow")
+})
+
+/**
  * Six cascading top splits — frame is full canvas wide × very thin,
  * extreme aspect ratio. Expect Rule 3 (clamp-overflow): height fills
  * target, width overflows the canvas.
