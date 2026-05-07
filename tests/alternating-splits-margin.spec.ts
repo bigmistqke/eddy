@@ -1,5 +1,5 @@
 import { test } from "@playwright/test"
-import { expectFrameRespectsMargin, runActions } from "./helpers"
+import { type Action, expectFrameRespectsMargin, runActions } from "./helpers"
 
 /**
  * 11 alternating right/top splits — each split halves one dimension,
@@ -10,25 +10,43 @@ test("alternating right/top splits: frame fits target with FRAME_PADDING margin"
   page,
 }) => {
   await page.goto("/")
-  await runActions(
-    page,
-    `
-    [action] {"type":"set-tool","tool":"split"}
-    [action] {"type":"tap-frame","path":[]}
-    [action] {"type":"add-frame","path":[],"direction":"right","op":"split"}
-    [action] {"type":"add-frame","path":[1],"direction":"top","op":"split"}
-    [action] {"type":"add-frame","path":[1,0],"direction":"right","op":"split"}
-    [action] {"type":"add-frame","path":[1,0,1],"direction":"top","op":"split"}
-    [action] {"type":"add-frame","path":[1,0,1,0],"direction":"right","op":"split"}
-    [action] {"type":"add-frame","path":[1,0,1,0,1],"direction":"top","op":"split"}
-    [action] {"type":"add-frame","path":[1,0,1,0,1,0],"direction":"right","op":"split"}
-    [action] {"type":"add-frame","path":[1,0,1,0,1,0,1],"direction":"top","op":"split"}
-    [action] {"type":"add-frame","path":[1,0,1,0,1,0,1,0],"direction":"right","op":"split"}
-    [action] {"type":"add-frame","path":[1,0,1,0,1,0,1,0,1],"direction":"top","op":"split"}
-    [action] {"type":"add-frame","path":[1,0,1,0,1,0,1,0,1,0],"direction":"right","op":"split"}
-    [action] {"type":"add-frame","path":[1,0,1,0,1,0,1,0,1,0,1],"direction":"top","op":"split"}
-    `,
-  )
-
+  const actions: Action[] = [
+    { type: "set-tool", tool: "split" },
+    { type: "tap-frame", path: [] },
+    { type: "add-frame", path: [], direction: "right", op: "split" },
+    { type: "add-frame", path: [1], direction: "top", op: "split" },
+    { type: "add-frame", path: [1, 0], direction: "right", op: "split" },
+    { type: "add-frame", path: [1, 0, 1], direction: "top", op: "split" },
+    { type: "add-frame", path: [1, 0, 1, 0], direction: "right", op: "split" },
+    { type: "add-frame", path: [1, 0, 1, 0, 1], direction: "top", op: "split" },
+    { type: "add-frame", path: [1, 0, 1, 0, 1, 0], direction: "right", op: "split" },
+    { type: "add-frame", path: [1, 0, 1, 0, 1, 0, 1], direction: "top", op: "split" },
+    { type: "add-frame", path: [1, 0, 1, 0, 1, 0, 1, 0], direction: "right", op: "split" },
+    { type: "add-frame", path: [1, 0, 1, 0, 1, 0, 1, 0, 1], direction: "top", op: "split" },
+    { type: "add-frame", path: [1, 0, 1, 0, 1, 0, 1, 0, 1, 0], direction: "right", op: "split" },
+    { type: "add-frame", path: [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1], direction: "top", op: "split" },
+  ]
+  await runActions(page, actions)
   await expectFrameRespectsMargin(page, "fit-inside")
+})
+
+/**
+ * Six cascading top splits — frame is full canvas wide × very thin,
+ * extreme aspect ratio. Expect Rule 3 (clamp-overflow): height fills
+ * target, width overflows the canvas.
+ */
+test("deep top-split chain: frame respects margin (clamp-overflow)", async ({ page }) => {
+  await page.goto("/")
+  const actions: Action[] = [
+    { type: "set-tool", tool: "split" },
+    { type: "tap-frame", path: [] },
+    { type: "add-frame", path: [], direction: "top", op: "split" },
+    { type: "add-frame", path: [0], direction: "top", op: "split" },
+    { type: "add-frame", path: [0, 0], direction: "top", op: "split" },
+    { type: "add-frame", path: [0, 0, 0], direction: "top", op: "split" },
+    { type: "add-frame", path: [0, 0, 0, 0], direction: "top", op: "split" },
+    { type: "add-frame", path: [0, 0, 0, 0, 0], direction: "top", op: "split" },
+  ]
+  await runActions(page, actions)
+  await expectFrameRespectsMargin(page, "clamp-overflow")
 })

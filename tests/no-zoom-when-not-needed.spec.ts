@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test"
-import { runActions } from "./helpers"
+import { type Action, runActions } from "./helpers"
 
 /**
  * Single split-right from the root entity. The selected frame [1] is
@@ -10,14 +10,12 @@ import { runActions } from "./helpers"
 test("single split-right does not trigger zoom", async ({ page }) => {
   await page.goto("/")
 
-  await runActions(
-    page,
-    `
-    [action] {"type":"set-tool","tool":"split"}
-    [action] {"type":"tap-frame","path":[]}
-    [action] {"type":"add-frame","path":[],"direction":"right","op":"split"}
-    `,
-  )
+  const actions: Action[] = [
+    { type: "set-tool", tool: "split" },
+    { type: "tap-frame", path: [] },
+    { type: "add-frame", path: [], direction: "right", op: "split" },
+  ]
+  await runActions(page, actions)
 
   const viewport = await page.evaluate(() => {
     const inner = document.querySelector<HTMLElement>("[data-canvas-inner='true']")

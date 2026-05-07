@@ -277,6 +277,97 @@ export async function expectFrameRespectsMargin(
   return { rule: detected, ...result }
 }
 
+/** Assert that the four selected-frame handles don't overlap each
+ *  other and don't sit entirely behind any HUD. The "tip past HUD"
+ *  check uses the canvas-center-facing edge of each handle: if a HUD
+ *  overlaps the handle, the handle's inward edge must be past the
+ *  HUD's frame-side edge (so a clickable strip is visible). */
+export async function expectHandlesDontOverlap(page: Page) {
+  const dump = await page.evaluate(() => {
+    const rect = (element: Element | null | undefined) => {
+      if (!element) {
+        return null
+      }
+      const r = element.getBoundingClientRect()
+      return { x: r.left, y: r.top, w: r.width, h: r.height }
+    }
+    const handles: Record<string, { x: number; y: number; w: number; h: number } | null> = {}
+    for (const direction of ["top", "bottom", "left", "right"]) {
+      const wrapper = document.querySelector(`[data-direction='${direction}']`)
+      handles[direction] = rect(wrapper?.firstElementChild)
+    }
+    const huds: Record<string, { x: number; y: number; w: number; h: number } | null> = {
+      mainBottom: rect(
+        document.querySelector("[data-action='set-tool-append']")?.closest("[class*='_notch_']"),
+      ),
+      contextualRight: rect(
+        document.querySelector("[data-action='deselect']")?.closest("[class*='_notch_']"),
+      ),
+      breadcrumbTop: rect(document.querySelector("[class*='hudTop']")),
+    }
+    return { handles, huds }
+  })
+
+  for (const [direction, r] of Object.entries(dump.handles)) {
+    if (!r) {
+      throw new Error(`expectHandlesDontOverlap: ${direction} handle missing`)
+    }
+    if (r.w <= 0 || r.h <= 0) {
+      throw new Error(`expectHandlesDontOverlap: ${direction} handle has zero area`)
+    }
+  }
+
+  type Rect = { x: number; y: number; w: number; h: number }
+  const overlaps = (a: Rect, b: Rect) =>
+    a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h
+
+  const handleList = Object.entries(dump.handles).map(([direction, r]) => ({
+    direction,
+    rect: r as Rect,
+  }))
+  for (let i = 0; i < handleList.length; i++) {
+    for (let j = i + 1; j < handleList.length; j++) {
+      const a = handleList[i]
+      const b = handleList[j]
+      if (overlaps(a.rect, b.rect)) {
+        throw new Error(
+          `expectHandlesDontOverlap: ${a.direction} overlaps ${b.direction}: ${JSON.stringify({ a: a.rect, b: b.rect })}`,
+        )
+      }
+    }
+  }
+
+  function tipPastHud(handleRect: Rect, hudRect: Rect, direction: string): boolean {
+    switch (direction) {
+      case "top":
+        return handleRect.y + handleRect.h > hudRect.y + hudRect.h
+      case "bottom":
+        return handleRect.y < hudRect.y
+      case "left":
+        return handleRect.x + handleRect.w > hudRect.x + hudRect.w
+      case "right":
+        return handleRect.x < hudRect.x
+      default:
+        return true
+    }
+  }
+  for (const [hudName, hudRect] of Object.entries(dump.huds)) {
+    if (!hudRect) {
+      continue
+    }
+    for (const handle of handleList) {
+      if (!overlaps(handle.rect, hudRect)) {
+        continue
+      }
+      if (!tipPastHud(handle.rect, hudRect, handle.direction)) {
+        throw new Error(
+          `expectHandlesDontOverlap: ${handle.direction} handle is entirely behind ${hudName} HUD: ${JSON.stringify({ handle: handle.rect, hud: hudRect })}`,
+        )
+      }
+    }
+  }
+}
+
 /** Drain console logs emitted via [action] tags into an in-memory list.
  *  Returns a function that gives you the current list. */
 export function captureActionLog(page: Page) {

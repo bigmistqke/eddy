@@ -123,7 +123,11 @@ function findClampOverflowScale(
     const widthFactor = targetWidth / rect.width
     const heightFactor = targetHeight / rect.height
     const factor = Math.max(widthFactor, heightFactor)
-    if (factor <= 1.001) {
+    // Same overshoot fix as findFitInsideScale: flex-math non-linearity
+    // at high scale can leave both axes past target — factor < 1 here
+    // means we should shrink back so the smaller-by-ratio axis lands
+    // exactly on target.
+    if (Math.abs(factor - 1) < 0.001) {
       return scale
     }
     scale *= factor
@@ -134,6 +138,12 @@ function findClampOverflowScale(
   return Math.min(scale, MAX_SCALE)
 }
 
+/** Minimum dimension required for both same-axis and cross-pair handle
+ *  pairs to fit non-overlapping on a single axis. Cross-pair geometry
+ *  (a top handle's HANDLE_W center span vs a rotated left/right
+ *  handle's HANDLE_H span) is the binding constraint. */
+const MIN_HANDLE_DIM = HANDLE_W + 2 * HANDLE_H
+
 function findFitScale(
   layout: Node,
   path: number[],
@@ -141,7 +151,19 @@ function findFitScale(
 ): number {
   const inside = findFitInsideScale(layout, path, canvas)
   if (inside > 1.001) {
-    return inside
+    // Rule 2 zoom is fine ONLY if both axes still have room for the
+    // four handles to lay out non-overlapping. With extreme aspect
+    // ratios, fit-inside lands the non-binding axis below MIN_HANDLE_DIM
+    // — left and right handles end up centered on top of each other.
+    // In that case fall through to clamp-overflow (Rule 3) which makes
+    // the smaller-by-ratio axis fill target and lets the other overflow.
+    const rect = frameRect(layout, path, {
+      width: canvas.width * inside,
+      height: canvas.height * inside,
+    })
+    if (Math.min(rect.width, rect.height) >= MIN_HANDLE_DIM) {
+      return inside
+    }
   }
   return findClampOverflowScale(layout, path, canvas)
 }
