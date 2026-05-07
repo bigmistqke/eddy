@@ -115,14 +115,15 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       return
     }
 
-    // Snap each leaf's left/right/top/bottom to device-pixel boundaries
-    // (CSS px / dpr) so the GL fragment shader fills the same physical
-    // pixel columns the DOM handle overlay is snapped to. Without this,
-    // float positions land at sub-device-pixel offsets and the GL edge
-    // gets anti-aliased while the CSS handle (snapped) sits at a hard
-    // boundary — visible as a half-pixel seam between handle and frame.
-    const dpr = window.devicePixelRatio || 1
-    const snap = (value: number) => Math.round(value * dpr) / dpr
+    // Snap each leaf's left/right/top/bottom to whole CSS pixels (which
+    // map to even device-pixel boundaries on HiDPI). The GL polygon
+    // edge lands exactly between two fragment-center samples, so
+    // rasterization fills a deterministic fragment column that matches
+    // what the (also-integer-snapped) CSS handle overlay covers.
+    // Snapping to half-CSS-pixels was tried first and put the polygon
+    // edge ON a fragment center, leaving the column unfilled — visible
+    // as a 1-device-px seam between handle and frame.
+    const snap = Math.round
     ensureBufferSize(leaves.length)
     for (let index = 0; index < leaves.length; index++) {
       const leaf = leaves[index]
@@ -147,10 +148,9 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     attributes.i_size.set(sizeBuffer.subarray(0, leaves.length * 2)).bind()
     attributes.i_color.set(colorBuffer.subarray(0, leaves.length * 3)).bind()
 
-    // u_canvasSize in CSS pixels (matches leaf rects). The backing
-    // buffer is DPR-scaled separately via gl.viewport.
-    // Translate is also snapped to a device-pixel boundary so the sum
-    // (i_position + u_view.xy) stays on the grid.
+    // u_canvasSize in CSS pixels (matches leaf rects). Translate is
+    // also snapped to whole CSS pixels so the sum (i_position +
+    // u_view.xy) stays on the integer grid.
     uniforms.u_canvasSize.set(cssWidth, cssHeight)
     uniforms.u_view.set(snap(viewport.x), snap(viewport.y), viewport.scale)
 
