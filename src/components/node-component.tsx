@@ -5,6 +5,7 @@ import {
   Match,
   merge,
   type ParentProps,
+  Show,
   Switch,
   useContext,
 } from "solid-js"
@@ -59,15 +60,17 @@ function Frame(
       class={[props.class, styles.frame]}
       data-path={props["data-path"]}
     >
-      <For each={props.handles}>
-        {handle => (
-          <ArrowNotch
-            direction={handle().dir}
-            style={handleStyle(handle().dir)}
-            onClick={() => props.onAddFrame(handle().dir, handle().op)}
-          />
-        )}
-      </For>
+      <Show when={!context.isAnimating()}>
+        <For each={props.handles}>
+          {handle => (
+            <ArrowNotch
+              direction={handle().dir}
+              style={handleStyle(handle().dir)}
+              onClick={() => props.onAddFrame(handle().dir, handle().op)}
+            />
+          )}
+        </For>
+      </Show>
       {props.children}
     </div>
   )
