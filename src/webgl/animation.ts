@@ -1,4 +1,4 @@
-type ViewportState = { x: number; y: number; scale: number }
+import type { ViewportState } from "./renderer"
 
 const ANIMATION_MS = 220
 
