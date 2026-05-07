@@ -36,13 +36,23 @@ export async function clickHandle(
   page: Page,
   framePath: number[],
   dir: "top" | "bottom" | "left" | "right",
+  options?: { force?: boolean },
 ) {
   const key = framePath.join(".")
   const notch = page
     .locator(`[data-path="${key}"] [data-direction="${dir}"]`)
     .last()
   // The first child of the notch wrapper is .notch-backdrop, which has an
-  // explicit width/height and is the actual click target.
+  // explicit width/height. The actual onClick handlers, however, live on
+  // .notchBackdrop's children (.edge/.center/.root) — the notch wrapper
+  // itself stopPropagation()s — so dispatchEvent must target a
+  // .notchBackdrop child to fire the handler. Native click works against
+  // .notchBackdrop because Playwright clicks at coordinates that resolve
+  // to the deepest element under the cursor.
+  if (options?.force) {
+    await notch.locator("> div > div").first().dispatchEvent("click")
+    return
+  }
   await notch.locator("> div").first().click()
 }
 
@@ -94,6 +104,80 @@ export async function readViewport(page: Page) {
       height: parseFloat(inner.style.height) || 0,
     }
   })
+}
+
+type Direction = "top" | "bottom" | "left" | "right"
+type HandleOp = "split" | "append"
+
+/** A logged user action — mirrors the JSON payloads emitted via logAction()
+ *  in src/utils.ts. The types here cover what the test harness needs to
+ *  replay; extend as new action kinds appear in the app. */
+export type Action =
+  | { type: "set-tool"; tool: "split" | "append" | null }
+  | { type: "tap-frame"; path: number[] }
+  | { type: "add-frame"; path: number[]; direction: Direction; op: HandleOp }
+  | { type: "deselect" }
+  | { type: "delete" }
+  | { type: "tap-breadcrumb"; depth: number; segmentIndex: number }
+
+/** Parse the `[action] {...}` lines that get printed to the browser console
+ *  by logAction(). Useful when the user pastes a console log directly into
+ *  a test — `runActions(page, raw)` will accept either a string or an
+ *  Action[] and parse on the way in. */
+export function parseActionLog(raw: string): Action[] {
+  const actions: Action[] = []
+  for (const line of raw.split("\n")) {
+    const match = line.match(/\[action\]\s*(\{.*\})\s*$/)
+    if (!match) {
+      continue
+    }
+    actions.push(JSON.parse(match[1]) as Action)
+  }
+  return actions
+}
+
+/** Replay a sequence of actions against the page using the same helpers
+ *  individual tests use. Waits `delayMs` after each step (default 300ms,
+ *  matching the app's animation+settle window). String input is parsed
+ *  via parseActionLog so a raw console log can be replayed verbatim. */
+export async function runActions(
+  page: Page,
+  actions: Action[] | string,
+  options: { delayMs?: number } = {},
+) {
+  const delayMs = options.delayMs ?? 300
+  const list = typeof actions === "string" ? parseActionLog(actions) : actions
+  for (const action of list) {
+    switch (action.type) {
+      case "set-tool":
+        if (action.tool === null) {
+          // Toggling the active tool sets it to null; the test author is
+          // responsible for knowing which tool is currently active.
+          throw new Error("set-tool with null is ambiguous; toggle the active tool explicitly")
+        }
+        await activateTool(page, action.tool)
+        break
+      case "tap-frame":
+        // Force-dispatch — replayed sequences shouldn't fail because a
+        // HUD or off-viewport position blocks hit-testing; the action log
+        // already proves the click happened in the user's session.
+        await clickFrame(page, action.path, { force: true })
+        break
+      case "add-frame":
+        await clickHandle(page, action.path, action.direction, { force: true })
+        break
+      case "deselect":
+        await clickAction(page, "deselect")
+        break
+      case "delete":
+        await clickAction(page, "delete")
+        break
+      case "tap-breadcrumb":
+        await clickBreadcrumb(page, action.segmentIndex)
+        break
+    }
+    await page.waitForTimeout(delayMs)
+  }
 }
 
 /** Drain console logs emitted via [action] tags into an in-memory list.

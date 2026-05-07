@@ -50,7 +50,9 @@ test("deep selected frame is centered after right/top action chain", async ({ pa
     [[1, 0, 1, 0, 2, 0, 1, 0, 1, 0], "right"],
   ]
   for (const [path, dir] of sequence) {
-    await clickHandle(page, path, dir)
+    // Force-dispatch — at deep zoom the breadcrumb's minimap canvas
+    // can sit above the handle and intercept native clicks.
+    await clickHandle(page, path, dir, { force: true })
     await page.waitForTimeout(280)
   }
 

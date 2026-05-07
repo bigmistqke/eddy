@@ -7,15 +7,19 @@ export default defineConfig({
   workers: 1,
   reporter: "list",
   use: {
-    baseURL: "http://localhost:5173",
+    baseURL: "http://localhost:5174",
     headless: true,
     viewport: { width: 1280, height: 800 },
     trace: "on-first-retry",
   },
   webServer: {
-    command: "pnpm run dev",
-    url: "http://localhost:5173",
-    reuseExistingServer: false,
+    // Dedicated test server on port 5174 so tests can run alongside a
+    // local `pnpm dev` (port 5173) without port conflicts. With
+    // reuseExistingServer, consecutive test runs reuse a still-running
+    // 5174 server instead of failing on port-in-use.
+    command: "pnpm run dev:test",
+    url: "http://localhost:5174",
+    reuseExistingServer: true,
     timeout: 30_000,
   },
 })

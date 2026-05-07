@@ -36,7 +36,7 @@ test("15-deep frame still has room for handles and is centered", async ({ page }
     [[1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0], "right"],
   ]
   for (const [path, dir] of sequence) {
-    await clickHandle(page, path, dir)
+    await clickHandle(page, path, dir, { force: true })
     await page.waitForTimeout(280)
   }
 
