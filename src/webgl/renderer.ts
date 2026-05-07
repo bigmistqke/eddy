@@ -6,12 +6,14 @@ export type ViewportState = { x: number; y: number; scale: number }
 
 /** Convert "rgb(r, g, b)" or "#rrggbb" to [0..1, 0..1, 0..1]. */
 function parseColor(input: string): [number, number, number] {
-  const rgbMatch = input.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/)
+  // CSS rgb() components can be floats (e.g. our random colors are
+  // `Math.random() * 100 + 150`) — match an optional decimal part.
+  const rgbMatch = input.match(/rgb\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)/)
   if (rgbMatch) {
     return [
-      parseInt(rgbMatch[1], 10) / 255,
-      parseInt(rgbMatch[2], 10) / 255,
-      parseInt(rgbMatch[3], 10) / 255,
+      parseFloat(rgbMatch[1]) / 255,
+      parseFloat(rgbMatch[2]) / 255,
+      parseFloat(rgbMatch[3]) / 255,
     ]
   }
   const hexMatch = input.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i)
