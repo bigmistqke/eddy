@@ -110,10 +110,8 @@ export function Canvas() {
         width: wrapperRect.width * viewport.scale,
         height: wrapperRect.height * viewport.scale,
       }
-      const { leaves, selectedRect } = layoutFrames(
-        context.app.layout,
-        scaledCanvas,
-        context.app.selection,
+      const { leaves, selectedRect } = untrack(() =>
+        layoutFrames(context.app.layout, scaledCanvas, context.app.selection),
       )
       lastLeaves = leaves
       lastSelectedRect = selectedRect
@@ -151,10 +149,13 @@ export function Canvas() {
     }
 
     function recomputeViewport(): ViewportState {
+      // Reads happen inside the effect's untracked callback (the
+      // creator already tracks via layoutSignature). Wrap store reads
+      // in untrack to silence STRICT_READ_UNTRACKED warnings.
       const t0 = performance.now()
       const wrapperRect = wrapperElement.getBoundingClientRect()
       const canvas = { width: wrapperRect.width, height: wrapperRect.height }
-      const selection = context.app.selection
+      const selection = untrack(() => context.app.selection)
       if (selection === null) {
         const identity: ViewportState = { x: 0, y: 0, scale: 1 }
         context.setViewport(identity)
@@ -164,20 +165,15 @@ export function Canvas() {
       const targetedDepth = selection.path.length - selection.depth
       const selectedPath = selection.path.slice(0, Math.max(0, targetedDepth))
       const hudRects = context.computeHudRects(wrapperRect)
+      const layout = untrack(() => context.app.layout)
       const tComputeStart = performance.now()
-      const transform = computeViewportTransform(
-        context.app.layout,
-        selectedPath,
-        canvas,
-        1,
-        hudRects,
-      )
+      const transform = computeViewportTransform(layout, selectedPath, canvas, 1, hudRects)
       const tComputeEnd = performance.now()
       // eslint-disable-next-line no-console
       console.log(
         `[recomputeViewport] depth=${selectedPath.length} compute=${(tComputeEnd - tComputeStart).toFixed(2)}ms total=${(tComputeEnd - t0).toFixed(2)}ms scale=${transform.scale.toFixed(2)}`,
       )
-      const realRect = frameRect(context.app.layout, selectedPath, {
+      const realRect = frameRect(layout, selectedPath, {
         width: canvas.width * transform.scale,
         height: canvas.height * transform.scale,
       })
