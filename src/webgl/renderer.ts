@@ -115,22 +115,21 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       return
     }
 
-    // Snap each leaf's left/right/top/bottom to whole CSS pixels (which
-    // map to even device-pixel boundaries on HiDPI). The GL polygon
-    // edge lands exactly between two fragment-center samples, so
-    // rasterization fills a deterministic fragment column that matches
-    // what the (also-integer-snapped) CSS handle overlay covers.
-    // Snapping to half-CSS-pixels was tried first and put the polygon
-    // edge ON a fragment center, leaving the column unfilled — visible
-    // as a 1-device-px seam between handle and frame.
+    // Snap each leaf's POST-TRANSLATE left/right/top/bottom to whole
+    // CSS pixels — i.e. snap the SUM `rect + viewport.translate`, not
+    // the parts separately. Snapping rect and translate independently
+    // can produce a 1px mismatch when both fractional parts round up.
+    // We bake the translate into i_position here and pass u_view.xy=0.
+    // CSS handle overlay does `Math.round(rect.x + viewport.x)` to
+    // match.
     const snap = Math.round
     ensureBufferSize(leaves.length)
     for (let index = 0; index < leaves.length; index++) {
       const leaf = leaves[index]
-      const left = snap(leaf.rect.x)
-      const top = snap(leaf.rect.y)
-      const right = snap(leaf.rect.x + leaf.rect.width)
-      const bottom = snap(leaf.rect.y + leaf.rect.height)
+      const left = snap(leaf.rect.x + viewport.x)
+      const top = snap(leaf.rect.y + viewport.y)
+      const right = snap(leaf.rect.x + leaf.rect.width + viewport.x)
+      const bottom = snap(leaf.rect.y + leaf.rect.height + viewport.y)
       positionBuffer[index * 2] = left
       positionBuffer[index * 2 + 1] = top
       sizeBuffer[index * 2] = right - left
@@ -148,11 +147,10 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     attributes.i_size.set(sizeBuffer.subarray(0, leaves.length * 2)).bind()
     attributes.i_color.set(colorBuffer.subarray(0, leaves.length * 3)).bind()
 
-    // u_canvasSize in CSS pixels (matches leaf rects). Translate is
-    // also snapped to whole CSS pixels so the sum (i_position +
-    // u_view.xy) stays on the integer grid.
+    // u_canvasSize in CSS pixels (matches snapped leaf rects). Translate
+    // is baked into i_position above.
     uniforms.u_canvasSize.set(cssWidth, cssHeight)
-    uniforms.u_view.set(snap(viewport.x), snap(viewport.y), viewport.scale)
+    uniforms.u_view.set(0, 0, viewport.scale)
 
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, leaves.length)
   }
