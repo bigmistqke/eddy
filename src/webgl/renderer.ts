@@ -115,13 +115,25 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
       return
     }
 
+    // Snap each leaf's left/right/top/bottom to device-pixel boundaries
+    // (CSS px / dpr) so the GL fragment shader fills the same physical
+    // pixel columns the DOM handle overlay is snapped to. Without this,
+    // float positions land at sub-device-pixel offsets and the GL edge
+    // gets anti-aliased while the CSS handle (snapped) sits at a hard
+    // boundary — visible as a half-pixel seam between handle and frame.
+    const dpr = window.devicePixelRatio || 1
+    const snap = (value: number) => Math.round(value * dpr) / dpr
     ensureBufferSize(leaves.length)
     for (let index = 0; index < leaves.length; index++) {
       const leaf = leaves[index]
-      positionBuffer[index * 2] = leaf.rect.x
-      positionBuffer[index * 2 + 1] = leaf.rect.y
-      sizeBuffer[index * 2] = leaf.rect.width
-      sizeBuffer[index * 2 + 1] = leaf.rect.height
+      const left = snap(leaf.rect.x)
+      const top = snap(leaf.rect.y)
+      const right = snap(leaf.rect.x + leaf.rect.width)
+      const bottom = snap(leaf.rect.y + leaf.rect.height)
+      positionBuffer[index * 2] = left
+      positionBuffer[index * 2 + 1] = top
+      sizeBuffer[index * 2] = right - left
+      sizeBuffer[index * 2 + 1] = bottom - top
       const [r, g, b] = parseColor(leaf.color)
       colorBuffer[index * 3] = r
       colorBuffer[index * 3 + 1] = g
@@ -135,12 +147,12 @@ export function createRenderer(canvas: HTMLCanvasElement): Renderer {
     attributes.i_size.set(sizeBuffer.subarray(0, leaves.length * 2)).bind()
     attributes.i_color.set(colorBuffer.subarray(0, leaves.length * 3)).bind()
 
-    // u_canvasSize is in CSS pixels (matches leaf rects). The backing
-    // buffer is DPR-scaled separately via gl.viewport — that takes care
-    // of HiDPI sharpness without changing the coordinate system the
-    // shader operates in.
+    // u_canvasSize in CSS pixels (matches leaf rects). The backing
+    // buffer is DPR-scaled separately via gl.viewport.
+    // Translate is also snapped to a device-pixel boundary so the sum
+    // (i_position + u_view.xy) stays on the grid.
     uniforms.u_canvasSize.set(cssWidth, cssHeight)
-    uniforms.u_view.set(viewport.x, viewport.y, viewport.scale)
+    uniforms.u_view.set(snap(viewport.x), snap(viewport.y), viewport.scale)
 
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, leaves.length)
   }
