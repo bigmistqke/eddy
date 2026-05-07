@@ -13,7 +13,7 @@ import type {
   Tool,
 } from "./types"
 import { resolveNode } from "./utils"
-import type { Rect } from "./viewport"
+import type { Rect, ViewportTransform } from "./viewport"
 
 function cloneNode(node: Node): Node {
   if (node.type === "entity") {
@@ -121,6 +121,10 @@ export function createAppState(): AppContext {
 
   const [isCanvasZoomed, setIsCanvasZoomed] = createSignal(false)
   const [isAnimating, setIsAnimating] = createSignal(false, { ownedWrite: true })
+  const [viewport, setViewport] = createSignal<ViewportTransform>(
+    { x: 0, y: 0, scale: 1 },
+    { ownedWrite: true },
+  )
   const [selectedHandlesState, setSelectedHandlesState] = createSignal<SelectedHandlesState>(
     { extend: ZERO_BY_DIR, stick: ZERO_BY_DIR },
     { ownedWrite: true },
@@ -300,5 +304,7 @@ export function createAppState(): AppContext {
     setTool,
     deleteSelection,
     handleAddFrame,
+    viewport,
+    setViewport,
   }
 }

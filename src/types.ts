@@ -1,5 +1,5 @@
 import type { Accessor } from "solid-js"
-import type { Rect } from "./viewport"
+import type { Rect, ViewportTransform } from "./viewport"
 
 export type Container = {
   type: "container"
@@ -60,6 +60,9 @@ export type AppContext = {
   setIsAnimating: (animating: boolean) => void
   selectedHandlesState: Accessor<SelectedHandlesState>
   setSelectedHandlesState: (state: SelectedHandlesState) => void
+
+  viewport: Accessor<ViewportTransform>
+  setViewport: (next: ViewportTransform) => void
 
   setTool: (tool: Tool) => void
   /** Remove the currently selected node. Containers with one child
