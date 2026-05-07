@@ -223,18 +223,16 @@ export function createAppState(): AppContext {
     // tail of `path`, so the actual target is path[..-depth].
     const targetedPath = selection.path.slice(0, selection.path.length - selection.depth)
 
-    // Decide the next selection from the *pre-mutation* tree. If the
-    // parent will still have ≥2 children after the removal it survives
-    // and we focus it; otherwise the parent collapses into its sibling
-    // and there's no parent left to select.
-    let nextSelection: Selection | null = null
-    if (targetedPath.length > 0) {
-      const parentPath = targetedPath.slice(0, -1)
-      const parent = resolveNode(app.layout, parentPath) as Container
-      if (parent.children.length >= 3) {
-        nextSelection = { path: parentPath, depth: 0 }
-      }
-    }
+    // Always select the parent's path after delete:
+    //   * Parent with ≥2 remaining children: parent stays a container,
+    //     parentPath still points to it.
+    //   * Parent collapses (had 2 children → 1 left): the surviving
+    //     sibling takes parentPath's slot, so parentPath now points to
+    //     that sibling. Either way selecting parentPath is correct.
+    //   * Root targetedPath ([]): root is replaced with a fresh entity;
+    //     selecting [] focuses the new entity.
+    const parentPath = targetedPath.slice(0, -1)
+    const nextSelection: Selection = { path: parentPath, depth: 0 }
 
     setApp(app => {
       const next = removeAt(app.layout, targetedPath)
