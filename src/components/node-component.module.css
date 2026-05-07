@@ -25,4 +25,10 @@
   position: relative;
   flex: 1;
   box-sizing: border-box;
+  /* Clip handles to the frame during animation. Without this they can
+   * overflow and stack visually outside the frame mid-zoom. After the
+   * animation settles, handles intentionally extend past the frame's
+   * edge via translate; that part stays clipped now too — acceptable
+   * trade-off for a smoother visual during the zoom transition. */
+  overflow: hidden;
 }

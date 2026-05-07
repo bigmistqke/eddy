@@ -180,6 +180,103 @@ export async function runActions(
   }
 }
 
+/** Assert the selected frame respects the zoom rules. Pass `mode` to
+ *  pick the rule:
+ *
+ *    - "fit-inside"    — Rule 2: frame fits inside the target box on
+ *                        BOTH axes; binding axis hits target exactly;
+ *                        the other axis is strictly smaller. Frame is
+ *                        centered in the canvas.
+ *    - "clamp-overflow"— Rule 3: one axis hits target, the other axis
+ *                        is LARGER than the canvas (extreme aspect
+ *                        ratio fallback). Frame is centered.
+ *    - "auto"          — accept either Rule 2 or Rule 3 outcome.
+ *
+ *  FRAME_PADDING and HUD-height assumptions match `src/constants.ts`
+ *  (FRAME_PADDING = 2 * HANDLE_H = 96 with the current values).
+ */
+export async function expectFrameRespectsMargin(
+  page: Page,
+  mode: "fit-inside" | "clamp-overflow" | "auto" = "auto",
+  options: { tolerance?: number; framePadding?: number } = {},
+) {
+  const tolerance = options.tolerance ?? 3
+  const framePadding = options.framePadding ?? 96
+
+  const result = await page.evaluate(() => {
+    // The selected frame is the only one rendering handles.
+    const handle = document.querySelector<HTMLElement>("[data-direction='bottom']")
+    const selected = handle?.closest<HTMLElement>("[data-path]")
+    const canvas = document.querySelector<HTMLElement>("[data-canvas='true']")
+    if (!selected || !canvas) {
+      return null
+    }
+    const s = selected.getBoundingClientRect()
+    const c = canvas.getBoundingClientRect()
+    return {
+      frame: { x: s.left - c.left, y: s.top - c.top, w: s.width, h: s.height },
+      canvas: { w: c.width, h: c.height },
+    }
+  })
+
+  if (!result) {
+    throw new Error(
+      "expectFrameRespectsMargin: no selected frame found (no [data-direction='bottom'] handle in DOM)",
+    )
+  }
+
+  const targetWidth = result.canvas.w - 2 * framePadding
+  const targetHeight = result.canvas.h - 2 * framePadding
+  const widthAtTarget = Math.abs(result.frame.w - targetWidth) < tolerance
+  const heightAtTarget = Math.abs(result.frame.h - targetHeight) < tolerance
+
+  if (!widthAtTarget && !heightAtTarget) {
+    throw new Error(
+      `expectFrameRespectsMargin: neither axis hit target. ${JSON.stringify(result)} ` +
+        `target=${targetWidth}x${targetHeight}`,
+    )
+  }
+
+  // Frame is centered in canvas.
+  const frameCx = result.frame.x + result.frame.w / 2
+  const frameCy = result.frame.y + result.frame.h / 2
+  const dx = Math.abs(frameCx - result.canvas.w / 2)
+  const dy = Math.abs(frameCy - result.canvas.h / 2)
+  if (dx >= tolerance || dy >= tolerance) {
+    throw new Error(
+      `expectFrameRespectsMargin: frame not centered. dx=${dx}, dy=${dy}, ${JSON.stringify(result)}`,
+    )
+  }
+
+  // Classify which rule applied: the non-binding axis is either
+  // smaller than target (fit-inside) or larger than canvas (overflow).
+  const nonBindingFitsInside = widthAtTarget
+    ? result.frame.h < targetHeight - tolerance
+    : result.frame.w < targetWidth - tolerance
+  const nonBindingOverflows = widthAtTarget
+    ? result.frame.h > result.canvas.h + tolerance
+    : result.frame.w > result.canvas.w + tolerance
+
+  const detected: "fit-inside" | "clamp-overflow" | "unknown" = nonBindingFitsInside
+    ? "fit-inside"
+    : nonBindingOverflows
+      ? "clamp-overflow"
+      : "unknown"
+
+  if (detected === "unknown") {
+    throw new Error(
+      `expectFrameRespectsMargin: non-binding axis is neither fit-inside nor overflow. ${JSON.stringify(result)}`,
+    )
+  }
+  if (mode !== "auto" && mode !== detected) {
+    throw new Error(
+      `expectFrameRespectsMargin: expected ${mode}, got ${detected}. ${JSON.stringify(result)}`,
+    )
+  }
+
+  return { rule: detected, ...result }
+}
+
 /** Drain console logs emitted via [action] tags into an in-memory list.
  *  Returns a function that gives you the current list. */
 export function captureActionLog(page: Page) {

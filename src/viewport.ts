@@ -82,7 +82,11 @@ function findFitInsideScale(
     const widthFactor = targetWidth / rect.width
     const heightFactor = targetHeight / rect.height
     const factor = Math.min(widthFactor, heightFactor)
-    if (factor <= 1.001) {
+    // Converged: binding axis is at target. Note this is `abs(factor-1)`,
+    // NOT `factor <= 1.001` — flex-math non-linearity can overshoot at
+    // high scale, putting both axes past target. We must shrink back
+    // down to land the binding axis exactly on target.
+    if (Math.abs(factor - 1) < 0.001) {
       return scale
     }
     scale *= factor
