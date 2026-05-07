@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@bigmistqke/view.gl':
+        specifier: 0.1.18
+        version: 0.1.18
       '@solidjs/signals':
         specifier: 2.0.0-beta.9
         version: 2.0.0-beta.9
@@ -113,6 +116,9 @@ packages:
   '@babel/types@7.29.0':
     resolution: {integrity: sha512-LwdZHpScM4Qz8Xw2iKSzS+cfglZzJGvofQICy7W7v4caru4EaAmyUuO6BGrbyQ2mYV11W0U8j5mBhd14dd3B0A==}
     engines: {node: '>=6.9.0'}
+
+  '@bigmistqke/view.gl@0.1.18':
+    resolution: {integrity: sha512-fkuKjN6qf49S6y/lo8lYaTCg4hhqw8QmnUJLkZDyVrusV8hJo9AOH3vEAuOhRPiNhiIdQGizTHSaYxD9Mixf9g==}
 
   '@esbuild/aix-ppc64@0.21.5':
     resolution: {integrity: sha512-1SDgH6ZSPTlggy1yI6+Dbkiz8xzpHJEVAlF/AM1tHPLsf5STom9rwtjE4hKAF20FfXXNTFqEYXyJNWh1GiZedQ==}
@@ -761,6 +767,8 @@ snapshots:
     dependencies:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
+
+  '@bigmistqke/view.gl@0.1.18': {}
 
   '@esbuild/aix-ppc64@0.21.5':
     optional: true
