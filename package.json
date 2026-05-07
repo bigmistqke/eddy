@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:test": "vite --port 5174 --strictPort",
+    "build": "vite build",
     "test": "playwright test",
     "typecheck": "tsc --noEmit"
   },
