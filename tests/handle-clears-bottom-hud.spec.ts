@@ -1,5 +1,10 @@
 import { test } from "@playwright/test"
-import { type Action, expectHandlesDontOverlap, runActions } from "./helpers"
+import {
+  type Action,
+  expectFrameRespectsMargin,
+  expectHandlesDontOverlap,
+  runActions,
+} from "./helpers"
 
 /**
  * Repro: split-right four times. The selected frame is so narrow at scale=1
@@ -19,12 +24,29 @@ test("deep right-split chain: handles don't overlap each other or HUDs", async (
   ]
   await runActions(page, actions)
   await expectHandlesDontOverlap(page)
+  await expectFrameRespectsMargin(page)
 })
 
 /**
- * Five alternating right/top splits followed by three deepening right
- * splits — selected frame ends up extremely narrow.
+ * 15 cascading top splits at the default viewport. Frame respects
+ * FRAME_PADDING — which guarantees all four handles sit inside the
+ * canvas viewport.
  */
+test("15-deep top-split chain: frame respects margin", async ({ page }) => {
+  await page.goto("/")
+  const path: number[] = []
+  const actions: Action[] = [
+    { type: "set-tool", tool: "split" },
+    { type: "tap-frame", path: [] },
+  ]
+  for (let i = 0; i < 15; i++) {
+    actions.push({ type: "add-frame", path: [...path], direction: "top", op: "split" })
+    path.push(0)
+  }
+  await runActions(page, actions)
+  await expectFrameRespectsMargin(page)
+})
+
 test("zigzag right/top splits + deep rights: no overlapping handles", async ({ page }) => {
   await page.goto("/")
   const actions: Action[] = [
@@ -41,4 +63,5 @@ test("zigzag right/top splits + deep rights: no overlapping handles", async ({ p
   ]
   await runActions(page, actions)
   await expectHandlesDontOverlap(page)
+  await expectFrameRespectsMargin(page)
 })
