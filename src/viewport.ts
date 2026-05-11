@@ -272,7 +272,8 @@ export function frameRect(
  *  full path to the leaf; `color` is its stable per-entity rgb.
  *  Returned by `layoutFrames` and consumed by both the WebGL renderer
  *  and the JS click hit-test. */
-export type LeafFrame = {
+export interface LeafFrame {
+  id: string
   path: number[]
   rect: Rect
   color: string
@@ -308,7 +309,7 @@ export function layoutFrames(
       selectedRect = rect
     }
     if (node.type === "entity") {
-      leaves.push({ path: path.slice(), rect, color: node.color })
+      leaves.push({ id: node.id, path: path.slice(), rect, color: node.color })
       return
     }
     const childCount = node.children.length

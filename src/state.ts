@@ -63,6 +63,7 @@ function removeAt(node: Node, path: number[]): Node | null {
 function createEntity(): Entity {
   return {
     type: "entity",
+    id: crypto.randomUUID(),
     color: `rgb(${Math.random() * 100 + 150}, ${Math.random() * 100 + 150}, ${Math.random() * 100 + 150})`,
   }
 }

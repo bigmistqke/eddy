@@ -6,7 +6,11 @@ export type Container = {
   direction: "horizontal" | "vertical"
   children: Array<Entity | Container>
 }
-export type Entity = { type: "entity"; color: string }
+export interface Entity {
+  type: "entity"
+  id: string
+  color: string
+}
 export type Node = Container | Entity
 
 /** Layout-editing tool. When `null`, frames are read-only — no handles
