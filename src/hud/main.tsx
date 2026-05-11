@@ -145,7 +145,12 @@ export function Main() {
         <Show
           when={captureHandle() !== null}
           fallback={
-            <button class={styles.button} data-action="record-start" onClick={onRecord}>
+            <button
+              class={styles.button}
+              data-action="record-start"
+              disabled={selectedCellId(context) === null}
+              onClick={onRecord}
+            >
               <RecordIcon />
             </button>
           }

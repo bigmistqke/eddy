@@ -82,7 +82,7 @@ export function createAppState(): AppContext {
   const [app, setApp] = createStore<AppState>({
     layout: createEntity(),
     tool: null,
-    // Start with the root entity selected AND preview armed so the
+    // Start with the root entity selected AND preview active so the
     // camera lands in that cell immediately on page load.
     selection: { path: [], depth: 0, preview: true },
   })
@@ -276,13 +276,12 @@ export function createAppState(): AppContext {
   function setTool(tool: Tool) {
     setApp(app => {
       app.tool = tool
-      // Toggling the tool off exits edit mode entirely — clear the
-      // selection so the viewport zooms back to identity. Switching
-      // between append and split keeps the selection intact.
-      if (tool === null) {
-        app.selection = null
-      }
     })
+    // Selection persists across tool changes. The viewport identity
+    // reset on tool→null is handled by recomputeViewport in canvas.tsx
+    // (which returns identity when tool === null). Keeping selection
+    // lets song-mode features (record, preview) inherit whatever cell
+    // the user was last focused on.
   }
 
   function handleAddFrame(path: number[], direction: Direction, operation: HandleOp) {
@@ -324,12 +323,14 @@ export function createAppState(): AppContext {
   const [songLength, setSongLength] = createSignal<number | null>(null)
 
   // The cell that the live camera preview should paint into — derived,
-  // not stored. Selection drives this: a previewing selection in song
-  // mode means the camera lands on that cell. Tool mode and the
-  // post-record state (selection.preview === false) both yield null.
+  // not stored. A previewing selection lands the camera on its cell in
+  // both song mode AND tool mode (splitting/appending is usually the
+  // setup for "I want to record into this newly-created cell"). The
+  // post-record state (selection.preview === false) yields null so
+  // the cell shows its clip's frame 0 instead.
   const previewTargetCellId = createMemo<string | null>(() => {
     const selection = app.selection
-    if (selection === null || !selection.preview || app.tool !== null) {
+    if (selection === null || !selection.preview) {
       return null
     }
     const targetedPath = selection.path.slice(0, selection.path.length - selection.depth)

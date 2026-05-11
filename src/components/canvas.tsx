@@ -110,15 +110,17 @@ export function Canvas() {
           selection.path.every((value, index) => value === leaf.path[index])
         if (sameAsSelected) {
           if (context.app.tool !== null) {
-            // Tool mode: tapping the selected cell is a no-op. Preview
-            // doesn't apply here.
+            // Tool mode: tapping the selected cell is a no-op. The
+            // selection drives handle visibility; deselecting on a
+            // same-cell tap would surprise users mid-layout-edit.
             return
           }
           if (selection.preview) {
-            // Camera was on → deselect entirely.
+            // Song mode + preview active → deselect entirely.
             context.setSelection(null)
           } else {
-            // Post-record state: re-arm preview without changing selection.
+            // Song mode + post-record state: re-activate preview without
+            // changing selection.
             context.setSelection({ ...selection, preview: true })
           }
           return

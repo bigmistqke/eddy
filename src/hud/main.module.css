@@ -44,4 +44,13 @@
     background: var(--color-active-back);
     color: var(--color-active-front);
   }
+
+  &[data-action="record-start"] {
+    color: var(--color-red);
+
+    &:disabled {
+      color: var(--color-front);
+      cursor: not-allowed;
+    }
+  }
 }

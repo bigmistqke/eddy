@@ -70,7 +70,7 @@ test("M3: subsequent recording is clamped to songLength", async ({ page }) => {
   const anchorLength = await page.evaluate(() => window.__appContext!.songLength()!)
   expect(anchorLength).toBeGreaterThan(0)
 
-  // Split, select cell 1, start recording — auto-stop should fire at songLength.
+  // Split, select cell 1, start recording — auto-stop should run at songLength.
   await page.evaluate(() => {
     const context = window.__appContext!
     context.setSelection({ path: [], depth: 0, preview: true })

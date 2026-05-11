@@ -4,7 +4,7 @@ import { clickFrame } from "./helpers"
 test("tap-toggle: cell click toggles selection in song mode", async ({ page }) => {
   await page.goto("/")
 
-  // App opens with root selected + preview armed (drives the camera).
+  // App opens with root selected + preview active (drives the camera).
   const initial = await page.evaluate(() => window.__appContext?.app.selection ?? null)
   expect(initial).not.toBeNull()
   expect(initial!.preview).toBe(true)
@@ -15,7 +15,7 @@ test("tap-toggle: cell click toggles selection in song mode", async ({ page }) =
   const afterFirstTap = await page.evaluate(() => window.__appContext?.app.selection ?? null)
   expect(afterFirstTap).toBeNull()
 
-  // Tap again → re-select with preview armed.
+  // Tap again → re-select with preview active.
   await clickFrame(page, [])
   await page.waitForTimeout(150)
   const afterSecondTap = await page.evaluate(() => window.__appContext?.app.selection ?? null)
