@@ -19,20 +19,15 @@ export function Main() {
 
   // Trigger camera acquisition reactively. `preview.stream` is a
   // function-form async signal — reading it kicks off `getUserMedia`.
-  // The createEffect compute reads it whenever a preview target exists,
-  // so the camera comes up the moment the user expects to see it. The
-  // try/catch swallows the NotReadyError that fires while gUM is in
-  // flight; `preview.isLoading()` is the truth for "still acquiring".
+  // The compute reads it directly (no try/catch) so the NotReadyError
+  // propagates: Solid suspends the effect until the stream resolves,
+  // then re-runs and the apply receives the MediaStream.
   createEffect(
     () => {
       if (context.previewTargetCellId() === null) {
         return null
       }
-      try {
-        return context.preview.stream()
-      } catch {
-        return null
-      }
+      return context.preview.stream()
     },
     () => {},
   )

@@ -493,7 +493,18 @@ export function Canvas() {
     >
       <canvas ref={canvasElement} class={styles.glCanvas} />
       <Show
-        when={context.previewTargetCellId() !== null && isPending(context.preview.stream)}
+        when={(() => {
+          if (context.previewTargetCellId() === null) {
+            return false
+          }
+          try {
+            context.preview.stream()
+            return false
+          } catch {
+            // NotReadyError → gUM is still in flight.
+            return true
+          }
+        })()}
       >
         <div class={styles.cameraLoader} data-testid="camera-loader" />
       </Show>

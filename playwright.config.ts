@@ -9,12 +9,12 @@ export default defineConfig({
   // Workers share the single webServer. Tests are isolated per page/
   // browser-context, so parallelism is safe here.
   // Workers share the single webServer. Tests are isolated per page/
-  // browser-context. Two workers gives a meaningful speedup; more
-  // pushes timing-sensitive tests (record auto-stop, layout tweens)
-  // into flake territory under CPU contention.
-  fullyParallel: true,
+  // browser-context, but layout-tween and record-stop timing become
+  // flaky under CPU contention at workers > 1. Sticking with 1 worker
+  // until those tests are made resilient to parallelism.
+  fullyParallel: false,
   retries: 0,
-  workers: 2,
+  workers: 1,
   reporter: "list",
   use: {
     baseURL: "http://localhost:5174",

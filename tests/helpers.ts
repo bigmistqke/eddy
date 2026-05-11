@@ -62,41 +62,48 @@ export { expect } from "@playwright/test"
  * enumerateDevices but rejects `getUserMedia` with `NotSupportedError`,
  * so we can't rely on it. Call once before `page.goto`.
  */
-export async function mockGetUserMedia(page: Page) {
+export async function mockGetUserMedia(page: Page, options: { delayMs?: number } = {}) {
   const bytes = readFileSync(resolve(__dirname, "fixtures/sample-1s.webm"))
   const base64 = bytes.toString("base64")
-  await page.addInitScript(b64 => {
-    const original = navigator.mediaDevices?.getUserMedia?.bind(navigator.mediaDevices)
-    if (original === undefined) {
-      throw new Error("mockGetUserMedia: navigator.mediaDevices.getUserMedia not present")
-    }
-    const binary = atob(b64)
-    const buffer = new Uint8Array(binary.length)
-    for (let index = 0; index < binary.length; index++) {
-      buffer[index] = binary.charCodeAt(index)
-    }
-    const blob = new Blob([buffer], { type: "video/webm" })
-    const blobUrl = URL.createObjectURL(blob)
+  const delayMs = options.delayMs ?? 0
+  await page.addInitScript(
+    ([b64, delay]) => {
+      const original = navigator.mediaDevices?.getUserMedia?.bind(navigator.mediaDevices)
+      if (original === undefined) {
+        throw new Error("mockGetUserMedia: navigator.mediaDevices.getUserMedia not present")
+      }
+      const binary = atob(b64 as string)
+      const buffer = new Uint8Array(binary.length)
+      for (let index = 0; index < binary.length; index++) {
+        buffer[index] = binary.charCodeAt(index)
+      }
+      const blob = new Blob([buffer], { type: "video/webm" })
+      const blobUrl = URL.createObjectURL(blob)
 
-    const fakeGUM = async (_: MediaStreamConstraints) => {
-      const video = document.createElement("video")
-      video.src = blobUrl
-      video.loop = true
-      video.muted = false
-      const { promise, resolve } = Promise.withResolvers<void>()
-      video.onloadedmetadata = () => resolve()
-      video.onerror = () => resolve()
-      await promise
-      await video.play()
-      type WithCapture = HTMLVideoElement & { captureStream(): MediaStream }
-      return (video as WithCapture).captureStream()
-    }
-    Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
-      configurable: true,
-      writable: true,
-      value: fakeGUM,
-    })
-  }, base64)
+      const fakeGUM = async (_: MediaStreamConstraints) => {
+        if ((delay as number) > 0) {
+          await new Promise(r => setTimeout(r, delay as number))
+        }
+        const video = document.createElement("video")
+        video.src = blobUrl
+        video.loop = true
+        video.muted = false
+        const { promise, resolve } = Promise.withResolvers<void>()
+        video.onloadedmetadata = () => resolve()
+        video.onerror = () => resolve()
+        await promise
+        await video.play()
+        type WithCapture = HTMLVideoElement & { captureStream(): MediaStream }
+        return (video as WithCapture).captureStream()
+      }
+      Object.defineProperty(navigator.mediaDevices, "getUserMedia", {
+        configurable: true,
+        writable: true,
+        value: fakeGUM,
+      })
+    },
+    [base64, delayMs] as const,
+  )
 }
 
 /** Click a frame by its layout path. Frames are now rendered to a WebGL

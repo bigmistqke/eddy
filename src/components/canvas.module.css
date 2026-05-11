@@ -19,11 +19,15 @@
 }
 
 .cameraLoader {
+  /* Defaults fill the wrapper so the loader is visible from the
+     instant it mounts, even if drawAt hasn't written the --preview-*
+     vars yet. drawAt overrides these with the preview target cell's
+     real rect on the first frame. */
   position: absolute;
-  left: var(--preview-x, 0px);
-  top: var(--preview-y, 0px);
-  width: var(--preview-width, 0px);
-  height: var(--preview-height, 0px);
+  left: var(--preview-x, 0);
+  top: var(--preview-y, 0);
+  width: var(--preview-width, 100%);
+  height: var(--preview-height, 100%);
   display: flex;
   align-items: center;
   justify-content: center;
