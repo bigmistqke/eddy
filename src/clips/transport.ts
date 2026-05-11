@@ -13,6 +13,12 @@ export interface Transport {
    *  pass every `loopLength` seconds. Otherwise plays once and stops. */
   play(clips: Clip[], loopLength?: number | null): Promise<void>
   stop(): void
+  /** Mute the clip in the given cell (gain 0) while playback continues
+   *  silently in lock with the song. Pass null to unmute. Used while a
+   *  cell is in live-preview state so the recorded audio doesn't
+   *  collide with the user's monitor; unmuting resumes audio in sync
+   *  with the rest of the song. */
+  setMutedCell(cellId: string | null): void
 }
 
 const SCHEDULE_LEAD_SECONDS = 0.05
@@ -21,16 +27,26 @@ export function createTransport(): Transport {
   const [state, setState] = createSignal<TransportState>("stopped")
   const [startedAt, setStartedAt] = createSignal(0)
   let sources: AudioBufferSourceNode[] = []
+  /** Per-cell GainNode keyed by cellId. Lets `setMutedCell` flip a
+   *  single cell's audio without re-scheduling sources, so the muted
+   *  clip stays in sample-lock with the rest of the song. Cleared
+   *  when sources are stopped (each schedule re-creates them). */
+  let cellGains: Record<string, GainNode> = {}
+  let mutedCell: string | null = null
   let loopTimer = 0
 
   function scheduleSources(clips: Clip[], when: number) {
     const audio = audioContext()
     for (const clip of clips) {
       const source = audio.createBufferSource()
+      const gain = audio.createGain()
+      gain.gain.value = clip.cellId === mutedCell ? 0 : 1
       source.buffer = clip.audio
-      source.connect(audio.destination)
+      source.connect(gain)
+      gain.connect(audio.destination)
       source.start(when)
       sources.push(source)
+      cellGains[clip.cellId] = gain
     }
   }
 
@@ -43,6 +59,27 @@ export function createTransport(): Transport {
       }
     }
     sources = []
+    cellGains = {}
+  }
+
+  function setMutedCell(cellId: string | null) {
+    const previous = mutedCell
+    mutedCell = cellId
+    if (previous !== null) {
+      const gain = cellGains[previous]
+      if (gain !== undefined) {
+        // Short ramp to avoid a click on the un-mute transition.
+        const audio = audioContext()
+        gain.gain.setTargetAtTime(1, audio.currentTime, 0.005)
+      }
+    }
+    if (cellId !== null) {
+      const gain = cellGains[cellId]
+      if (gain !== undefined) {
+        const audio = audioContext()
+        gain.gain.setTargetAtTime(0, audio.currentTime, 0.005)
+      }
+    }
   }
 
   async function play(clips: Clip[], loopLength: number | null = null) {
@@ -98,5 +135,5 @@ export function createTransport(): Transport {
     return Math.max(0, audioContext().currentTime - startedAt())
   }
 
-  return { state, position, play, stop }
+  return { state, position, play, stop, setMutedCell }
 }

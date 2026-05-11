@@ -53,6 +53,53 @@ test("M3: deleting the last clip resets songLength", async ({ page }) => {
   expect(result.clipCount).toBe(0)
 })
 
+test("M3: re-recording the sole clip redefines songLength", async ({ page }) => {
+  await mockGetUserMedia(page)
+  await page.goto("/")
+
+  // First anchor: ~0.4s.
+  await page.locator('[data-action="record-start"]').click()
+  await page.waitForFunction(() => window.__appContext?.previewTargetCellId() !== null, {
+    timeout: 5000,
+  })
+  await page.waitForTimeout(400)
+  await page.locator('[data-action="record-stop"]').click()
+  await page.waitForFunction(() => window.__appContext?.songLength() !== null, {
+    timeout: 10_000,
+  })
+  const first = await page.evaluate(() => window.__appContext!.songLength()!)
+
+  // Re-arm preview (record-stop cleared the flag) so previewTargetCellId
+  // resolves and the record button reenables.
+  await page.evaluate(() => {
+    const ctx = window.__appContext!
+    ctx.setSelection({ path: [], depth: 0, preview: true })
+  })
+  await page.waitForFunction(() => window.__appContext?.previewTargetCellId() !== null, {
+    timeout: 5000,
+  })
+
+  // Second take: noticeably longer. Without the new-anchor rule the
+  // auto-stop would fire at ~first (≈0.4s); with it the second take
+  // runs unbounded and redefines songLength.
+  await page.locator('[data-action="record-start"]').click()
+  await page.waitForTimeout(1100)
+  await page.locator('[data-action="record-stop"]').click()
+  await page.waitForFunction(
+    prev => {
+      const ctx = window.__appContext
+      if (!ctx) return false
+      const s = ctx.songLength()
+      return s !== null && Math.abs(s - prev) > 0.4
+    },
+    first,
+    { timeout: 15_000 },
+  )
+
+  const second = await page.evaluate(() => window.__appContext!.songLength()!)
+  expect(second - first).toBeGreaterThan(0.4)
+})
+
 test("M3: subsequent recording is clamped to songLength", async ({ page }) => {
   await mockGetUserMedia(page)
   await page.goto("/")

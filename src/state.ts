@@ -381,6 +381,14 @@ export function createAppState(): AppContext {
     return node.type === "entity" ? node.id : null
   })
 
+  // Mute the previewed cell's clip audio so the live camera in that
+  // cell isn't doubled up with its own recording. The transport keeps
+  // the source scheduled (gain=0); unmuting resumes in sample-lock
+  // with the rest of the song.
+  createEffect(previewTargetCellId, cellId => {
+    transport.setMutedCell(cellId)
+  })
+
   return {
     app,
     setSelection,
