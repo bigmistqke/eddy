@@ -4,11 +4,31 @@
   background: var(--color-back);
   color: var(--color-front);
   border-radius: var(--radius);
-  min-width: 240px;
+  min-width: 260px;
+  max-height: 80vh;
+  /* Only switch to flex when the dialog is open — otherwise the UA's
+     `dialog:not([open]) { display: none }` rule would be overridden
+     and the menu would render inline. */
+  &[open] {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
 
   &::backdrop {
     background: transparent;
     backdrop-filter: blur(12px) saturate(120%);
+  }
+
+  /* Stacked dialogs: any open .dialog with a later open sibling
+     dialog is, by DOM order, not the topmost — hide it so only the
+     most recent is visible (and its backdrop doesn't double-blur). */
+  &[open]:has(~ dialog[open]) {
+    visibility: hidden;
+
+    &::backdrop {
+      backdrop-filter: none;
+    }
   }
 }
 
@@ -26,7 +46,7 @@
   color: var(--color-front);
   padding: var(--radius);
   font: inherit;
-  text-align: center;
+  text-align: left;
   cursor: pointer;
   border-radius: calc(var(--radius) - var(--padding));
 
@@ -38,5 +58,136 @@
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+}
+
+.optionDestructive {
+  composes: option;
+  color: var(--color-red);
+
+  &:hover {
+    background: var(--color-red);
+    color: var(--color-back);
+  }
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--padding);
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: bold;
+  text-align: left;
+  padding: var(--radius);
+  border: 1px solid transparent;
+  box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.titleInput {
+  flex: 1;
+  min-width: 0;
+  background: var(--color-active-back);
+  color: var(--color-active-front);
+  border: 1px solid transparent;
+  box-sizing: border-box;
+  font: inherit;
+  font-weight: bold;
+  text-align: left;
+  padding: var(--radius);
+  border-radius: calc(var(--radius) - var(--padding));
+  outline: none;
+}
+
+.editButton {
+  background: none;
+  border: none;
+  color: var(--color-front);
+  font: inherit;
+  font-size: 0.8em;
+  padding: var(--padding) var(--radius);
+  cursor: pointer;
+  border-radius: calc(var(--radius) - var(--padding));
+
+  &:hover {
+    background: var(--color-active-back);
+    color: var(--color-active-front);
+  }
+}
+
+.divider {
+  height: 1px;
+  background: var(--color-front);
+  opacity: 0.2;
+  margin-block: var(--padding);
+}
+
+.projectList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--padding);
+  overflow-y: auto;
+  min-height: 0;
+  /* Keep the rows snug against the left/right edges of the dialog
+     content while preserving the scrollbar gutter. */
+  margin-inline: calc(-1 * var(--padding));
+  padding-inline: var(--padding);
+}
+
+.projectRow {
+  display: flex;
+  align-items: stretch;
+  gap: var(--padding);
+}
+
+.projectOpen {
+  composes: option;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: calc(var(--padding) / 2);
+  text-align: left;
+  min-width: 0;
+}
+
+.projectName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.projectAge {
+  font-size: 0.75em;
+  opacity: 0.6;
+}
+
+.projectDelete {
+  background: none;
+  border: none;
+  color: var(--color-front);
+  padding: 0 var(--radius);
+  cursor: pointer;
+  border-radius: calc(var(--radius) - var(--padding));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: var(--color-red);
+    color: var(--color-back);
+  }
+
+  &[data-confirming="true"] {
+    background: var(--color-red);
+    color: var(--color-back);
   }
 }

@@ -1,4 +1,4 @@
-import { createEffect, createSignal, isPending, Show, untrack, useContext } from "solid-js"
+import { createSignal, isPending, Show, untrack, useContext } from "solid-js"
 import { HudButton } from "../components/hud-button"
 import {
   PlayIcon,
@@ -17,21 +17,6 @@ import styles from "./main.module.css"
 export function Main() {
   const context = useContext(Context)!
   const [captureHandle, setCaptureHandle] = createSignal<CaptureHandle | null>(null)
-
-  // Trigger camera acquisition reactively. `preview.stream` is a
-  // function-form async signal — reading it kicks off `getUserMedia`.
-  // The compute reads it directly (no try/catch) so the NotReadyError
-  // propagates: Solid suspends the effect until the stream resolves,
-  // then re-runs and the apply receives the MediaStream.
-  createEffect(
-    () => {
-      if (context.previewTargetCellId() === null) {
-        return null
-      }
-      return context.preview.stream()
-    },
-    () => {},
-  )
 
   function toggleAddMode() {
     // Single bottom-bar "+" enters/exits add mode. Default tool on
@@ -111,6 +96,10 @@ export function Main() {
       return
     }
     const clip = await blobToClip(cellId, blob)
+    // Persist the raw blob to OPFS before staging the in-memory clip
+    // so a refresh mid-decode can't lose the recording. The manifest
+    // update inside saveClipBlob will include the new cellId.
+    await context.projects.saveClipBlob(cellId, blob)
     context.clips.setClip(cellId, clip)
     if (context.songLength() === null) {
       context.setSongLength(clip.duration)

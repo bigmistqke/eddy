@@ -211,6 +211,27 @@ Don't go retro and rewrite the MVP handlers — keep them as-is until they're to
 
 ---
 
+## Cross-cutting — proper error handling
+
+Surfaced while debugging the OPFS-feature test breakage (2026-05-11). Today the app has *no* application-level error boundary; the only `<Errored>` is a defensive `fallback={null}` in `canvas.tsx` swallowing the camera-loader's `preview.stream()` rejection. Everything else propagates uncaught — corrupts sibling JSX renders if the throw happens in a tracked read, silent if it happens in an event handler.
+
+Symptoms we hit:
+- Tests not calling `mockGetUserMedia` saw `getUserMedia` reject with browser-native `NotSupportedError`. Solid wrapped it as `StatusError` (minified `io`), propagated past the `<Loading>` boundary (which only catches `NotReadyError`), and broke the handle-overlay's reactive update — `data-selected-path` stayed empty even though `selection.path` had updated. Tests timed out waiting for the overlay.
+- Worked around in two ways: added a Playwright launch flag for a Chromium fake camera; wrapped the camera-loader `<Loading>` in `<Errored fallback={null}>`. Both are bandaids — the underlying gap is real.
+
+What v2 should do:
+- **Restore graceful gUM handling in `preview.ts`** — catch `NotSupportedError` / `NotAllowedError`, surface as a `cameraStatus` accessor (`ready | pending | unavailable | denied`), let consumers render an appropriate state. Don't swallow non-permission errors.
+- **App-level `<Errored>` boundary in `App.tsx`** with a real fallback ("Something went wrong, retry?" with `reset()`). Catches truly unexpected throws.
+- **Toast / status HUD surface** for non-fatal errors (export failed, save to OPFS failed, atproto publish rejected). Adopting `action()` for those mutations (see above) gives a natural place to plug it in — pending state + error state come from the same primitive.
+- **Per-call-site try/catch in event handlers** that read async signals via `untrack` (`onRecord` reads `untrack(context.preview.stream)`; if pending or errored, throws).
+
+Don't try to do all of this in one PR. The order that makes sense:
+1. `preview.ts` graceful failure (smallest, biggest win for tests + real users with denied permission).
+2. App-level `<Errored>` boundary with a default fallback.
+3. Toast/status surface — only when the first non-fatal action (export/save) needs it.
+
+---
+
 ## Theme 7 — Code cleanup catalogued during MVP
 
 Each is a small focused PR.

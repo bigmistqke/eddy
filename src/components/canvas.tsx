@@ -1,6 +1,7 @@
 import {
   createEffect,
   createMemo,
+  Errored,
   For,
   Loading,
   onSettled,
@@ -475,10 +476,12 @@ export function Canvas() {
     >
       <canvas ref={canvasElement} class={styles.glCanvas} />
       <Show when={context.previewTargetCellId() !== null}>
-        <Loading
-          fallback={<div class={styles.cameraLoader} data-testid="camera-loader" />}
-          children={track(context.preview.stream)}
-        />
+        <Errored fallback={null}>
+          <Loading
+            fallback={<div class={styles.cameraLoader} data-testid="camera-loader" />}
+            children={track(context.preview.stream)}
+          />
+        </Errored>
       </Show>
       <Show
         when={!context.isAnimating() && context.app.tool !== null && selectedPathKey() !== null}

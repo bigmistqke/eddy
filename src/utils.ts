@@ -67,6 +67,31 @@ export function pathEquals(first: number[], second: number[]) {
   return first.length === second.length && first.every((value, index) => value === second[index])
 }
 
+/** Short relative-time label ("just now", "5 m", "3 h", "2 d", or a
+ *  formatted date for older entries). Used in the project list. */
+export function formatTimeAgo(timestamp: number, now: number = Date.now()): string {
+  const seconds = Math.max(0, Math.round((now - timestamp) / 1000))
+  if (seconds < 60) {
+    return "just now"
+  }
+  const minutes = Math.round(seconds / 60)
+  if (minutes < 60) {
+    return `${minutes}m`
+  }
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) {
+    return `${hours}h`
+  }
+  const days = Math.round(hours / 24)
+  if (days < 7) {
+    return `${days}d`
+  }
+  return new Date(timestamp).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  })
+}
+
 /**
  * Resolve after `milliseconds`. Centralised so call sites stay free of
  * `new Promise(resolve => setTimeout(resolve, ...))` boilerplate.

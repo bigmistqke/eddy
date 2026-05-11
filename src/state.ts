@@ -1,7 +1,8 @@
-import { createMemo, createSignal, createStore, untrack } from "solid-js"
+import { createEffect, createMemo, createSignal, createStore, untrack } from "solid-js"
 import { createClipStore } from "./clips/store"
 import { createPreview } from "./clips/preview"
 import { createTransport } from "./clips/transport"
+import { createProjectsStore } from "./state/projects"
 import type {
   AppContext,
   AppState,
@@ -183,7 +184,6 @@ export function createAppState(): AppContext {
       setApp(app => {
         app.selection = { path: [newEntityIndex], depth: 0, preview: true }
       })
-
       return
     }
 
@@ -200,7 +200,6 @@ export function createAppState(): AppContext {
       setApp(app => {
         app.selection = { path: [...parentPath, newEntityIndex], depth: 0, preview: true }
       })
-
       return
     }
 
@@ -267,6 +266,7 @@ export function createAppState(): AppContext {
 
     for (const cellId of removedIds) {
       clips.clearClip(cellId)
+      void projects.removeClipBlob(cellId)
     }
     if (Object.keys(clips.clips).length === 0) {
       setSongLength(null)
@@ -322,6 +322,49 @@ export function createAppState(): AppContext {
   const preview = createPreview()
   const [songLength, setSongLength] = createSignal<number | null>(null)
 
+  const projects = createProjectsStore({
+    clips,
+    setLayout(layout) {
+      setApp(app => {
+        app.layout = layout
+      })
+    },
+    setSongLength,
+    resetSelection() {
+      // Match the boot state: root selected with preview active so the
+      // camera lands in the (new) root cell.
+      setApp(app => {
+        app.selection = { path: [], depth: 0, preview: true }
+      })
+    },
+    readLayout: () => untrack(() => app.layout),
+    readSongLength: () => untrack(songLength),
+  })
+
+  // Single auto-save effect: any change to layout, songLength, or the
+  // set of recorded cells writes a fresh manifest. Skipped while a
+  // load is in flight so we don't redundantly re-save state we just
+  // pulled from disk.
+  createEffect(
+    () => ({
+      layout: app.layout,
+      songLength: songLength(),
+      cellIds: clips.cellIds().join("|"),
+      loading: projects.isLoading(),
+    }),
+    ({ loading }) => {
+      if (loading) {
+        return
+      }
+      void projects.saveCurrent()
+    },
+  )
+
+  // Boot-time OPFS load. Fire-and-forget — UI starts with the initial
+  // fresh-entity layout; if OPFS has saved state, init() swaps it in
+  // shortly after mount.
+  void projects.init()
+
   // The cell that the live camera preview should paint into — derived,
   // not stored. A previewing selection lands the camera on its cell in
   // both song mode AND tool mode (splitting/appending is usually the
@@ -357,6 +400,7 @@ export function createAppState(): AppContext {
     clips,
     transport,
     preview,
+    projects,
     songLength,
     setSongLength,
     previewTargetCellId,
