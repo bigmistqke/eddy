@@ -249,6 +249,7 @@ export function Canvas() {
     // Reads clip + preview state via untrack — the loop itself is an
     // unowned rAF callback, no reactive dependencies.
     let playbackRaf = 0
+    let lastPlaybackPosition = 0
 
     function gatherFrames(): Map<string, TextureSource> {
       return untrack(() => {
@@ -285,6 +286,17 @@ export function Canvas() {
     }
 
     function playbackTick() {
+      // Loop transition: transport.position() reset to ~0. Reset each
+      // video source so frameAt for small t doesn't return stale frames.
+      const positionSeconds = untrack(context.transport.position)
+      if (positionSeconds < lastPlaybackPosition - 0.1) {
+        const allClips = untrack(() => context.clips.clips)
+        for (const cellId of Object.keys(allClips)) {
+          allClips[cellId]?.video.reset()
+        }
+      }
+      lastPlaybackPosition = positionSeconds
+
       const frames = gatherFrames()
       const drawViewport: ViewportState = { x: lastViewport.x, y: lastViewport.y, scale: 1 }
       renderer.render(drawViewport, lastLeaves, frames.size > 0 ? frames : undefined)

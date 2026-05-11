@@ -23,9 +23,30 @@ export function Main() {
       return
     }
     logAction("record-start", {})
+
+    // Monitor: play existing clips (excluding the cell being recorded
+    // into) so the user can overdub against the song so far. Caller is
+    // expected to be wearing headphones — spec accepts the mic
+    // picking up the speaker as a known limitation.
+    const existing = Object.values(context.clips.clips).filter(clip => clip.cellId !== cellId)
+    const length = context.songLength()
+    if (existing.length > 0) {
+      await context.transport.play(existing, length)
+    }
+
     const handle = await startCapture()
     setCaptureHandle(handle)
     await context.preview.start(cellId, handle.stream)
+
+    // Anchor-take: if songLength is set, auto-stop the new recording at
+    // that length so it matches the anchor.
+    if (length !== null) {
+      window.setTimeout(() => {
+        if (captureHandle() === handle) {
+          void onStopRecording()
+        }
+      }, length * 1000)
+    }
   }
 
   async function onStopRecording() {
@@ -37,12 +58,16 @@ export function Main() {
     logAction("record-stop", {})
     setCaptureHandle(null)
     context.preview.stop()
+    context.transport.stop() // stop monitor playback if it was running
     const blob = await handle.stop()
     if (cellId === null) {
       return
     }
     const clip = await blobToClip(cellId, blob)
     context.clips.setClip(cellId, clip)
+    if (context.songLength() === null) {
+      context.setSongLength(clip.duration)
+    }
   }
 
   async function onPlay() {
@@ -51,7 +76,7 @@ export function Main() {
       return
     }
     logAction("play", {})
-    await context.transport.play(allClips)
+    await context.transport.play(allClips, context.songLength())
   }
 
   function onStopPlayback() {

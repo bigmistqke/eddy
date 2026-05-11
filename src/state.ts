@@ -231,6 +231,21 @@ export function createAppState(): AppContext {
     // tail of `path`, so the actual target is path[..-depth].
     const targetedPath = selection.path.slice(0, selection.path.length - selection.depth)
 
+    // Collect entity ids in the subtree being removed so we can drop
+    // their clips after the layout mutation.
+    const removedIds: string[] = []
+    function collectIds(node: Node) {
+      if (node.type === "entity") {
+        removedIds.push(node.id)
+        return
+      }
+      for (const child of node.children) {
+        collectIds(child)
+      }
+    }
+    const targetNode = resolveNode(app.layout, targetedPath)
+    collectIds(targetNode)
+
     // Always select the parent's path after delete:
     //   * Parent with ≥2 remaining children: parent stays a container,
     //     parentPath still points to it.
@@ -247,6 +262,13 @@ export function createAppState(): AppContext {
       app.layout = next ?? createEntity()
       app.selection = nextSelection
     })
+
+    for (const cellId of removedIds) {
+      clips.clearClip(cellId)
+    }
+    if (Object.keys(clips.clips).length === 0) {
+      setSongLength(null)
+    }
   }
 
   function setTool(tool: Tool) {
