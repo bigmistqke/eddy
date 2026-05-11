@@ -254,7 +254,6 @@ export type Action =
   | { type: "set-tool"; tool: "split" | "append" | null }
   | { type: "tap-frame"; path: number[] }
   | { type: "add-frame"; path: number[]; direction: Direction; op: HandleOp }
-  | { type: "deselect" }
   | { type: "delete" }
   | { type: "tap-breadcrumb"; depth: number; segmentIndex: number }
   | { type: "record-start" }
@@ -308,9 +307,6 @@ export async function runActions(
         break
       case "add-frame":
         await clickHandle(page, action.path, action.direction, { force: true })
-        break
-      case "deselect":
-        await clickAction(page, "deselect")
         break
       case "delete":
         await clickAction(page, "delete")
@@ -469,7 +465,7 @@ export async function expectHandlesDontOverlap(page: Page) {
         document.querySelector("[data-action='set-tool-append']")?.closest("[class*='_notch_']"),
       ),
       contextualRight: rect(
-        document.querySelector("[data-action='deselect']")?.closest("[class*='_notch_']"),
+        document.querySelector("[data-action='delete']")?.closest("[class*='_notch_']"),
       ),
       breadcrumbTop: rect(document.querySelector("[class*='hudTop']")),
     }
