@@ -196,10 +196,13 @@ export function Canvas() {
       // all reactive reads go through untrack — Solid 2.x dev fires
       // STRICT_READ_UNTRACKED otherwise.
       const { leaves, selectedRect } = untrack(() => {
-        // Cells are flush in every mode; song mode also drops the
-        // root padding so the layout fills the canvas edge-to-edge.
-        const layoutOptions = context.app.tool === null ? { gap: 0, rootPadding: 0 } : { gap: 0 }
-        return layoutFrames(context.app.layout, scaledCanvas, context.app.selection, layoutOptions)
+        // Layout fills the canvas edge-to-edge in every mode — no gap
+        // between siblings, no inset from the canvas edge. The HUD grid
+        // overlay sits on top and provides its own padding.
+        return layoutFrames(context.app.layout, scaledCanvas, context.app.selection, {
+          gap: 0,
+          rootPadding: 0,
+        })
       })
       lastLeaves = leaves
       lastSelectedRect = selectedRect
@@ -282,10 +285,7 @@ export function Canvas() {
         const tComputeStart = performance.now()
         const transform = computeViewportTransform(layout, selectedPath, canvas, 1, hudRects)
         const tComputeEnd = performance.now()
-        // eslint-disable-next-line no-console
-        console.log(
-          `[recomputeViewport] depth=${selectedPath.length} compute=${(tComputeEnd - tComputeStart).toFixed(2)}ms total=${(tComputeEnd - t0).toFixed(2)}ms scale=${transform.scale.toFixed(2)}`,
-        )
+
         const realRect = frameRect(layout, selectedPath, {
           width: canvas.width * transform.scale,
           height: canvas.height * transform.scale,

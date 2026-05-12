@@ -154,39 +154,22 @@ export async function clickBreadcrumb(page: Page, segmentIndex: number) {
     .click()
 }
 
-/** Click a directional handle on a specific frame. The notch wrapper has
- *  zero in-flow size (children are absolutely positioned), so we click the
- *  visible inner `.notch-backdrop` via a child selector. */
+/** Click a directional handle on a specific frame. Handles are buttons
+ *  carrying `[data-direction]`; only one frame is selected at a time so
+ *  direction alone identifies the handle. We dispatch a synthetic click
+ *  because Playwright's locator.click() refuses rotated handles whose
+ *  post-transform bounding boxes leak past the browser viewport. */
 export async function clickHandle(
   page: Page,
   framePath: number[],
   dir: "top" | "bottom" | "left" | "right",
-  options?: { force?: boolean },
+  _options?: { force?: boolean },
 ) {
   const key = framePath.join(".")
-  // Notches are no longer scoped under a per-frame [data-path] element —
-  // they live in a flat overlay div carrying [data-selected-path]. The
-  // overlay is suppressed during animations, so wait for it to appear
-  // with the expected selected path before clicking. Only one path is
-  // selected at a time, so direction alone identifies the handle.
   await page
     .locator(`[data-selected-path="${key.replace(/"/g, '\\"')}"]`)
     .waitFor({ state: "attached", timeout: 5000 })
-  const notch = page.locator(`[data-direction="${dir}"]`).last()
-  // The notch wrapper itself stopPropagation()s onClick — its inner
-  // .notchBackdrop > .edge / .center / .root carry the handlers. Use
-  // dispatchEvent in `force` mode (bypasses scroll-into-view, useful when
-  // the rotated CSS-transformed handle's bounding box leaks past the
-  // browser viewport).
-  if (options?.force) {
-    await notch.locator("> div > div").first().dispatchEvent("click")
-    return
-  }
-  // Dispatch a click event programmatically. Playwright's locator.click()
-  // refuses the rotated notches with "element is outside of the viewport"
-  // because their post-transform bounding boxes leak past the window
-  // edge. dispatchEvent bypasses that gate.
-  await notch.locator("> div > div").first().dispatchEvent("click")
+  await page.locator(`[data-direction="${dir}"]`).last().dispatchEvent("click")
 }
 
 /** Click a UI action button by its data-action attribute. */
@@ -354,8 +337,9 @@ export async function runActions(
  *                        ratio fallback). Frame is centered.
  *    - "auto"          — accept either Rule 2 or Rule 3 outcome.
  *
- *  FRAME_PADDING and HUD-height assumptions match `src/constants.ts`
- *  (FRAME_PADDING = 2 * HANDLE_H = 96 with the current values).
+ *  The default `framePadding` matches viewport.ts — zero, since the
+ *  layout fills the canvas edge-to-edge and HUDs sit in their own
+ *  overlay rather than encroaching on the canvas.
  */
 export async function expectFrameRespectsMargin(
   page: Page,
@@ -363,7 +347,7 @@ export async function expectFrameRespectsMargin(
   options: { tolerance?: number; framePadding?: number } = {},
 ) {
   const tolerance = options.tolerance ?? 3
-  const framePadding = options.framePadding ?? 96
+  const framePadding = options.framePadding ?? 0
 
   const result = await page.evaluate(() => {
     const fn = (window as unknown as { __layoutFrames?: () => unknown }).__layoutFrames

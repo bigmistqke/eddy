@@ -12,6 +12,10 @@
   scrollbar-color: var(--color-scroll-thumb) transparent;
 }
 
+.sliderContainer {
+  margin-block: var(--padding);
+}
+
 /* Vertical slider that fills the remaining column space. Uses
    `writing-mode: vertical-lr` to flip both track and thumb axis
    cross-browser without the legacy `appearance: slider-vertical`

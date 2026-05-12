@@ -1,4 +1,4 @@
-import { FRAME_PADDING, HANDLE_H, HANDLE_W, ROOT_PADDING, SIBLING_GAP } from "./constants"
+import { HANDLE_H, HANDLE_W, ROOT_PADDING, SIBLING_GAP } from "./constants"
 import type { Direction, Node, Rgb, Selection } from "./types"
 import { pathEquals } from "./utils"
 
@@ -42,9 +42,9 @@ export function selectedPathKey(selection: Selection): string {
 /** Two-stage zoom search:
  *
  *  Rule 2 — `findFitInsideScale` iterates by `min(widthFactor, heightFactor)`
- *  so the frame fits ENTIRELY inside the target box (canvas inset by
- *  FRAME_PADDING per side). The binding axis hits target exactly; the
- *  other axis is smaller. Aspect ratio preserved.
+ *  so the frame fits ENTIRELY inside the canvas. The binding axis hits
+ *  the canvas edge exactly; the other axis is smaller. Aspect ratio
+ *  preserved.
  *
  *  Rule 3 — `findClampOverflowScale` iterates by `max(...)`. Used only
  *  when fit-inside can't grow the frame (extreme aspect ratios where
@@ -65,8 +65,8 @@ function findFitInsideScale(
   path: number[],
   canvas: { width: number; height: number },
 ): number {
-  const targetWidth = canvas.width - 2 * FRAME_PADDING
-  const targetHeight = canvas.height - 2 * FRAME_PADDING
+  const targetWidth = canvas.width
+  const targetHeight = canvas.height
   if (targetWidth <= 0 || targetHeight <= 0) {
     return 1
   }
@@ -100,8 +100,8 @@ function findClampOverflowScale(
   path: number[],
   canvas: { width: number; height: number },
 ): number {
-  const targetWidth = canvas.width - 2 * FRAME_PADDING
-  const targetHeight = canvas.height - 2 * FRAME_PADDING
+  const targetWidth = canvas.width
+  const targetHeight = canvas.height
   if (targetWidth <= 0 || targetHeight <= 0) {
     return 1
   }
