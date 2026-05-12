@@ -22,12 +22,11 @@ export interface Entity {
 }
 export type Node = Container | Entity
 
-/** Layout-editing tool. When `null`, frames are read-only — no handles
- *  render and tapping a frame is a no-op. */
-/** Layout-editing or audio-editing tool. Non-null = "Edit mode" is
- *  active (see the Edit toggle in the main HUD). `audio` swaps the
- *  preview-camera affordance for a per-cell level slider. */
-export type Tool = "append" | "split" | "audio" | null
+/** Layout-editing sub-mode. Non-null = "Edit mode" is active (see the
+ *  Edit toggle in the main HUD); the value picks which add-frame
+ *  operation the handles perform. The audio slider mounts whenever a
+ *  cell is selected, independent of this. */
+export type Tool = "append" | "split" | null
 export type AppState = {
   /** Root of the layout tree. Starts as a single Entity; becomes a
    *  Container as soon as the user splits/appends. */
@@ -39,7 +38,7 @@ export type AppState = {
 }
 
 export type Direction = "top" | "bottom" | "left" | "right"
-export type HudKind = "main" | "breadcrumb" | "contextual" | "audio"
+export type HudKind = "main" | "breadcrumb" | "menu" | "contextual"
 export interface Selection {
   path: number[]
   depth: number

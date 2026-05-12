@@ -28,11 +28,17 @@ export function ArrowButton(props: {
 
 // -- Hud --------------------------------------------------------------
 
-export type HudPosition = "bottom-center" | "bottom-right" | "top-left" | "top-right"
+export type HudPosition =
+  | "bottom-center"
+  | "bottom-right"
+  | "middle-right"
+  | "top-left"
+  | "top-right"
 
 const POSITION_CLASS: Record<HudPosition, string> = {
   "bottom-center": styles.bottomCenter,
   "bottom-right": styles.bottomRight,
+  "middle-right": styles.middleRight,
   "top-left": styles.topLeft,
   "top-right": styles.topRight,
 }

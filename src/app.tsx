@@ -1,5 +1,4 @@
 import { Context } from "./context"
-import { Main } from "./hud/main"
 import { LayoutBuilder } from "./layout-builder"
 import { createAppState } from "./state"
 
@@ -11,9 +10,8 @@ export function App() {
 
   return (
     <Context value={state}>
-      <div style={{ display: "flex", width: "100vw", height: "100%", position: "relative" }}>
+      <div style={{ width: "100vw", height: "100vh", position: "relative" }}>
         <LayoutBuilder />
-        <Main />
       </div>
     </Context>
   )

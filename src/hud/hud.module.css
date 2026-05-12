@@ -1,154 +1,44 @@
+/* ============================================================
+ * Hud — base shell, orientation modifiers, grid placement.
+ *
+ * Layout model: the parent (.canvas in layout-builder.module.css)
+ * defines a 3×3 grid with named areas. Each Hud picks an area via
+ * its position class (.topLeft / .bottomCenter / etc.) and pins
+ * itself flush against the corresponding edge via place-self.
+ *
+ * Orientation classes (.hudTop / .hudBottom / .hudLeft / .hudRight)
+ * are independent of position — they pick the children's stacking
+ * axis (row vs. column) and the gutter spacing.
+ * ============================================================ */
+
 .hud {
-  --backdrop-x: 0%;
-  --backdrop-width: 100%;
-
-  position: absolute;
   height: var(--hud-height);
-  position: absolute;
-  z-index: var(--z-notch);
-  color: var(--color-front);
-  pointer-events: auto;
-  border-radius: var(--radius-big);
-  backdrop-filter: blur(10px) brightness(1.1) invert(0.25);
   z-index: var(--z-hud);
-}
-
-.arrowButton {
-  --edge-distance: calc(var(--padding, 0px) + var(--stick, 0px) + var(--extend, 0px));
-
-  aspect-ratio: 1 / 1;
-  width: var(--hud-height);
-  border-radius: var(--radius-big);
-  position: absolute;
-  z-index: var(--z-notch);
   color: var(--color-front);
   pointer-events: auto;
   border-radius: var(--radius-big);
-  transform: translate(-50%);
   backdrop-filter: blur(10px) brightness(1.1) invert(0.25);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border: none;
-  background-color: transparent;
-
-  /* ArrowNotch rotation+edge-snap variants. */
-  &.top {
-    left: 50%;
-    top: var(--edge-distance, 0);
-    rotate: 180deg;
-    transform-origin: center center;
-    translate: -100% 0%;
-  }
-
-  &.bottom {
-    left: 50%;
-    bottom: var(--edge-distance, 0);
-    translate: 0% 0%;
-  }
-
-  &.left {
-    left: var(--edge-distance, 0);
-    top: 50%;
-    rotate: 90deg;
-    transform-origin: top;
-    translate: 50% 50%;
-  }
-
-  &.right {
-    right: var(--edge-distance, 0);
-    top: 50%;
-    rotate: -90deg;
-    transform-origin: top;
-    translate: -50% -50%;
-  }
 }
 
-/* Right: row direction; .root on screen-right, .edge canvas-facing. */
-.hudRight {
-  top: var(--padding);
-  right: 0;
-  height: auto;
-
-  & > .notchBackdrop {
-    flex-direction: row;
-
-    & > .edge,
-    & > .center {
-      margin-inline: 0;
-      margin-block: var(--radius-big);
-    }
-
-    & > .root {
-      corner-top-left-shape: scoop;
-      corner-bottom-left-shape: scoop;
-      corner-top-right-shape: square;
-      corner-bottom-right-shape: square;
-    }
-
-    & > .edge {
-      corner-top-right-shape: square;
-      corner-bottom-right-shape: square;
-    }
-  }
-}
-
-/* Left: mirror of right via row-reverse. */
-.hudLeft {
-  & > .notchBackdrop {
-    flex-direction: row-reverse;
-
-    & > .edge,
-    & > .center {
-      margin-inline: 0;
-      margin-block: var(--radius-big);
-    }
-
-    & > .root {
-      corner-top-right-shape: scoop;
-      corner-bottom-right-shape: scoop;
-      corner-top-left-shape: square;
-      corner-bottom-left-shape: square;
-    }
-
-    & > .edge {
-      corner-top-left-shape: square;
-      corner-bottom-left-shape: square;
-    }
-  }
-}
-
-.hudBottom {
-  & .edge {
-    corner-bottom-shape: square;
-  }
-
-  /* Bottom HUD (transport): row layout with cap padding + vertical
-       centering. Top HUDs (breadcrumb) skip this because they use a
-       stretch/scroll layout — their own module owns those rules. */
-  & > .content {
-    align-items: center;
-    corner-bottom-shape: square;
-  }
-}
+/* ---- Orientation -------------------------------------------------- */
 
 .hudTop,
 .hudBottom {
-  margin-block: var(--padding);
   height: calc(var(--hud-height) + var(--padding) * 2);
+  margin-block: var(--padding);
 
   & > .content {
     margin-inline: var(--padding);
+    flex-direction: row;
     justify-content: center;
     align-items: center;
   }
 }
 
-/* Side-mounted HUDs stack children vertically and need padding-block
-     to clear the round notch caps. */
-.hudRight,
-.hudLeft {
+.hudLeft,
+.hudRight {
   width: calc(var(--hud-height) + var(--padding) * 2);
+  height: auto;
   margin-inline: var(--padding);
 
   & > .content {
@@ -159,28 +49,51 @@
   }
 }
 
+/* ---- Position (grid placement) ----------------------------------- */
+
+.topLeft {
+  grid-area: top-left;
+  place-self: start start;
+}
+
+.topRight {
+  grid-area: top-right;
+  place-self: start end;
+}
+
+/* Contextual tool-bar slot — sized to its content, capped at the
+   middle row's height so it can't extend under the bottom-row's main
+   HUD. When content exceeds the cap, the HUD's content shell scrolls
+   (see hud/contextual.module.css). */
+.middleRight {
+  grid-area: middle-right;
+  place-self: start end;
+  height: auto;
+  max-height: 100%;
+  min-height: 0;
+}
+
+/* Bottom-center is pinned to the container, not the grid — its
+   position must not shift when other HUDs in the bottom row grow or
+   shrink (e.g. the audio slider mounting in edit mode). */
 .bottomCenter {
+  position: absolute;
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
 }
 
 .bottomRight {
-  bottom: 0;
-  right: 0;
-  height: auto;
+  grid-area: bottom-right;
+  place-self: end end;
 }
 
-.topLeft {
-  top: 0;
-  left: 12px;
-}
+/* ---- Content shell ----------------------------------------------- */
 
-/* Default content shell. Per-HUD modules add their own layout class
-   via `contentClass` for direction, padding, scroll, etc. */
 .content {
   display: flex;
   height: 100%;
+  box-sizing: border-box;
 }
 
 /* ============================================================
@@ -188,18 +101,18 @@
  * ============================================================ */
 
 .button {
-  background: none;
-  border: none;
-  padding: 0;
   width: var(--hud-height);
   aspect-ratio: 1 / 1;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: calc(var(--radius-big) - var(--padding));
   box-sizing: border-box;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--color-front);
-  border-radius: calc(var(--radius-big) - var(--padding));
+  cursor: pointer;
 
   &.active {
     background: var(--color-active-back);
@@ -213,5 +126,59 @@
 
   &[data-action="record-start"]:not(:disabled) {
     color: var(--color-red);
+  }
+}
+
+/* ============================================================
+ * ArrowButton — directional handle on a selected Frame.
+ * Lives over the WebGL canvas, not in the HUD grid; positions
+ * itself against the selected frame's edges via --edge-distance.
+ * ============================================================ */
+
+.arrowButton {
+  --edge-distance: calc(var(--padding, 0px) + var(--stick, 0px) + var(--extend, 0px));
+
+  width: var(--hud-height);
+  aspect-ratio: 1 / 1;
+  position: absolute;
+  z-index: var(--z-notch);
+  border: none;
+  background-color: transparent;
+  border-radius: var(--radius-big);
+  color: var(--color-front);
+  pointer-events: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(10px) brightness(1.1) invert(0.25);
+
+  &.top {
+    left: 50%;
+    top: var(--edge-distance, 0);
+    rotate: 180deg;
+    transform-origin: center center;
+    translate: -50% 0%;
+  }
+
+  &.bottom {
+    left: 50%;
+    bottom: var(--edge-distance, 0);
+    translate: -50% 0%;
+  }
+
+  &.left {
+    left: var(--edge-distance, 0);
+    top: 50%;
+    rotate: 90deg;
+    transform-origin: top;
+    translate: 50% 0%;
+  }
+
+  &.right {
+    right: var(--edge-distance, 0);
+    top: 50%;
+    rotate: -90deg;
+    transform-origin: top;
+    translate: -50% 0%;
   }
 }

@@ -306,16 +306,24 @@ export function layoutFrames(
   let selectedRect: Rect | null = null
 
   const targetedPath =
-    selection === null
-      ? null
-      : selection.path.slice(0, selection.path.length - selection.depth)
+    selection === null ? null : selection.path.slice(0, selection.path.length - selection.depth)
 
   function walk(node: Node, path: number[], rect: Rect) {
     if (targetedPath !== null && pathEquals(path, targetedPath)) {
       selectedRect = rect
     }
     if (node.type === "entity") {
-      leaves.push({ id: node.id, path: path.slice(), rect, color: node.color })
+      // Snapshot the color tuple — node.color sits inside the Solid
+      // store and would otherwise pass a proxied array reference into
+      // the renderer, where reads of leaf.color[0..2] inside the
+      // layout-effect's apply trip STRICT_READ_UNTRACKED.
+      leaves.push({
+        id: node.id,
+        path: path.slice(),
+        rect,
+        color: [node.color[0], node.color[1], node.color[2]],
+      })
+
       return
     }
     const childCount = node.children.length

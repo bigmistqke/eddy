@@ -122,10 +122,7 @@ export function Canvas() {
           }
           return
         }
-        // Audio mode swaps the live camera for a per-cell level slider
-        // (see the audio overlay below); never preview on tap there.
-        const previewOnSelect = context.app.tool !== "audio"
-        context.setSelection({ path: leaf.path, depth: 0, preview: previewOnSelect })
+        context.setSelection({ path: leaf.path, depth: 0, preview: true })
         return
       }
     }
@@ -269,10 +266,10 @@ export function Canvas() {
         const wrapperRect = wrapperElement.getBoundingClientRect()
         const canvas = { width: wrapperRect.width, height: wrapperRect.height }
         const selection = context.app.selection
-        // Song mode + audio mode both stay at identity — the user
-        // wants to see the whole song while tapping cells. Only the
-        // layout-editing tools (split / append) zoom to selection.
-        if (selection === null || context.app.tool === null || context.app.tool === "audio") {
+        // Song mode stays at identity — the user wants to see the
+        // whole song while tapping cells. Only the layout-editing
+        // tools (split / append) zoom to selection.
+        if (selection === null || context.app.tool === null) {
           const identity: ViewportState = { x: 0, y: 0, scale: 1 }
           context.setViewport(identity)
           context.setSelectedHandlesState({ extend: ZERO_BY_DIRECTION, stick: ZERO_BY_DIRECTION })
@@ -522,10 +519,7 @@ export function Canvas() {
                   }
                   const targeted = selection.path.slice(0, selection.path.length - selection.depth)
                   const tool = context.app.tool
-                  // Handles only mount under append/split (see the
-                  // outer <Show> gate); the audio tool has no handle
-                  // operation. The runtime guard keeps TS happy.
-                  if (tool !== "append" && tool !== "split") {
+                  if (tool === null) {
                     return
                   }
                   logAction("add-frame", { path: targeted, direction: direction(), op: tool })

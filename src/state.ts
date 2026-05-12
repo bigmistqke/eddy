@@ -85,8 +85,8 @@ export function createAppState(): AppContext {
   const hudSignals: Record<HudKind, ReturnType<typeof createSignal<HTMLElement | undefined>>> = {
     main: createSignal<HTMLElement | undefined>(),
     breadcrumb: createSignal<HTMLElement | undefined>(),
+    menu: createSignal<HTMLElement | undefined>(),
     contextual: createSignal<HTMLElement | undefined>(),
-    audio: createSignal<HTMLElement | undefined>(),
   }
 
   const setHudElement = (kind: HudKind) => hudSignals[kind][1]
@@ -101,8 +101,8 @@ export function createAppState(): AppContext {
     const elements = [
       untrack(hudSignals.breadcrumb[0]),
       untrack(hudSignals.main[0]),
+      untrack(hudSignals.menu[0]),
       untrack(hudSignals.contextual[0]),
-      untrack(hudSignals.audio[0]),
     ]
     const rects: Rect[] = []
     for (const element of elements) {

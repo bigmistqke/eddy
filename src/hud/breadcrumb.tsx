@@ -169,15 +169,6 @@ export function Breadcrumb(props: { canvasAspect: Accessor<number> }) {
     return result
   })
 
-  // Lock the button's inner width to the canvas's full-size width via a
-  // CSS var. Total content width stays constant whether the scrollbar is
-  // showing or not — without this, canvas width would track height
-  // (aspect-ratio), causing scrollbar-toggle resize loops. Full height
-  // (no scrollbar) = hud-height(60) - padding-block-end(--radius-big=12) -
-  // button margin(2*2) - button padding(2*2) = 40.
-  const FULL_CANVAS_H = 40
-  const buttonWidth = () => `${Math.max(8, Math.round(FULL_CANVAS_H * props.canvasAspect()))}px`
-
   let contentElement!: HTMLDivElement
   // Scroll the trailing breadcrumb into view whenever the chain grows.
   createEffect(
@@ -203,10 +194,8 @@ export function Breadcrumb(props: { canvasAspect: Accessor<number> }) {
           kind="breadcrumb"
           position="top-left"
           orientation="top"
-          class={styles.notch}
           contentClass={styles.content}
           contentRef={element => (contentElement = element)}
-          contentStyle={{ "--breadcrumb-button-width": buttonWidth() }}
         >
           <For each={segments()}>
             {(segment, index) => (

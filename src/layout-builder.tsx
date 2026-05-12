@@ -1,8 +1,9 @@
 import { createSignal, onSettled } from "solid-js"
 import { Canvas } from "./components/canvas"
-import { AudioVolume } from "./hud/audio-volume"
 import { Breadcrumb } from "./hud/breadcrumb"
 import { Contextual } from "./hud/contextual"
+import { Main } from "./hud/main"
+import { Menu } from "./hud/menu"
 import styles from "./layout-builder.module.css"
 
 export function LayoutBuilder() {
@@ -32,8 +33,9 @@ export function LayoutBuilder() {
       <div class={styles.canvas} ref={canvasElement} data-canvas="true">
         <Canvas />
         <Breadcrumb canvasAspect={canvasAspect} />
+        <Menu />
         <Contextual />
-        <AudioVolume />
+        <Main />
       </div>
     </div>
   )

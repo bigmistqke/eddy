@@ -1,61 +1,77 @@
 import { Show, useContext } from "solid-js"
-import { AudioIcon, PlusIcon, SplitIcon, TrashIcon } from "../components/icons"
-import { ProjectMenu } from "../components/project-menu"
+import { PlusIcon, SplitIcon, TrashIcon } from "../components/icons"
 import { Context } from "../context"
-import type { Tool } from "../types"
-import { logAction } from "../utils"
+import { logAction, selectedCellId } from "../utils"
+import styles from "./contextual.module.css"
 import { Hud } from "./hud"
 
+/** Edit-mode tool-bar. Sits in the middle-right grid cell, underneath
+ *  the always-visible hamburger menu. Contents scroll vertically when
+ *  they'd exceed the available height (e.g. small viewport with a tall
+ *  volume slider). Mounted only while Edit is on; the cycle button
+ *  flips between append/split, trash removes the selection, and the
+ *  vertical slider drives the selected cell's volume. */
 export function Contextual() {
   const context = useContext(Context)!
 
-  // Tool buttons are toggles: tapping the active tool clears it,
-  // tapping the inactive tool switches to it. Record/play also clear
-  // the tool (see hud/main.tsx).
-  function setToolToggle(tool: Tool) {
-    const next = context.app.tool === tool ? null : tool
+  function cycleSubMode() {
+    const next = context.app.tool === "append" ? "split" : "append"
     logAction("set-tool", { tool: next })
     context.setTool(next)
   }
 
   return (
-    <Hud kind="contextual" position="top-right" orientation="right">
-      <ProjectMenu />
-      <Hud.Button
-        data-action="delete"
-        disabled={context.app.selection === null}
-        onClick={() => {
-          logAction("delete")
-          context.deleteSelection()
-        }}
+    <Show when={context.app.tool !== null}>
+      <Hud
+        kind="contextual"
+        position="middle-right"
+        orientation="right"
+        contentClass={styles.content}
       >
-        <TrashIcon />
-      </Hud.Button>
-      {/* Edit-mode tools (append / split / audio) appear only when
-          the user has toggled Edit on (main HUD). */}
-      <Show when={context.app.tool !== null}>
         <Hud.Button
-          active={context.app.tool === "append"}
-          data-action="set-tool-append"
-          onClick={() => setToolToggle("append")}
+          data-action="delete"
+          disabled={context.app.selection === null}
+          onClick={() => {
+            logAction("delete")
+            context.deleteSelection()
+          }}
         >
-          <PlusIcon />
+          <TrashIcon />
         </Hud.Button>
         <Hud.Button
-          active={context.app.tool === "split"}
-          data-action="set-tool-split"
-          onClick={() => setToolToggle("split")}
+          data-action="cycle-sub-mode"
+          data-tool={context.app.tool}
+          onClick={cycleSubMode}
         >
-          <SplitIcon />
+          <Show when={context.app.tool === "append"} fallback={<SplitIcon />}>
+            <PlusIcon />
+          </Show>
         </Hud.Button>
-        <Hud.Button
-          active={context.app.tool === "audio"}
-          data-action="set-tool-audio"
-          onClick={() => setToolToggle("audio")}
-        >
-          <AudioIcon />
-        </Hud.Button>
-      </Show>
-    </Hud>
+        <Show when={selectedCellId(context)}>
+          {id => {
+            const hasClip = () => context.clips.cellIds().includes(id())
+            return (
+              <input
+                class={styles.slider}
+                data-action="set-cell-volume"
+                data-audio-cell={id()}
+                type="range"
+                min="0"
+                max="1.5"
+                step="0.01"
+                disabled={!hasClip()}
+                value={context.clips.cellVolume(id())}
+                onInput={event => {
+                  context.clips.setCellVolume(
+                    id(),
+                    Number((event.currentTarget as HTMLInputElement).value),
+                  )
+                }}
+              />
+            )
+          }}
+        </Show>
+      </Hud>
+    </Show>
   )
 }

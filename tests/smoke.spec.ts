@@ -1,16 +1,16 @@
 import { expect, test } from "./helpers"
 import { activateTool, clickFrame, frameRect, readViewport } from "./helpers"
 
-test("dev server boots and tool buttons render", async ({ page }) => {
+test("dev server boots; edit toggle reveals the sub-mode cycle button", async ({ page }) => {
   await page.goto("/")
-  // Edit-mode entry point lives in the main HUD and is always
-  // visible; per-tool buttons (append / split / audio) only mount in
-  // contextual once Edit is on.
-  await expect(page.locator('[data-action="toggle-edit"]')).toBeVisible()
-  await page.locator('[data-action="toggle-edit"]').click()
-  await expect(page.locator('[data-action="set-tool-append"]')).toBeVisible()
-  await expect(page.locator('[data-action="set-tool-split"]')).toBeVisible()
-  await expect(page.locator('[data-action="set-tool-audio"]')).toBeVisible()
+  const toggle = page.locator('[data-action="toggle-edit"]')
+  await expect(toggle).toBeVisible()
+  await expect(page.locator('[data-action="cycle-sub-mode"]')).toHaveCount(0)
+  await toggle.click()
+  const cycle = page.locator('[data-action="cycle-sub-mode"]')
+  await expect(cycle).toHaveAttribute("data-tool", "append")
+  await cycle.click()
+  await expect(cycle).toHaveAttribute("data-tool", "split")
 })
 
 test("activating a tool shows the canvas inner", async ({ page }) => {

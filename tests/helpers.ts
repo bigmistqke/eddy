@@ -194,22 +194,19 @@ export async function clickAction(page: Page, action: string) {
   await page.locator(`[data-action="${action}"]`).first().click()
 }
 
-/** Activate an editing tool (`append` / `split` / `audio`).
+/** Activate an editing sub-mode (`append` / `split`).
  *
- *  The contextual HUD only mounts the tool-pickers when Edit mode is
- *  on, so we click the main `toggle-edit` button first if no tool is
- *  currently active. Toggle-edit defaults to `append`; if the caller
- *  already wanted append we stop there. The per-tool button is a
- *  toggle — clicking it when it's already active flips back to null,
- *  so we must re-read tool state after toggling Edit before deciding
- *  whether to click set-tool-{tool}. */
-export async function activateTool(page: Page, tool: "append" | "split" | "audio") {
+ *  Edit on/off lives on the main HUD; the sub-mode cycle button lives
+ *  in the contextual HUD and only mounts while Edit is on. We click
+ *  toggle-edit first (default sub-mode is `append`), then cycle once
+ *  more if the caller wanted `split`. */
+export async function activateTool(page: Page, tool: "append" | "split") {
   const readTool = () => page.evaluate(() => window.__appContext?.app.tool ?? null)
   if ((await readTool()) === null) {
     await clickAction(page, "toggle-edit")
   }
   if ((await readTool()) !== tool) {
-    await clickAction(page, `set-tool-${tool}`)
+    await clickAction(page, "cycle-sub-mode")
   }
 }
 
@@ -473,7 +470,7 @@ export async function expectHandlesDontOverlap(page: Page) {
     }
     const huds: Record<string, { x: number; y: number; w: number; h: number } | null> = {
       mainBottom: rect(
-        document.querySelector("[data-action='set-tool-append']")?.closest("[class*='_notch_']"),
+        document.querySelector("[data-action='toggle-edit']")?.closest("[class*='_notch_']"),
       ),
       contextualRight: rect(
         document.querySelector("[data-action='delete']")?.closest("[class*='_notch_']"),

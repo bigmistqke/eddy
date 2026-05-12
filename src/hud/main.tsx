@@ -138,9 +138,9 @@ export function Main() {
     context.transport.stop()
   }
 
-  /** Toggle "Edit mode" — gates the contextual HUD's tool pickers
-   *  (split / append / audio). Default tool on entry is `append`; the
-   *  contextual lets the user switch from there. */
+  /** Toggle "Edit mode" — mounts the contextual HUD's split/append
+   *  cycle button. Default sub-mode on entry is `append`; the cycle
+   *  button switches to `split` from there. */
   function toggleEdit() {
     const next = context.app.tool === null ? "append" : null
     logAction("set-tool", { tool: next })
