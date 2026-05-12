@@ -113,7 +113,8 @@
   color: var(--color-front);
   font: inherit;
   font-size: 0.8em;
-  padding: var(--padding) var(--radius-big);
+  padding: var(--radius-small);
+  height: calc((var(--radius-big) - var(--padding)) * 2);
   cursor: pointer;
   border-radius: calc(var(--radius-big) - var(--padding));
 
@@ -174,7 +175,7 @@
   background: none;
   border: none;
   color: var(--color-front);
-  padding: 0 var(--radius-big);
+  padding: 0 var(--radius-small);
   cursor: pointer;
   border-radius: calc(var(--radius-big) - var(--padding));
   display: flex;

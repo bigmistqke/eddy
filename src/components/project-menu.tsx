@@ -306,6 +306,7 @@ export function ProjectMenu() {
                       data-project-id={project().id}
                       onClick={event => onDeleteRow(event, project().id)}
                       aria-label="Delete project"
+                      style={{ "--stroke-width": "3px" }}
                     >
                       <TrashIcon />
                     </button>

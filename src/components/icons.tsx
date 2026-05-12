@@ -68,7 +68,7 @@ export function AudioIcon(props: { class?: string }) {
         <path
           d="M28.0046 28.9774V3.00769L9.00459 10.9773V34.4774M28.0046 28.9774C28.0045 34.6126 21.0002 34.8741 21 28.9774C20.9998 23.0807 28.0046 22.9192 28.0046 28.9774ZM9.00459 34.4774C9.0045 40.1126 2.00017 40.3741 2 34.4774C1.99983 28.5807 9.00459 28.4192 9.00459 34.4774Z"
           stroke="currentColor"
-          stroke-width="4"
+          stroke-width="var(--stroke-width, 4px)"
           stroke-linecap="round"
         />
       </svg>
@@ -262,18 +262,28 @@ export function TrashIcon(props: { class?: string }) {
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <path d="M25 13L25 30" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
-        <path d="M17 13L17 30" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+        <path
+          d="M25 13L25 30"
+          stroke="currentColor"
+          stroke-width="var(--stroke-width, 4px)"
+          stroke-linecap="round"
+        />
+        <path
+          d="M17 13L17 30"
+          stroke="currentColor"
+          stroke-width="var(--stroke-width, 4px)"
+          stroke-linecap="round"
+        />
         <path
           d="M6 7L8.97838 38H32.0216L35 7"
           stroke="currentColor"
-          stroke-width="4"
+          stroke-width="var(--stroke-width, 4px)"
           stroke-linecap="round"
         />
         <path
           d="M2 5H13.9104L16.1791 2H25.8209L28.0896 5H40"
           stroke="currentColor"
-          stroke-width="4"
+          stroke-width="var(--stroke-width, 4px)"
           stroke-linecap="round"
         />
       </svg>
