@@ -3,7 +3,7 @@ import type { ClipStore } from "./clips/store"
 import type { Preview } from "./clips/preview"
 import type { Transport } from "./clips/transport"
 import type { ProjectsStore } from "./state/projects"
-import type { Rect, ViewportTransform } from "./viewport"
+import type { HudRect, ViewportTransform } from "./viewport"
 
 export type Container = {
   type: "container"
@@ -39,6 +39,13 @@ export type AppState = {
 
 export type Direction = "top" | "bottom" | "left" | "right"
 export type HudKind = "main" | "breadcrumb" | "menu" | "contextual"
+/** A HUD's long axis — the direction along which it extends. Horizontal
+ *  HUDs (e.g. a breadcrumb across the top edge) attach to the top/bottom
+ *  edges; vertical HUDs attach to the left/right edges. Used by viewport
+ *  math to decide between extending a handle past the HUD vs zooming the
+ *  selected frame to fit (when the handle's escape axis matches the
+ *  HUD's, extending can't clear the collision). */
+export type HudOrientation = "horizontal" | "vertical"
 export interface Selection {
   path: number[]
   depth: number
@@ -69,12 +76,17 @@ export type AppContext = {
   setIsCanvasZoomed: (zoomed: boolean) => void
 
   /** Returns a ref-setter for the named HUD slot. Wire as
-   *  `ref={context.setHudElement("breadcrumb")}` etc. */
-  setHudElement: (kind: HudKind) => (el: HTMLElement | undefined) => void
+   *  `ref={context.setHudElement("breadcrumb", "horizontal")}` etc.
+   *  The orientation is the HUD's long axis (see `HudOrientation`). */
+  setHudElement: (
+    kind: HudKind,
+    orientation: HudOrientation,
+  ) => (el: HTMLElement | undefined) => void
 
-  /** Bounding rects of all mounted HUDs in canvas-relative coords. Used
-   *  by viewport math to detect handle/HUD overlap. */
-  computeHudRects: (canvasRect: DOMRect) => Rect[]
+  /** Bounding rects of all mounted HUDs in canvas-relative coords, each
+   *  tagged with its long-axis orientation. Used by viewport math to
+   *  decide handle extend vs zoom-to-fit on handle/HUD overlap. */
+  computeHudRects: (canvasRect: DOMRect) => HudRect[]
 
   /** True while the canvas viewport is mid-transition. Frames hide their
    *  handles during this window so ResizeObserver-driven collision rechecks

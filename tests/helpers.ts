@@ -449,8 +449,10 @@ export async function expectHandlesDontOverlap(page: Page) {
     }
     const handles: Record<string, { x: number; y: number; w: number; h: number } | null> = {}
     for (const direction of ["top", "bottom", "left", "right"]) {
-      const wrapper = document.querySelector(`[data-direction='${direction}']`)
-      handles[direction] = rect(wrapper?.firstElementChild)
+      // Measure the ArrowButton itself (data-direction is on it), not
+      // its child SVG — the button's backdrop is what visually collides
+      // with HUDs, and it's larger than the icon inside.
+      handles[direction] = rect(document.querySelector(`[data-direction='${direction}']`))
     }
     const huds: Record<string, { x: number; y: number; w: number; h: number } | null> = {
       mainBottom: rect(

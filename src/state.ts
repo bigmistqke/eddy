@@ -11,13 +11,14 @@ import type {
   Entity,
   HandleOp,
   HudKind,
+  HudOrientation,
   Node,
   SelectedHandlesState,
   Selection,
   Tool,
 } from "./types"
 import { createEntity, resolveNode, trackLayout } from "./utils"
-import type { Rect, ViewportTransform } from "./viewport"
+import type { HudRect, ViewportTransform } from "./viewport"
 
 function cloneNode(node: Node): Node {
   if (node.type === "entity") {
@@ -80,41 +81,51 @@ export function createAppState(): AppContext {
     selection: { path: [], depth: 0, preview: true },
   })
 
-  // HUD element refs — kept internal. Consumers register a ref via
-  // setHudElement(kind) and read overlap rects via computeHudRects.
-  const hudSignals: Record<HudKind, ReturnType<typeof createSignal<HTMLElement | undefined>>> = {
-    main: createSignal<HTMLElement | undefined>(),
-    breadcrumb: createSignal<HTMLElement | undefined>(),
-    menu: createSignal<HTMLElement | undefined>(),
-    contextual: createSignal<HTMLElement | undefined>(),
+  // HUD element refs — kept internal. Consumers register via
+  // setHudElement(kind, orientation) and read overlap rects via
+  // computeHudRects. Orientation is carried so viewport math can decide
+  // between extending a handle past a HUD vs zooming to fit.
+  type HudSlot = {
+    element: HTMLElement | undefined
+    orientation: HudOrientation
+  }
+  const hudSlots: Record<HudKind, ReturnType<typeof createSignal<HudSlot | undefined>>> = {
+    main: createSignal<HudSlot | undefined>(),
+    breadcrumb: createSignal<HudSlot | undefined>(),
+    menu: createSignal<HudSlot | undefined>(),
+    contextual: createSignal<HudSlot | undefined>(),
   }
 
-  const setHudElement = (kind: HudKind) => hudSignals[kind][1]
+  const setHudElement =
+    (kind: HudKind, orientation: HudOrientation) => (element: HTMLElement | undefined) => {
+      hudSlots[kind][1](element ? { element, orientation } : undefined)
+    }
 
   /**
-   * Read each HUD's bounding rect in canvas-relative coords, skipping
-   * detached refs. HUDs are partial-edge rectangles (corners, center
-   * strips), not full-edge insets — model them as rects so per-handle
-   * overlap detection can be precise.
+   * Read each HUD's bounding rect in canvas-relative coords (with its
+   * long-axis orientation), skipping detached refs. HUDs are partial-edge
+   * rectangles (corners, center strips), not full-edge insets — model
+   * them as rects so per-handle overlap detection can be precise.
    */
-  function computeHudRects(canvasRect: DOMRect): Rect[] {
-    const elements = [
-      untrack(hudSignals.breadcrumb[0]),
-      untrack(hudSignals.main[0]),
-      untrack(hudSignals.menu[0]),
-      untrack(hudSignals.contextual[0]),
+  function computeHudRects(canvasRect: DOMRect): HudRect[] {
+    const slots = [
+      untrack(hudSlots.breadcrumb[0]),
+      untrack(hudSlots.main[0]),
+      untrack(hudSlots.menu[0]),
+      untrack(hudSlots.contextual[0]),
     ]
-    const rects: Rect[] = []
-    for (const element of elements) {
-      if (!element?.isConnected) {
+    const rects: HudRect[] = []
+    for (const slot of slots) {
+      if (!slot?.element?.isConnected) {
         continue
       }
-      const elementRect = element.getBoundingClientRect()
+      const elementRect = slot.element.getBoundingClientRect()
       rects.push({
         x: elementRect.left - canvasRect.left,
         y: elementRect.top - canvasRect.top,
         width: elementRect.width,
         height: elementRect.height,
+        orientation: slot.orientation,
       })
     }
     return rects

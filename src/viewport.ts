@@ -1,5 +1,5 @@
 import { HANDLE_H, HANDLE_W, ROOT_PADDING, SIBLING_GAP } from "./constants"
-import type { Direction, Node, Rgb, Selection } from "./types"
+import type { Direction, HudOrientation, Node, Rgb, Selection } from "./types"
 import { pathEquals } from "./utils"
 
 /**
@@ -165,7 +165,7 @@ export function computeViewportTransform(
   path: number[],
   canvas: { width: number; height: number },
   minScale = 1,
-  hudRects: Rect[] = [],
+  hudRects: HudRect[] = [],
 ): ViewportTransform {
   // Base rect at scale=1 — used for the natural-fit short-circuit only.
   // CSS `padding` and `gap` are *fixed pixels*, so the rect at scale s
@@ -184,6 +184,9 @@ export function computeViewportTransform(
   //   * horizontal-pair non-overlap: frame.width ≥ 2·HANDLE_H + ext.left + ext.right
   //   * cross-pair non-overlap (top ↔ left/right): frame.width ≥ HANDLE_W + 2·HANDLE_H
   //   * cross-pair non-overlap on vertical: frame.height ≥ HANDLE_W + 2·HANDLE_H
+  // Same-axis handle/HUD collisions can't be resolved by extending the
+  // notch — force fit-scale so the frame lays out clear of the HUD.
+  const axisCollision = hasUnescapableHudCollision(baseRect, hudRects)
   const naturalExt = computeExtends(baseRect, hudRects)
   const sameAxisH = 2 * HANDLE_H
   const crossPair = HANDLE_W + 2 * HANDLE_H
@@ -191,7 +194,7 @@ export function computeViewportTransform(
   const horizontalFits = baseRect.width >= sameAxisH + naturalExt.left + naturalExt.right
   const crossWidthFits = baseRect.width >= crossPair
   const crossHeightFits = baseRect.height >= crossPair
-  if (verticalFits && horizontalFits && crossWidthFits && crossHeightFits) {
+  if (!axisCollision && verticalFits && horizontalFits && crossWidthFits && crossHeightFits) {
     return IDENTITY_VIEWPORT
   }
 
@@ -217,6 +220,22 @@ export function transformToCss(t: ViewportTransform) {
 /** Axis-aligned rect in canvas-local coordinates. Coordinates are in CSS
  *  pixels of the un-zoomed canvas. */
 export type Rect = { x: number; y: number; width: number; height: number }
+
+/** A HUD's bounding rect plus its long-axis orientation (see
+ *  `HudOrientation` in types.ts). The orientation drives handle-collision
+ *  policy: when a handle's escape axis matches the HUD's long axis,
+ *  extending past the HUD can't clear the collision — we zoom-to-fit
+ *  instead. */
+export interface HudRect extends Rect {
+  orientation: HudOrientation
+}
+
+/** A directional handle's escape axis. Top/bottom handles escape by
+ *  growing along the vertical axis; left/right handles along the
+ *  horizontal axis. */
+function handleAxis(direction: Direction): HudOrientation {
+  return direction === "top" || direction === "bottom" ? "vertical" : "horizontal"
+}
 
 /**
  * Compute a frame's rect from the layout tree and canvas dimensions.
@@ -420,12 +439,20 @@ function rectsOverlap(first: Rect, second: Rect): boolean {
 /** Per-direction extend amount (px) for a frame's handle notches against
  *  HUDs. For each handle, finds the maximum overlap with any HUD on that
  *  handle's outward side; that distance is how far the notch needs to
- *  grow to push its visible portion past the HUD. */
-export function computeExtends(frame: Rect, hudRects: Rect[]): Record<Direction, number> {
+ *  grow to push its visible portion past the HUD.
+ *
+ *  HUDs whose long axis matches the handle's escape axis are skipped:
+ *  extending can't clear a collinear HUD (the handle would have to grow
+ *  past the HUD's full length), so the policy is to zoom-to-fit instead
+ *  — see `hasUnescapableHudCollision`. */
+export function computeExtends(frame: Rect, hudRects: HudRect[]): Record<Direction, number> {
   const handles = handleRects(frame)
   const extend: Record<Direction, number> = { top: 0, bottom: 0, left: 0, right: 0 }
   for (const hud of hudRects) {
     for (const direction of ["top", "bottom", "left", "right"] as Direction[]) {
+      if (hud.orientation === handleAxis(direction)) {
+        continue
+      }
       const handle = handles[direction]
       if (!rectsOverlap(handle, hud)) {
         continue
@@ -451,6 +478,26 @@ export function computeExtends(frame: Rect, hudRects: Rect[]): Record<Direction,
     }
   }
   return extend
+}
+
+/** True iff any handle overlaps a HUD whose long axis matches the
+ *  handle's escape axis. Such collisions can't be resolved by extending
+ *  the notch (the handle would need to grow past the HUD's whole length)
+ *  — the caller responds by zooming the frame to fit so handles lay out
+ *  away from the HUDs entirely. */
+export function hasUnescapableHudCollision(frame: Rect, hudRects: HudRect[]): boolean {
+  const handles = handleRects(frame)
+  for (const hud of hudRects) {
+    for (const direction of ["top", "bottom", "left", "right"] as Direction[]) {
+      if (hud.orientation !== handleAxis(direction)) {
+        continue
+      }
+      if (rectsOverlap(handles[direction], hud)) {
+        return true
+      }
+    }
+  }
+  return false
 }
 
 /** Per-direction stick amount (px) — how far to pull each handle inward
