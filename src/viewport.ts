@@ -1,4 +1,4 @@
-import { HANDLE_H, HANDLE_W, ROOT_PADDING, SIBLING_GAP } from "./constants"
+import { HANDLE_H, HANDLE_W } from "./constants"
 import type { Direction, HudOrientation, Node, Rgb, Selection } from "./types"
 import { pathEquals } from "./utils"
 
@@ -240,47 +240,35 @@ function handleAxis(direction: Direction): HudOrientation {
 /**
  * Compute a frame's rect from the layout tree and canvas dimensions.
  *
- * Mirrors the CSS flex layout: every container has `display: flex` with
- * children at `flex: 1`. The root container has padding on all sides plus
- * gap between children; non-root containers have only gap.
- *
- * Pure function — no DOM reads. Caller passes canvas dims and the path of
- * the target frame (empty path = root container).
+ * Mirrors the CSS flex layout: every container is `display: flex` with
+ * children at `flex: 1`, tiling edge-to-edge — no gap, no padding (see
+ * ADR-0001). Pure function — no DOM reads.
  */
 export function frameRect(
   layout: Node,
   path: number[],
   canvas: { width: number; height: number },
-  options: { gap?: number; rootPadding?: number } = {},
 ): Rect {
-  const gap = options.gap ?? SIBLING_GAP
-  const rootPadding = options.rootPadding ?? ROOT_PADDING
-  let rect: Rect = {
-    x: rootPadding,
-    y: rootPadding,
-    width: canvas.width - 2 * rootPadding,
-    height: canvas.height - 2 * rootPadding,
-  }
+  let rect: Rect = { x: 0, y: 0, width: canvas.width, height: canvas.height }
   let current: Node = layout
   for (const childIndex of path) {
     if (current.type !== "container") {
       break
     }
     const childCount = current.children.length
-    const totalGap = gap * (childCount - 1)
     if (current.direction === "horizontal") {
-      const childWidth = (rect.width - totalGap) / childCount
+      const childWidth = rect.width / childCount
       rect = {
-        x: rect.x + childIndex * (childWidth + gap),
+        x: rect.x + childIndex * childWidth,
         y: rect.y,
         width: childWidth,
         height: rect.height,
       }
     } else {
-      const childHeight = (rect.height - totalGap) / childCount
+      const childHeight = rect.height / childCount
       rect = {
         x: rect.x,
-        y: rect.y + childIndex * (childHeight + gap),
+        y: rect.y + childIndex * childHeight,
         width: rect.width,
         height: childHeight,
       }
@@ -312,15 +300,13 @@ export interface LeafFrame {
  *
  *  Pure function — no DOM reads. Caller passes scaled canvas dims for
  *  the desired output (e.g. `canvas.width * scale` to render at zoom).
+ *  Layout tiles edge-to-edge — no gap, no padding (see ADR-0001).
  */
 export function layoutFrames(
   layout: Node,
   canvas: { width: number; height: number },
   selection: Selection | null = null,
-  options: { gap?: number; rootPadding?: number } = {},
 ): { leaves: LeafFrame[]; selectedRect: Rect | null } {
-  const gap = options.gap ?? SIBLING_GAP
-  const rootPadding = options.rootPadding ?? ROOT_PADDING
   const leaves: LeafFrame[] = []
   let selectedRect: Rect | null = null
 
@@ -342,16 +328,14 @@ export function layoutFrames(
         rect,
         color: [node.color[0], node.color[1], node.color[2]],
       })
-
       return
     }
     const childCount = node.children.length
-    const totalGap = gap * (childCount - 1)
     if (node.direction === "horizontal") {
-      const childWidth = (rect.width - totalGap) / childCount
+      const childWidth = rect.width / childCount
       for (let index = 0; index < childCount; index++) {
         const childRect: Rect = {
-          x: rect.x + index * (childWidth + gap),
+          x: rect.x + index * childWidth,
           y: rect.y,
           width: childWidth,
           height: rect.height,
@@ -361,11 +345,11 @@ export function layoutFrames(
         path.pop()
       }
     } else {
-      const childHeight = (rect.height - totalGap) / childCount
+      const childHeight = rect.height / childCount
       for (let index = 0; index < childCount; index++) {
         const childRect: Rect = {
           x: rect.x,
-          y: rect.y + index * (childHeight + gap),
+          y: rect.y + index * childHeight,
           width: rect.width,
           height: childHeight,
         }
@@ -376,14 +360,7 @@ export function layoutFrames(
     }
   }
 
-  const rootRect: Rect = {
-    x: rootPadding,
-    y: rootPadding,
-    width: canvas.width - 2 * rootPadding,
-    height: canvas.height - 2 * rootPadding,
-  }
-  walk(layout, [], rootRect)
-
+  walk(layout, [], { x: 0, y: 0, width: canvas.width, height: canvas.height })
   return { leaves, selectedRect }
 }
 
