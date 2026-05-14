@@ -192,22 +192,10 @@ export function Canvas() {
         width: wrapperRect.width * viewport.scale,
         height: wrapperRect.height * viewport.scale,
       }
-      // In song mode (no tool) cells are seamless: no gap between
-      // siblings, no inset from the canvas edge. In edit mode (append
-      // or split) the constants apply so the layout-editing affordances
-      // (handles, selection rect) have breathing room. drawAt runs in
-      // an unowned scope (called from animation tween + onSettled), so
-      // all reactive reads go through untrack — Solid 2.x dev fires
-      // STRICT_READ_UNTRACKED otherwise.
-      const { leaves, selectedRect } = untrack(() => {
-        // Layout fills the canvas edge-to-edge in every mode — no gap
-        // between siblings, no inset from the canvas edge. The HUD grid
-        // overlay sits on top and provides its own padding.
-        return layoutFrames(context.app.layout, scaledCanvas, context.app.selection, {
-          gap: 0,
-          rootPadding: 0,
-        })
-      })
+      // Layout tiles the scaled canvas edge-to-edge — see ADR-0001.
+      const { leaves, selectedRect } = untrack(() =>
+        layoutFrames(context.app.layout, scaledCanvas, context.app.selection),
+      )
       lastLeaves = leaves
       lastSelectedRect = selectedRect
       lastViewport = viewport
