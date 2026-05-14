@@ -65,5 +65,5 @@ experiment (sustained N-decoder throughput) remains the decisive test.
 ```sh
 git checkout <result.json git.sha>
 pnpm dev
-PORT=<port> experiments/harness/run.sh raw-capability
+PORT=<port> experiments/harness/run.sh 01_raw-capability
 ```

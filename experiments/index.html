@@ -25,7 +25,7 @@
       // this loads the one named in the query string. harness/run-cdp.mjs
       // navigates here with ?experiment=<name>.
       const name = new URLSearchParams(location.search).get("experiment")
-      if (name && /^[a-z0-9-]+$/.test(name)) {
+      if (name && /^[a-z0-9_-]+$/.test(name)) {
         document.title = `experiment · ${name}`
         import(`./${name}/index.ts`)
       } else {

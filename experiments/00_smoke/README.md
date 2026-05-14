@@ -13,5 +13,5 @@ If smoke is green, a real experiment will get a camera too.
 
 ```sh
 pnpm dev
-PORT=<port> experiments/harness/run.sh smoke
+PORT=<port> experiments/harness/run.sh 00_smoke
 ```

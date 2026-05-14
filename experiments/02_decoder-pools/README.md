@@ -61,5 +61,5 @@ run-to-run variance).
 ```sh
 git checkout <result.json git.sha>
 pnpm dev
-PORT=<port> experiments/harness/run.sh decoder-pools
+PORT=<port> experiments/harness/run.sh 02_decoder-pools
 ```
