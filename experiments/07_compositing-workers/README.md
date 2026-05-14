@@ -31,9 +31,31 @@ and the build can be backgrounded. Numbers diverge or it errors → some
 part of the pipeline (`OffscreenCanvas`, `VideoEncoder`, `VideoDecoder`)
 misbehaves in a Worker on this device.
 
-## Verdict
+## Verdict (2026-05-14 · Galaxy A15 · Android 10 · Chrome 148)
 
-_Pending first device run._
+**Feasibility confirmed — the composite pipeline is worker-safe.**
+Build + decode both run inside a Worker; numbers track 05:
+
+| N | worker fps / build | 05 main fps / build |
+|---|---|---|
+| 4 | 87.7 / 18.7 s | 89.3 / 8.8 s |
+| 9 | 81.3 / 12.7 s | 78.3 / 12.0 s |
+| 16 | 80.3 / 12.8 s | 110.3 / 10.3 s |
+| 25 | 107.6 / 13.9 s | 98.4 / 12.7 s |
+
+- **Decode fps:** worker ≈ main, within run-to-run noise (both bounce
+  78–110) — consistent with 06: Workers don't change decode throughput.
+- **Build time:** ~12–14 s, ≈ 05. Workers don't speed the build either
+  (same hardware). N=4's 18.7 s is an outlier — likely first-worker
+  cold-start (module load + codec init).
+- `OffscreenCanvas`, `VideoEncoder`, `VideoDecoder` all work in a Worker
+  on this device — no fallbacks needed.
+
+**Takeaway:** the ~10–15 s atlas build can't be made *faster* by
+threading, but it **can be moved off the main thread** — so the real app
+rebuilds atlases in the background with its UI thread free. Combined
+with 05, the composite is both the fastest *and* the most
+UI-friendly option.
 
 ## Reproduce
 
