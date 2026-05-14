@@ -18,8 +18,11 @@ const params = {
   reconfigureIterations: 30,
   uploadIterations: 60,
   recordSeconds: 6,
-  highRes: { width: 320, height: 240 },
-  lowRes: { width: 160, height: 120 },
+  // Realistic capture resolutions — what a cell's source clip would
+  // actually be recorded at. The camera negotiates the nearest it
+  // supports; result.json records the actual dimensions.
+  highRes: { width: 1280, height: 720 },
+  lowRes: { width: 640, height: 480 },
 }
 
 function dims(input: ProbeInput): { requested: string; actual: string } {
