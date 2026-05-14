@@ -39,125 +39,38 @@ export function selectedPathKey(selection: Selection): string {
  * induced same-axis-pair overlap occurs, pan to canvas center. Otherwise
  * identity — preserves "no pan when not needed" UX.
  */
-/** Two-stage zoom search:
- *
- *  Rule 2 — `findFitInsideScale` iterates by `min(widthFactor, heightFactor)`
- *  so the frame fits ENTIRELY inside the canvas. The binding axis hits
- *  the canvas edge exactly; the other axis is smaller. Aspect ratio
- *  preserved.
- *
- *  Rule 3 — `findClampOverflowScale` iterates by `max(...)`. Used only
- *  when fit-inside can't grow the frame (extreme aspect ratios where
- *  one axis already exceeds target while the other is far smaller).
- *  The smaller-by-ratio dim fills target; the larger overflows the
- *  canvas. Stick + extend keep the off-canvas handles visible.
- *
- *  Iterative in both cases because CSS padding/gap are fixed pixels —
- *  rect dims at scale s are NOT (rect at 1) × s. Converges in 1–3
- *  iterations typically, capped to avoid runaway. */
-// MAX_FIT_ITER alone bounds the loop — there's no need for a separate
-// scale cap. The dim-positivity check (rect.w/h <= 0 doubles scale and
-// continues) ensures we never compute factors against zero/negative
-// dims, so factor is always finite.
-const MAX_FIT_ITER = 20
-function findFitInsideScale(
-  layout: Node,
-  path: number[],
-  canvas: { width: number; height: number },
-): number {
-  const targetWidth = canvas.width
-  const targetHeight = canvas.height
-  if (targetWidth <= 0 || targetHeight <= 0) {
-    return 1
-  }
-  let scale = 1
-  for (let iteration = 0; iteration < MAX_FIT_ITER; iteration++) {
-    const rect = frameRect(layout, path, {
-      width: canvas.width * scale,
-      height: canvas.height * scale,
-    })
-    if (rect.width <= 0 || rect.height <= 0) {
-      scale *= 2
-      continue
-    }
-    const widthFactor = targetWidth / rect.width
-    const heightFactor = targetHeight / rect.height
-    const factor = Math.min(widthFactor, heightFactor)
-    // Converged: binding axis is at target. Use abs(factor-1) — NOT
-    // factor<=1.001 — because flex-math non-linearity can overshoot at
-    // high scale, putting both axes past target. We must allow shrink
-    // back down to land the binding axis exactly on target.
-    if (Math.abs(factor - 1) < 0.001) {
-      return scale
-    }
-    scale *= factor
-  }
-  return scale
-}
-
-function findClampOverflowScale(
-  layout: Node,
-  path: number[],
-  canvas: { width: number; height: number },
-): number {
-  const targetWidth = canvas.width
-  const targetHeight = canvas.height
-  if (targetWidth <= 0 || targetHeight <= 0) {
-    return 1
-  }
-  let scale = 1
-  for (let iteration = 0; iteration < MAX_FIT_ITER; iteration++) {
-    const rect = frameRect(layout, path, {
-      width: canvas.width * scale,
-      height: canvas.height * scale,
-    })
-    if (rect.width <= 0 || rect.height <= 0) {
-      scale *= 2
-      continue
-    }
-    const widthFactor = targetWidth / rect.width
-    const heightFactor = targetHeight / rect.height
-    const factor = Math.max(widthFactor, heightFactor)
-    // Same overshoot fix as findFitInsideScale: flex-math non-linearity
-    // at high scale can leave both axes past target — factor < 1 here
-    // means we should shrink back so the smaller-by-ratio axis lands
-    // exactly on target.
-    if (Math.abs(factor - 1) < 0.001) {
-      return scale
-    }
-    scale *= factor
-  }
-  return scale
-}
-
 /** Minimum dimension required for both same-axis and cross-pair handle
- *  pairs to fit non-overlapping on a single axis. Cross-pair geometry
- *  (a top handle's HANDLE_W center span vs a rotated left/right
- *  handle's HANDLE_H span) is the binding constraint. */
+ *  pairs to fit non-overlapping on a single axis. */
 const MIN_HANDLE_DIM = HANDLE_W + 2 * HANDLE_H
 
+/** Closed-form fit-scale. Layout is linearly scalable (ADR-0001), so the
+ *  rect at scale 1 scales directly:
+ *
+ *  - fit-inside (Rule 2): `min` of the axis ratios — frame fits entirely
+ *    inside the canvas, binding axis exactly on target.
+ *  - clamp-overflow (Rule 3): `max` of the axis ratios — used only when
+ *    fit-inside would leave a dimension below `MIN_HANDLE_DIM` (extreme
+ *    aspect ratios); the smaller-by-ratio axis fills target, the other
+ *    overflows.
+ */
 function findFitScale(
   layout: Node,
   path: number[],
   canvas: { width: number; height: number },
 ): number {
-  const inside = findFitInsideScale(layout, path, canvas)
-  if (inside > 1.001) {
-    // Rule 2 zoom is fine ONLY if both axes still have room for the
-    // four handles to lay out non-overlapping. With extreme aspect
-    // ratios, fit-inside lands the non-binding axis below MIN_HANDLE_DIM
-    // — left and right handles end up centered on top of each other.
-    // In that case fall through to clamp-overflow (Rule 3) which makes
-    // the smaller-by-ratio axis fill target and lets the other overflow.
-    const rect = frameRect(layout, path, {
-      width: canvas.width * inside,
-      height: canvas.height * inside,
-    })
-    if (Math.min(rect.width, rect.height) >= MIN_HANDLE_DIM) {
-      return inside
-    }
+  if (canvas.width <= 0 || canvas.height <= 0) {
+    return 1
   }
-  return findClampOverflowScale(layout, path, canvas)
+  const rect = frameRect(layout, path, canvas)
+  if (rect.width <= 0 || rect.height <= 0) {
+    return 1
+  }
+  const inside = Math.min(canvas.width / rect.width, canvas.height / rect.height)
+  // Rule 2 is fine only if both axes still have room for the four handles.
+  if (inside * Math.min(rect.width, rect.height) >= MIN_HANDLE_DIM) {
+    return inside
+  }
+  return Math.max(canvas.width / rect.width, canvas.height / rect.height)
 }
 
 export function computeViewportTransform(
@@ -167,10 +80,8 @@ export function computeViewportTransform(
   minScale = 1,
   hudRects: HudRect[] = [],
 ): ViewportTransform {
-  // Base rect at scale=1 — used for the natural-fit short-circuit only.
-  // CSS `padding` and `gap` are *fixed pixels*, so the rect at scale s
-  // is NOT baseRect × s; we recompute via flex math at the scaled
-  // canvasInner size for both handle-fit decisions and centering.
+  // Base rect at scale=1. Layout is linearly scalable (ADR-0001):
+  // the rect at scale s equals baseRect × s.
   const baseRect = frameRect(layout, path, canvas)
   if (baseRect.width === 0 || baseRect.height === 0) {
     return IDENTITY_VIEWPORT
@@ -201,13 +112,10 @@ export function computeViewportTransform(
   const fitScale = findFitScale(layout, path, canvas)
   const scale = Math.max(fitScale, minScale)
 
-  // Pan to canvas center using REAL flex-math at the scaled canvasInner.
-  const realRect = frameRect(layout, path, {
-    width: canvas.width * scale,
-    height: canvas.height * scale,
-  })
-  const x = canvas.width / 2 - (realRect.x + realRect.width / 2)
-  const y = canvas.height / 2 - (realRect.y + realRect.height / 2)
+  // Layout is linearly scalable (ADR-0001): the rect at `scale` is the
+  // base rect times `scale`. Pan its center to the canvas center.
+  const x = canvas.width / 2 - (baseRect.x + baseRect.width / 2) * scale
+  const y = canvas.height / 2 - (baseRect.y + baseRect.height / 2) * scale
   return { scale, x, y }
 }
 
