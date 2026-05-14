@@ -46,13 +46,24 @@ adb shell pm grant "$PKG" android.permission.CAMERA >/dev/null 2>&1 || true
 adb shell pm grant "$PKG" android.permission.RECORD_AUDIO >/dev/null 2>&1 || true
 
 # Chrome must be running for its DevTools socket to exist.
-if [ -z "$(adb shell pidof "$PKG" | tr -d '\r')" ]; then
+chrome_pid="$(adb shell pidof "$PKG" | tr -d '\r')"
+if [ -z "$chrome_pid" ]; then
   echo "[run] launching Chrome"
   adb shell monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1 || true
   sleep 2
+  chrome_pid="$(adb shell pidof "$PKG" | tr -d '\r')"
 fi
 
-socket="$(adb shell cat /proc/net/unix | grep -o 'chrome_devtools_remote[^ ]*' | head -1 | tr -d '\r')"
+# Resolve CHROME's socket specifically. Other Chromium browsers (Brave,
+# etc.) also expose a *_devtools_remote socket — Brave in particular
+# squats the unsuffixed `chrome_devtools_remote`, so naively picking the
+# first match drives the wrong browser. Chrome's socket is suffixed with
+# its PID; prefer that, fall back to the bare name only if absent.
+sockets="$(adb shell cat /proc/net/unix | awk '/@chrome_devtools_remote/ {print $NF}' | tr -d '\r' | sort -u)"
+socket="$(echo "$sockets" | grep -E "^@chrome_devtools_remote_${chrome_pid}\$" | head -n1 | sed 's/^@//')"
+if [ -z "$socket" ]; then
+  socket="$(echo "$sockets" | grep -E '^@chrome_devtools_remote$' | head -n1 | sed 's/^@//')"
+fi
 if [ -z "$socket" ]; then
   echo "Chrome DevTools socket not found — is Chrome running on the device?" >&2
   exit 1

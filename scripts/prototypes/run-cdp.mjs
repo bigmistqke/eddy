@@ -92,6 +92,9 @@ page.ws.addEventListener("message", ev => {
 await page.ready
 await page.send("Runtime.enable")
 await page.send("Page.enable")
+// getUserMedia is denied for non-visible tabs on Android Chrome — the
+// tab must be foreground before the prototype calls it.
+await page.send("Page.bringToFront").catch(() => {})
 console.error("[run-cdp] navigating...")
 await page.send("Page.navigate", { url: PAGE_URL })
 
