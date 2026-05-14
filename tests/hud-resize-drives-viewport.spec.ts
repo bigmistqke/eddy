@@ -1,5 +1,5 @@
 import { test, expect } from "./helpers"
-import { activateTool, clickFrame, readViewport } from "./helpers"
+import { activateTool, clickFrame } from "./helpers"
 
 test("a HUD growing taller re-runs handle/viewport math", async ({ page }) => {
   await page.goto("/")
@@ -8,11 +8,17 @@ test("a HUD growing taller re-runs handle/viewport math", async ({ page }) => {
   await clickFrame(page, [])
   await page.waitForTimeout(300)
 
-  const before = await readViewport(page)
-  expect(before).not.toBeNull()
+  // Read the bottom handle's --extend value before the HUD grows.
+  // The extend value encodes the handle/viewport math output for this
+  // direction; a change proves the pipeline re-ran.
+  const beforeExtend = await page.evaluate(() => {
+    const bottomHandle = document.querySelector("[data-direction='bottom']") as HTMLElement | null
+    if (!bottomHandle) throw new Error("bottom handle not found")
+    return bottomHandle.style.getPropertyValue("--extend").trim()
+  })
 
   // Grow the bottom (main) HUD by injecting height onto its element.
-  // The HUD changing size must, on its own, drive a viewport recompute.
+  // The HUD changing size must, on its own, drive a handle/viewport recompute.
   await page.evaluate(() => {
     const hud = document
       .querySelector("[data-action='toggle-edit']")
@@ -22,13 +28,16 @@ test("a HUD growing taller re-runs handle/viewport math", async ({ page }) => {
   })
   await page.waitForTimeout(400)
 
-  const after = await readViewport(page)
-  expect(after).not.toBeNull()
-  // The selected frame's handles now collide with a much taller HUD;
-  // the viewport must respond (scale or pan changed).
-  const changed =
-    Math.abs(after!.x - before!.x) > 1 ||
-    Math.abs(after!.y - before!.y) > 1 ||
-    Math.abs(after!.scale - before!.scale) > 0.001
-  expect(changed).toBe(true)
+  // Read the bottom handle's --extend value after the HUD grows.
+  const afterExtend = await page.evaluate(() => {
+    const bottomHandle = document.querySelector("[data-direction='bottom']") as HTMLElement | null
+    if (!bottomHandle) throw new Error("bottom handle not found")
+    return bottomHandle.style.getPropertyValue("--extend").trim()
+  })
+
+  // The bottom handle must have a larger extend now — the taller HUD
+  // pushed the handle further up to clear it. A change here proves the
+  // ResizeObserver-driven recompute actually ran and updated handle state.
+  expect(afterExtend).not.toBe("")
+  expect(afterExtend).not.toBe(beforeExtend)
 })

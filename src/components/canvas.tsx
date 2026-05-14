@@ -272,7 +272,7 @@ export function Canvas() {
         }
         const targetedDepth = selection.path.length - selection.depth
         const selectedPath = selection.path.slice(0, Math.max(0, targetedDepth))
-        const hudRects = context.computeHudRects(wrapperRect)
+        const hudRects = context.hudRects()
         const layout = context.app.layout
         const tComputeStart = performance.now()
         const transform = computeViewportTransform(layout, selectedPath, canvas, 1, hudRects)
@@ -451,7 +451,19 @@ export function Canvas() {
   )
 
   createEffect(
-    () => layoutSignature(context.app.layout, context.app.selection, context.app.tool),
+    () => {
+      const signature = layoutSignature(
+        context.app.layout,
+        context.app.selection,
+        context.app.tool,
+      )
+      // Track HUD geometry too — a HUD resizing on its own must
+      // re-run handle/viewport math (see candidate #2).
+      const rects = context.hudRects()
+      return `${signature}|${rects.length}:${rects
+        .map(r => `${Math.round(r.width)}x${Math.round(r.height)}`)
+        .join(",")}`
+    },
     () => {
       if (drive === null) {
         return
@@ -463,7 +475,10 @@ export function Canvas() {
 
   return (
     <div
-      ref={wrapperElement}
+      ref={element => {
+        wrapperElement = element
+        context.setCanvasViewportElement(element)
+      }}
       class={styles.canvasWrapper}
       onClick={onWrapperClick}
       data-canvas-inner="true"
