@@ -33,9 +33,49 @@ multiples of 16 (VP8's macroblock size — odd/unaligned dims force
 padding that decodes slower). This experiment's `result.json` is the
 run *after* both fixes.
 
-## Verdict
+## Verdict (2026-05-14 · Galaxy A15 · Android 10 · Chrome 148)
 
-_Pending run with the macroblock-aligned transcode._
+Run with bitrate-scaled + macroblock-aligned transcode (`result.json`):
+
+| N | cell (mult-16) | min fps | aggregate | realtime? | px/s throughput | transcodeMs |
+|---|---|---|---|---|---|---|
+| 4 | 544×976 | **31.8** | 136 | ✅ | 72.0M | 3392 |
+| 9 | 368×656 | 20.6 | 204 | ❌ | 49.3M | 1681 |
+| 16 | 272×496 | 14.2 | 276 | ❌ | 37.2M | 1637 |
+| 25 | 224×400 | **10.7** | 361 | ❌ | 32.3M | 1662 |
+
+**Streaming sustains realtime only at N=4** — same shape as 03, now with
+trustworthy cell sizes. N≥9 falls short and the gap widens. Effective
+px/s throughput *falls* as cells shrink (72M → 32M) → the wall is
+**per-decode/per-stream overhead, not pixel bandwidth**. Spreading the
+same pixels across more, smaller decoders is strictly worse.
+
+### The re-encode penalty (important, and unsolved)
+
+Even after both fixes (resolution-scaled bitrate + 16-px macroblock
+alignment, which lifted px throughput ~20%), **transcoded clips still
+decode ~1.5–1.7× harder per pixel than camera-native ones.** Compare
+N=25 here (224×400, 90K px → 10.7 fps) with 03's camera-native N=25
+(480×264, 127K px → 17.5 fps): the transcoded clip is *smaller* yet
+decodes *slower*.
+
+The likely cause is **not** the downscale — it's the **re-encode**:
+WebCodecs `VideoEncoder` (software VP8) produces a bitstream the
+hardware decoder handles less efficiently than the camera's
+hardware-encoded MediaRecorder output. If that's right, **the composite
+pays this penalty too** — it is also `VideoEncoder` output.
+`compositing-full-video` must measure it.
+
+### Cost
+
+`transcode` runs ~1.6–3.4 s for 150 frames — a real cost, but one-time
+per clip at record, not per playback frame.
+
+**Bottom line:** streaming N independent decoders does not scale past
+N≈4 on this device, and re-encoding (which any non-camera-native
+pipeline needs) adds a standing decode tax. Strong evidence for the
+composite — but the composite must be measured under the same
+re-encode tax.
 
 ## Reproduce
 
