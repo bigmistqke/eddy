@@ -10,7 +10,6 @@ import type {
   Direction,
   Entity,
   HandleOp,
-  HudKind,
   HudOrientation,
   Node,
   SelectedHandlesState,
@@ -81,57 +80,74 @@ export function createAppState(): AppContext {
     selection: { path: [], depth: 0, preview: true },
   })
 
-  // HUD element refs — kept internal. Consumers register via
-  // setHudElement(kind, orientation) and read overlap rects via
-  // computeHudRects. Orientation is carried so viewport math can decide
-  // between extending a handle past a HUD vs zooming to fit.
-  type HudSlot = {
-    element: HTMLElement | undefined
-    orientation: HudOrientation
-  }
-  const hudSlots: Record<HudKind, ReturnType<typeof createSignal<HudSlot | undefined>>> = {
-    main: createSignal<HudSlot | undefined>(),
-    breadcrumb: createSignal<HudSlot | undefined>(),
-    menu: createSignal<HudSlot | undefined>(),
-    contextual: createSignal<HudSlot | undefined>(),
-  }
+  // HUD geometry. Every mounted HUD element registers here with its
+  // long-axis orientation; one ResizeObserver watches all of them plus
+  // the canvas viewport element. Any resize rebuilds `hudRects` —
+  // canvas-relative rects consumed by frame-affordances math.
+  const hudRegistry = new Map<HTMLElement, HudOrientation>()
+  let canvasViewportElement: HTMLElement | undefined
+  const [hudRects, setHudRects] = createSignal<HudRect[]>([], { ownedWrite: true })
 
-  const setHudElement =
-    (kind: HudKind, orientation: HudOrientation) => (element: HTMLElement | undefined) => {
-      hudSlots[kind][1](element ? { element, orientation } : undefined)
+  function rebuildHudRects() {
+    if (canvasViewportElement === undefined || !canvasViewportElement.isConnected) {
+      setHudRects([])
+      return
     }
-
-  /**
-   * Read each HUD's bounding rect in canvas-relative coords (with its
-   * long-axis orientation), skipping detached refs. HUDs are partial-edge
-   * rectangles (corners, center strips), not full-edge insets — model
-   * them as rects so per-handle overlap detection can be precise.
-   */
-  function computeHudRects(canvasRect: DOMRect): HudRect[] {
-    const slots = [
-      untrack(hudSlots.breadcrumb[0]),
-      untrack(hudSlots.main[0]),
-      untrack(hudSlots.menu[0]),
-      untrack(hudSlots.contextual[0]),
-    ]
+    const canvasRect = canvasViewportElement.getBoundingClientRect()
     const rects: HudRect[] = []
-    for (const slot of slots) {
-      if (!slot?.element?.isConnected) {
+    for (const [element, orientation] of hudRegistry) {
+      if (!element.isConnected) {
         continue
       }
-      const elementRect = slot.element.getBoundingClientRect()
+      const elementRect = element.getBoundingClientRect()
       rects.push({
         x: elementRect.left - canvasRect.left,
         y: elementRect.top - canvasRect.top,
         width: elementRect.width,
         height: elementRect.height,
-        orientation: slot.orientation,
+        orientation,
       })
     }
-    return rects
+    setHudRects(rects)
   }
 
-  const [isCanvasZoomed, setIsCanvasZoomed] = createSignal(false)
+  const hudResizeObserver = new ResizeObserver(rebuildHudRects)
+
+  const setHudElement =
+    (orientation: HudOrientation) => (element: HTMLElement | undefined) => {
+      if (element === undefined) {
+        // Unmount: Solid passes no element on cleanup, so sweep the
+        // registry for nodes that have left the DOM.
+        for (const tracked of hudRegistry.keys()) {
+          if (!tracked.isConnected) {
+            hudRegistry.delete(tracked)
+            hudResizeObserver.unobserve(tracked)
+          }
+        }
+        rebuildHudRects()
+        return
+      }
+      // Solid removes the element from the DOM before the ref cleanup
+      // fires, so the !isConnected sweep above reliably finds it.
+      hudRegistry.set(element, orientation)
+      hudResizeObserver.observe(element)
+      rebuildHudRects()
+    }
+
+  function setCanvasViewportElement(element: HTMLElement | undefined) {
+    if (canvasViewportElement !== undefined) {
+      hudResizeObserver.unobserve(canvasViewportElement)
+    }
+    canvasViewportElement = element
+    if (element !== undefined) {
+      // The canvas wrapper is also observed by a local ResizeObserver in
+      // canvas.tsx; a canvas resize therefore recomputes viewport math
+      // twice (imperative + reactive). Idempotent — intentional, harmless.
+      hudResizeObserver.observe(element)
+    }
+    rebuildHudRects()
+  }
+
   const [isAnimating, setIsAnimating] = createSignal(false, { ownedWrite: true })
   const [viewport, setViewport] = createSignal<ViewportTransform>(
     { x: 0, y: 0, scale: 1 },
@@ -414,9 +430,8 @@ export function createAppState(): AppContext {
     app,
     setSelection,
     setHudElement,
-    computeHudRects,
-    isCanvasZoomed,
-    setIsCanvasZoomed,
+    hudRects,
+    setCanvasViewportElement,
     isAnimating,
     setIsAnimating,
     selectedHandlesState,

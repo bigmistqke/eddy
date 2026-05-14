@@ -1,4 +1,4 @@
-import { HANDLE_H, HANDLE_W, ROOT_PADDING, SIBLING_GAP } from "./constants"
+import { HANDLE_H, HANDLE_W } from "./constants"
 import type { Direction, HudOrientation, Node, Rgb, Selection } from "./types"
 import { pathEquals } from "./utils"
 
@@ -24,191 +24,6 @@ export function selectedPathKey(selection: Selection): string {
     return ""
   }
   return selection.path.slice(0, len).join(".")
-}
-
-/**
- * Compute the viewport transform for a selected frame's base rect.
- *
- * `minScale`: minimum scale to apply regardless of handle-fit needs. When
- * already zoomed, callers pass `currentScale` here so the viewport never
- * zooms *out* on tap; only the back button does that.
- *
- * `hudRects`: actual HUD rectangles in canvas-relative coords (so a corner
- * HUD doesn't get treated as spanning the whole edge). Used for natural-fit
- * decision: if the frame's handles overlap any HUD enough that extend-
- * induced same-axis-pair overlap occurs, pan to canvas center. Otherwise
- * identity — preserves "no pan when not needed" UX.
- */
-/** Two-stage zoom search:
- *
- *  Rule 2 — `findFitInsideScale` iterates by `min(widthFactor, heightFactor)`
- *  so the frame fits ENTIRELY inside the canvas. The binding axis hits
- *  the canvas edge exactly; the other axis is smaller. Aspect ratio
- *  preserved.
- *
- *  Rule 3 — `findClampOverflowScale` iterates by `max(...)`. Used only
- *  when fit-inside can't grow the frame (extreme aspect ratios where
- *  one axis already exceeds target while the other is far smaller).
- *  The smaller-by-ratio dim fills target; the larger overflows the
- *  canvas. Stick + extend keep the off-canvas handles visible.
- *
- *  Iterative in both cases because CSS padding/gap are fixed pixels —
- *  rect dims at scale s are NOT (rect at 1) × s. Converges in 1–3
- *  iterations typically, capped to avoid runaway. */
-// MAX_FIT_ITER alone bounds the loop — there's no need for a separate
-// scale cap. The dim-positivity check (rect.w/h <= 0 doubles scale and
-// continues) ensures we never compute factors against zero/negative
-// dims, so factor is always finite.
-const MAX_FIT_ITER = 20
-function findFitInsideScale(
-  layout: Node,
-  path: number[],
-  canvas: { width: number; height: number },
-): number {
-  const targetWidth = canvas.width
-  const targetHeight = canvas.height
-  if (targetWidth <= 0 || targetHeight <= 0) {
-    return 1
-  }
-  let scale = 1
-  for (let iteration = 0; iteration < MAX_FIT_ITER; iteration++) {
-    const rect = frameRect(layout, path, {
-      width: canvas.width * scale,
-      height: canvas.height * scale,
-    })
-    if (rect.width <= 0 || rect.height <= 0) {
-      scale *= 2
-      continue
-    }
-    const widthFactor = targetWidth / rect.width
-    const heightFactor = targetHeight / rect.height
-    const factor = Math.min(widthFactor, heightFactor)
-    // Converged: binding axis is at target. Use abs(factor-1) — NOT
-    // factor<=1.001 — because flex-math non-linearity can overshoot at
-    // high scale, putting both axes past target. We must allow shrink
-    // back down to land the binding axis exactly on target.
-    if (Math.abs(factor - 1) < 0.001) {
-      return scale
-    }
-    scale *= factor
-  }
-  return scale
-}
-
-function findClampOverflowScale(
-  layout: Node,
-  path: number[],
-  canvas: { width: number; height: number },
-): number {
-  const targetWidth = canvas.width
-  const targetHeight = canvas.height
-  if (targetWidth <= 0 || targetHeight <= 0) {
-    return 1
-  }
-  let scale = 1
-  for (let iteration = 0; iteration < MAX_FIT_ITER; iteration++) {
-    const rect = frameRect(layout, path, {
-      width: canvas.width * scale,
-      height: canvas.height * scale,
-    })
-    if (rect.width <= 0 || rect.height <= 0) {
-      scale *= 2
-      continue
-    }
-    const widthFactor = targetWidth / rect.width
-    const heightFactor = targetHeight / rect.height
-    const factor = Math.max(widthFactor, heightFactor)
-    // Same overshoot fix as findFitInsideScale: flex-math non-linearity
-    // at high scale can leave both axes past target — factor < 1 here
-    // means we should shrink back so the smaller-by-ratio axis lands
-    // exactly on target.
-    if (Math.abs(factor - 1) < 0.001) {
-      return scale
-    }
-    scale *= factor
-  }
-  return scale
-}
-
-/** Minimum dimension required for both same-axis and cross-pair handle
- *  pairs to fit non-overlapping on a single axis. Cross-pair geometry
- *  (a top handle's HANDLE_W center span vs a rotated left/right
- *  handle's HANDLE_H span) is the binding constraint. */
-const MIN_HANDLE_DIM = HANDLE_W + 2 * HANDLE_H
-
-function findFitScale(
-  layout: Node,
-  path: number[],
-  canvas: { width: number; height: number },
-): number {
-  const inside = findFitInsideScale(layout, path, canvas)
-  if (inside > 1.001) {
-    // Rule 2 zoom is fine ONLY if both axes still have room for the
-    // four handles to lay out non-overlapping. With extreme aspect
-    // ratios, fit-inside lands the non-binding axis below MIN_HANDLE_DIM
-    // — left and right handles end up centered on top of each other.
-    // In that case fall through to clamp-overflow (Rule 3) which makes
-    // the smaller-by-ratio axis fill target and lets the other overflow.
-    const rect = frameRect(layout, path, {
-      width: canvas.width * inside,
-      height: canvas.height * inside,
-    })
-    if (Math.min(rect.width, rect.height) >= MIN_HANDLE_DIM) {
-      return inside
-    }
-  }
-  return findClampOverflowScale(layout, path, canvas)
-}
-
-export function computeViewportTransform(
-  layout: Node,
-  path: number[],
-  canvas: { width: number; height: number },
-  minScale = 1,
-  hudRects: HudRect[] = [],
-): ViewportTransform {
-  // Base rect at scale=1 — used for the natural-fit short-circuit only.
-  // CSS `padding` and `gap` are *fixed pixels*, so the rect at scale s
-  // is NOT baseRect × s; we recompute via flex math at the scaled
-  // canvasInner size for both handle-fit decisions and centering.
-  const baseRect = frameRect(layout, path, canvas)
-  if (baseRect.width === 0 || baseRect.height === 0) {
-    return IDENTITY_VIEWPORT
-  }
-
-  // Natural-fit short-circuit: at scale=1, do all 4 handles fit
-  // non-overlapping (after the natural extends pushed by HUDs)? If yes,
-  // don't zoom at all — preserves "no zoom when not needed" UX. The four
-  // checks mirror the geometry of the rendered handles:
-  //   * vertical-pair non-overlap: frame.height ≥ 2·HANDLE_H + ext.top + ext.bottom
-  //   * horizontal-pair non-overlap: frame.width ≥ 2·HANDLE_H + ext.left + ext.right
-  //   * cross-pair non-overlap (top ↔ left/right): frame.width ≥ HANDLE_W + 2·HANDLE_H
-  //   * cross-pair non-overlap on vertical: frame.height ≥ HANDLE_W + 2·HANDLE_H
-  // Same-axis handle/HUD collisions can't be resolved by extending the
-  // notch — force fit-scale so the frame lays out clear of the HUD.
-  const axisCollision = hasUnescapableHudCollision(baseRect, hudRects)
-  const naturalExt = computeExtends(baseRect, hudRects)
-  const sameAxisH = 2 * HANDLE_H
-  const crossPair = HANDLE_W + 2 * HANDLE_H
-  const verticalFits = baseRect.height >= sameAxisH + naturalExt.top + naturalExt.bottom
-  const horizontalFits = baseRect.width >= sameAxisH + naturalExt.left + naturalExt.right
-  const crossWidthFits = baseRect.width >= crossPair
-  const crossHeightFits = baseRect.height >= crossPair
-  if (!axisCollision && verticalFits && horizontalFits && crossWidthFits && crossHeightFits) {
-    return IDENTITY_VIEWPORT
-  }
-
-  const fitScale = findFitScale(layout, path, canvas)
-  const scale = Math.max(fitScale, minScale)
-
-  // Pan to canvas center using REAL flex-math at the scaled canvasInner.
-  const realRect = frameRect(layout, path, {
-    width: canvas.width * scale,
-    height: canvas.height * scale,
-  })
-  const x = canvas.width / 2 - (realRect.x + realRect.width / 2)
-  const y = canvas.height / 2 - (realRect.y + realRect.height / 2)
-  return { scale, x, y }
 }
 
 /** CSS translate string for `transform`. Caller applies the size multiplier
@@ -240,47 +55,35 @@ function handleAxis(direction: Direction): HudOrientation {
 /**
  * Compute a frame's rect from the layout tree and canvas dimensions.
  *
- * Mirrors the CSS flex layout: every container has `display: flex` with
- * children at `flex: 1`. The root container has padding on all sides plus
- * gap between children; non-root containers have only gap.
- *
- * Pure function — no DOM reads. Caller passes canvas dims and the path of
- * the target frame (empty path = root container).
+ * Mirrors the CSS flex layout: every container is `display: flex` with
+ * children at `flex: 1`, tiling edge-to-edge — no gap, no padding (see
+ * ADR-0001). Pure function — no DOM reads.
  */
 export function frameRect(
   layout: Node,
   path: number[],
   canvas: { width: number; height: number },
-  options: { gap?: number; rootPadding?: number } = {},
 ): Rect {
-  const gap = options.gap ?? SIBLING_GAP
-  const rootPadding = options.rootPadding ?? ROOT_PADDING
-  let rect: Rect = {
-    x: rootPadding,
-    y: rootPadding,
-    width: canvas.width - 2 * rootPadding,
-    height: canvas.height - 2 * rootPadding,
-  }
+  let rect: Rect = { x: 0, y: 0, width: canvas.width, height: canvas.height }
   let current: Node = layout
   for (const childIndex of path) {
     if (current.type !== "container") {
       break
     }
     const childCount = current.children.length
-    const totalGap = gap * (childCount - 1)
     if (current.direction === "horizontal") {
-      const childWidth = (rect.width - totalGap) / childCount
+      const childWidth = rect.width / childCount
       rect = {
-        x: rect.x + childIndex * (childWidth + gap),
+        x: rect.x + childIndex * childWidth,
         y: rect.y,
         width: childWidth,
         height: rect.height,
       }
     } else {
-      const childHeight = (rect.height - totalGap) / childCount
+      const childHeight = rect.height / childCount
       rect = {
         x: rect.x,
-        y: rect.y + childIndex * (childHeight + gap),
+        y: rect.y + childIndex * childHeight,
         width: rect.width,
         height: childHeight,
       }
@@ -312,15 +115,13 @@ export interface LeafFrame {
  *
  *  Pure function — no DOM reads. Caller passes scaled canvas dims for
  *  the desired output (e.g. `canvas.width * scale` to render at zoom).
+ *  Layout tiles edge-to-edge — no gap, no padding (see ADR-0001).
  */
 export function layoutFrames(
   layout: Node,
   canvas: { width: number; height: number },
   selection: Selection | null = null,
-  options: { gap?: number; rootPadding?: number } = {},
 ): { leaves: LeafFrame[]; selectedRect: Rect | null } {
-  const gap = options.gap ?? SIBLING_GAP
-  const rootPadding = options.rootPadding ?? ROOT_PADDING
   const leaves: LeafFrame[] = []
   let selectedRect: Rect | null = null
 
@@ -342,16 +143,14 @@ export function layoutFrames(
         rect,
         color: [node.color[0], node.color[1], node.color[2]],
       })
-
       return
     }
     const childCount = node.children.length
-    const totalGap = gap * (childCount - 1)
     if (node.direction === "horizontal") {
-      const childWidth = (rect.width - totalGap) / childCount
+      const childWidth = rect.width / childCount
       for (let index = 0; index < childCount; index++) {
         const childRect: Rect = {
-          x: rect.x + index * (childWidth + gap),
+          x: rect.x + index * childWidth,
           y: rect.y,
           width: childWidth,
           height: rect.height,
@@ -361,11 +160,11 @@ export function layoutFrames(
         path.pop()
       }
     } else {
-      const childHeight = (rect.height - totalGap) / childCount
+      const childHeight = rect.height / childCount
       for (let index = 0; index < childCount; index++) {
         const childRect: Rect = {
           x: rect.x,
-          y: rect.y + index * (childHeight + gap),
+          y: rect.y + index * childHeight,
           width: rect.width,
           height: childHeight,
         }
@@ -376,14 +175,7 @@ export function layoutFrames(
     }
   }
 
-  const rootRect: Rect = {
-    x: rootPadding,
-    y: rootPadding,
-    width: canvas.width - 2 * rootPadding,
-    height: canvas.height - 2 * rootPadding,
-  }
-  walk(layout, [], rootRect)
-
+  walk(layout, [], { x: 0, y: 0, width: canvas.width, height: canvas.height })
   return { leaves, selectedRect }
 }
 

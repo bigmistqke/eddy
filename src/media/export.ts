@@ -44,10 +44,7 @@ export async function exportSong(
   const renderer = createRenderer(canvas)
   renderer.resize(width, height)
 
-  const { leaves } = layoutFrames(layout, { width, height }, null, {
-    gap: 0,
-    rootPadding: 0,
-  })
+  const { leaves } = layoutFrames(layout, { width, height }, null)
 
   const output = new Output({
     format: new Mp4OutputFormat(),

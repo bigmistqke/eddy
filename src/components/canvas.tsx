@@ -13,26 +13,19 @@ import { Context } from "../context"
 import { ArrowButton } from "../hud/hud"
 import type { Direction, Node, Selection } from "../types"
 import { logAction, track } from "../utils"
-import {
-  computeExtends,
-  computeSticks,
-  computeViewportTransform,
-  frameRect,
-  layoutFrames,
-  type LeafFrame,
-  type Rect,
-} from "../viewport"
+import { computeFrameAffordances } from "../frame-affordances"
+import { layoutFrames, type LeafFrame, type Rect } from "../viewport"
 import { animateViewport } from "../webgl/animation"
 import { createRenderer, type TextureSource, type ViewportState } from "../webgl/renderer"
 import styles from "./canvas.module.css"
 
 const HANDLE_DIRECTIONS: Direction[] = ["top", "bottom", "left", "right"]
-const ZERO_BY_DIRECTION: Record<Direction, number> = { top: 0, bottom: 0, left: 0, right: 0 }
 
 /** A signature of the layout topology + selection + tool. Re-fires the
  *  viewport-recompute effect whenever any container's children list, any
  *  container's direction, the selection, or the active tool changes —
- *  the tool affects gap/padding (song mode vs edit mode). */
+ *  the tool gates whether the selection drives a zoom (song mode = no
+ *  zoom; see frame-affordances). */
 function layoutSignature(layout: Node, selection: Selection | null, tool: string | null): string {
   function nodeSignature(node: Node): string {
     if (node.type === "entity") {
@@ -183,31 +176,19 @@ export function Canvas() {
 
     function drawAt(viewport: ViewportState) {
       const wrapperRect = wrapperElement.getBoundingClientRect()
-      // Compute leaves at *scaled* canvas dims so flex math matches
-      // `computeViewportTransform`'s realRect (fixed-pixel paddings/gaps
-      // don't scale uniformly with the viewport). The renderer then
-      // only applies translation; scale is already baked into the
-      // leaves' positions and sizes.
+      // Compute leaves at *scaled* canvas dims so flex math matches the
+      // viewport transform (fixed-pixel paddings/gaps don't scale
+      // uniformly with the viewport). The renderer then only applies
+      // translation; scale is already baked into the leaves' positions
+      // and sizes.
       const scaledCanvas = {
         width: wrapperRect.width * viewport.scale,
         height: wrapperRect.height * viewport.scale,
       }
-      // In song mode (no tool) cells are seamless: no gap between
-      // siblings, no inset from the canvas edge. In edit mode (append
-      // or split) the constants apply so the layout-editing affordances
-      // (handles, selection rect) have breathing room. drawAt runs in
-      // an unowned scope (called from animation tween + onSettled), so
-      // all reactive reads go through untrack — Solid 2.x dev fires
-      // STRICT_READ_UNTRACKED otherwise.
-      const { leaves, selectedRect } = untrack(() => {
-        // Layout fills the canvas edge-to-edge in every mode — no gap
-        // between siblings, no inset from the canvas edge. The HUD grid
-        // overlay sits on top and provides its own padding.
-        return layoutFrames(context.app.layout, scaledCanvas, context.app.selection, {
-          gap: 0,
-          rootPadding: 0,
-        })
-      })
+      // Layout tiles the scaled canvas edge-to-edge — see ADR-0001.
+      const { leaves, selectedRect } = untrack(() =>
+        layoutFrames(context.app.layout, scaledCanvas, context.app.selection),
+      )
       lastLeaves = leaves
       lastSelectedRect = selectedRect
       lastViewport = viewport
@@ -264,53 +245,31 @@ export function Canvas() {
     }
 
     function recomputeViewport(): ViewportState {
-      // Solid store proxies track on EVERY property access, so a single
-      // outer untrack(() => context.app.selection) doesn't help — reading
-      // `.path`/`.depth` on the captured object retracks. Wrap the whole
-      // function body in one untrack scope.
+      // Solid store proxies track on EVERY property access, so wrap the
+      // whole body in one untrack scope.
       return untrack(() => {
-        const t0 = performance.now()
         const wrapperRect = wrapperElement.getBoundingClientRect()
         const canvas = { width: wrapperRect.width, height: wrapperRect.height }
         const selection = context.app.selection
-        // Song mode stays at identity — the user wants to see the
-        // whole song while tapping cells. Only the layout-editing
-        // tools (split / append) zoom to selection.
-        if (selection === null || context.app.tool === null) {
-          const identity: ViewportState = { x: 0, y: 0, scale: 1 }
-          context.setViewport(identity)
-          context.setSelectedHandlesState({ extend: ZERO_BY_DIRECTION, stick: ZERO_BY_DIRECTION })
-          return identity
-        }
-        const targetedDepth = selection.path.length - selection.depth
-        const selectedPath = selection.path.slice(0, Math.max(0, targetedDepth))
-        const hudRects = context.computeHudRects(wrapperRect)
-        const layout = context.app.layout
-        const tComputeStart = performance.now()
-        const transform = computeViewportTransform(layout, selectedPath, canvas, 1, hudRects)
-        const tComputeEnd = performance.now()
-
-        const realRect = frameRect(layout, selectedPath, {
-          width: canvas.width * transform.scale,
-          height: canvas.height * transform.scale,
-        })
-        const postRect: Rect = {
-          x: realRect.x + transform.x,
-          y: realRect.y + transform.y,
-          width: realRect.width,
-          height: realRect.height,
-        }
-        const stick = computeSticks(postRect, canvas)
-        const stuckRect: Rect = {
-          x: postRect.x + stick.left,
-          y: postRect.y + stick.top,
-          width: postRect.width - stick.left - stick.right,
-          height: postRect.height - stick.top - stick.bottom,
-        }
-        const extend = computeExtends(stuckRect, hudRects)
-        context.setSelectedHandlesState({ extend, stick })
-        context.setViewport(transform)
-        return transform
+        // App-mode policy lives here, not in the module: song mode (no
+        // tool) and no-selection both mean "no frame to zoom" — pass
+        // null. computeFrameAffordances knows nothing about tools.
+        const path =
+          selection === null || context.app.tool === null
+            ? null
+            : selection.path.slice(
+                0,
+                Math.max(0, selection.path.length - selection.depth),
+              )
+        const affordances = computeFrameAffordances(
+          context.app.layout,
+          path,
+          canvas,
+          context.hudRects(),
+        )
+        context.setViewport(affordances.viewport)
+        context.setSelectedHandlesState(affordances.handles)
+        return affordances.viewport
       })
     }
 
@@ -463,7 +422,19 @@ export function Canvas() {
   )
 
   createEffect(
-    () => layoutSignature(context.app.layout, context.app.selection, context.app.tool),
+    () => {
+      const signature = layoutSignature(
+        context.app.layout,
+        context.app.selection,
+        context.app.tool,
+      )
+      // Track HUD geometry too — a HUD resizing on its own must
+      // re-run handle/viewport math (see candidate #2).
+      const rects = context.hudRects()
+      return `${signature}|${rects.length}:${rects
+        .map(r => `${Math.round(r.width)}x${Math.round(r.height)}`)
+        .join(",")}`
+    },
     () => {
       if (drive === null) {
         return
@@ -475,7 +446,10 @@ export function Canvas() {
 
   return (
     <div
-      ref={wrapperElement}
+      ref={element => {
+        wrapperElement = element
+        context.setCanvasViewportElement(element)
+      }}
       class={styles.canvasWrapper}
       onClick={onWrapperClick}
       data-canvas-inner="true"
