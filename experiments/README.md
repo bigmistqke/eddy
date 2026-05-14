@@ -70,6 +70,6 @@ To vary an experiment, edit the `params` block in its `index.ts` and commit.
 | 03 | [grid-streaming](03_grid-streaming/README.md) | Does the real workload (N cells = one viewport) sustain realtime? | Naive attempt — camera clamps resolution; results reproduce but confounded. Only N=4 realtime |
 | 04 | [grid-streaming-transcoded](04_grid-streaming-transcoded/README.md) | Same, with correct cell sizes via downscale-transcode | Streaming realtime only at N=4; **re-encoded clips carry a ~1.5–1.7× decode tax** |
 | 05 | [compositing-full-video](05_compositing-full-video/README.md) | Does one big atlas decode beat N small streams — *under the same re-encode tax*? | **Yes, decisively** — O(1) in N, 78–110 fps at any N vs streaming's cliff (caveat: identical-tile content) |
-| 06 | grid-streaming-workers | Is streaming's poor scaling partly main-thread contention? (decoders in Web Workers) | _not yet built_ |
-| 07 | compositing-workers | Composite decode + build off the main thread | _not yet built_ |
+| 06 | [grid-streaming-workers](06_grid-streaming-workers/README.md) | Is streaming's poor scaling partly main-thread contention? (decoders in Web Workers) | **No** — workers ≈ main thread; it's hardware-decode-bound |
+| 07 | compositing-workers | Can the composite build + decode run off the main thread? | _not yet built_ |
 | — | windowed-previews | Can per-cell ring buffers give bounded memory at acceptable quality? | _not yet built_ |
