@@ -99,11 +99,18 @@ export function computeFrameAffordances(
 
   // Post-transform handle geometry: stick (canvas-edge clamp) first,
   // then extend (HUD clearance) on the resulting stuck rect.
+  // Re-run frameRect at the scaled canvas dims so the division order
+  // matches the renderer (scale before divide, not divide then scale)
+  // — floating-point differences accumulate across deep trees otherwise.
+  const scaledRect = frameRect(layout, path, {
+    width: canvas.width * viewport.scale,
+    height: canvas.height * viewport.scale,
+  })
   const postRect: Rect = {
-    x: baseRect.x * viewport.scale + viewport.x,
-    y: baseRect.y * viewport.scale + viewport.y,
-    width: baseRect.width * viewport.scale,
-    height: baseRect.height * viewport.scale,
+    x: scaledRect.x + viewport.x,
+    y: scaledRect.y + viewport.y,
+    width: scaledRect.width,
+    height: scaledRect.height,
   }
   const stick = computeSticks(postRect, canvas)
   const stuckRect: Rect = {
