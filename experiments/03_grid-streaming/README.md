@@ -23,11 +23,14 @@ That isolates the question decoder-pools left open:
 
 ## Setup
 
-`totalResolution` = the A15's screen (~1080×1965 device px). For each N
-in `gridSizes` (4, 9, 16, 25 — square grids), records a clip at the cell
-size (`total / √N` per axis), runs N decoders looping it concurrently
-for `runSeconds`, and reports per-decoder sustained fps, the min, the
-aggregate, and whether the slowest held `realtimeFps` (28).
+`totalResolution` = the A15's screen (~1080×1965 device px). Records
+**once** at `captureResolution`, then for each N in `gridSizes` (4, 9,
+16, 25 — square grids) **transcodes** that clip down to the cell size
+(`total / √N` per axis) via `harness/transcode.ts` — the camera won't
+hand back arbitrary small resolutions, so a real pipeline must downscale
+itself. Then runs N decoders looping the transcoded clip concurrently
+for `runSeconds`, reporting per-decoder sustained fps, the min, the
+aggregate, `realtimeOk` (min ≥ 28), and the per-grid `transcodeMs`.
 
 **Read it as:** if `minFps` stays ≥ ~30 as N grows, streaming an N-cell
 grid is bandwidth-bound and viable. If it falls off well before the
