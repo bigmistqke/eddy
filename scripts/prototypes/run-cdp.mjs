@@ -90,13 +90,18 @@ page.ws.addEventListener("message", ev => {
 })
 
 await page.ready
-await page.send("Runtime.enable")
 await page.send("Page.enable")
 // getUserMedia is denied for non-visible tabs on Android Chrome — the
 // tab must be foreground before the prototype calls it.
 await page.send("Page.bringToFront").catch(() => {})
 console.error("[run-cdp] navigating...")
 await page.send("Page.navigate", { url: PAGE_URL })
+// Enable Runtime only AFTER navigating. The runner reuses an existing
+// tab, which may still hold a previous prototype's page; enabling
+// Runtime first would replay that stale page's buffered
+// [prototype-result] and we'd capture the wrong run. Post-navigate,
+// replay only covers the page we actually want.
+await page.send("Runtime.enable")
 
 const timeout = setTimeout(() => {
   console.error(`[run-cdp] TIMEOUT — no [prototype-result] within ${TIMEOUT_MS / 1000}s`)
