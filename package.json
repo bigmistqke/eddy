@@ -2,7 +2,7 @@
   "name": "eddy",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "dev:test": "vite --port 5174 --strictPort",
