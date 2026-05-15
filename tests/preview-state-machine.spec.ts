@@ -1,4 +1,4 @@
-import { activateTool, expect, mockGetUserMedia, test } from "./helpers"
+import { activateTool, expect, mockGetUserMedia, test, waitForSettled } from "./helpers"
 
 test("initial selection lands on root with preview active", async ({ page }) => {
   await page.goto("/")
@@ -54,7 +54,7 @@ test("record button is disabled when no cell is selected", async ({ page }) => {
   await page.evaluate(() => {
     window.__appContext!.setSelection(null)
   })
-  await page.waitForTimeout(50)
+  await waitForSettled(page)
   const isDisabled = await page
     .locator('[data-action="record-start"]')
     .evaluate(element => (element as HTMLButtonElement).disabled)
@@ -79,7 +79,9 @@ test("record exits tool mode but keeps the selection", async ({ page }) => {
   await activateTool(page, "split")
   // Record from tool mode.
   await page.locator('[data-action="record-start"]').click()
-  await page.waitForTimeout(150)
+  // onRecord clears the tool synchronously then awaits the stream — wait
+  // for the tool clear to land instead of a wall-clock buffer.
+  await page.waitForFunction(() => window.__appContext?.app.tool === null, { timeout: 5000 })
   const state = await page.evaluate(() => {
     const context = window.__appContext!
     return {
@@ -146,7 +148,7 @@ test("tapping the post-record cell re-activates preview", async ({ page }) => {
   )
   // Tap the same cell — selection stays, preview re-activates.
   await page.locator('[data-canvas-inner]').click({ position: { x: 200, y: 200 } })
-  await page.waitForTimeout(150)
+  await waitForSettled(page)
   const state = await page.evaluate(() => {
     const context = window.__appContext!
     return {
