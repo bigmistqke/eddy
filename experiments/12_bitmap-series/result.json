@@ -1,0 +1,123 @@
+{
+  "ranAt": "2026-05-16T09:33:06.125Z",
+  "git": {
+    "sha": "9d7eb49",
+    "dirty": true
+  },
+  "experiment": "bitmap-series",
+  "params": {
+    "captureResolution": {
+      "width": 1280,
+      "height": 720
+    },
+    "atlasResolution": {
+      "width": 540,
+      "height": 983
+    },
+    "bitmapResolution": {
+      "width": 96,
+      "height": 174
+    },
+    "bitmapCellCounts": [
+      1,
+      4,
+      8
+    ],
+    "recordSeconds": 4,
+    "runSeconds": 4,
+    "maxQueue": 8,
+    "realtimeFps": 28
+  },
+  "device": {
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36",
+    "viewport": {
+      "width": 384,
+      "height": 699
+    }
+  },
+  "result": {
+    "initialBuild": {
+      "ms": 1376.800000011921,
+      "framesProduced": 118,
+      "bitmap": "96x174",
+      "rateVsRealtime": 0.34420000000298023
+    },
+    "ks": [
+      {
+        "k": 1,
+        "baselinePaint": {
+          "k": 1,
+          "framesPainted": 798,
+          "paintedFps": 199.27581470845297,
+          "msPerFrame": 5.018170426065163,
+          "realtimeOk": true
+        },
+        "contended": {
+          "captureFrames": 98,
+          "captureBytes": 1120030,
+          "atlasFps": 107.30175346795758,
+          "paint": {
+            "k": 1,
+            "framesPainted": 814,
+            "paintedFps": 203.3322508924078,
+            "msPerFrame": 4.918058968073613
+          },
+          "bitmapBuildMs": 1727.2999999821186,
+          "bitmapBuildRateVsRealtime": 1.1469750000014902,
+          "bitmapBuildCompletedInWindow": true,
+          "paintRealtimeOk": true
+        }
+      },
+      {
+        "k": 4,
+        "baselinePaint": {
+          "k": 4,
+          "framesPainted": 804,
+          "paintedFps": 201,
+          "msPerFrame": 4.975124378109452,
+          "realtimeOk": true
+        },
+        "contended": {
+          "captureFrames": 108,
+          "captureBytes": 1223707,
+          "atlasFps": 75.43379776058843,
+          "paint": {
+            "k": 4,
+            "framesPainted": 736,
+            "paintedFps": 183.8942608008616,
+            "msPerFrame": 5.437907608671356
+          },
+          "bitmapBuildMs": 2219.399999976158,
+          "bitmapBuildRateVsRealtime": 1.1704500000029803,
+          "bitmapBuildCompletedInWindow": true,
+          "paintRealtimeOk": true
+        }
+      },
+      {
+        "k": 8,
+        "baselinePaint": {
+          "k": 8,
+          "framesPainted": 828,
+          "paintedFps": 207,
+          "msPerFrame": 4.830917874396135,
+          "realtimeOk": true
+        },
+        "contended": {
+          "captureFrames": 117,
+          "captureBytes": 1300878,
+          "atlasFps": 23.95647230797117,
+          "paint": {
+            "k": 8,
+            "framesPainted": 781,
+            "paintedFps": 195.19632101201256,
+            "msPerFrame": 5.123047375152419
+          },
+          "bitmapBuildMs": 4979.299999982119,
+          "bitmapBuildRateVsRealtime": 1.35025,
+          "bitmapBuildCompletedInWindow": false,
+          "paintRealtimeOk": true
+        }
+      }
+    ]
+  }
+}

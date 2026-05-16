@@ -1,0 +1,33 @@
+{
+  "ranAt": "2026-05-16T09:36:11.564Z",
+  "git": {
+    "sha": "9d7eb49",
+    "dirty": true
+  },
+  "experiment": "bitmap-during-record",
+  "params": {
+    "captureResolution": {
+      "width": 1280,
+      "height": 720
+    },
+    "bitmapResolution": {
+      "width": 96,
+      "height": 174
+    },
+    "recordSeconds": 4
+  },
+  "device": {
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36",
+    "viewport": {
+      "width": 384,
+      "height": 699
+    }
+  },
+  "result": {
+    "recordedFrames": 118,
+    "bitmapsEmitted": 118,
+    "meanLatencyMs": 3.6067796589459404,
+    "maxLatencyMs": 21.400000005960464,
+    "keepUpRatio": 1
+  }
+}
