@@ -183,32 +183,43 @@ loop pass. Instead:
 
 1. The new atlas is persisted to OPFS.
 2. A new `VideoDecoder` is created, configured, fed its first chunk.
-   The resulting `VideoFrame` is **held** in memory.
-3. The cell sits in a "pre-wqueued" sub-state, still painting from
-   bitmaps or the old atlas.
+   The resulting `VideoFrame` is drawn to a small canvas and
+   converted to an `ImageBitmap` (the frame itself is closed).
+3. The cell sits in a "pre-warmed" sub-state, still painting from
+   bitmaps or the old atlas. The held `ImageBitmap` plus the still-
+   open `VideoDecoder` wait for the boundary.
 4. At the next loop boundary, the cell's source pointer flips. The
-   held `VideoFrame` paints this frame; the new decoder feeds
-   subsequent frames.
+   held `ImageBitmap` paints this frame; the decoder feeds subsequent
+   delta chunks (state retained across the idle).
 
-Validated by 14: hot swap is 0ms (pointer flip); cold swap (configure
-+ decode at swap moment) is 270ms = ~8 visible blank frames. The
-pre-warm pattern is mandatory.
+Validated by 14 (0 ms hot swap) and 16 (`ImageBitmap` hold + decoder
+state both survive 30 s; post-idle delta decode 12-34 ms). The
+**ImageBitmap-hold** form is the production pattern — 14's original
+`VideoFrame`-hold version worked at 500 ms but `VideoFrame` lifetime
+across longer holds is opaque.
 
-`VideoFrame`s held across short waits (~500ms tested) remain valid.
-Longer holds untested; not expected to be a problem at this scale.
+Production timing: kick off `decode(chunk 1)` a few ms *before* the
+boundary so frame 1 doesn't race the 33 ms tick budget after the
+swap (per 16's note).
 
 ## Where the architecture sits in the design space
 
 | dimension | choice | why |
 |---|---|---|
-| Playback representation | sub-atlas (container-aligned) | O(1) per-container decode, layout-aware cache boundary (11) |
+| Playback representation for K ≤ 4 | direct VP8 stream per cell, no atlas | smooth 60fps through K=3, K=4 hitches slightly (18d) — simplest path |
+| Playback representation for K > 4 | sub-atlas (container-aligned) | streaming walls at K≥5 (18d); atlas is O(1) per-container decode, layout-aware cache boundary (10/11) |
 | Granularity | one per leaf container | matches user editing scope; K dynamic per layout |
-| When rebuilt | between-takes, in workers | build-during-record falsified (09); between-takes fits via parallel workers |
+| **When rebuilt** | **at any time, chunked** | chunked builds (18e/18f) have baseline jank vs mono's score 150+; can rebuild during recording without contention |
+| **How rebuilt** | **temporal chunks (~1-2 s each) with `setTimeout(0)` yields between** | 18e: chunked = baseline jank, mono = visible hitches; chunked also ~25% faster total |
 | Rebuilt from what | raw OPFS clips | no generation loss (per `video-playback-scaling.md` requirement) |
 | Atlas resolution | CSS-pixel (~540×983) | sweet spot per 10's sweep: sharp at standard density, contention-free |
-| Gap during rebuild | bitmap series | sidesteps decoder budget (12), generated during record (12b) so no gap |
+| Gap during rebuild | bitmap series (OPFS-backed) | sidesteps decoder budget (12), generated during record (12b), OPFS-backed to avoid OOM (18c) |
+| **Bitmap storage** | **OPFS raw RGBA per cell** | 18c: in-memory OOMed at 575 MB; OPFS keeps it at 10 MB peak |
 | Cold start | persisted atlas + sourceHash | under 1s open into loop (13) |
-| Atlas handoff | pre-wqueued decoder + held VideoFrame | 0ms swap (14) |
+| Atlas handoff | pre-warmed decoder + held ImageBitmap | 0ms swap, survives 30s (14/16) |
+| **Per-frame contract** | **`gl.clear` at start of every rAF tick** | 18c: without it Android Chrome silently fails to present cells whose textures weren't most-recently-uploaded |
+| **Decoder pacing** | **driven from rAF tick (single clock source)** | 17b: flat-out continuous decoders starve rAF; pacing recovers smoothness |
+| **Smoothness metric** | **`framesOver33ms` + `longestJankStreak` + `jankScore`** | 18d/jank.ts: mean fps lies when distribution is bimodal — `framesOver33msRatio` is what the user perceives |
 
 ## Validation summary
 
@@ -218,62 +229,79 @@ Longer holds untested; not expected to be a problem at this scale.
 | Hardware decode-bound; workers don't add throughput | 06 |
 | Composite pipeline is worker-safe | 07 |
 | Atlas build ~1.2× realtime, linear; chunking mandatory for memory | 08 |
-| Build-during-recording fails: 1.2× → 2.5× under contention; capture drops | 09 |
+| Build-during-recording (mono) fails: 1.2× → 2.5× under contention; capture drops | 09 |
 | K=4 sub-atlases at CSS-pixel res is the sweet spot | 10 |
 | Container-aligned sub-atlases hold to K=8, get *better* with K | 11 |
 | Bitmap-series gap-filler works (K≤4 safe) | 12 |
-| Bitmaps can be generated during recording at 100% keep-up | 12b |
+| Bitmaps can be generated during recording at 100% keep-up via MediaStreamTrackProcessor | 12b |
 | Cold-start from OPFS is under 1s (single 219ms, K=4 561ms) | 13 |
-| Atlas swap at loop boundary is 0ms with pre-wqueued decoder | 14 |
+| Atlas swap at loop boundary is 0ms with pre-warmed decoder + held ImageBitmap | 14, 16 |
+| Distinct content barely affects atlas cost (+4% bytes, -5% fps) | 15 |
+| Steady-state render is 60fps; contended is 22fps (rAF throttle); driving decoders from rAF avoids starvation | 17, 17b |
+| Mono atlas linear-N rebuild cost (0.2× per cell added); needs container-aligned sub-atlases at scale | 18 |
+| In-memory bitmap series OOMs the tab at ~575 MB on full progressive | 18b |
+| OPFS-backed raw RGBA bitmaps cap memory at ~10 MB; `gl.clear` per frame is mandatory | 18c |
+| Pure streaming smooth K≤3-4; janky at K≥5 (decoder hardware contention) | 18d |
+| Chunked atlas builds (~1-2 s per chunk, `setTimeout(0)` yields) eliminate rebuild-during-record contention | 18e |
+| Chunked builds hold smoothness across 9-stage progressive flow (build/record fps stays 58-60) | 18f |
+| Standardized jank metrics: `framesOver33ms`, `longestJankStreak`, `jankScore` reveal what mean fps hides | harness/jank.ts |
 
 ## Not yet validated / explicitly deferred
 
-- **Distinct-content overhead.** All experiments tile the source clip
-  identically across cells. Real cells have distinct content (higher
-  entropy → larger atlases, slightly heavier decode). Worth a single
-  sanity run before src/ work but not expected to flip any decision.
 - **Audio integration with the rebuild queue.** Audio is already
   scheduled via existing `transport.ts`; the boundary contract is
-  defined. Implementation will surface any gotchas.
-- **Long-held VideoFrame lifetime.** 14 tested 500ms hold. Production
-  may hold a few seconds. Should be fine; add a regression test.
-- **Layout edits with rebuild already in flight.** A user splits cell
-  X while a different sub-atlas is rebuilding. The new split
-  invalidates a different (potentially overlapping) sub-atlas. Queue
-  policy: enqueue the new dirty container, let current rebuild
-  finish. Edge case; needs a small "cancel-and-replace" mechanism if
-  the same container is dirtied twice quickly.
-- **Single-cell containers as streams.** Per 04, a 1-cell container
-  could stream the clip directly instead of paying the atlas-build
-  cost. Worth a code path in production but not strictly necessary —
-  bitmap-series + sub-atlas works for 1 cell too.
+  defined. Implementation will surface any gotchas. *No experiment
+  yet.*
+- **Layout edits with rebuild in flight.** A user splits cell X
+  while a different sub-atlas is rebuilding. With chunked builds
+  (18e/18f), this is much less concerning: cancel the in-flight
+  chunk worker on layout change, start a fresh chunked build for
+  the new container set. The "cancel-and-replace" mechanism is
+  still ours to wire up.
+- **Audio + video sync across loop boundaries.** The boundary
+  contract is defined (Section 3), but no experiment has measured
+  the actual sync error between the audio scheduler and the
+  visual handoff. Worth a small spike before src/.
+- **Multi-session realism.** All experiments are ~1-2 min sessions
+  on a freshly-loaded tab. Long-session (10+ min) thermal /
+  memory / GPU-state behaviour is unmeasured. Add a soak test
+  before declaring the design production-ready.
+
+## Notable production lessons (surfaced post-design, all in
+`experiments/NN_*/README.md` Note-for-eddy-implementation sections)
+
+- `gl.clear` at start of every rAF tick is **mandatory** on Android
+  Chrome (18c). Without it, cells whose textures aren't the most-
+  recently-uploaded silently fail to present.
+- Decoder feed is driven from the rAF tick — **single clock source,
+  no `setInterval`** (17b).
+- Atlas builds are chunked (~1-2 s each) with `setTimeout(0)`
+  yields between (18e/18f). Mono builds visibly hitch.
+- Bitmap series is stored as raw RGBA in OPFS via
+  `FileSystemSyncAccessHandle`, read by a worker, uploaded direct
+  to texture via `texImage2D` (no `ImageBitmap` intermediate; 18c).
+- Atlas swap uses ImageBitmap-hold + open decoder, not VideoFrame-
+  hold (14/16).
+- Perceived smoothness is measured via `framesOver33msRatio` +
+  `longestJankStreak` + `jankScore` (harness/jank.ts), not mean
+  fps. Mean lies on bimodal distributions.
 
 ## Next step
 
-**Experiments-first.** No `src/` implementation until every "not yet
-validated" item above is closed by a concrete `experiments/NN_*` run.
-The full design is plausible, but several pieces are still
-hypotheses: distinct-content overhead, long-held VideoFrame
-lifetime, layout-edit interaction with rebuild-in-flight, the
-single-cell-container streaming code path.
+The architectural questions have evidence behind them. Remaining
+open items are smaller (audio sync, layout-edit cancel-replace,
+soak). `src/` work can begin, scoped tightly to the validated
+pieces.
 
-Suggested experiment order:
+Suggested order for src/ work:
+1. `harness/jank.ts` → port to `src/utils/jank.ts` for the
+   production renderer's frame-time telemetry
+2. Renderer baseline (one cell, atlas decode, `gl.clear` + rAF +
+   `texImage2D` per the validated patterns)
+3. Chunked atlas builder (18e/f's pattern, productionised)
+4. OPFS bitmap-writer + reader (18c's pattern)
+5. Per-cell state machine + loop-boundary scheduler
+6. Container-aligned sub-atlas wiring
 
-1. **15_distinct-content** — re-run a representative subset of 11
-   (K=4 contended) with K *distinct* source clips per sub-atlas
-   instead of identical tiles. Closes the biggest remaining unknown
-   and confirms (or invalidates) the K=4 CSS-pixel verdict under
-   realistic content entropy.
-2. **16_long-hold-videoframe** — pre-warm a `VideoDecoder`, hold its
-   first `VideoFrame` for 1s / 5s / 30s, paint at end; confirm the
-   frame is still valid and GPU memory hasn't grown unboundedly.
-3. **17_rebuild-queue-dynamics** — multiple cells changed in quick
-   succession; measure the queue-policy behaviour (FIFO drain,
-   "cancel-and-replace" when the same container is dirtied twice
-   before its rebuild finishes).
-4. **18_single-cell-stream** — 1-cell container streamed directly
-   vs. as a 1×1 sub-atlas; compare per-take cost, latency, and
-   whether the special-case is worth a code path.
-
-Each closes one open question. Once 15-17 land cleanly (18 is
-optional), the design has the evidence base to support `src/` work.
+Per-piece, write a small Playwright test that mirrors what its
+originating experiment measured, so regressions surface.
