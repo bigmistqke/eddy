@@ -1,0 +1,41 @@
+{
+  "ranAt": "2026-05-16T09:44:48.404Z",
+  "git": {
+    "sha": "5929efa",
+    "dirty": true
+  },
+  "experiment": "atlas-swap",
+  "params": {
+    "captureResolution": {
+      "width": 1280,
+      "height": 720
+    },
+    "atlasResolution": {
+      "width": 540,
+      "height": 983
+    },
+    "recordSeconds": 4,
+    "preSwapSeconds": 1,
+    "hotHoldMs": 500,
+    "maxQueue": 8
+  },
+  "device": {
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36",
+    "viewport": {
+      "width": 384,
+      "height": 699
+    }
+  },
+  "result": {
+    "cold": {
+      "swapGapMs": 269.80000001192093,
+      "aFramesBeforeSwap": 119,
+      "frameAlive": true
+    },
+    "hot": {
+      "swapGapMs": 0,
+      "aFramesBeforeSwap": 119,
+      "frameAlive": true
+    }
+  }
+}
