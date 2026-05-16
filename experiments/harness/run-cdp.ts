@@ -155,8 +155,35 @@ page.ws.addEventListener("close", () => {
   }
 })
 
+// Inspector.targetCrashed is the canonical renderer-crash signal — it
+// usually fires several seconds before the socket close does, so reacting
+// to it shortens the OOM-detect latency from "wait for socket / 3-min
+// timeout" to immediate. Inspector.targetReloadedAfterCrash means Chrome
+// auto-reloaded the page after a crash, also a hard fail for this run.
+page.ws.addEventListener("message", ev => {
+  const msg = JSON.parse(ev.data as string)
+  if (msg.method === "Inspector.targetCrashed" || msg.method === "Inspector.targetReloadedAfterCrash") {
+    if (!captured) {
+      console.error(`[run-cdp] ${msg.method} — Chrome renderer crash`)
+      process.exit(3)
+    }
+  }
+  // Surface uncaught exceptions from the device so a silent timeout has a
+  // visible cause. Doesn't change the exit path (the experiment's own
+  // catch handler usually still reports a result); just makes failures
+  // diagnosable instead of mysterious.
+  if (msg.method === "Runtime.exceptionThrown") {
+    const detail = msg.params?.exceptionDetails
+    const text = detail?.exception?.description ?? detail?.text ?? "(no detail)"
+    console.error(`[device-exception] ${text}`)
+  }
+})
+
 await page.ready
 await page.send("Page.enable")
+// Inspector domain emits targetCrashed / targetReloadedAfterCrash —
+// the canonical renderer-crash events, listened for above.
+await page.send("Inspector.enable").catch(() => {})
 // getUserMedia is denied for non-visible tabs on Android Chrome — the
 // tab must be foreground before the experiment calls it.
 await page.send("Page.bringToFront").catch(() => {})
