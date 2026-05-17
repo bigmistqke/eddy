@@ -5,17 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>experiment</title>
     <style>
-      body {
+      html, body {
         margin: 0;
-        padding: 12px;
+        padding: 0;
+        height: 100%;
         font: 13px/1.4 ui-monospace, monospace;
         background: #111;
         color: #eee;
       }
-      pre {
+      body {
+        display: flex;
+        flex-direction: column;
+      }
+      /* Status log at the top — bounded, scrollable. */
+      pre#status {
+        flex: 0 0 auto;
+        margin: 0;
+        padding: 8px;
+        max-height: 30vh;
+        overflow-y: auto;
         white-space: pre-wrap;
         word-break: break-word;
+        border-bottom: 1px solid #333;
       }
+      /* Any canvas an experiment appends to body fills the remaining
+         viewport. Experiments don't need to style their canvas; the
+         shared shell owns layout. !important overrides per-experiment
+         inline styles from earlier experiments. */
+      body > canvas {
+        flex: 1 1 auto !important;
+        display: block !important;
+        width: 100% !important;
+        height: auto !important;
+        max-height: calc(100vh - 30vh) !important;
+        object-fit: contain;
+        background: #000;
+      }
+      /* Auto-scroll status to the latest line. */
     </style>
   </head>
   <body>
@@ -27,6 +53,13 @@
       const name = new URLSearchParams(location.search).get("experiment")
       if (name && /^[a-z0-9_-]+$/.test(name)) {
         document.title = `experiment · ${name}`
+        // Auto-scroll the status pre so the newest log line stays in
+        // view as experiments append status lines.
+        const status = document.querySelector("#status")
+        const observer = new MutationObserver(() => {
+          status.scrollTop = status.scrollHeight
+        })
+        observer.observe(status, { childList: true, characterData: true, subtree: true })
         import(`./${name}/index.ts`)
       } else {
         document.querySelector("#status").textContent =
