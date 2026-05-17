@@ -80,6 +80,35 @@ Per K:
 - **No longtasks but jank still present** → GPU-side bottleneck;
   decoders / textures contending for the GPU bus
 
+## Verdict
+
+**Decode keeps up at every K; the rAF tick is the new ceiling.**
+
+| K | mip | rAF fps | mean | p95 | max | >33ms | streak | decode fps | target |
+|---|---|---|---|---|---|---|---|---|---|
+| 4 | 540p | **60.1** | 17.5 | 16.7 | 532* | 0.2% | 1 | 119 | 120 |
+| 9 | 360p | **53.4** | 18.7 | 33.3 | 49.9 | 12.2% | 2 | 267 | 270 |
+| 16 | 270p | **33.8** | 29.5 | 33.4 | 83.2 | **72.8%** | 8 | 474 | 480 |
+| 25 | 180p | **24.1** | 41.4 | 66.6 | 99.9 | **87.6%** | 25 | 738 | 750 |
+
+\* K=4's 532ms max is a single first-frame setup hitch; p95=16.7 says steady state is clean.
+
+Decoders pace to target at every K (119≈120, 267≈270, 474≈480, 738≈750) — **decode isn't the bottleneck.** The render loop itself falls off the cliff between K=9 and K=16. The per-cell `texImage2D` + `drawArrays` cost compounds: at K=16, the rAF callback runs ~50 GL ops per tick (16 texture uploads + 16 draws + 16 decoder feeds), pushing past the 30fps budget.
+
+**Revised architecture for A15:**
+
+- **K ≤ 9: per-cell streaming + per-cell AV1-SW mip works end-to-end.** No atlas needed. 53-60fps with sub-15% >33ms frames.
+- **K ≥ 12-16: atlas is back on the table.** Collapsing N `texImage2D` into one atlas upload is load-bearing again — exactly what 10/11/18g found for the VP8 era. The difference: AV1-SW makes the atlas decode/rebuild substantially cheaper than it was with VP8.
+
+This **does not invalidate** the 20-series codec/pool work — it just relocates where the win lands. The codec story lowers the *decode* cost at every K; the atlas story handles the *paint* cost above K=12.
+
+## Note for eddy implementation
+
+- 1-cell, 2-cell, 4-cell, 6-cell, 9-cell layouts: ship per-cell streaming. No atlas, no time-slicing, no cross-codec.
+- 12-cell and above: atlas grouping (K=2-4 sub-atlases per 11) but the atlas itself can decode via AV1-SW with per-resolution mip per sub-atlas. Much cheaper than VP8 atlas was.
+- Skip the first 60 rAF ticks before measuring jank — first-frame texImage2D + shader compile cost shows up as a single huge hitch (this run: 532ms at K=4) that distorts jankScore. Doesn't change verdict, but the harness should drop warm-up frames in future runs.
+- The decoder pacing pattern (rAF tick drives `feedTo(elapsedMs, 30fps)`) confirmed working at every K up to 25. Single-clock-source for decode + paint matches 17b's verdict.
+
 ## Caveats
 
 - All K cells decode the same source clip (just at the per-K mip).
