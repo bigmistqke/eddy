@@ -1,6 +1,6 @@
 import { VideoSampleSink, type InputVideoTrack } from "mediabunny"
 import { deleteRgbaCache, writeRgbaCache } from "../storage/rgba-cache"
-import { logTrace } from "../utils"
+import { logTrace, wait } from "../utils"
 
 export interface BitmapFrame {
   /** Tightly-packed RGBA8 bytes, row-major (width × height × 4). */
@@ -100,6 +100,7 @@ export async function makeBitmapSource(
 
   let latest: BitmapFrame | null = null
   const { promise: ready, resolve: resolveReady } = Promise.withResolvers<void>()
+  let doneResolve: (() => void) | null = null
   worker.onmessage = (
     event: MessageEvent<{
       type: string
@@ -109,6 +110,11 @@ export async function makeBitmapSource(
   ) => {
     if (event.data.type === "ready") {
       resolveReady()
+      return
+    }
+    if (event.data.type === "done") {
+      doneResolve?.()
+      doneResolve = null
       return
     }
     if (event.data.type === "frames" && event.data.frames !== undefined) {
@@ -155,14 +161,24 @@ export async function makeBitmapSource(
       worker.postMessage({ type: "seek", tSeconds: 0 })
     },
     close(): void {
-      worker.postMessage({ type: "stop" })
-      worker.terminate()
+      // Synchronously clear `latest` so consumers immediately see "no
+      // frame". The rest of the cleanup is async — we await the worker's
+      // {type:'done'} confirmation (posted after it closes its
+      // SyncAccessHandle) BEFORE terminating + deleting the cache file.
+      // Without this sequencing, deleteRgbaCache would race the handle
+      // release and silently leave an orphan file.
       latest = null
-      // Best-effort delete of the cache file. If we crash before this
-      // fires (e.g., page refresh mid-session), the stale file will
-      // be cleaned up at next project load (or by phase 3's
-      // AV1-lifecycle GC). For now: fire-and-forget.
-      void deleteRgbaCache(clipId).catch(() => {})
+      ;(async () => {
+        const done = new Promise<void>(resolve => {
+          doneResolve = resolve
+        })
+        worker.postMessage({ type: "stop" })
+        // Safety timeout in case the worker never responds (worker died
+        // mid-init, etc.) — don't leak the cleanup forever.
+        await Promise.race([done, wait(2000)])
+        worker.terminate()
+        await deleteRgbaCache(clipId).catch(() => {})
+      })()
     },
   }
 }
