@@ -1,0 +1,279 @@
+{
+  "ranAt": "2026-05-17T17:22:20.341Z",
+  "git": {
+    "sha": "f7225f9",
+    "dirty": true
+  },
+  "experiment": "cross-codec-dual-pool",
+  "params": {
+    "captureResolution": {
+      "width": 1280,
+      "height": 720
+    },
+    "sourceSeconds": 6,
+    "runSeconds": 10,
+    "maxQueue": 8,
+    "bitratePerPixel": 0.1,
+    "hwCodec": {
+      "label": "vp9",
+      "codecString": "vp09.00.10.08"
+    },
+    "swCodec": {
+      "label": "av1",
+      "codecString": "av01.0.04M.08"
+    },
+    "passes": [
+      {
+        "label": "vp9-hw-4",
+        "hw": 4,
+        "sw": 0
+      },
+      {
+        "label": "av1-sw-4",
+        "hw": 0,
+        "sw": 4
+      },
+      {
+        "label": "cross-4+4",
+        "hw": 4,
+        "sw": 4
+      },
+      {
+        "label": "cross-2+4",
+        "hw": 2,
+        "sw": 4
+      }
+    ]
+  },
+  "device": {
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36",
+    "viewport": {
+      "width": 755,
+      "height": 298
+    }
+  },
+  "result": {
+    "passes": [
+      {
+        "label": "vp9-hw-4",
+        "hw": 4,
+        "sw": 0,
+        "aggregateFps": 203.2,
+        "hwPoolFps": 203.2,
+        "swPoolFps": 0,
+        "perDecoder": [
+          {
+            "id": 0,
+            "pool": "vp9-hw",
+            "framesDecoded": 528,
+            "fps": 52.8,
+            "firstQuarterFps": 55.6,
+            "lastQuarterFps": 54
+          },
+          {
+            "id": 1,
+            "pool": "vp9-hw",
+            "framesDecoded": 509,
+            "fps": 50.9,
+            "firstQuarterFps": 48,
+            "lastQuarterFps": 54
+          },
+          {
+            "id": 2,
+            "pool": "vp9-hw",
+            "framesDecoded": 500,
+            "fps": 50,
+            "firstQuarterFps": 44.8,
+            "lastQuarterFps": 54
+          },
+          {
+            "id": 3,
+            "pool": "vp9-hw",
+            "framesDecoded": 495,
+            "fps": 49.5,
+            "firstQuarterFps": 42.4,
+            "lastQuarterFps": 53.6
+          }
+        ],
+        "errors": []
+      },
+      {
+        "label": "av1-sw-4",
+        "hw": 0,
+        "sw": 4,
+        "aggregateFps": 428.6,
+        "hwPoolFps": 0,
+        "swPoolFps": 428.6,
+        "perDecoder": [
+          {
+            "id": 0,
+            "pool": "av1-sw",
+            "framesDecoded": 1109,
+            "fps": 110.9,
+            "firstQuarterFps": 111.6,
+            "lastQuarterFps": 115.2
+          },
+          {
+            "id": 1,
+            "pool": "av1-sw",
+            "framesDecoded": 1056,
+            "fps": 105.6,
+            "firstQuarterFps": 95.2,
+            "lastQuarterFps": 113.6
+          },
+          {
+            "id": 2,
+            "pool": "av1-sw",
+            "framesDecoded": 1056,
+            "fps": 105.6,
+            "firstQuarterFps": 98.8,
+            "lastQuarterFps": 111.2
+          },
+          {
+            "id": 3,
+            "pool": "av1-sw",
+            "framesDecoded": 1065,
+            "fps": 106.5,
+            "firstQuarterFps": 98,
+            "lastQuarterFps": 110.4
+          }
+        ],
+        "errors": []
+      },
+      {
+        "label": "cross-4+4",
+        "hw": 4,
+        "sw": 4,
+        "aggregateFps": 459.29999999999995,
+        "hwPoolFps": 157.5,
+        "swPoolFps": 301.79999999999995,
+        "perDecoder": [
+          {
+            "id": 0,
+            "pool": "vp9-hw",
+            "framesDecoded": 403,
+            "fps": 40.3,
+            "firstQuarterFps": 40.4,
+            "lastQuarterFps": 41.2
+          },
+          {
+            "id": 1,
+            "pool": "vp9-hw",
+            "framesDecoded": 395,
+            "fps": 39.5,
+            "firstQuarterFps": 36,
+            "lastQuarterFps": 40
+          },
+          {
+            "id": 2,
+            "pool": "vp9-hw",
+            "framesDecoded": 393,
+            "fps": 39.3,
+            "firstQuarterFps": 31.2,
+            "lastQuarterFps": 42.8
+          },
+          {
+            "id": 3,
+            "pool": "vp9-hw",
+            "framesDecoded": 384,
+            "fps": 38.4,
+            "firstQuarterFps": 29.6,
+            "lastQuarterFps": 42
+          },
+          {
+            "id": 4,
+            "pool": "av1-sw",
+            "framesDecoded": 766,
+            "fps": 76.6,
+            "firstQuarterFps": 70.4,
+            "lastQuarterFps": 78
+          },
+          {
+            "id": 5,
+            "pool": "av1-sw",
+            "framesDecoded": 744,
+            "fps": 74.4,
+            "firstQuarterFps": 70.4,
+            "lastQuarterFps": 80.8
+          },
+          {
+            "id": 6,
+            "pool": "av1-sw",
+            "framesDecoded": 752,
+            "fps": 75.2,
+            "firstQuarterFps": 68.4,
+            "lastQuarterFps": 76.8
+          },
+          {
+            "id": 7,
+            "pool": "av1-sw",
+            "framesDecoded": 756,
+            "fps": 75.6,
+            "firstQuarterFps": 71.6,
+            "lastQuarterFps": 76.8
+          }
+        ],
+        "errors": []
+      },
+      {
+        "label": "cross-2+4",
+        "hw": 2,
+        "sw": 4,
+        "aggregateFps": 461.7,
+        "hwPoolFps": 148,
+        "swPoolFps": 313.7,
+        "perDecoder": [
+          {
+            "id": 0,
+            "pool": "vp9-hw",
+            "framesDecoded": 743,
+            "fps": 74.3,
+            "firstQuarterFps": 70.4,
+            "lastQuarterFps": 73.6
+          },
+          {
+            "id": 1,
+            "pool": "vp9-hw",
+            "framesDecoded": 737,
+            "fps": 73.7,
+            "firstQuarterFps": 67.6,
+            "lastQuarterFps": 74.4
+          },
+          {
+            "id": 2,
+            "pool": "av1-sw",
+            "framesDecoded": 757,
+            "fps": 75.7,
+            "firstQuarterFps": 74.4,
+            "lastQuarterFps": 74.4
+          },
+          {
+            "id": 3,
+            "pool": "av1-sw",
+            "framesDecoded": 815,
+            "fps": 81.5,
+            "firstQuarterFps": 79.2,
+            "lastQuarterFps": 90.4
+          },
+          {
+            "id": 4,
+            "pool": "av1-sw",
+            "framesDecoded": 820,
+            "fps": 82,
+            "firstQuarterFps": 70.4,
+            "lastQuarterFps": 77.2
+          },
+          {
+            "id": 5,
+            "pool": "av1-sw",
+            "framesDecoded": 745,
+            "fps": 74.5,
+            "firstQuarterFps": 72.4,
+            "lastQuarterFps": 67.6
+          }
+        ],
+        "errors": []
+      }
+    ]
+  }
+}

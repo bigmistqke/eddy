@@ -62,6 +62,33 @@ Per pass:
 - **VP9 HW drops in cross-4+4** → HW decoder is itself memory-
   contended
 
+## Verdict
+
+**Cross-codec dual-pool is NOT independent the way same-codec HW+SW was.**
+
+| pass | aggregate | vp9-hw | av1-sw |
+|---|---|---|---|
+| vp9-hw-4 | 203 | 203 | — |
+| av1-sw-4 | 429 | — | 429 |
+| **cross-4+4** | **459** | 158 | 302 |
+| cross-2+4 | 462 | 148 | 314 |
+
+Predicted-additive (203 + 429 = 632); actual 459. Both pools take a 22-30% hit under cross load. Net gain over best single pool: +30 fps ≈ +1 cell — not the +6 the additive theory predicted.
+
+cross-2+4 ≈ cross-4+4: the VP9-HW pool tops out at ~150 fps under cross-codec contention regardless of N. Whatever bottleneck is shared, it's not "decoder slots."
+
+Suspect shared resources: memory bandwidth, main-thread callback queue, GPU↔CPU output bus. Distinguishing these is a follow-up.
+
+**Architectural call:** 2× storage cost (VP9 + AV1 per clip) is not justified by +1 cell of headroom on this device. **Single AV1-SW pool stays the realistic ceiling** for one-pool architecture (K≈14-18).
+
+Run-to-run variance is significant: 20b's av1-sw-4 was 551 fps, today's 429 fps (-22%). Thermal/background load swings absolute numbers ~20% session-to-session. Trust patterns over single-number absolutes.
+
+## Note for eddy implementation
+
+- Two-codec storage isn't worth its complexity on this device. Keep canonical = VP9 for portability, cache codec = single AV1.
+- The 459 fps cross result doesn't *forbid* opportunistic dual-codec routing (e.g. play the AV1 version normally, fall back to VP9-HW for a hot cell during atlas rebuild). The headroom exists; just don't budget K=24 against it.
+- Per-device profile should report the single-pool ceiling, not the additive prediction.
+
 ## Caveats
 
 - Tests assume both codecs decode the *same* visual content
