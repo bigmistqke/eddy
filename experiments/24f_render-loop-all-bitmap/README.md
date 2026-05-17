@@ -84,6 +84,48 @@ Per pass (mirrors 24 / 24a for direct comparison):
 - **Jank correlates with mip pixel area × K** → confirms the per-
   pixel upload model; informs how to pick mips per K.
 
+## Verdict
+
+**The all-bitmap path holds clean 60 fps from K=4 through K=25.** 25b's prediction confirmed end-to-end.
+
+| K | mip | fps | mean | p95 | max | >33ms | streak | jankScore |
+|---|---|---|---|---|---|---|---|---|
+| 4 | 540p | 58.5 | 17.5 | 16.7 | 266* | 2.6% | 1 | 93 |
+| 9 | 360p | 59.7 | 16.9 | 16.7 | 116 | 0.5% | 2 | 12 |
+| 16 | 270p | **59.8** | 16.8 | 16.7 | 83 | 0.5% | 2 | 4 |
+| **25** | 180p | **60.1** | 16.7 | 16.7 | 49.9 | 0.2% | 1 | 0.5 |
+
+\* K=4 540p has slightly elevated mean (17.5 ms) and 2.6% over 33 ms — the larger mip's upload cost biting. p95=16.7 shows steady state is clean; the 266 ms max is one first-frame setup hitch.
+
+Side-by-side against 24 (per-cell AV1) and 24a (atlas AV1):
+
+| K | per-cell AV1 | atlas AV1 | all-bitmap |
+|---|---|---|---|
+| 4 | 60 fps | 60 fps | 58.5 fps |
+| 9 | 53 fps, 12% jank | 60 fps | 59.7 fps |
+| 16 | 34 fps, **73%** jank | 60 fps | **59.8 fps** |
+| 25 | 24 fps, **88%** jank | 60 fps | **60.1 fps** |
+
+All-bitmap matches atlas's per-K rAF stability without needing any atlas. The decode path was per-cell when measured here (16 separate decoders at K=16 was the failing config in 24); the bitmap path replaces those decoders with cheap Uint8Array uploads.
+
+## Note for eddy implementation
+
+If the OPFS read pipeline holds at K=16-25 and storage costs are acceptable for typical sessions, this is a meaningful architectural simplification:
+
+- No atlas → no rebuild → 24c/24d/24e failure modes don't exist
+- No hybrid pattern → 24b's tight dirty-budget doesn't apply
+- No atlas swap → 14/16 patterns don't apply
+- No codec selection during playback → 20-series cross-codec discussion narrows to "what codec do we use at session-end encode for share/sync"
+
+Caveats that haven't been validated:
+
+- OPFS read throughput at K=16/25 — 18c validated K=9; extension needs measurement
+- Storage cost: per-cell bytes = mip_bytes × fps × seconds. For typical eddy K=16 × 6 s clips at 270p ≈ 240 MB OPFS total. Bounded by (cell count × cell duration), not by session length
+- Concurrent capture + all-bitmap render — 24e showed capture+atlas is fine; bitmap variant unmeasured
+- Session-end encode cost (raw RGBA → AV1 for share/sync) — single batch job at end-of-session, untested
+
+The architecture decision becomes: are those four caveats acceptable on target hardware? If yes, drop atlas entirely; if no, keep atlas as fallback for cases that don't fit the bitmap path.
+
 ## Caveats
 
 - In-memory bytes only. OPFS read latency is not exercised here. 18c

@@ -1,0 +1,278 @@
+{
+  "ranAt": "2026-05-17T19:38:47.722Z",
+  "git": {
+    "sha": "adae883",
+    "dirty": true
+  },
+  "experiment": "render-loop-all-bitmap",
+  "params": {
+    "captureResolution": {
+      "width": 1280,
+      "height": 720
+    },
+    "sourceSeconds": 6,
+    "runSeconds": 10,
+    "framesPerPass": 60,
+    "passes": [
+      {
+        "k": 4,
+        "gridCols": 2,
+        "gridRows": 2,
+        "mip": {
+          "label": "540p",
+          "width": 960,
+          "height": 544
+        }
+      },
+      {
+        "k": 9,
+        "gridCols": 3,
+        "gridRows": 3,
+        "mip": {
+          "label": "360p",
+          "width": 640,
+          "height": 368
+        }
+      },
+      {
+        "k": 16,
+        "gridCols": 4,
+        "gridRows": 4,
+        "mip": {
+          "label": "270p",
+          "width": 480,
+          "height": 272
+        }
+      },
+      {
+        "k": 25,
+        "gridCols": 5,
+        "gridRows": 5,
+        "mip": {
+          "label": "180p",
+          "width": 320,
+          "height": 184
+        }
+      }
+    ]
+  },
+  "device": {
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36",
+    "viewport": {
+      "width": 755,
+      "height": 298
+    }
+  },
+  "result": {
+    "passes": [
+      {
+        "k": 4,
+        "mip": "540p",
+        "mipWidth": 960,
+        "mipHeight": 544,
+        "frameCount": 50,
+        "bitmapBytesMb": 99.609375,
+        "totalUploadsPerTick": 4,
+        "jank": {
+          "framesObserved": 585,
+          "meanMs": 17.47025641025641,
+          "medianMs": 16.600000000002183,
+          "p95Ms": 16.700000000000728,
+          "p99Ms": 33.29999999999927,
+          "maxMs": 266.3000000000011,
+          "over16ms": 585,
+          "over33ms": 15,
+          "over50ms": 1,
+          "over100ms": 1,
+          "over33msRatio": 0.02564102564102564,
+          "longestJankStreak": 1,
+          "jankScore": 93.04329914529995,
+          "histogramMs": [
+            0,
+            570,
+            0,
+            14,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1
+          ]
+        },
+        "longTasks": {
+          "observed": 1,
+          "totalDurationMs": 272,
+          "longestMs": 272
+        }
+      },
+      {
+        "k": 9,
+        "mip": "360p",
+        "mipWidth": 640,
+        "mipHeight": 368,
+        "frameCount": 50,
+        "bitmapBytesMb": 44.921875,
+        "totalUploadsPerTick": 9,
+        "jank": {
+          "framesObserved": 597,
+          "meanMs": 16.89564489112228,
+          "medianMs": 16.600000000002183,
+          "p95Ms": 16.700000000000728,
+          "p99Ms": 16.80000000000291,
+          "maxMs": 116.5,
+          "over16ms": 597,
+          "over33ms": 3,
+          "over50ms": 1,
+          "over100ms": 1,
+          "over33msRatio": 0.005025125628140704,
+          "longestJankStreak": 2,
+          "jankScore": 12.163048576214404,
+          "histogramMs": [
+            0,
+            594,
+            0,
+            1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "longTasks": {
+          "observed": 1,
+          "totalDurationMs": 113,
+          "longestMs": 113
+        }
+      },
+      {
+        "k": 16,
+        "mip": "270p",
+        "mipWidth": 480,
+        "mipHeight": 272,
+        "frameCount": 50,
+        "bitmapBytesMb": 24.90234375,
+        "totalUploadsPerTick": 16,
+        "jank": {
+          "framesObserved": 598,
+          "meanMs": 16.812040133779263,
+          "medianMs": 16.60000000000582,
+          "p95Ms": 16.700000000004366,
+          "p99Ms": 16.80000000000291,
+          "maxMs": 83.40000000000146,
+          "over16ms": 598,
+          "over33ms": 3,
+          "over50ms": 1,
+          "over100ms": 0,
+          "over33msRatio": 0.005016722408026756,
+          "longestJankStreak": 2,
+          "jankScore": 4.2481772575253265,
+          "histogramMs": [
+            0,
+            595,
+            0,
+            2,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "longTasks": {
+          "observed": 1,
+          "totalDurationMs": 79,
+          "longestMs": 79
+        }
+      },
+      {
+        "k": 25,
+        "mip": "180p",
+        "mipWidth": 320,
+        "mipHeight": 192,
+        "frameCount": 50,
+        "bitmapBytesMb": 11.71875,
+        "totalUploadsPerTick": 25,
+        "jank": {
+          "framesObserved": 601,
+          "meanMs": 16.700665557404324,
+          "medianMs": 16.60000000000582,
+          "p95Ms": 16.700000000004366,
+          "p99Ms": 16.80000000000291,
+          "maxMs": 49.900000000001455,
+          "over16ms": 601,
+          "over33ms": 1,
+          "over50ms": 0,
+          "over100ms": 0,
+          "over33msRatio": 0.0016638935108153079,
+          "longestJankStreak": 1,
+          "jankScore": 0.4752246256240419,
+          "histogramMs": [
+            0,
+            600,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        },
+        "longTasks": {
+          "observed": 1,
+          "totalDurationMs": 63,
+          "longestMs": 63
+        }
+      }
+    ]
+  }
+}
