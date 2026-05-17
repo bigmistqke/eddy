@@ -22,6 +22,9 @@ test("bitmap-source: clip source latestFrame returns null before seek, populates
     }
     const ids = Object.keys(ctx.clips.clips)
     const clip = ctx.clips.clips[ids[0]]
+    // Reset to defeat any seek the render loop performed after autoplay
+    // kicked in post-record-stop.
+    clip.video.reset()
     const before = clip.video.latestFrame()
     clip.video.seek(0)
     const after = clip.video.latestFrame()

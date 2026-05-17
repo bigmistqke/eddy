@@ -3,6 +3,7 @@ import {
   createMemo,
   Errored,
   For,
+  latest,
   Loading,
   onSettled,
   Show,
@@ -136,13 +137,23 @@ export function Canvas() {
         const frames = new Map<string, TextureSource>()
 
         // Live camera preview goes into the preview target cell, if any.
+        // Use `latest` to read stream — bare stream() throws NotReadyError
+        // while the initial getUserMedia is still UNINITIALIZED+PENDING,
+        // which would bubble out of drawAt before installing
+        // window.__layoutFrames (the test harness's only view into the
+        // current layout). `latest` returns `undefined` until the signal
+        // resolves; we treat that the same as null (no camera frame yet).
+        // Same contract as hud/main.tsx — see solid-pending-bug-repro.
         const previewCell = context.previewTargetCellId()
         if (previewCell !== null) {
-          const cameraSrc = context.preview.bitmapSource()
-          if (cameraSrc !== null) {
-            const frame = cameraSrc.latestFrame()
-            if (frame !== null) {
-              frames.set(previewCell, frame)
+          const currentStream = latest(context.preview.stream)
+          if (currentStream != null) {
+            const cameraSrc = context.preview.bitmapSource()
+            if (cameraSrc !== null) {
+              const frame = cameraSrc.latestFrame()
+              if (frame !== null) {
+                frames.set(previewCell, frame)
+              }
             }
           }
         }
@@ -297,7 +308,12 @@ export function Canvas() {
       drawAt(transform)
     }
 
-    syncSize()
+    // The initial syncSize calls drawAt → gatherFrames, which reads
+    // `latest(context.preview.stream)`. onSettled is a forbidden scope
+    // for pending-async reads in Solid 2.x — defer the first draw to a
+    // microtask so it runs outside this scope. The rAF-driven loop and
+    // ResizeObserver callbacks already run outside.
+    queueMicrotask(syncSize)
     const resizeObserver = new ResizeObserver(syncSize)
     resizeObserver.observe(wrapperElement)
 
