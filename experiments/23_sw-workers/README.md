@@ -64,6 +64,33 @@ Per pass:
 - **cross-4+4 with workers ≈ cross-4+4 main (~460 fps)** → bottleneck
   is memory bandwidth (corroborates whatever 20d shows)
 
+## Verdict
+
+**Workers don't help — at 720p.**
+
+| pass | aggregate | vp9-hw | av1-sw |
+|---|---|---|---|
+| av1-sw-4 main | 448 | — | 448 |
+| av1-sw-4 workers | 443 | — | 443 |
+| vp9-hw-4 main | 177 | 177 | — |
+| cross-4+4 main | **469** | 167 | 302 |
+| cross-4+4 hw-main + sw-workers | **472** | 166 | 306 |
+
+Both predictions fail:
+- AV1-SW solo is identical main vs workers (448 vs 443)
+- Cross-codec additivity does not recover (469 vs 472) — the ~30% deficit vs predicted (~625) persists when SW is workerised
+
+The bottleneck is **not** main-thread callback saturation at 720p. Best remaining guess: Chrome's GPU/codec service IPC. Workers don't bypass it because they all talk to the same GPU process. Plausible specific causes: output frame allocation, GPU↔CPU memory copy for SW-decoded frames, or a shared decode-task queue in the renderer.
+
+**Important caveat:** at 720p the SW pool delivers ~450 callbacks/sec — not enough to saturate the main thread. [20d](../20d_resolution-codec-pool/README.md)'s "lower res hurts more" finding was at 360p, where the SW pool produces ~1690 callbacks/sec. That hypothesis isn't disproven yet — just untested at the resolution where it would actually matter. A 23b sweep across resolutions (or 20d + workers) would close it.
+
+## Note for eddy implementation
+
+- For **aggregate throughput**, workers vs main is a wash on this device (at 720p; possibly different at lower res)
+- BUT workers free the main thread for rAF / capture / WebGL upload / atlas builds. Even at equal aggregate fps, the **latency picture changes** meaningfully under a real render loop, where main thread already has other work
+- The "main thread is fine for decode" data was collected with an idle main thread. In a contended render loop, workers might still pull ahead even at 720p
+- An end-to-end render-loop experiment would be the right place to measure this — decoder location's effect on jank/frame-pace under realistic main-thread load
+
 ## Caveats
 
 - Worker postMessage of EncodedVideoChunk: chunks aren't natively
