@@ -75,6 +75,34 @@ Per pass (mirrors 24c/24d for direct comparison):
 - **Rebuild wall-time in pass 4 vs pass 3** — does adding capture
   slow the rebuild further?
 
+## Verdict
+
+**Capture + rebuild concurrent fails super-linearly. The "rebuild at record_start" trigger is the wrong moment.**
+
+| pass | fps | mean | p95 | max | >33ms | streak | jankScore | rebuild | capture |
+|---|---|---|---|---|---|---|---|---|---|
+| baseline | 60.1 | 17.0 | 16.7 | 283* | 0.2% | 1 | 69 | — | — |
+| capture-only | 57.0 | 17.6 | 16.8 | 80.5 | 4.8% | 5 | 5.6 | — | 193 chunks |
+| rebuild-only | 46.6 | 21.5 | 50.0 | 166 | 12.2% | 45 | 183 | 10.7 s | — |
+| **full** | **32.3** | 31.2 | 116.5 | 350 | **22.1%** | 13 | **2100** | 13.8 s | **119 chunks** |
+
+\* baseline max 283 ms is one first-frame setup hitch; p95 16.7 confirms steady-state clean.
+
+Three findings:
+
+1. **Capture alone is cheap** — atlas playback survives concurrent VP8 camera capture easily (5% jank). Confirms 18g's VP8 finding for AV1 at K=16.
+2. **Rebuild alone is moderate** — 12% jank during the rebuild window. Matches 24c/24d's known cost.
+3. **Capture + rebuild is super-linear bad** — 22% jank, jankScore 11× rebuild-only's, and capture itself lost 38% of its frames (193 → 119 chunks for the same 10 s window). A partial recording is a UX failure, not just a perf one.
+
+The refined design's underlying insight (rebuild can be deferred to idle time) is sound, but the proposed trigger — "rebuild at record_start" — is the worst moment to fire it. Recording is when capture can't afford to lose frames *and* when atlas playback can't afford to look janky to the recording user.
+
+## Note for eddy implementation
+
+- **Don't run rebuild concurrent with capture.** The capture's frame loss alone disqualifies this trigger.
+- **Trigger at record_stop instead.** Rebuild only with atlas playback contention (12% jank for ~10 s), no capture overlap. That window is also a lower-attention moment (user reviewing the take), making the jank more forgivable than during creation.
+- **The "start next recording within rebuild window" case** is the new edge case: if rebuild is mid-flight when the user hits record again, we're back to the super-linear failure. Possible mitigations: block record-start UI until rebuild done (latency hit), cancel rebuild and defer (D grows), or accept the contention (probably too bad).
+- **Capture frame loss under contention is a previously-unmeasured cost.** Should be checked anytime a feature might run concurrent with active recording.
+
 ## Caveats
 
 - Single rebuild fires at T+2 s. Real flow may have multiple stacked.
