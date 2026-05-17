@@ -1,0 +1,389 @@
+{
+  "ranAt": "2026-05-17T20:29:15.497Z",
+  "git": {
+    "sha": "2f397c9",
+    "dirty": true
+  },
+  "experiment": "full-lifecycle",
+  "params": {
+    "captureResolution": {
+      "width": 1280,
+      "height": 720
+    },
+    "sourceSeconds": 6,
+    "framesPerCell": 60,
+    "playSeconds": 10,
+    "recordSeconds": 5,
+    "bitratePerPixel": 0.1,
+    "sourceFps": 30,
+    "swCodec": {
+      "label": "av1",
+      "codecString": "av01.0.04M.08"
+    },
+    "opfsDirName": "29",
+    "k": 16,
+    "gridCols": 4,
+    "gridRows": 4,
+    "cellMip": {
+      "label": "270p",
+      "width": 480,
+      "height": 272
+    }
+  },
+  "device": {
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36",
+    "viewport": {
+      "width": 384,
+      "height": 699
+    }
+  },
+  "result": {
+    "load": {
+      "coldStartMs": 2846.300000011921,
+      "perCell": [
+        {
+          "type": "done",
+          "cellId": 0,
+          "framesProduced": 60,
+          "decodeMs": 1010,
+          "writeMs": 1288.5999999642372,
+          "totalMs": 2339.5,
+          "errors": []
+        },
+        {
+          "type": "done",
+          "cellId": 1,
+          "framesProduced": 60,
+          "decodeMs": 908,
+          "writeMs": 389,
+          "totalMs": 1328.3999999761581,
+          "errors": []
+        },
+        {
+          "type": "done",
+          "cellId": 2,
+          "framesProduced": 60,
+          "decodeMs": 734.3999999761581,
+          "writeMs": 350.10000002384186,
+          "totalMs": 1103.0999999642372,
+          "errors": []
+        },
+        {
+          "type": "done",
+          "cellId": 3,
+          "framesProduced": 60,
+          "decodeMs": 865.8000000119209,
+          "writeMs": 273.89999997615814,
+          "totalMs": 1186.0999999642372,
+          "errors": []
+        },
+        {
+          "type": "done",
+          "cellId": 4,
+          "framesProduced": 60,
+          "decodeMs": 1079,
+          "writeMs": 1570.5,
+          "totalMs": 2685.600000023842,
+          "errors": []
+        },
+        {
+          "type": "done",
+          "cellId": 5,
+          "framesProduced": 60,
+          "decodeMs": 994.8000000119209,
+          "writeMs": 1247.199999988079,
+          "totalMs": 2270.199999988079,
+          "errors": []
+        },
+        {
+          "type": "done",
+          "cellId": 6,
+          "framesProduced": 60,
+          "decodeMs": 1022.3999999761581,
+          "writeMs": 1627.6000000238419,
+          "totalMs": 2726.899999976158,
+          "errors": []
+        },
+        {
+          "type": "done",
+          "cellId": 7,
+          "framesProduced": 60,
+          "decodeMs": 957.8999999761581,
+          "writeMs": 1338.199999988079,
+          "totalMs": 2342.100000023842,
+          "errors": []
+        },
+        {
+          "type": "done",
+          "cellId": 8,
+          "framesProduced": 60,
+          "decodeMs": 1018.5,
+          "writeMs": 1488.2999999523163,
+          "totalMs": 2557.100000023842,
+          "errors": []
+        },
+        {
+          "type": "done",
+          "cellId": 9,
+          "framesProduced": 60,
+          "decodeMs": 990.3000000119209,
+          "writeMs": 1402.300000011921,
+          "totalMs": 2451.800000011921,
+          "errors": []
+        },
+        {
+          "type": "done",
+          "cellId": 10,
+          "framesProduced": 60,
+          "decodeMs": 986.3999999761581,
+          "writeMs": 1337.5,
+          "totalMs": 2357.699999988079,
+          "errors": []
+        },
+        {
+          "type": "done",
+          "cellId": 11,
+          "framesProduced": 60,
+          "decodeMs": 960.1000000238419,
+          "writeMs": 1357.1000000238419,
+          "totalMs": 2373.100000023842,
+          "errors": []
+        },
+        {
+          "type": "done",
+          "cellId": 12,
+          "framesProduced": 60,
+          "decodeMs": 1005.1999999880791,
+          "writeMs": 1383.300000011921,
+          "totalMs": 2427.5,
+          "errors": []
+        },
+        {
+          "type": "done",
+          "cellId": 13,
+          "framesProduced": 60,
+          "decodeMs": 938.3999999761581,
+          "writeMs": 1349.8999999761581,
+          "totalMs": 2323.899999976158,
+          "errors": []
+        },
+        {
+          "type": "done",
+          "cellId": 14,
+          "framesProduced": 60,
+          "decodeMs": 946.5,
+          "writeMs": 1452.699999988079,
+          "totalMs": 2462.300000011921,
+          "errors": []
+        },
+        {
+          "type": "done",
+          "cellId": 15,
+          "framesProduced": 60,
+          "decodeMs": 923.8000000119209,
+          "writeMs": 1384.1000000238419,
+          "totalMs": 2402.2999999523163,
+          "errors": []
+        }
+      ]
+    },
+    "play": {
+      "jank": {
+        "framesObserved": 587,
+        "meanMs": 17.012776831345825,
+        "medianMs": 16.600000000002183,
+        "p95Ms": 16.700000000000728,
+        "p99Ms": 16.80000000000291,
+        "maxMs": 66.60000000000218,
+        "over16ms": 587,
+        "over33ms": 5,
+        "over50ms": 3,
+        "over100ms": 0,
+        "over33msRatio": 0.008517887563884156,
+        "longestJankStreak": 1,
+        "jankScore": 6.7487052810906025,
+        "histogramMs": [
+          0,
+          582,
+          0,
+          0,
+          1,
+          1,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "longTasks": {
+        "observed": 2,
+        "totalDurationMs": 121,
+        "longestMs": 67
+      },
+      "emptyCellTicks": 0
+    },
+    "record": {
+      "jank": {
+        "framesObserved": 285,
+        "meanMs": 17.521052631578947,
+        "medianMs": 16.600000000002183,
+        "p95Ms": 16.799999999999272,
+        "p99Ms": 49.89999999999782,
+        "maxMs": 99.79999999999927,
+        "over16ms": 285,
+        "over33ms": 9,
+        "over50ms": 1,
+        "over100ms": 0,
+        "over33msRatio": 0.031578947368421054,
+        "longestJankStreak": 1,
+        "jankScore": 17.66305263157809,
+        "histogramMs": [
+          0,
+          276,
+          0,
+          6,
+          2,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "longTasks": {
+        "observed": 2,
+        "totalDurationMs": 147,
+        "longestMs": 88
+      },
+      "emptyCellTicks": 0,
+      "captureCompleted": true,
+      "captureChunks": 115
+    },
+    "save": {
+      "saveMs": 4250.400000035763,
+      "perCell": [
+        {
+          "ok": true,
+          "outputBytes": 79115,
+          "encodeMs": 4136.600000023842,
+          "errors": []
+        },
+        {
+          "ok": true,
+          "outputBytes": 79115,
+          "encodeMs": 4131.699999988079,
+          "errors": []
+        },
+        {
+          "ok": true,
+          "outputBytes": 79115,
+          "encodeMs": 4135,
+          "errors": []
+        },
+        {
+          "ok": true,
+          "outputBytes": 79115,
+          "encodeMs": 4133,
+          "errors": []
+        },
+        {
+          "ok": true,
+          "outputBytes": 79115,
+          "encodeMs": 4146,
+          "errors": []
+        },
+        {
+          "ok": true,
+          "outputBytes": 79115,
+          "encodeMs": 4150.700000047684,
+          "errors": []
+        },
+        {
+          "ok": true,
+          "outputBytes": 79115,
+          "encodeMs": 4137,
+          "errors": []
+        },
+        {
+          "ok": true,
+          "outputBytes": 79115,
+          "encodeMs": 4182.600000023842,
+          "errors": []
+        },
+        {
+          "ok": true,
+          "outputBytes": 79115,
+          "encodeMs": 4177.399999976158,
+          "errors": []
+        },
+        {
+          "ok": true,
+          "outputBytes": 79115,
+          "encodeMs": 4161.199999988079,
+          "errors": []
+        },
+        {
+          "ok": true,
+          "outputBytes": 79115,
+          "encodeMs": 4145.599999964237,
+          "errors": []
+        },
+        {
+          "ok": true,
+          "outputBytes": 79115,
+          "encodeMs": 4154,
+          "errors": []
+        },
+        {
+          "ok": true,
+          "outputBytes": 79115,
+          "encodeMs": 4153.699999988079,
+          "errors": []
+        },
+        {
+          "ok": true,
+          "outputBytes": 79115,
+          "encodeMs": 4182.300000011921,
+          "errors": []
+        },
+        {
+          "ok": true,
+          "outputBytes": 79115,
+          "encodeMs": 4149.800000011921,
+          "errors": []
+        },
+        {
+          "ok": true,
+          "outputBytes": 79115,
+          "encodeMs": 4224.400000035763,
+          "errors": []
+        }
+      ],
+      "totalKb": 1236.171875,
+      "avgBytesPerCell": 79115
+    },
+    "totalMs": 23317.19999998808
+  }
+}

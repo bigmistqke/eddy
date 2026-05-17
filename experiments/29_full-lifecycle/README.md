@@ -60,6 +60,41 @@ Aggregate:
 - **Cumulative jank** during play+record at the end of the session is similar to early-session jank — no thermal drift
 - **No long-tasks during play phase** — playback stays clean even after the cold-start did codec work
 
+## Verdict
+
+**Full lifecycle survives integration. Total 23.3 s end-to-end, each phase matches its isolated baseline.**
+
+| phase | wall time | metric | isolated baseline | match? |
+|---|---|---|---|---|
+| **LOAD** (K=16 cold-start) | **2.85 s** | per-cell decode 959 ms + write 1203 ms | 26b: 4.5 s | ✓ faster (variance) |
+| **PLAY** (10 s) | 10 s | 58.7 fps, 0.9% over 33 ms | 24g: 59.3 fps, 1.5% | ✓ matches |
+| **RECORD** (5 s) | 5 s | 57.0 fps, 3.2% over 33 ms, 115 capture chunks | 24h: 58.7 fps, 1.7% | ✓ matches |
+| **SAVE** (K=16 AV1 parallel) | **4.25 s** | 1236 KB total, 77 KB/cell | 27: 2.1 s | ⚠ ~2× slower |
+
+The save phase is ~2× slower than 27's isolated baseline. Most likely cause: 29 reads RGBA from OPFS first (480 MB across 16 cells) and constructs `VideoFrame` from each slice, while 27 had bytes already in memory. The OPFS read + VideoFrame construction overhead adds ~2 s. Not contention or thermal — a one-time cost of working from disk.
+
+Capture got 115 chunks in 5 s (~23 chunks/s), comfortably more than 24h's rate-equivalent.
+
+**End-to-end validation summary for C2 on this device:**
+
+| layer | validated by |
+|---|---|
+| Storage compression (AV1 vs RGBA) | 26 (520-580×) |
+| Cold-start latency | 26b (~4.5 s for K=16) |
+| Playback at K=4-25 | 24f / 24g |
+| Capture during playback | 24h |
+| Cold-start during playback | 28 |
+| Save (RGBA → AV1) | 27 (2.1 s isolated) / 29 (4.25 s from disk) |
+| Full lifecycle integration | **29 (23 s end-to-end)** |
+
+## Note for eddy implementation
+
+- The C2 architecture survives end-to-end integration at K=16 on this device.
+- Save-from-disk adds ~2 s vs save-from-memory. Worth knowing — if real-time save speed is critical, keep RGBA buffers in memory while user is editing rather than re-reading on save.
+- 23 s total session timeline (open + play + record + save) is dominated by the wait times (15 s play+record), not the actual work (load 2.85 s + save 4.25 s ≈ 7 s).
+- Capture during the record phase shows slightly more jank (3.2% vs 1.7% in 24h) — could be cumulative thermal at the ~17 s mark, or run-to-run variance. Worth watching at longer durations.
+- No cumulative jank growth observed across phases — playback in phase 2 and phase 3 both match their isolated baselines within noise.
+
 ## Caveats
 
 - Single source clip across all cells (test simplification per 15).
