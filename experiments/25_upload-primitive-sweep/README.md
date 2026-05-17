@@ -94,6 +94,36 @@ ticks. Per cell:
   texImage2D`** → the bitmap path wins outright once the right
   primitive is used.
 
+## Verdict
+
+**Three findings, two of them surprises:**
+
+| source × primitive | K=4 270p | K=16 270p |
+|---|---|---|
+| VideoFrame + texImage2D | 4.03 ms | 8.07 ms |
+| VideoFrame + texSubImage2D | 3.98 ms | 8.05 ms |
+| **Uint8Array + texImage2D** | **1.91 ms** | **5.91 ms** |
+| **Uint8Array + texSubImage2D** | **1.98 ms** | **5.82 ms** |
+
+1. **`texSubImage2D` doesn't help.** Within noise of `texImage2D` across the entire matrix. The "wrong primitive" hypothesis was overstated — switching the 24-series to immutable storage would change nothing meaningful on this device/driver. Possible explanation: same-dimension `texImage2D` reallocation hits a fast path under the hood equivalent to `texSubImage2D`.
+
+2. **`Uint8Array` is consistently ~2× faster than `VideoFrame`.** Opposite of the prediction. **Critical caveat:** the VideoFrames here were *constructed* from RGBA bytes via `new VideoFrame(buffer, ...)`, not real decoded frames from a `VideoDecoder`. Decoded VideoFrames may behave very differently (likely a fast GPU-backed path). This is the urgent follow-up.
+
+3. **K=16 at 270p with Uint8Array is 5.91 ms — well under budget.** Per-tick total budget is 16.7 ms; upload eats ~6 ms, leaves ~10 ms for clear + draws + decoder feed + browser composite. **The all-bitmap K=16 design has real upload-budget room** if the OPFS read pipeline can also keep up.
+
+**Cost scaling:**
+
+- At 270p: total scales near-linearly with K (0.77 → 1.91 → 3.26 → 5.91 for K=1/4/8/16) — both per-call overhead and per-pixel cost matter.
+- At K=4: total scales sub-linearly with pixels (144p=0.91 ms → 540p=5.31 ms = ~6× for 14× pixels) — fixed per-call cost is meaningful, but big cells still pay big upload costs.
+- At 540p K=16: 20-30 ms across all combinations — well over the 16.7 ms budget. Big cells × high K still need atlas regardless of primitive.
+
+## Note for eddy implementation
+
+- **Don't bother switching the existing render loops from `texImage2D` to `texSubImage2D` for performance** — measured impact is zero. The pattern is still cleaner if the textures are immutable size, but it's a code-clarity choice, not a perf one.
+- **Uint8Array upload is meaningfully faster than constructed-VideoFrame upload.** This is favorable for the OPFS-bitmap path proposed after re-encountering 18c.
+- **Per-tick upload budget on this device is roughly: K × (small fixed + per-pixel cost).** For 270p mip: ~0.4 ms/upload baseline + ~0.4 ms per K. For 540p: ~1.5 ms/upload baseline + ~1.5 ms per K. Useful for predicting whether a given (K, mip) combination fits the 16.7 ms budget.
+- **The most-important untested case is decoded VideoFrame upload cost** — does a frame produced by a `VideoDecoder` upload at the synthetic-VideoFrame speed (~4 ms at K=4 270p) or at a fast hardware-backed speed (likely much less)? The 24a atlas-K=16 result running clean at 60 fps implies real decoded VideoFrames upload fast. A direct measurement would settle this.
+
 ## Caveats
 
 - This is upload-only. No `drawArrays`, no `gl.clear`. The actual
