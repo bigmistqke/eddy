@@ -24,6 +24,10 @@ export interface Transport {
    *  multiplicatively with the mute (muted cell stays silent
    *  regardless of volume). Ramped briefly to avoid clicks. */
   setCellVolume(cellId: string, value: number): void
+  /** Register a per-cell seek callback. The transport invokes it on
+   *  every play/loop cycle and at stop. Multiple registrations per
+   *  cell are kept until the returned dispose function is called. */
+  registerSeek(cellId: string, seek: (tSeconds: number) => void): () => void
 }
 
 const SCHEDULE_LEAD_SECONDS = 0.05
@@ -42,6 +46,33 @@ export function createTransport(): Transport {
   const cellVolumes: Record<string, number> = {}
   let mutedCell: string | null = null
   let loopTimer = 0
+  const seekCallbacks: Map<string, ((t: number) => void)[]> = new Map()
+
+  function fanOutSeek(t: number): void {
+    for (const cbs of seekCallbacks.values()) {
+      for (const cb of cbs) {
+        cb(t)
+      }
+    }
+  }
+
+  function registerSeek(cellId: string, seek: (t: number) => void): () => void {
+    const arr = seekCallbacks.get(cellId) ?? []
+    arr.push(seek)
+    seekCallbacks.set(cellId, arr)
+    return () => {
+      const current = seekCallbacks.get(cellId)
+      if (current === undefined) {
+        return
+      }
+      const next = current.filter(c => c !== seek)
+      if (next.length === 0) {
+        seekCallbacks.delete(cellId)
+      } else {
+        seekCallbacks.set(cellId, next)
+      }
+    }
+  }
 
   function effectiveGain(cellId: string): number {
     if (cellId === mutedCell) {
@@ -116,6 +147,7 @@ export function createTransport(): Transport {
     scheduleSources(clips, firstWhen)
     setStartedAt(firstWhen)
     setState("playing")
+    fanOutSeek(0)
 
     if (loopLength !== null) {
       const cycle = () => {
@@ -127,6 +159,7 @@ export function createTransport(): Transport {
         const nextWhen = audioNow.currentTime + 0.01
         scheduleSources(clips, nextWhen)
         setStartedAt(nextWhen)
+        fanOutSeek(0)
         loopTimer = window.setTimeout(cycle, loopLength * 1000)
       }
       loopTimer = window.setTimeout(cycle, loopLength * 1000)
@@ -144,6 +177,7 @@ export function createTransport(): Transport {
     loopTimer = 0
     setState("stopped")
     setStartedAt(0)
+    fanOutSeek(0)
   }
 
   function position() {
@@ -156,5 +190,5 @@ export function createTransport(): Transport {
     return Math.max(0, audioContext().currentTime - startedAt())
   }
 
-  return { state, position, play, stop, setMutedCell, setCellVolume }
+  return { state, position, play, stop, setMutedCell, setCellVolume, registerSeek }
 }
