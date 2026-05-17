@@ -210,6 +210,8 @@ async function sampleDecode(
 async function sampleCombo(
   asset: TranscodeAsset,
   durationSeconds: number,
+  hwAvailable: boolean,
+  swAvailable: boolean,
 ): Promise<{ aggregateFps: number; hw: number; sw: number }> {
   const stopped = { value: false }
   interface Slot {
@@ -217,12 +219,25 @@ async function sampleCombo(
     kind: "hw" | "sw"
     frames: number
   }
-  const slots: Array<{ kind: "hw" | "sw"; pref: HardwareAcceleration }> = [
-    { kind: "hw", pref: "prefer-hardware" },
-    { kind: "hw", pref: "prefer-hardware" },
-    { kind: "sw", pref: "prefer-software" },
-    { kind: "sw", pref: "prefer-software" },
-  ]
+  // Pool shape depends on available paths. With both, do 2+2 then
+  // double for an estimated 4+4. With one only, do 4 of that kind.
+  const slots: Array<{ kind: "hw" | "sw"; pref: HardwareAcceleration }> =
+    hwAvailable && swAvailable
+      ? [
+          { kind: "hw", pref: "prefer-hardware" },
+          { kind: "hw", pref: "prefer-hardware" },
+          { kind: "sw", pref: "prefer-software" },
+          { kind: "sw", pref: "prefer-software" },
+        ]
+      : hwAvailable
+        ? Array.from({ length: 4 }, () => ({
+            kind: "hw" as const,
+            pref: "prefer-hardware" as HardwareAcceleration,
+          }))
+        : Array.from({ length: 4 }, () => ({
+            kind: "sw" as const,
+            pref: "prefer-software" as HardwareAcceleration,
+          }))
   const entries: Slot[] = slots.map(slot => {
     const entry: Slot = {
       decoder: null as unknown as VideoDecoder,
@@ -387,16 +402,27 @@ async function run(): Promise<void> {
   // Phase 3 — combo headroom on the recommended cache codec.
   const comboAsset = assets.get(recommendation.comboCodec)
   if (comboAsset !== undefined) {
-    status(`combo-2+2 sample on ${recommendation.comboCodec} (${params.comboSampleSeconds}s)...`)
-    const combo = await sampleCombo(comboAsset, params.comboSampleSeconds)
-    // Extrapolate 2+2 → 4+4 linearly. 20b will refine the constant.
-    recommendation.comboAggregateFps = combo.aggregateFps * 2
+    const comboCodecProfile = profiles.find(p => p.label === recommendation.comboCodec)
+    const hwAvailable = comboCodecProfile?.hw.supported ?? false
+    const swAvailable = comboCodecProfile?.sw.supported ?? false
+    const shape = hwAvailable && swAvailable ? "combo-2+2" : hwAvailable ? "hw-4" : "sw-4"
+    status(`${shape} sample on ${recommendation.comboCodec} (${params.comboSampleSeconds}s)...`)
+    const combo = await sampleCombo(
+      comboAsset,
+      params.comboSampleSeconds,
+      hwAvailable,
+      swAvailable,
+    )
+    // If we ran a 2+2, double for 4+4 estimate; otherwise we already
+    // ran a 4-decoder pool so the aggregate is the estimate directly.
+    recommendation.comboAggregateFps =
+      hwAvailable && swAvailable ? combo.aggregateFps * 2 : combo.aggregateFps
     recommendation.estimatedMaxCells = Math.floor(
       recommendation.comboAggregateFps / 30,
     )
     status(
-      `  combo-2+2 = ${combo.aggregateFps.toFixed(0)}fps (hw=${combo.hw.toFixed(0)} sw=${combo.sw.toFixed(0)}); ` +
-        `extrapolated combo-4+4 ≈ ${recommendation.comboAggregateFps.toFixed(0)}fps → maxCells ≈ ${recommendation.estimatedMaxCells}`,
+      `  ${shape} = ${combo.aggregateFps.toFixed(0)}fps (hw=${combo.hw.toFixed(0)} sw=${combo.sw.toFixed(0)}); ` +
+        `estimated pool ≈ ${recommendation.comboAggregateFps.toFixed(0)}fps → maxCells ≈ ${recommendation.estimatedMaxCells}`,
     )
   } else {
     status(`no asset for combo codec ${recommendation.comboCodec} — skipping phase 3`)

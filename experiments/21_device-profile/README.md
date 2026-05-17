@@ -113,6 +113,42 @@ camera at the top.
   set to `supported: false`
 - **No state mutation** — probe is pure, idempotent, safe to re-run
 
+## Verdict
+
+**The probe shape works.** ~30s end-to-end on A15, including 1s
+capture. Profile output on this device:
+
+```
+capture  = vp9     (encoder supported, ≥ realtime)
+storage  = vp9     (fixed canonical for portability)
+cache    = av1     (highest decode fps — 364 sw, no hw needed)
+comboFps = 626     (extrapolated from 2s sw-4 sample)
+maxCells = 20
+```
+
+Cross-check against [20b](../20b_codec-combo-contention/README.md)'s
+10-second sw-4 AV1 run (551 fps): the 2s probe reads 626 fps —
+slightly higher because less thermal soak, but well within trustworthy
+range for a recommendation. Per-codec solo numbers (vp9 sw 252, av1
+sw 364) within 5-10% of 20's deeper measurements.
+
+H.264 encoder cleanly reported `supported: false`, matching 20's
+finding for this Chrome build.
+
+## Note for eddy implementation
+
+- Run on first launch; cache result under a key including the
+  Chrome major version (invalidate on browser upgrade)
+- Profile is portable JSON — safe to surface in sync layer if useful
+  for debugging cross-device collab issues
+- Per-codec `decodeFps` numbers from the probe are intentionally
+  rough (1 s samples). Treat them as ordering, not absolute budgets.
+  The combo aggregate estimate is the only number that drives a
+  `maxCells` policy
+- The probe pattern (config probe → tiny transcode → short decode
+  loop) can be reused per-resolution if we ever need a per-resolution
+  budget
+
 ## Caveats
 
 - Encoder probe is configuration-only, not actual encode. Some

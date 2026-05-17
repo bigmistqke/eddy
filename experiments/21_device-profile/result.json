@@ -1,0 +1,132 @@
+{
+  "ranAt": "2026-05-17T16:32:29.243Z",
+  "git": {
+    "sha": "cdad034",
+    "dirty": true
+  },
+  "experiment": "device-profile",
+  "params": {
+    "captureResolution": {
+      "width": 1280,
+      "height": 720
+    },
+    "sourceSeconds": 1,
+    "bitratePerPixel": 0.1,
+    "decodeSampleSeconds": 1,
+    "comboSampleSeconds": 2,
+    "maxQueue": 8,
+    "codecs": [
+      {
+        "label": "vp8",
+        "codecString": "vp8"
+      },
+      {
+        "label": "vp9",
+        "codecString": "vp09.00.10.08"
+      },
+      {
+        "label": "av1",
+        "codecString": "av01.0.04M.08"
+      },
+      {
+        "label": "h264",
+        "codecString": "avc1.42E01E"
+      }
+    ]
+  },
+  "device": {
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36",
+    "viewport": {
+      "width": 384,
+      "height": 699
+    }
+  },
+  "result": {
+    "codecs": [
+      {
+        "label": "vp8",
+        "codecString": "vp8",
+        "encoder": {
+          "supported": true,
+          "hwAcceleration": "no-preference",
+          "reason": null
+        },
+        "hw": {
+          "supported": true,
+          "decodeFps": 112,
+          "hwAcceleration": "prefer-hardware"
+        },
+        "sw": {
+          "supported": true,
+          "decodeFps": 252,
+          "hwAcceleration": "prefer-software"
+        }
+      },
+      {
+        "label": "vp9",
+        "codecString": "vp09.00.10.08",
+        "encoder": {
+          "supported": true,
+          "hwAcceleration": "no-preference",
+          "reason": null
+        },
+        "hw": {
+          "supported": true,
+          "decodeFps": 116,
+          "hwAcceleration": "prefer-hardware"
+        },
+        "sw": {
+          "supported": true,
+          "decodeFps": 252,
+          "hwAcceleration": "prefer-software"
+        }
+      },
+      {
+        "label": "av1",
+        "codecString": "av01.0.04M.08",
+        "encoder": {
+          "supported": true,
+          "hwAcceleration": "no-preference",
+          "reason": null
+        },
+        "hw": {
+          "supported": false,
+          "decodeFps": 0,
+          "hwAcceleration": null
+        },
+        "sw": {
+          "supported": true,
+          "decodeFps": 364,
+          "hwAcceleration": "prefer-software"
+        }
+      },
+      {
+        "label": "h264",
+        "codecString": "avc1.42E01E",
+        "encoder": {
+          "supported": false,
+          "hwAcceleration": "no-preference",
+          "reason": null
+        },
+        "hw": {
+          "supported": false,
+          "decodeFps": 0,
+          "hwAcceleration": null
+        },
+        "sw": {
+          "supported": false,
+          "decodeFps": 0,
+          "hwAcceleration": null
+        }
+      }
+    ],
+    "recommendation": {
+      "captureCodec": "vp9",
+      "storageCodec": "vp9",
+      "cacheCodec": "av1",
+      "comboCodec": "av1",
+      "comboAggregateFps": 626.5,
+      "estimatedMaxCells": 20
+    }
+  }
+}
