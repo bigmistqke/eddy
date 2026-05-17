@@ -104,9 +104,13 @@ OPFS adds ~1 fps cost and ~1% more jank vs in-memory bitmap. Small, attributable
 - One thing worth noting: the per-cell ArrayBuffer churn on the main thread (one transferable buffer per cell per source frame) is significant. K=25 × 30 fps = 750 buffers/sec being allocated and transferred. Hasn't shown up as jank here but worth watching under combined load (24h).
 - The reader-worker pattern as scaffolded uses one worker for all K cells. Splitting into K/N workers (e.g., N=4 workers each handling a quarter of the cells) is a possible mitigation if read concurrency ever becomes a bottleneck.
 
-### Follow-up: SharedArrayBuffer to eliminate postMessage overhead
+### Follow-ups for eliminating postMessage overhead
 
-The ~1 fps cost vs in-memory (24f) is attributable to per-frame ArrayBuffer allocation + structured-clone deserialization on the main thread (K cells × ~30 frames/s = up to 750 buffers/sec at K=25). A `SharedArrayBuffer`-backed ring buffer per cell would eliminate this entirely:
+The ~1 fps and ~1% extra jank vs in-memory (24f) is attributable to per-frame ArrayBuffer allocation + structured-clone deserialization on the main thread (K cells × ~30 frames/s = up to 750 buffers/sec at K=25). Two ways to bypass this, neither implemented in this experiment but both characterized for when the next layer of optimization is needed.
+
+**Option A — `SharedArrayBuffer` ring buffer per cell**
+
+Allocate a shared ring buffer per cell once at setup. Worker writes into it directly; main reads directly. No allocation per frame, no postMessage of bytes (just one init message handing over SAB references).
 
 ```
 // Setup (once):
@@ -126,15 +130,45 @@ const bytes = new Uint8Array(sab, cellOffset + slot * frameBytes, frameBytes)
 gl.texImage2D(..., bytes)
 ```
 
-Zero per-frame allocation; zero `postMessage` of bytes (only one init message handing over the SAB references). The atomic on the signal index guarantees main never reads a partially-written frame.
+The atomic on the signal index guarantees main never reads a partially-written frame.
 
-Total shared memory needed is tiny: K=25 × 2 × 59 KB = ~3 MB; K=16 × 2 × 130 KB = ~4 MB; K=4 × 2 × 522 KB = ~4 MB.
+Total shared memory needed is small: K=25 × 2 × 59 KB ≈ 3 MB; K=16 × 2 × 130 KB ≈ 4 MB; K=4 × 2 × 522 KB ≈ 4 MB.
 
-**Prerequisite:** `SharedArrayBuffer` needs cross-origin isolation — HTTP responses must include `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp`, and `crossOriginIsolated` must be `true` at runtime. The experiments dev server (Vite) does not set these by default; one-line `server.headers` config in `vite.config.ts` fixes it. `texImage2D` accepts `Uint8Array` views of SAB on WebGL2.
+**Prerequisite:** `SharedArrayBuffer` needs cross-origin isolation — HTTP responses must include `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp`, and `crossOriginIsolated` must be `true` at runtime. The experiments dev server (Vite) does not set these by default; a one-line `server.headers` config in `vite.config.ts` fixes it. `texImage2D` accepts `Uint8Array` views of SAB on WebGL2.
 
-**Larger alternative — OffscreenCanvas in worker:** moving the entire render loop into the worker (reader + WebGL context + texImage2D + drawArrays) eliminates all main-thread JS during steady-state playback. Bigger refactor (shader setup, draw logic, frame pacing all move to worker), but frees the main thread completely for capture / UI / edits. Worth considering separately if main-thread contention ever becomes the bottleneck.
+**Scope:** small change to the existing worker structure. Reader still works the same way, just writes into shared memory instead of allocating per-frame buffers. Recovers the ~1 fps gap vs in-memory.
 
-Neither was implemented here — 24g establishes that the postMessage version is already viable. The SAB and OffscreenCanvas options are characterized for when the next layer of optimization is needed.
+**Option B — full render loop in worker via `OffscreenCanvas`**
+
+Move the entire render loop into the reader worker. Worker owns:
+- The `SyncAccessHandle`s (already does)
+- A WebGL2 context backed by an `OffscreenCanvas` transferred to it from main
+- Shader programs, texture creation, the rAF / clock
+- `texImage2D` + `drawArrays` calls
+
+Main thread owns:
+- The on-screen `<canvas>` element (the OffscreenCanvas presents to it via the standard transfer)
+- The camera capture (which writes its own OPFS files via a writer worker)
+- UI / edit state
+
+```
+// Setup (main):
+const canvas = document.createElement("canvas")
+document.body.appendChild(canvas)
+const offscreen = canvas.transferControlToOffscreen()
+worker.postMessage({ type: "init", offscreen, ...cellInit }, [offscreen])
+```
+
+The worker's render loop becomes the actual production render loop. There is no per-frame data crossing the thread boundary — the worker reads from OPFS and writes to the GPU entirely within its own context.
+
+**Scope:** larger refactor. All shader setup, draw logic, frame pacing, and texture management move to the worker. The benefit is total main-thread freedom during playback — capture, UI gestures, edit state changes all run on a main thread with no rendering work competing.
+
+**When to reach for which:**
+
+- SAB: if the postMessage overhead becomes the bottleneck (currently it isn't — 24g's gap vs in-memory is small enough that postMessage is fine for now)
+- OffscreenCanvas: if main-thread contention starts limiting capture / UI / edit responsiveness once those workloads are added on top of playback (the case 24h would surface)
+
+24g establishes that the simple postMessage version is already viable for K up to 25. The SAB and OffscreenCanvas options are next-layer optimizations to keep in the back pocket.
 
 ## Caveats
 
