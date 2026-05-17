@@ -61,8 +61,13 @@ export async function makeBitmapSource(track: InputVideoTrack): Promise<BitmapSo
   frames.sort((a, b) => a.timestamp - b.timestamp)
 
   let cursor: CachedRgbaFrame | null = null
+  let lastSeekedTo: number | null = null
 
   function seek(tSeconds: number): void {
+    if (lastSeekedTo === tSeconds) {
+      return
+    }
+    lastSeekedTo = tSeconds
     if (frames.length === 0) {
       cursor = null
       return
@@ -89,11 +94,13 @@ export async function makeBitmapSource(track: InputVideoTrack): Promise<BitmapSo
 
   function reset(): void {
     cursor = null
+    lastSeekedTo = null
   }
 
   function close(): void {
     frames.length = 0
     cursor = null
+    lastSeekedTo = null
   }
 
   return { latestFrame, seek, reset, close }

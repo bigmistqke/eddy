@@ -1,4 +1,5 @@
-import { createSignal, untrack, type Accessor } from "solid-js"
+import { createMemo, createSignal, onCleanup, untrack, type Accessor } from "solid-js"
+import { makeCameraBitmapSource, type BitmapSource } from "../media/bitmap-source"
 import { logError } from "../utils"
 
 export interface Preview {
@@ -12,6 +13,9 @@ export interface Preview {
   /** Persistent <video> element bound to the camera stream. Used by
    *  the renderer as a texture source. Always the same instance. */
   element: HTMLVideoElement
+  /** BitmapSource for the live camera. Returns null while the stream
+   *  is still resolving. Backed by MediaStreamTrackProcessor + copyTo. */
+  bitmapSource: Accessor<BitmapSource | null>
   /** Release the camera. */
   disable(): void
 }
@@ -55,22 +59,38 @@ export function createPreview(): Preview {
     }
   })
 
+  const bitmapSource = createMemo<BitmapSource | null>(() => {
+    const currentStream = stream()
+    if (currentStream === null) {
+      return null
+    }
+    const source = makeCameraBitmapSource(currentStream)
+    onCleanup(() => {
+      source.close()
+    })
+    return source
+  })
+
   function disable() {
     let current: MediaStream | null = null
     try {
       current = untrack(stream)
     } catch {
       // Still pending — nothing acquired yet.
+      return
     }
     if (current === null) {
       return
     }
+    // setStream(null) triggers the bitmapSource memo's onCleanup,
+    // which closes the BitmapSource adapter before we yank the
+    // underlying stream tracks.
+    setStream(null)
     for (const track of current.getTracks()) {
       track.stop()
     }
     element.srcObject = null
-    setStream(null)
   }
 
-  return { stream, element, disable }
+  return { stream, element, bitmapSource, disable }
 }

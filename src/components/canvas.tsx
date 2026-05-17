@@ -138,16 +138,20 @@ export function Canvas() {
         // Live camera preview goes into the preview target cell, if any.
         const previewCell = context.previewTargetCellId()
         if (previewCell !== null) {
-          const previewElement = context.preview.element
-          if (previewElement.videoWidth > 0 && previewElement.videoHeight > 0) {
-            frames.set(previewCell, previewElement)
+          const cameraSrc = context.preview.bitmapSource()
+          if (cameraSrc !== null) {
+            const frame = cameraSrc.latestFrame()
+            if (frame !== null) {
+              frames.set(previewCell, frame)
+            }
           }
         }
 
-        // Clip frames. When playing, use transport position; otherwise
-        // show frame 0 of each clip so cells stay visible at rest.
+        // Clip frames. When playing, drive the cursor via seek using
+        // transport position; otherwise call seek(0) so the source
+        // snaps to its first frame.
         const playing = context.transport.state() === "playing"
-        const positionMicros = playing ? Math.round(context.transport.position() * 1_000_000) : 0
+        const positionSeconds = playing ? context.transport.position() : 0
         const allClips = context.clips.clips
         for (const cellId of Object.keys(allClips)) {
           if (frames.has(cellId)) {
@@ -157,21 +161,14 @@ export function Canvas() {
           if (clip === undefined) {
             continue
           }
-          const bitmap = clip.video.frameAt(positionMicros)
-          if (bitmap !== null) {
-            frames.set(cellId, bitmap)
+          clip.video.seek(positionSeconds)
+          const frame = clip.video.latestFrame()
+          if (frame !== null) {
+            frames.set(cellId, frame)
           }
         }
         return frames
       })
-    }
-
-    function closeTransientFrames(frames: Map<string, TextureSource>) {
-      for (const source of frames.values()) {
-        if (source instanceof VideoFrame) {
-          source.close()
-        }
-      }
     }
 
     function drawAt(viewport: ViewportState) {
@@ -198,7 +195,6 @@ export function Canvas() {
       // Include clip/preview frames so layout animations don't strip them.
       const frames = gatherFrames()
       renderer.render(drawViewport, lastLeaves, frames.size > 0 ? frames : undefined)
-      closeTransientFrames(frames)
 
       // Test hook — snapshot of what the GL just drew. `viewport.scale`
       // here is reported as 1 because leaf rects are already in scaled
@@ -327,7 +323,6 @@ export function Canvas() {
       const frames = gatherFrames()
       const drawViewport: ViewportState = { x: lastViewport.x, y: lastViewport.y, scale: 1 }
       renderer.render(drawViewport, lastLeaves, frames.size > 0 ? frames : undefined)
-      closeTransientFrames(frames)
       const previewActive = untrack(context.previewTargetCellId) !== null
       const transportPlaying = untrack(context.transport.state) === "playing"
       // Keep ticking while transport is playing or a live preview is
@@ -364,7 +359,6 @@ export function Canvas() {
       const frames = gatherFrames()
       const drawViewport: ViewportState = { x: lastViewport.x, y: lastViewport.y, scale: 1 }
       renderer.render(drawViewport, lastLeaves, frames.size > 0 ? frames : undefined)
-      closeTransientFrames(frames)
     }
 
     drive = {
