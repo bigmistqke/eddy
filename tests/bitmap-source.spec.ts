@@ -1,5 +1,4 @@
-import { expect, test } from "./helpers"
-import { mockGetUserMedia } from "./helpers"
+import { expect, mockGetUserMedia, test } from "./helpers"
 
 test("bitmap-source: clip source latestFrame returns null before seek, populates after", async ({ page }) => {
   await mockGetUserMedia(page)

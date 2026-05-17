@@ -1,6 +1,8 @@
-import type { InputVideoTrack } from "mediabunny"
+import { VideoSampleSink, type InputVideoTrack } from "mediabunny"
+import { logTrace } from "../utils"
 
 export interface BitmapFrame {
+  /** Tightly-packed RGBA8 bytes, row-major (width × height × 4). */
   bytes: Uint8Array
   width: number
   height: number
@@ -15,13 +17,86 @@ export interface BitmapSource {
    *  Called from the render loop or transport tick. Idempotent for
    *  the same tSeconds. */
   seek(tSeconds: number): void
-  /** Reset to the start — pre-loop hook. */
+  /** Clear the cursor; latestFrame() returns null until the next seek(). */
   reset(): void
+  /** Release internal buffers / readers. Idempotent. */
   close(): void
 }
 
-export async function makeBitmapSource(_track: InputVideoTrack): Promise<BitmapSource> {
-  throw new Error("makeBitmapSource: not implemented")
+interface CachedRgbaFrame {
+  /** PTS in seconds. */
+  timestamp: number
+  bytes: Uint8Array
+  width: number
+  height: number
+}
+
+export async function makeBitmapSource(track: InputVideoTrack): Promise<BitmapSource> {
+  logTrace("bitmap-source-begin", { codec: track.codec })
+  const sink = new VideoSampleSink(track)
+  const frames: CachedRgbaFrame[] = []
+  let lastLog = performance.now()
+  for await (const sample of sink.samples()) {
+    const videoFrame = sample.toVideoFrame()
+    try {
+      const width = videoFrame.displayWidth
+      const height = videoFrame.displayHeight
+      const bytes = new Uint8Array(width * height * 4)
+      await videoFrame.copyTo(bytes, { format: "RGBA" })
+      const timestamp = sample.timestamp
+      frames.push({ timestamp, bytes, width, height })
+      const now = performance.now()
+      if (now - lastLog > 250 || frames.length <= 3) {
+        logTrace("bitmap-source-sample", { count: frames.length, ts: timestamp })
+        lastLog = now
+      }
+    } finally {
+      videoFrame.close()
+      sample.close()
+    }
+  }
+  logTrace("bitmap-source-done", { count: frames.length })
+  // VideoSampleSink yields in decode order, which is NOT presentation
+  // order for B-frame codecs. Sort by PTS so seek() can walk in time.
+  frames.sort((a, b) => a.timestamp - b.timestamp)
+
+  let cursor: CachedRgbaFrame | null = null
+
+  function seek(tSeconds: number): void {
+    if (frames.length === 0) {
+      cursor = null
+      return
+    }
+    let best: CachedRgbaFrame | null = null
+    for (const frame of frames) {
+      if (frame.timestamp <= tSeconds) {
+        best = frame
+      } else {
+        break
+      }
+    }
+    // Snap to first frame when t is before everything (first frame's
+    // PTS is often slightly > 0; see deleted video-decoder.ts).
+    cursor = best ?? frames[0]
+  }
+
+  function latestFrame(): BitmapFrame | null {
+    if (cursor === null) {
+      return null
+    }
+    return { bytes: cursor.bytes, width: cursor.width, height: cursor.height }
+  }
+
+  function reset(): void {
+    cursor = null
+  }
+
+  function close(): void {
+    frames.length = 0
+    cursor = null
+  }
+
+  return { latestFrame, seek, reset, close }
 }
 
 export function makeCameraBitmapSource(_stream: MediaStream): BitmapSource {
