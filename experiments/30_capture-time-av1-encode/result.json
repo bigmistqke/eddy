@@ -1,0 +1,102 @@
+{
+  "ranAt": "2026-05-17T23:29:40.725Z",
+  "git": {
+    "sha": "a3520e6",
+    "dirty": true
+  },
+  "experiment": "capture-time-av1-encode",
+  "params": {
+    "captureSeconds": 10,
+    "captureResolution": {
+      "width": 1280,
+      "height": 720
+    },
+    "bitratePerPixel": 0.1,
+    "codec": "av1",
+    "passes": [
+      {
+        "label": "540p",
+        "width": 960,
+        "height": 544
+      },
+      {
+        "label": "270p",
+        "width": 480,
+        "height": 272
+      },
+      {
+        "label": "180p",
+        "width": 320,
+        "height": 184
+      }
+    ]
+  },
+  "device": {
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36",
+    "viewport": {
+      "width": 384,
+      "height": 699
+    }
+  },
+  "result": {
+    "passes": [
+      {
+        "label": "540p",
+        "width": 960,
+        "height": 544,
+        "framesFromCamera": 83,
+        "framesEncoded": 83,
+        "cameraFps": 8.3,
+        "encodedFps": 8.3,
+        "dropRatio": 0,
+        "encodedAddMaxMs": 48.700000047683716,
+        "encodedAddP95Ms": 4,
+        "firstFrameMs": 197.5,
+        "finalizeMs": 46.80000001192093,
+        "webmBytes": 373396,
+        "webmBytesPerSecond": 37339.6,
+        "roundTripDemuxed": 83,
+        "roundTripVerified": true,
+        "errors": []
+      },
+      {
+        "label": "270p",
+        "width": 480,
+        "height": 272,
+        "framesFromCamera": 83,
+        "framesEncoded": 83,
+        "cameraFps": 8.3,
+        "encodedFps": 8.3,
+        "dropRatio": 0,
+        "encodedAddMaxMs": 6.300000011920929,
+        "encodedAddP95Ms": 3.800000011920929,
+        "firstFrameMs": 133.9000000357628,
+        "finalizeMs": 25.899999976158142,
+        "webmBytes": 92617,
+        "webmBytesPerSecond": 9261.7,
+        "roundTripDemuxed": 83,
+        "roundTripVerified": true,
+        "errors": []
+      },
+      {
+        "label": "180p",
+        "width": 320,
+        "height": 184,
+        "framesFromCamera": 83,
+        "framesEncoded": 83,
+        "cameraFps": 8.3,
+        "encodedFps": 8.3,
+        "dropRatio": 0,
+        "encodedAddMaxMs": 4.200000047683716,
+        "encodedAddP95Ms": 3.899999976158142,
+        "firstFrameMs": 149.5,
+        "finalizeMs": 19.700000047683716,
+        "webmBytes": 46856,
+        "webmBytesPerSecond": 4685.6,
+        "roundTripDemuxed": 83,
+        "roundTripVerified": true,
+        "errors": []
+      }
+    ]
+  }
+}
