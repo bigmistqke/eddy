@@ -170,11 +170,20 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* Restore text-selection: .projectOpen composes .option (which has
+     user-select: none for the touch-ergonomics pass) and .projectRow
+     also sets user-select: none. Project names are content the user
+     might want to copy. */
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .projectAge {
   font-size: 0.75em;
   opacity: 0.6;
+  /* Same rationale as .projectName above. */
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .projectDelete {
