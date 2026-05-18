@@ -1,0 +1,85 @@
+{
+  "ranAt": "2026-05-18T07:38:36.754Z",
+  "git": {
+    "sha": "d499577",
+    "dirty": true
+  },
+  "experiment": "audio-split-pipeline",
+  "params": {
+    "highResolution": {
+      "width": 1280,
+      "height": 720
+    },
+    "lowResolution": {
+      "width": 480,
+      "height": 272
+    },
+    "encodeSeconds": 10,
+    "targetFps": 30,
+    "bitratePerPixel": 0.1,
+    "videoCodec": "av1",
+    "audioCodec": "opus",
+    "audioBitrate": 96000,
+    "fixtureSeconds": 6,
+    "warmupMs": 1000,
+    "K": 9
+  },
+  "device": {
+    "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Mobile Safari/537.36",
+    "viewport": {
+      "width": 384,
+      "height": 699
+    }
+  },
+  "result": {
+    "high": {
+      "framesSubmitted": 300,
+      "framesEncoded": 300,
+      "encodedFps": 30,
+      "pendingAddsMax": 1,
+      "addP95Ms": 6.600000023841858,
+      "addMaxMs": 20,
+      "finalizeMs": 108.09999996423721,
+      "webmBytes": 311239,
+      "tracksOk": true,
+      "videoPacketCount": 300,
+      "audioPacketCount": 502,
+      "lastVideoEndUs": 9.992,
+      "lastAudioEndUs": 10.02,
+      "avDriftMs": 27.999999999998693
+    },
+    "low": {
+      "framesSubmitted": 300,
+      "framesEncoded": 300,
+      "encodedFps": 30,
+      "pendingAddsMax": 1,
+      "addP95Ms": 4.800000011920929,
+      "addMaxMs": 18.30000001192093,
+      "finalizeMs": 24.899999976158142,
+      "webmBytes": 174774,
+      "tracksOk": true,
+      "videoPacketCount": 300,
+      "audioPacketCount": 502,
+      "lastVideoEndUs": 9.992,
+      "lastAudioEndUs": 10.02,
+      "avDriftMs": 27.999999999998693
+    },
+    "resizeP95Ms": 2,
+    "tickLagP95Ms": 0,
+    "decoderFps": [
+      30.3,
+      30.2,
+      30.2,
+      30.2,
+      30.2,
+      30.2,
+      30.2,
+      30.2,
+      30.2
+    ],
+    "decoderFpsMin": 30.2,
+    "decoderFpsMean": 30.21111111111111,
+    "audioErrors": [],
+    "errors": []
+  }
+}
