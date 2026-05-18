@@ -4,7 +4,8 @@
   background: var(--color-back);
   color: var(--color-front);
   border-radius: var(--radius-big);
-  min-width: 260px;
+  min-width: min(16.25rem, calc(100dvw - 2 * var(--padding)));
+  max-width: calc(100dvw - 2 * env(safe-area-inset-left) - 2 * env(safe-area-inset-right) - 2 * var(--padding));
   max-height: 80dvh;
   /* Only switch to flex when the dialog is open — otherwise the UA's
      `dialog:not([open]) { display: none }` rule would be overridden
