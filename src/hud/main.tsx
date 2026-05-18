@@ -116,7 +116,7 @@ export function Main() {
     // Persist the raw blob to OPFS before staging the in-memory clip
     // so a refresh mid-decode can't lose the recording. The manifest
     // update inside saveClipBlob will include the new cellId.
-    await context.projects.saveClipBlob(cellId, blob)
+    await context.projects.saveClipBlob(cellId, "270p", blob)
     logTrace("record-stop-saved", { cellId })
     context.clips.setClip(cellId, clip)
     if (context.songLength() === null) {
