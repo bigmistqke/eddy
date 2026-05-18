@@ -111,7 +111,9 @@ export function createProjectsStore(deps: ProjectsStoreDeps): ProjectsStore {
       deps.clips.setCellVolumes(manifest.cellVolumes ?? {})
       deps.resetSelection()
       for (const cellId of manifest.cellIds) {
-        const blob = await readClipBlob(manifest.id, cellId)
+        const blob =
+          (await readClipBlob(manifest.id, cellId, "270p")) ??
+          (await readClipBlob(manifest.id, cellId, null))
         if (blob === null) {
           continue
         }
@@ -246,7 +248,7 @@ export function createProjectsStore(deps: ProjectsStoreDeps): ProjectsStore {
     if (id === null) {
       return
     }
-    await writeClipBlob(id, cellId, blob)
+    await writeClipBlob(id, cellId, "270p", blob)
   }
 
   async function removeClipBlob(cellId: string) {
@@ -254,7 +256,9 @@ export function createProjectsStore(deps: ProjectsStoreDeps): ProjectsStore {
     if (id === null) {
       return
     }
-    await deleteClipBlob(id, cellId)
+    await deleteClipBlob(id, cellId, "720p")
+    await deleteClipBlob(id, cellId, "270p")
+    await deleteClipBlob(id, cellId, null)
   }
 
   return {
