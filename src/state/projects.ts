@@ -198,6 +198,8 @@ export function createProjectsStore(deps: ProjectsStoreDeps): ProjectsStore {
     }
     setIsLoading(true)
     try {
+      // Mirror snapshot()'s invariant: cellIds derives from cells.
+      const cells = cellsFromClips(deps.clips)
       const manifest: ProjectManifest = {
         id: crypto.randomUUID(),
         name: nextUntitledName(existing),
@@ -205,8 +207,8 @@ export function createProjectsStore(deps: ProjectsStoreDeps): ProjectsStore {
         updatedAt: Date.now(),
         layout: deps.readLayout(),
         songLength: deps.readSongLength(),
-        cells: [],
-        cellIds: untrack(deps.clips.cellIds),
+        cells,
+        cellIds: cells.map(c => c.cellId),
       }
       setActiveId(manifest.id)
       upsertInList(manifest)

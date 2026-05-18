@@ -6,7 +6,9 @@
  * re-recording the same cell writes to a fresh file, avoiding the
  * SyncAccessHandle lock held by the previous clip's reader worker.
  * The file is owned by BitmapSource.close()'s deleteRgbaCache call;
- * crash recovery is handled by `wipeRgbaCache()` at project-store init.
+ * crash recovery is handled by `garbageCollectRgbaCache(keepSet)` at
+ * project-store init, driven by the cells[] records in each project's
+ * manifest. `wipeRgbaCache()` stays exported for tests + dev tooling.
  */
 
 export const RGBA_DIR_NAME = "rgba"
