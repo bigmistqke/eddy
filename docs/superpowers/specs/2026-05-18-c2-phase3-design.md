@@ -1,24 +1,46 @@
 # C2 Prototype — Phase 3 Design
 
 **Date:** 2026-05-18
-**Status:** deferred — pending experiments 30 / 30b / 30c on capture-time AV1 encode
+**Status:** active — rewritten 2026-05-18 against experiments 30 / 30b / 30c / 30d / 30f / 30g / 31
 **Related:** [phase 2 design](2026-05-18-c2-phase2-design.md), [phase 1 design](2026-05-17-c2-phase1-design.md), [video pipeline experiments review](2026-05-17-video-pipeline-experiments-review.md)
 
-> **Status note (2026-05-18):** this spec is written around the conservative "transcode at record-stop" path (validated by experiments 20 + 27). An alternative on-the-fly capture-time AV1 encode path is plausibly cleaner architecturally but isn't yet experiment-backed. Before committing to either, run experiments 30 (capture-time AV1 throughput), 30b (under playback), 30c (audio split pipeline). This spec will be rewritten or confirmed based on those results.
+> **Status note (2026-05-18):** the original draft of this spec proposed AV1-only transcode at record-stop. The 30-series experiments produced a different, better architecture: **dual capture-time encode** (720p canonical + 270p mip), each WebM self-contained with opus audio, decoders reading the 270p mip in workers. This spec replaces the draft.
 
 ## Scope
 
-Third slice of the C2 architecture port. Replaces WebM clip-blob storage with **AV1 canonical** files (~50 KB per 6 s clip per experiment 27 vs ~2-3 MB for WebM, ~50× smaller persistent footprint), and persists per-clip `clipId`s in the project manifest so the RGBA working cache can **survive across sessions** — skipping the cold-start decode when a clip's cache file is already present.
+Third slice of the C2 architecture port. Two changes:
 
-Phase 3 makes session-reopen near-instant for previously-loaded projects and shrinks persistent storage by ~50×. It does NOT yet change the recording path's capture primitive (MediaRecorder + demux stays; the AV1 encode happens at finalize-time, not capture-time). Phase 4+ may pivot capture to `MediaStreamTrackProcessor` if profiling demands it.
+1. **Replace MediaRecorder capture with a dual capture-time encode pipeline**: `MediaStreamTrackProcessor` → branch into (a) 720p canonical AV1 encode + (b) WebGL-resized 270p mip AV1 encode + (c) opus audio captured once, muxed into both. Each clip produces two self-contained WebM files.
+2. **Persist `clipId` in the project manifest** so the RGBA working cache (from phase 2) can survive across sessions; project reopen drops cold-start decode.
+
+After phase 3:
+- Recording finishes within ~150 ms of record-stop (was several seconds via post-transcode in the original draft).
+- Canonical 720p AV1 storage enables fullscreen single-cell preview and future export at camera-native quality.
+- Cell playback reads the 270p mip — much smaller decode workload — leaving SoC headroom for K=9 record-while-playing.
+- Session reopen for previously-loaded projects drops from ~5 s (phase 2 cold start) to ~100 ms (manifest-driven cache reuse).
+- Persistent storage per 9-cell session drops from ~25-50 MB (phase 2 WebM blobs) to ~10-20 MB (720p AV1 + 270p mip + audio in each).
+
+## Evidence anchoring
+
+The architecture is derived from these experiments. Numbers are A15 Galaxy (the floor device); mid/high-end Android should have more headroom.
+
+| Experiment | Finding | Architecture impact |
+|---|---|---|
+| [30](../../../experiments/30_capture-time-av1-encode/README.md) | Capture-time AV1 pipeline works end-to-end | Replaces the original record-stop transcode |
+| [30d](../../../experiments/30d_synthetic-30fps-stress/README.md) | AV1 SW encoder has 7-12× headroom at all mips up to 720p in isolation | 720p encode is realistic at capture time |
+| [30b](../../../experiments/30b_capture-encode-under-playback/README.md) | Single 720p encode under K=9 720p decoders saturates the SoC; 270p decoders are fine | Must split: canonical 720p + smaller playback mip |
+| [30f](../../../experiments/30f_capture-encode-decoders-in-workers/README.md) | Workers free the tick loop but don't fix CPU bandwidth contention | Decoder threading helps but isn't sufficient by itself |
+| [30g](../../../experiments/30g_dual-encode-720p-and-270p/README.md) | Dual 720p + 270p encode under K=9 270p decoders runs cleanly (30 fps, pendingMax=1) | This is the architecture |
+| [31](../../../experiments/31_resize-shootout/README.md) | WebGL canvas-transfer resize is the fastest (~0.7-2.9 ms p50) and only sync-correct path; createImageBitmap is slower | Required resize technique |
+| [30c](../../../experiments/30c_audio-split-pipeline/README.md) | Opus audio muxes into both outputs with 28 ms A/V drift over 10 s | Each WebM self-contained with audio |
 
 ## What stays the same
 
-- `BitmapSource` interface (`latestFrame`, `seek`, `reset`, `close`) — fully transparent
+- `BitmapSource` interface (`latestFrame`, `seek`, `reset`, `close`) — fully transparent to consumers
 - `BitmapFrame` shape (`bytes`, `width`, `height`)
 - `ClipStore`, `Clip` interface (the `clipId` field added in phase 2 stays)
 - `Transport`, audio scheduling, loop/volume routing
-- `Preview` and live camera adapter (still in-memory)
+- `Preview` and live camera adapter (still in-memory, transient)
 - Renderer (raw-RGBA-only)
 - Per-clip reader worker (`src/media/bitmap-reader-worker.ts` — phase 2)
 - `/rgba/<clipId>.bin` working cache layout (phase 2)
@@ -27,187 +49,191 @@ Phase 3 makes session-reopen near-instant for previously-loaded projects and shr
 
 ## What changes
 
-### 1. Canonical storage: WebM → AV1
+### 1. Capture pipeline: MediaRecorder → dual capture-time encode
 
-`src/storage/opfs.ts`: the project's clip blob is now stored as AV1 video in a WebM container (`<cellId>.webm` filename stays for backward compatibility with existing user projects — mediabunny's demuxer routes by codec, not extension). New recordings encode to AV1 at record-stop time; old VP8 WebMs continue to load via the existing demux path (mediabunny is codec-agnostic).
+The recording path replaces `MediaRecorder` with a custom pipeline rooted at `MediaStreamTrackProcessor`. Per camera frame:
 
-The on-disk path:
+```
+camera VideoFrame (720p)
+  ├─ rebased timestamp → new VideoFrame → VideoSampleSource (720p AV1) → Output(WebM 720p+audio)
+  └─ WebGL canvas-transfer resize to 270p → new VideoFrame
+                                           → VideoSampleSource (270p AV1) → Output(WebM 270p+audio)
+```
+
+Audio is captured once from `getUserMedia({video, audio})`. The audio track is cloned twice; each clone feeds a `MediaStreamAudioTrackSource(opus, 96kbps)` on its respective `Output`.
+
+**Key implementation constraints (from experiments):**
+- **WebGL canvas-transfer (NOT canvas-wrap)** for the 720p→270p resize — `transferToImageBitmap` per call to avoid aliasing across in-flight VideoFrames when the encoder is fire-and-track. Per [[feedback-webgl-resize-aliasing]].
+- **Rebase video timestamps to start at 0** before feeding either video encoder — otherwise audio (synced-zero) and video (camera system clock) end up on different origins and playback is desynced. Per [[feedback-av-timestamp-rebase]].
+- **Fire-and-track encoder submission** — don't `await` each `videoSource.add(sample)` in the tick loop; let the source queue ≤ 1-2 deep and drain at record-stop. Verified at K=9 in [30g](../../../experiments/30g_dual-encode-720p-and-270p/README.md).
+
+New file `src/media/capture.ts` exposes `startCapture(stream): CaptureSession` returning:
+
+```ts
+interface CaptureSession {
+  stop(): Promise<{
+    canonicalBlob: Blob  // 720p AV1 + opus WebM
+    mipBlob: Blob        // 270p AV1 + opus WebM
+    durationSec: number
+    frameCount: number
+  }>
+  cancel(): Promise<void>
+}
+```
+
+The session owns the camera track lifecycle, both `Output` instances, the WebGL resize rig, and the audio cloning. `stop()` drains both encoders, finalizes both outputs, and returns the blobs.
+
+### 2. Storage layout: two files per clip
 
 ```
 /projects/<id>/manifest.json
-/projects/<id>/clips/<cellId>.webm  (now contains AV1 + Opus instead of VP8 + Opus)
+/projects/<id>/clips/<cellId>.720p.webm   (canonical: 720p AV1 + opus)
+/projects/<id>/clips/<cellId>.270p.webm   (mip: 270p AV1 + opus)
 ```
 
-No layout change, just codec content change. New cells get AV1; existing cells stay VP8 until re-recorded.
+Both files are independently playable. The 270p file is the input to the bitmap pipeline (decoded → RGBA cache); the 720p file is reserved for fullscreen preview, export, and future re-edit.
 
-### 2. AV1 encode at record-stop
+**Existing WebM-blob projects:** legacy `<cellId>.webm` files (single VP8 + opus per phase 1/2) continue to load via the existing demux path. On first load of a legacy clip, treat it as the 270p mip (its actual resolution may differ — mediabunny demuxer handles it codec-agnostically); no 720p canonical exists until re-record.
 
-In `src/hud/main.tsx`'s record-stop handler, before calling `saveClipBlob`, transcode the MediaRecorder VP8 blob to an AV1 WebM blob. The transcode happens in a worker (avoids blocking main-thread playback that may be active).
+### 3. Manifest persists `clipId` and per-mip metadata
 
-```ts
-// Sketch:
-const av1Blob = await transcodeBlobToAv1(vp8Blob)
-await context.projects.saveClipBlob(cellId, av1Blob)
-```
-
-`transcodeBlobToAv1(vp8Blob)` is a new helper in `src/media/transcode.ts` that:
-1. Spawns a worker (`src/media/transcode-worker.ts`)
-2. Worker uses mediabunny + WebCodecs `VideoDecoder` (VP8) → `VideoEncoder` (AV1, `av01.0.04M.08`) → mediabunny mux into WebM
-3. Posts the result back as a Blob (or transferable ArrayBuffer)
-
-Per experiment 20: AV1 encode at 720p ≈ 32 fps. A 6 s clip = ~6 s of encode time. Per experiment 27: parallel encoders speed up but a single-clip encode is single-stream. Acceptable for record-stop since the user is reviewing the take anyway.
-
-### 3. Manifest persists `clipId`
-
-Bump the manifest's per-cell record from a bare `cellIds: string[]` array to either parallel arrays or a structured form:
+Per-cell record gains:
 
 ```ts
-// Option A (parallel arrays — minimal disruption):
-interface ProjectManifest {
-  // ... existing fields
-  cellIds: string[]
-  clipIds: Record<string, string>  // cellId → clipId
-}
-
-// Option B (structured cells — cleaner):
 interface CellRecord {
   cellId: string
   clipId: string
+  // Cache metadata for the 270p-mip-derived RGBA cache. The hot path
+  // reads these from the manifest instead of demuxing the WebM.
+  cacheWidth: number
+  cacheHeight: number
+  cacheFrames: number
+  cacheSourceFps: number
 }
+
 interface ProjectManifest {
   // ... existing fields
   cells: CellRecord[]
-  // cellIds remains as derived/legacy for migration
 }
 ```
 
-The plan can pick whichever fits the existing manifest shape better. Option A is less invasive (one new field, default-handling for old manifests).
-
-On record-stop, after blob save, update the manifest with the new clipId for that cellId. Existing project save/load paths get this for free if the helpers (`saveClipBlob`, `loadProject`) thread `clipId` through.
+Legacy manifests with `cellIds: string[]` migrate on first load: derive `cellIds` from existing field, generate fresh `clipId`s, and re-decode to populate cache metadata (one-time cost).
 
 ### 4. Cross-session RGBA cache reuse on load
 
-Currently (phase 2): on project load, each clip's `blobToClip` reads the WebM blob, decodes to RGBA, writes a fresh `/rgba/<clipId>.bin` file. Cold-start every time.
+Currently (phase 2): every project-load decodes each clip's WebM and writes a fresh `/rgba/<clipId>.bin` file.
 
-Phase 3: `blobToClip` checks whether `/rgba/<clipId>.bin` already exists (matching the clipId persisted in the manifest). If yes, skip the decode + write step; just spawn the reader worker directly on the existing file. Massive perf win — opening a 9-cell session can drop from ~5 s to ~50 ms.
-
-If the file is missing (eviction, fresh device, manifest mismatch, etc.), fall through to the existing cold-start path: decode AV1 → write RGBA → spawn worker.
+Phase 3: `blobToClip` checks `rgbaCacheExists(clipId)`; if present, skip decode and spawn the reader worker directly with metadata from the manifest:
 
 ```ts
 // In makeBitmapSource:
 if (await rgbaCacheExists(clipId)) {
-  // Hot path: reuse persistent cache.
-  const { width, height, totalFrames } = await readCacheMetadata(clipId)
-  return spawnReaderForCache(clipId, width, height, totalFrames)
+  // Hot path: reuse persistent cache from manifest metadata.
+  return spawnReaderForCache(clipId, cellRecord.cacheWidth, cellRecord.cacheHeight,
+                             cellRecord.cacheFrames, cellRecord.cacheSourceFps)
 }
-// Cold-start path: decode from canonical, write cache, spawn worker (phase 2 path).
+// Cold-start path: demux 270p WebM, decode to RGBA, write cache, spawn worker.
+const mipBlob = await loadClipBlob(cellId, "270p")
+return await coldStartFromMip(mipBlob, clipId)
 ```
 
-The trick: we need `width/height/totalFrames` to set up the reader. Phase 2 derives these from the decode. For the hot path, we need them stored alongside the cache — either in a sidecar metadata file (`<clipId>.meta.json`) or appended as a header. Or carried in the manifest's CellRecord.
+### 5. Startup GC: manifest-driven, not blind wipe
 
-Carrying in the manifest is cleanest:
-
-```ts
-interface CellRecord {
-  cellId: string
-  clipId: string
-  cacheWidth: number
-  cacheHeight: number
-  cacheFrames: number
-}
-```
-
-Manifest writes are already on the save path; one extra small structure per cell.
-
-### 5. Remove startup wipe; replace with manifest-driven cleanup
-
-Phase 2's startup wipe (`wipeRgbaCache` in `src/state/projects.ts`'s `init`) was a heavy hammer because we couldn't trust which rgba files were valid. With clipIds persisted in the manifest, we can compute the "expected" set:
+Phase 2's startup `wipeRgbaCache()` deleted all rgba files because we couldn't distinguish valid from orphaned. With clipIds in the manifest we compute the expected set:
 
 ```ts
-// At app startup, after loading the projects list:
 const expectedClipIds = new Set<string>()
 for (const projectId of allProjects) {
   const manifest = await readManifest(projectId)
-  for (const cell of manifest.cells) {
+  for (const cell of manifest.cells ?? []) {
     expectedClipIds.add(cell.clipId)
   }
 }
-await garbageCollectRgbaCache(expectedClipIds)  // delete files not in expected set
+await garbageCollectRgbaCache(expectedClipIds)
 ```
 
-This preserves the active session's cached files (they're in the expected set), removes truly orphaned files (left over from crashes, deleted projects, etc.).
+This preserves the cache for clips referenced by any project's manifest, deletes truly orphaned files (crash residue, deleted projects).
 
-If `garbageCollectRgbaCache` doesn't exist yet, add it as a new export in `src/storage/rgba-cache.ts`:
-
-```ts
-export async function garbageCollectRgbaCache(keep: Set<string>): Promise<void> {
-  // ... iterate /rgba/, delete files whose clipId (filename) isn't in `keep`
-}
-```
-
-### 6. `deleteProject` reads manifest, deletes rgba per cell
-
-With clipIds persisted, the non-active-project-delete case is now trivial:
+### 6. `deleteProject` reads manifest, deletes both WebMs + rgba cache per cell
 
 ```ts
 async function deleteProject(id: string) {
   const manifest = await readManifest(id)
   if (manifest !== null) {
-    for (const cell of manifest.cells) {
+    for (const cell of manifest.cells ?? []) {
       await deleteRgbaCache(cell.clipId)
+      await deleteClipBlob(id, cell.cellId, "720p")
+      await deleteClipBlob(id, cell.cellId, "270p")
     }
   }
-  await deleteProjectOnDisk(id)
-  // ... rest of existing logic
+  await deleteProjectDir(id)
 }
 ```
 
-(Re-introduces what phase 2's Task 4 had, then was removed during the clipId refactor.)
+### 7. Record-stop flow
+
+`src/hud/main.tsx`'s record-stop handler:
+
+1. `captureSession.stop()` returns both blobs (~100-150 ms based on [30c](../../../experiments/30c_audio-split-pipeline/README.md)'s finalize timings)
+2. `saveClipBlob(cellId, "720p", canonicalBlob)` and `saveClipBlob(cellId, "270p", mipBlob)` in parallel
+3. Demux the 270p blob once to derive cache metadata (`width`, `height`, `frames`, `sourceFps`) — this is the decode that populates the rgba cache anyway, so reuse its output
+4. `blobToClip` writes the rgba cache file, spawns reader, returns the Clip
+5. `ClipStore.setClip(cellId, clip, clipId, cacheMetadata)` updates store + manifest atomically
 
 ## Out of scope (phase 4+)
 
-- **Capture-time AV1 encode** (replacing MediaRecorder with MediaStreamTrackProcessor + VideoEncoder). Phase 3 keeps the existing capture path; transcodes post-record.
-- **Storage-pressure-driven eviction** of RGBA cache. Phase 3's GC is manifest-driven (delete what's not referenced); a true LRU eviction under quota pressure is later.
-- **Transport `registerSeek` wiring** to bitmap sources for boundary-driven cursor resets. The API exists from phase 1 but no consumer uses it yet. Phase 4.
-- **Worker-side video decode** in the bitmap reader. Currently main-thread; phase 4+ if profiling demands.
+- **Hardware-accelerated AV1 encode** when available (per-device probe). The dual-encode pipeline doesn't preclude HW encode in either branch; it just happens to use SW today.
+- **Multi-mip-pyramid storage** beyond 720p + 270p. Could add 540p or other intermediate mips if usage shapes demand it. Not needed for current K=9 ceiling.
+- **Worker-side video encode**. The encoders run on the main thread; moving them to workers would free additional CPU for playback but complicate the resize handoff. Re-measure if K=16 record-while-playing becomes a target.
+- **Storage-pressure-driven eviction** of RGBA cache. Phase 3's GC is manifest-driven; LRU eviction under quota pressure is later.
+- **Transport `registerSeek` wiring** to bitmap sources for boundary-driven cursor resets. API exists since phase 1, no consumer yet. Phase 4.
 - **Shared reader worker pool**. Per-clip workers are correct for current scale.
 - **`SharedArrayBuffer`** for zero-overhead frame transfer (needs COOP/COEP headers).
-- **Live camera adapter moving to OPFS** — stays in-memory.
+- **Live camera adapter moving to OPFS** — stays in-memory; transient.
+- **A 60-90 s thermal sustainment test.** Headroom in [30g](../../../experiments/30g_dual-encode-720p-and-270p/README.md) (~10× over realtime per encoder) suggests this is safe but worth confirming as a follow-up experiment.
 
 ## Touch surface
 
 | File | Action |
 |---|---|
-| `src/media/transcode-worker.ts` | New: worker that takes VP8 WebM blob, transcodes to AV1, returns AV1 WebM blob |
-| `src/media/transcode.ts` | New: `transcodeBlobToAv1(blob)` helper that spawns the worker |
-| `src/storage/opfs.ts` | `ProjectManifest` gains `cells: CellRecord[]` with `{cellId, clipId, cacheWidth, cacheHeight, cacheFrames}`; legacy `cellIds` kept as derived or migrated |
-| `src/storage/rgba-cache.ts` | Add `garbageCollectRgbaCache(keepSet)`; (`writeRgbaCache`, `deleteRgbaCache`, `rgbaCacheExists`, `RGBA_DIR_NAME` unchanged) |
-| `src/media/bitmap-source.ts` | `makeBitmapSource` gains hot-path: check `rgbaCacheExists(clipId)` first; if present, skip decode and spawn reader directly with metadata from manifest |
-| `src/clips/clip.ts` | `blobToClip(cellId, blob, clipId?, cacheMetadata?)` — accept optional persisted clipId (manifest read) + cache metadata; reuse if present |
-| `src/state/projects.ts` | Replace startup `wipeRgbaCache()` with `garbageCollectRgbaCache(expectedSet)`; thread `cells` (with clipIds + cache metadata) through save/load; re-add `deleteRgbaCache` loop in `deleteProject` |
-| `src/hud/main.tsx` | Record-stop: `transcodeBlobToAv1` between MediaRecorder stop and `saveClipBlob`; update manifest with new clipId + cache metadata after `setClip` |
+| `src/media/capture.ts` | New: `startCapture(stream)` → `CaptureSession` with dual encoders + audio + WebGL resize |
+| `src/media/resize-rig.ts` | New: `setupResizeRig(width, height)` + `resizeWithWebgl(rig, frame, ts)` — extracted from the 30g/30c experiment code |
+| `src/storage/opfs.ts` | `saveClipBlob(cellId, mip, blob)` + `loadClipBlob(cellId, mip)` + `deleteClipBlob(cellId, mip)` gain a `"720p" \| "270p"` argument; `ProjectManifest.cells: CellRecord[]` schema; legacy migration on read |
+| `src/storage/rgba-cache.ts` | Add `garbageCollectRgbaCache(keep: Set<string>)`; (`writeRgbaCache`, `deleteRgbaCache`, `rgbaCacheExists`, `RGBA_DIR_NAME` unchanged) |
+| `src/media/bitmap-source.ts` | `makeBitmapSource` gains hot path: if `rgbaCacheExists(clipId)` and cache metadata is present in the manifest, spawn reader without decoding |
+| `src/clips/clip.ts` | `blobToClip(cellId, mipBlob, options?)` — accept optional persisted `clipId` + cache metadata; reuse if present |
+| `src/state/projects.ts` | Replace startup `wipeRgbaCache()` with `garbageCollectRgbaCache(expectedSet)`; thread `cells` (with clipIds + cache metadata) through save/load; restore `deleteRgbaCache` + per-mip blob delete in `deleteProject` |
+| `src/hud/main.tsx` | Record-stop: replace MediaRecorder with `startCapture(stream)`; on `stop`: save both blobs, build Clip from mip, update manifest with `cells` entry |
+| `src/state/projects.test.ts` *(if exists)* | Update for new manifest schema |
 
 Order:
-1. AV1 transcode worker + helper (new files, no consumers)
-2. Manifest schema bump (default-handling for old manifests)
-3. Hot-path cache reuse in `makeBitmapSource`
-4. Wire record-stop to transcode + persist
-5. Replace startup wipe with manifest-driven GC + restore `deleteProject` rgba cleanup
-6. E2E regression + new test for cache-survives-reload
+1. Resize rig (`src/media/resize-rig.ts`) — extract from experiment, unit-shape test
+2. Capture session (`src/media/capture.ts`) — depends on resize rig
+3. Storage layout: two-mip `saveClipBlob`/`loadClipBlob` + manifest schema
+4. Hot-path cache reuse in `makeBitmapSource`
+5. Wire record-stop to capture session
+6. Startup GC + `deleteProject` per-mip cleanup
+7. Legacy manifest migration handling
+8. E2E regression + new tests
 
 ## Success criteria
 
-- All phase 1 + phase 2 E2E tests still pass (~55 tests)
-- New test: `tests/c2-cache-survives-reload.spec.ts` — record a clip, reload the page, assert the rgba cache file is reused (verifiable via a timing or trace assertion: cold-start step skipped on second load)
-- New test: `tests/c2-av1-canonical.spec.ts` — record a clip, assert the saved blob is AV1 (via mediabunny demux or a magic-number check)
-- Session reopen for a 9-cell project drops from phase 2's ~5 s to ~100 ms (informational; verify in dev manually)
-- Persistent storage per 9-cell session drops from ~25-50 MB (WebM blobs) to ~0.5-1 MB (AV1 blobs)
-- No functional regression: record, play, loop, multi-cell, project save/load/delete all work
+- All phase 1 + phase 2 E2E tests pass (~55 tests).
+- New test `tests/c2-dual-mip-record.spec.ts`: record a clip, assert both `<cellId>.720p.webm` and `<cellId>.270p.webm` exist in OPFS and demux as AV1.
+- New test `tests/c2-cache-survives-reload.spec.ts`: record a clip, reload the page, assert the rgba cache file is reused (verifiable via a timing or trace assertion: cold-start step skipped on second load).
+- New test `tests/c2-av-sync.spec.ts`: record a 6 s clip, assert A/V drift in each WebM is ≤ 200 ms.
+- New test `tests/c2-legacy-project-migrate.spec.ts`: load a phase-2-era project, assert it loads (no 720p file, treats existing WebM as 270p mip) and that re-recording any cell produces dual-mip output.
+- Record-stop latency ≤ 200 ms in dev (informational; verify manually).
+- Session reopen for a 9-cell project drops from phase 2's ~5 s to ~100 ms (informational; verify manually).
+- Persistent storage per 9-cell session: ~10-20 MB (was ~25-50 MB phase 2).
+- No functional regression: record, play, loop, multi-cell record-while-playing at K=9, project save/load/delete all work.
 
 ## Risks
 
-- **AV1 encode latency at record-stop.** A 6 s clip takes ~6 s to encode on this device per experiment 20. The user is reviewing the take during that time so it's mostly hidden, but for re-record-heavy workflows (where the user records, immediately re-records before reviewing), the encode queue could back up. Mitigation: don't block re-record on encode completion; queue encodes and allow them to complete asynchronously. Manifest update happens when each encode lands.
-- **Manifest schema migration.** Existing user projects have manifests with `cellIds: string[]` but no `cells: CellRecord[]`. Need to handle gracefully: if `cells` is missing, derive `cellIds` and generate fresh `clipId`s on first load (no cache reuse for these — old behavior). The migration writes the new schema on next save.
-- **Cache metadata staleness.** If `<clipId>.bin` is somehow out of sync with `cacheWidth/Height/Frames` (file truncated, dimensions changed, manual fiddling), the reader will read garbage. Mitigation: include a small magic + version header in the file, validate before spawning the reader; on mismatch, fall through to cold-start.
-- **First load of a re-recorded clip in a session.** Re-record allocates a new clipId → no existing cache → cold-start runs. Same UX as phase 2's record-stop. Not a regression.
-- **GC race with active workers.** `garbageCollectRgbaCache` runs at startup before any clips load, so no workers hold handles. Safe.
+- **Dual file save at record-stop.** Two `saveClipBlob` calls per record-stop; if one succeeds and the other fails (OPFS quota, IO error), the manifest could reference a clip that's missing one mip. Mitigation: write blobs first, then atomically update the manifest; if either blob save fails, roll back (delete the partial one) and surface error.
+- **Audio in both WebMs duplicates ~14-16 KB/s of opus.** Negligible compared to the video bytes (~12-20 KB/s for 270p, ~150 KB/s for 720p), but doubles audio bandwidth. Alternative: audio in 270p only, 720p video-only (saves ~150 KB per 10 s clip). Defer this optimization; self-contained-WebMs is simpler.
+- **Legacy manifest migration.** Existing user projects' manifests use `cellIds: string[]`. On first load, derive `cellIds`, generate fresh `clipId`s, populate `cells` with derived metadata, persist on next save. Old clips remain as single-mip WebMs (the existing path treats them as 270p source); new recordings produce both mips.
+- **WebGL context loss.** Mobile Chrome can drop the WebGL context on backgrounding. The capture session's WebGL resize rig must handle `webglcontextlost`/`webglcontextrestored` events; on loss, abort the in-flight recording with a graceful error. Mitigation: detect and surface; user can retry. (Phase 1's renderer already deals with this for the main canvas; pattern is established.)
+- **A/V drift growth over long sessions.** [30c](../../../experiments/30c_audio-split-pipeline/README.md) measured 28 ms over 10 s. Likely linear growth (audio and video clocks aren't perfectly co-driven). For a 60 s clip, drift could be 150-300 ms — still within tolerance. For multi-minute clips, may need explicit resync. Out of scope for phase 3; revisit if long-clip use cases emerge.
+- **WebGL canvas-transfer per-frame allocation.** `transferToImageBitmap` creates a new ImageBitmap per call. At 30 fps that's 30 short-lived bitmaps/s, eligible for GC. Measured no impact in [30g re-run](../../../experiments/30g_dual-encode-720p-and-270p/README.md) — pendingMax stayed at 1, no GC pauses visible — but worth keeping an eye on under long sessions.
+- **`MediaStreamAudioTrackSource.errorPromise` is fire-and-forget.** If audio capture fails partway through a recording, the video encoders keep going but the resulting WebM has truncated audio. Mitigation: wire `errorPromise` rejection to abort the capture session and surface the error.
