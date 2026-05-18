@@ -1,7 +1,7 @@
 import type { Input } from "mediabunny"
 import { decodeToAudioBuffer } from "../media/audio-decoder"
 import { demuxBlob } from "../media/demuxer"
-import { makeBitmapSource, type BitmapSource } from "../media/bitmap-source"
+import { makeBitmapSource, type BitmapCacheMetadata, type BitmapSource } from "../media/bitmap-source"
 import { logTrace } from "../utils"
 
 export interface Clip {
@@ -13,6 +13,10 @@ export interface Clip {
   duration: number
   audio: AudioBuffer
   video: BitmapSource
+  /** Width/height/totalFrames/sourceFps of the rgba cache backing
+   *  `video`. Used by the projects store to persist into CellRecord
+   *  so the hot path can read these without re-decoding. */
+  videoCacheMetadata: BitmapCacheMetadata
   /** Underlying mediabunny Input — held to keep tracks alive until close. */
   input: Input
 }
@@ -26,14 +30,14 @@ export async function blobToClip(cellId: string, blob: Blob): Promise<Clip> {
   const demuxed = await demuxBlob(blob)
   logTrace("clip-demux-done", { cellId, durationSeconds: demuxed.durationSeconds })
   const clipId = crypto.randomUUID()
-  const [audio, video] = await Promise.all([
+  const [audio, videoResult] = await Promise.all([
     decodeToAudioBuffer(demuxed.audioTrack).then(a => {
       logTrace("clip-audio-decoded", { cellId, duration: a.duration, channels: a.numberOfChannels, sampleRate: a.sampleRate })
       return a
     }),
-    makeBitmapSource(demuxed.videoTrack, clipId).then(v => {
-      logTrace("clip-video-decoded", { cellId, clipId })
-      return v
+    makeBitmapSource(demuxed.videoTrack, clipId).then(result => {
+      logTrace("clip-video-decoded", { cellId, clipId, ...result.metadata })
+      return result
     }),
   ])
   return {
@@ -41,7 +45,8 @@ export async function blobToClip(cellId: string, blob: Blob): Promise<Clip> {
     clipId,
     duration: Math.max(audio.duration, demuxed.durationSeconds),
     audio,
-    video,
+    video: videoResult.source,
+    videoCacheMetadata: videoResult.metadata,
     input: demuxed.input,
   }
 }
