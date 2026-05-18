@@ -103,20 +103,36 @@ export function Main() {
     context.transport.stop() // stop monitor playback if it was running
     // Capture is over — autoplay below uses speakers normally.
     useDirectOutput()
-    // TEMPORARY adapter — Task 8 wires both blobs
     const result = await handle.stop()
-    const blob = result.mipBlob
-    logTrace("record-stop-blob", { cellId, size: blob.size, type: blob.type })
+    logTrace("record-stop-result", {
+      cellId,
+      canonicalSize: result.canonicalBlob.size,
+      mipSize: result.mipBlob.size,
+      duration: result.durationSeconds,
+      frames: result.frameCount,
+      codec: result.videoCodec,
+    })
     if (cellId === null) {
       logTrace("record-stop-abort", { reason: "no cellId" })
       return
     }
-    const clip = await blobToClip(cellId, blob)
-    logTrace("record-stop-clip-ready", { cellId, duration: clip.duration })
-    // Persist the raw blob to OPFS before staging the in-memory clip
-    // so a refresh mid-decode can't lose the recording. The manifest
-    // update inside saveClipBlob will include the new cellId.
-    await context.projects.saveClipBlob(cellId, "270p", blob)
+    // Build the clip from the MIP blob — bitmap pipeline always reads
+    // the mip; the 720p canonical is reserved for export / fullscreen.
+    const clip = await blobToClip(cellId, result.mipBlob)
+    logTrace("record-stop-clip-ready", {
+      cellId,
+      clipId: clip.clipId,
+      duration: clip.duration,
+      cacheMeta: clip.videoCacheMetadata,
+    })
+    // Persist both blobs in parallel before staging the clip so a
+    // mid-decode refresh can't lose either file. The manifest update
+    // (which gets the CellRecord with clipId + cache metadata) follows
+    // via setClip → save effect, picking up clip.clipId + clip.videoCacheMetadata.
+    await Promise.all([
+      context.projects.saveClipBlob(cellId, "720p", result.canonicalBlob),
+      context.projects.saveClipBlob(cellId, "270p", result.mipBlob),
+    ])
     logTrace("record-stop-saved", { cellId })
     context.clips.setClip(cellId, clip)
     if (context.songLength() === null) {
