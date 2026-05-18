@@ -45,6 +45,10 @@ interface TechniqueResult {
 
 interface Technique {
   name: string
+  // If false, skip the per-technique encode-round-trip validation (e.g.
+  // passthrough produces a source-res frame that the 270p encoder would
+  // reject).
+  validateEncode?: boolean
   setup(): Promise<void>
   resize(frame: VideoFrame, timestampUs: number): Promise<VideoFrame>
   dispose(): void
@@ -68,11 +72,17 @@ function makeCreateImageBitmapTechnique(quality: "low" | "medium" | "high"): Tec
   }
 }
 
-function makeCanvas2dWrapTechnique(): Technique {
+interface Canvas2dWrapOptions {
+  variantName: string
+  smoothing: boolean
+  smoothingQuality: "low" | "medium" | "high"
+}
+
+function makeCanvas2dWrapTechnique(opts: Canvas2dWrapOptions): Technique {
   let canvas: OffscreenCanvas | null = null
   let context: OffscreenCanvasRenderingContext2D | null = null
   return {
-    name: "canvas2d-wrap",
+    name: opts.variantName,
     async setup(): Promise<void> {
       canvas = new OffscreenCanvas(
         params.targetResolution.width,
@@ -80,14 +90,15 @@ function makeCanvas2dWrapTechnique(): Technique {
       )
       const ctx = canvas.getContext("2d")
       if (ctx === null) {
-        throw new Error("canvas2d-wrap: no 2d context")
+        throw new Error(`${opts.variantName}: no 2d context`)
       }
-      ctx.imageSmoothingQuality = "low"
+      ctx.imageSmoothingEnabled = opts.smoothing
+      ctx.imageSmoothingQuality = opts.smoothingQuality
       context = ctx
     },
     async resize(frame: VideoFrame, timestampUs: number): Promise<VideoFrame> {
       if (canvas === null || context === null) {
-        throw new Error("canvas2d-wrap: not set up")
+        throw new Error(`${opts.variantName}: not set up`)
       }
       context.drawImage(
         frame,
@@ -163,12 +174,25 @@ void main() {
 }
 `
 
-function makeWebglTechnique(): Technique {
+interface WebglVariantOptions {
+  variantName: string
+  // sync: call gl.finish() before measuring (closest to real per-frame cost)
+  sync: boolean
+  // outputMode:
+  //   'canvas-wrap'    — render to the GL canvas; wrap canvas as VideoFrame
+  //   'canvas-transfer'— render to canvas, transferToImageBitmap, wrap bitmap
+  outputMode: "canvas-wrap" | "canvas-transfer"
+  // useMipmaps: generate mip levels after upload, sample with linear-mipmap-linear.
+  // Higher-quality downscale at the cost of mip generation.
+  useMipmaps: boolean
+}
+
+function makeWebglTechnique(opts: WebglVariantOptions): Technique {
   let canvas: OffscreenCanvas | null = null
   let gl: WebGL2RenderingContext | null = null
   let texture: WebGLTexture | null = null
   return {
-    name: "webgl",
+    name: opts.variantName,
     async setup(): Promise<void> {
       canvas = new OffscreenCanvas(
         params.targetResolution.width,
@@ -176,36 +200,36 @@ function makeWebglTechnique(): Technique {
       )
       const ctx = canvas.getContext("webgl2", { antialias: false, premultipliedAlpha: true })
       if (ctx === null) {
-        throw new Error("webgl: WebGL2 unavailable")
+        throw new Error(`${opts.variantName}: WebGL2 unavailable`)
       }
       gl = ctx
       const vs = gl.createShader(gl.VERTEX_SHADER)
       if (vs === null) {
-        throw new Error("webgl: createShader vs")
+        throw new Error(`${opts.variantName}: createShader vs`)
       }
       gl.shaderSource(vs, WEBGL_VERTEX)
       gl.compileShader(vs)
       if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
-        throw new Error(`webgl: vs compile ${gl.getShaderInfoLog(vs) ?? ""}`)
+        throw new Error(`${opts.variantName}: vs compile ${gl.getShaderInfoLog(vs) ?? ""}`)
       }
       const fs = gl.createShader(gl.FRAGMENT_SHADER)
       if (fs === null) {
-        throw new Error("webgl: createShader fs")
+        throw new Error(`${opts.variantName}: createShader fs`)
       }
       gl.shaderSource(fs, WEBGL_FRAGMENT)
       gl.compileShader(fs)
       if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
-        throw new Error(`webgl: fs compile ${gl.getShaderInfoLog(fs) ?? ""}`)
+        throw new Error(`${opts.variantName}: fs compile ${gl.getShaderInfoLog(fs) ?? ""}`)
       }
       const program = gl.createProgram()
       if (program === null) {
-        throw new Error("webgl: createProgram")
+        throw new Error(`${opts.variantName}: createProgram`)
       }
       gl.attachShader(program, vs)
       gl.attachShader(program, fs)
       gl.linkProgram(program)
       if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        throw new Error(`webgl: link ${gl.getProgramInfoLog(program) ?? ""}`)
+        throw new Error(`${opts.variantName}: link ${gl.getProgramInfoLog(program) ?? ""}`)
       }
       gl.useProgram(program)
 
@@ -221,19 +245,31 @@ function makeWebglTechnique(): Technique {
       gl.bindTexture(gl.TEXTURE_2D, texture)
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+      const minFilter = opts.useMipmaps ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, minFilter)
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
 
       gl.viewport(0, 0, params.targetResolution.width, params.targetResolution.height)
     },
     async resize(frame: VideoFrame, timestampUs: number): Promise<VideoFrame> {
       if (gl === null || canvas === null || texture === null) {
-        throw new Error("webgl: not set up")
+        throw new Error(`${opts.variantName}: not set up`)
       }
       gl.bindTexture(gl.TEXTURE_2D, texture)
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, frame)
+      if (opts.useMipmaps) {
+        gl.generateMipmap(gl.TEXTURE_2D)
+      }
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
-      gl.finish()
+      if (opts.sync) {
+        gl.finish()
+      }
+      if (opts.outputMode === "canvas-transfer") {
+        const bitmap = canvas.transferToImageBitmap()
+        const out = new VideoFrame(bitmap, { timestamp: timestampUs })
+        bitmap.close()
+        return out
+      }
       return new VideoFrame(canvas, { timestamp: timestampUs })
     },
     dispose(): void {
@@ -256,37 +292,63 @@ function isWebGPUAvailable(): boolean {
   return (navigator as unknown as WebGPUNavigator).gpu !== undefined
 }
 
-function makeWebgpuTechnique(): Technique {
-  let canvas: OffscreenCanvas | null = null
-  let device: GPUDevice | null = null
-  let context: GPUCanvasContext | null = null
-  let pipeline: GPURenderPipeline | null = null
-  let sampler: GPUSampler | null = null
+interface WebgpuVariantOptions {
+  variantName: string
+  // sync: await queue.onSubmittedWorkDone() so the per-call cost reflects
+  // total GPU work, not just JS dispatch. Set false for throughput-style
+  // measurement.
+  sync: boolean
+  // sourceMode:
+  //   'external'    — import VideoFrame as external texture (fast in theory; slow in practice on this device)
+  //   'copy-then-2d'— copyExternalImageToTexture into a regular 2D texture; render from that
+  sourceMode: "external" | "copy-then-2d"
+  // pipelineMode:
+  //   'render'  — full-screen quad render pass into the canvas
+  //   'compute' — compute pass writing into a storage texture, blitted to canvas
+  pipelineMode: "render" | "compute"
+}
+
+interface WebgpuRig {
+  device: GPUDevice
+  canvas: OffscreenCanvas
+  context: GPUCanvasContext
+  format: GPUTextureFormat
+  renderPipeline: GPURenderPipeline | null
+  computePipeline: GPUComputePipeline | null
+  blitPipeline: GPURenderPipeline | null
+  sampler: GPUSampler
+  copyTexture: GPUTexture | null
+  computeOutputTexture: GPUTexture | null
+}
+
+function makeWebgpuTechnique(opts: WebgpuVariantOptions): Technique {
+  let rig: WebgpuRig | null = null
   return {
-    name: "webgpu",
+    name: opts.variantName,
     async setup(): Promise<void> {
       const navGpu = (navigator as unknown as { gpu: GPU }).gpu
       if (navGpu === undefined) {
-        throw new Error("webgpu: navigator.gpu unavailable")
+        throw new Error(`${opts.variantName}: navigator.gpu unavailable`)
       }
       const adapter = await navGpu.requestAdapter()
       if (adapter === null) {
-        throw new Error("webgpu: no adapter")
+        throw new Error(`${opts.variantName}: no adapter`)
       }
-      device = await adapter.requestDevice()
-      canvas = new OffscreenCanvas(
+      const device = (await adapter.requestDevice()) as GPUDevice
+      const canvas = new OffscreenCanvas(
         params.targetResolution.width,
         params.targetResolution.height,
       )
       const ctx = canvas.getContext("webgpu") as GPUCanvasContext | null
       if (ctx === null) {
-        throw new Error("webgpu: no canvas context")
+        throw new Error(`${opts.variantName}: no canvas context`)
       }
-      context = ctx
       const format = navGpu.getPreferredCanvasFormat()
-      context.configure({ device, format, alphaMode: "premultiplied" })
+      ctx.configure({ device, format, alphaMode: "premultiplied" })
+      const sampler = device.createSampler({ magFilter: "linear", minFilter: "linear" })
 
-      const shader = device.createShaderModule({
+      // Render-from-external-texture program (used when sourceMode==='external').
+      const externalShader = device.createShaderModule({
         code: `
           struct VertexOutput {
             @builtin(position) position: vec4f,
@@ -319,53 +381,244 @@ function makeWebgpuTechnique(): Technique {
           }
         `,
       })
-      pipeline = device.createRenderPipeline({
-        layout: "auto",
-        vertex: { module: shader, entryPoint: "vs" },
-        fragment: { module: shader, entryPoint: "fs", targets: [{ format }] },
-        primitive: { topology: "triangle-strip" },
+      // Render-from-2d-texture program (used when sourceMode==='copy-then-2d',
+      // and as the blit-out program after compute).
+      const twoDShader = device.createShaderModule({
+        code: `
+          struct VertexOutput {
+            @builtin(position) position: vec4f,
+            @location(0) uv: vec2f,
+          };
+          @vertex
+          fn vs(@builtin(vertex_index) index: u32) -> VertexOutput {
+            var pos = array<vec2f, 4>(
+              vec2f(-1.0, -1.0),
+              vec2f( 1.0, -1.0),
+              vec2f(-1.0,  1.0),
+              vec2f( 1.0,  1.0),
+            );
+            var uv = array<vec2f, 4>(
+              vec2f(0.0, 1.0),
+              vec2f(1.0, 1.0),
+              vec2f(0.0, 0.0),
+              vec2f(1.0, 0.0),
+            );
+            var out: VertexOutput;
+            out.position = vec4f(pos[index], 0.0, 1.0);
+            out.uv = uv[index];
+            return out;
+          }
+          @group(0) @binding(0) var s: sampler;
+          @group(0) @binding(1) var t: texture_2d<f32>;
+          @fragment
+          fn fs(in: VertexOutput) -> @location(0) vec4f {
+            return textureSample(t, s, in.uv);
+          }
+        `,
       })
-      sampler = device.createSampler({ magFilter: "linear", minFilter: "linear" })
+
+      let renderPipeline: GPURenderPipeline | null = null
+      let blitPipeline: GPURenderPipeline | null = null
+      let computePipeline: GPUComputePipeline | null = null
+      let copyTexture: GPUTexture | null = null
+      let computeOutputTexture: GPUTexture | null = null
+
+      if (opts.pipelineMode === "render") {
+        const shaderModule = opts.sourceMode === "external" ? externalShader : twoDShader
+        renderPipeline = device.createRenderPipeline({
+          layout: "auto",
+          vertex: { module: shaderModule, entryPoint: "vs" },
+          fragment: { module: shaderModule, entryPoint: "fs", targets: [{ format }] },
+          primitive: { topology: "triangle-strip" },
+        })
+      } else {
+        // Compute pipeline: read from a 2d texture (source mode must be copy-then-2d
+        // because texture_external is not directly samplable in a compute pass).
+        const computeShader = device.createShaderModule({
+          code: `
+            @group(0) @binding(0) var s: sampler;
+            @group(0) @binding(1) var src: texture_2d<f32>;
+            @group(0) @binding(2) var dst: texture_storage_2d<rgba8unorm, write>;
+            @compute @workgroup_size(8, 8)
+            fn cs(@builtin(global_invocation_id) gid: vec3u) {
+              let dim = textureDimensions(dst);
+              if (gid.x >= dim.x || gid.y >= dim.y) {
+                return;
+              }
+              let uv = vec2f(f32(gid.x) / f32(dim.x), f32(gid.y) / f32(dim.y));
+              let color = textureSampleLevel(src, s, uv, 0.0);
+              textureStore(dst, vec2i(i32(gid.x), i32(gid.y)), color);
+            }
+          `,
+        })
+        computePipeline = device.createComputePipeline({
+          layout: "auto",
+          compute: { module: computeShader, entryPoint: "cs" },
+        })
+        // Compute writes to a storage texture; blit pipeline copies it onto the canvas.
+        blitPipeline = device.createRenderPipeline({
+          layout: "auto",
+          vertex: { module: twoDShader, entryPoint: "vs" },
+          fragment: { module: twoDShader, entryPoint: "fs", targets: [{ format }] },
+          primitive: { topology: "triangle-strip" },
+        })
+        computeOutputTexture = device.createTexture({
+          size: {
+            width: params.targetResolution.width,
+            height: params.targetResolution.height,
+          },
+          format: "rgba8unorm",
+          // STORAGE_BINDING (0x08) | TEXTURE_BINDING (0x04) | COPY_SRC (0x01)
+          usage: 0x08 | 0x04 | 0x01,
+        })
+      }
+
+      // copyTexture is created lazily on first resize() call so it
+      // matches the actual frame size (camera may negotiate a different
+      // resolution than requested).
+      rig = {
+        device,
+        canvas,
+        context: ctx,
+        format,
+        renderPipeline,
+        computePipeline,
+        blitPipeline,
+        sampler,
+        copyTexture,
+        computeOutputTexture,
+      }
     },
     async resize(frame: VideoFrame, timestampUs: number): Promise<VideoFrame> {
-      if (device === null || context === null || pipeline === null || sampler === null || canvas === null) {
-        throw new Error("webgpu: not set up")
+      if (rig === null) {
+        throw new Error(`${opts.variantName}: not set up`)
       }
-      const externalTexture = device.importExternalTexture({ source: frame })
-      const bindGroup = device.createBindGroup({
-        layout: pipeline.getBindGroupLayout(0),
-        entries: [
-          { binding: 0, resource: sampler },
-          { binding: 1, resource: externalTexture },
-        ],
-      })
-      const encoder = device.createCommandEncoder()
-      const pass = encoder.beginRenderPass({
-        colorAttachments: [
-          {
-            view: context.getCurrentTexture().createView(),
-            clearValue: { r: 0, g: 0, b: 0, a: 1 },
-            loadOp: "clear",
-            storeOp: "store",
-          },
-        ],
-      })
-      pass.setPipeline(pipeline)
-      pass.setBindGroup(0, bindGroup)
-      pass.draw(4, 1, 0, 0)
-      pass.end()
-      device.queue.submit([encoder.finish()])
-      // Block until GPU done so the per-frame timing reflects total cost.
-      await device.queue.onSubmittedWorkDone()
+      const { device, canvas, context, sampler } = rig
+      let sourceTextureView: GPUTextureView | GPUExternalTexture
+      if (opts.sourceMode === "external") {
+        sourceTextureView = device.importExternalTexture({ source: frame })
+      } else {
+        // Size copyTexture to match the actual frame on first use.
+        if (
+          rig.copyTexture === null ||
+          rig.copyTexture.width !== frame.codedWidth ||
+          rig.copyTexture.height !== frame.codedHeight
+        ) {
+          if (rig.copyTexture !== null) {
+            rig.copyTexture.destroy()
+          }
+          rig.copyTexture = device.createTexture({
+            size: { width: frame.codedWidth, height: frame.codedHeight },
+            format: "rgba8unorm",
+            // COPY_DST | TEXTURE_BINDING | RENDER_ATTACHMENT
+            usage: 0x02 | 0x04 | 0x10,
+          })
+        }
+        device.queue.copyExternalImageToTexture(
+          { source: frame },
+          { texture: rig.copyTexture },
+          [frame.codedWidth, frame.codedHeight],
+        )
+        sourceTextureView = rig.copyTexture.createView()
+      }
+
+      const commandEncoder = device.createCommandEncoder()
+
+      if (opts.pipelineMode === "render") {
+        if (rig.renderPipeline === null) {
+          throw new Error(`${opts.variantName}: renderPipeline missing`)
+        }
+        const bindGroup = device.createBindGroup({
+          layout: rig.renderPipeline.getBindGroupLayout(0),
+          entries: [
+            { binding: 0, resource: sampler },
+            { binding: 1, resource: sourceTextureView },
+          ],
+        })
+        const pass = commandEncoder.beginRenderPass({
+          colorAttachments: [
+            {
+              view: context.getCurrentTexture().createView(),
+              clearValue: { r: 0, g: 0, b: 0, a: 1 },
+              loadOp: "clear",
+              storeOp: "store",
+            },
+          ],
+        })
+        pass.setPipeline(rig.renderPipeline)
+        pass.setBindGroup(0, bindGroup)
+        pass.draw(4, 1, 0, 0)
+        pass.end()
+      } else {
+        if (
+          rig.computePipeline === null ||
+          rig.blitPipeline === null ||
+          rig.computeOutputTexture === null
+        ) {
+          throw new Error(`${opts.variantName}: compute resources missing`)
+        }
+        const computeBindGroup = device.createBindGroup({
+          layout: rig.computePipeline.getBindGroupLayout(0),
+          entries: [
+            { binding: 0, resource: sampler },
+            { binding: 1, resource: sourceTextureView },
+            { binding: 2, resource: rig.computeOutputTexture.createView() },
+          ],
+        })
+        const computePass = commandEncoder.beginComputePass()
+        computePass.setPipeline(rig.computePipeline)
+        computePass.setBindGroup(0, computeBindGroup)
+        const wx = Math.ceil(params.targetResolution.width / 8)
+        const wy = Math.ceil(params.targetResolution.height / 8)
+        computePass.dispatchWorkgroups(wx, wy)
+        computePass.end()
+
+        const blitBindGroup = device.createBindGroup({
+          layout: rig.blitPipeline.getBindGroupLayout(0),
+          entries: [
+            { binding: 0, resource: sampler },
+            { binding: 1, resource: rig.computeOutputTexture.createView() },
+          ],
+        })
+        const blitPass = commandEncoder.beginRenderPass({
+          colorAttachments: [
+            {
+              view: context.getCurrentTexture().createView(),
+              clearValue: { r: 0, g: 0, b: 0, a: 1 },
+              loadOp: "clear",
+              storeOp: "store",
+            },
+          ],
+        })
+        blitPass.setPipeline(rig.blitPipeline)
+        blitPass.setBindGroup(0, blitBindGroup)
+        blitPass.draw(4, 1, 0, 0)
+        blitPass.end()
+      }
+      device.queue.submit([commandEncoder.finish()])
+      if (opts.sync) {
+        await device.queue.onSubmittedWorkDone()
+      }
       return new VideoFrame(canvas, { timestamp: timestampUs })
     },
     dispose(): void {
-      device = null
-      context = null
-      pipeline = null
-      sampler = null
-      canvas = null
+      rig = null
     },
+  }
+}
+
+// Cost-of-nothing baseline: clone the source VideoFrame at native res
+// without resizing. Establishes the floor on per-call overhead any
+// real resize technique must beat.
+function makePassthroughTechnique(): Technique {
+  return {
+    name: "passthrough-clone",
+    validateEncode: false,
+    async setup(): Promise<void> {},
+    async resize(frame: VideoFrame, _timestampUs: number): Promise<VideoFrame> {
+      return frame.clone()
+    },
+    dispose(): void {},
   }
 }
 
@@ -424,17 +677,80 @@ async function run(): Promise<void> {
   status(`  camera native ${settings.width}×${settings.height} @ ${settings.frameRate ?? "?"} fps`)
 
   const techniques: Technique[] = [
+    makePassthroughTechnique(),
     makeCreateImageBitmapTechnique("low"),
     makeCreateImageBitmapTechnique("medium"),
     makeCreateImageBitmapTechnique("high"),
-    makeCanvas2dWrapTechnique(),
+    makeCanvas2dWrapTechnique({
+      variantName: "canvas2d-wrap-low",
+      smoothing: true,
+      smoothingQuality: "low",
+    }),
+    makeCanvas2dWrapTechnique({
+      variantName: "canvas2d-wrap-high",
+      smoothing: true,
+      smoothingQuality: "high",
+    }),
+    makeCanvas2dWrapTechnique({
+      variantName: "canvas2d-wrap-nosmooth",
+      smoothing: false,
+      smoothingQuality: "low",
+    }),
     makeCanvas2dTransferTechnique(),
-    makeWebglTechnique(),
+    makeWebglTechnique({
+      variantName: "webgl-canvas-wrap-sync",
+      sync: true,
+      outputMode: "canvas-wrap",
+      useMipmaps: false,
+    }),
+    makeWebglTechnique({
+      variantName: "webgl-canvas-wrap-nosync",
+      sync: false,
+      outputMode: "canvas-wrap",
+      useMipmaps: false,
+    }),
+    makeWebglTechnique({
+      variantName: "webgl-mipmap-sync",
+      sync: true,
+      outputMode: "canvas-wrap",
+      useMipmaps: true,
+    }),
+    makeWebglTechnique({
+      variantName: "webgl-canvas-transfer-sync",
+      sync: true,
+      outputMode: "canvas-transfer",
+      useMipmaps: false,
+    }),
   ]
   if (isWebGPUAvailable()) {
-    techniques.push(makeWebgpuTechnique())
+    techniques.push(
+      makeWebgpuTechnique({
+        variantName: "webgpu-render-external-sync",
+        sync: true,
+        sourceMode: "external",
+        pipelineMode: "render",
+      }),
+      makeWebgpuTechnique({
+        variantName: "webgpu-render-external-nosync",
+        sync: false,
+        sourceMode: "external",
+        pipelineMode: "render",
+      }),
+      makeWebgpuTechnique({
+        variantName: "webgpu-render-copy2d-sync",
+        sync: true,
+        sourceMode: "copy-then-2d",
+        pipelineMode: "render",
+      }),
+      makeWebgpuTechnique({
+        variantName: "webgpu-compute-copy2d-sync",
+        sync: true,
+        sourceMode: "copy-then-2d",
+        pipelineMode: "compute",
+      }),
+    )
   } else {
-    status("  webgpu: navigator.gpu unavailable — skipping")
+    status("  webgpu: navigator.gpu unavailable — skipping all webgpu variants")
   }
 
   const states = new Map<string, PerTechniqueState>()
@@ -443,7 +759,8 @@ async function run(): Promise<void> {
     const start = performance.now()
     try {
       await t.setup()
-      const encoderRig = await makeEncoderRig()
+      const encoderRig =
+        t.validateEncode === false ? null : await makeEncoderRig()
       states.set(t.name, {
         timings: [],
         setupMs: performance.now() - start,
