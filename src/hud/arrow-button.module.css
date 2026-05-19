@@ -20,6 +20,9 @@
   justify-content: center;
   align-items: center;
   backdrop-filter: blur(10px) brightness(1.1) invert(0.25);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
 
   &.top,
   &.bottom {
@@ -53,5 +56,15 @@
     right: var(--edge-distance);
     rotate: -90deg;
     translate: -50% 0%;
+  }
+}
+
+/* Reduced-transparency a11y fallback (spec §6) — swap the backdrop
+   blur for a solid semi-transparent fill when the user has opted in
+   at the OS level. */
+@media (prefers-reduced-transparency: reduce) {
+  .arrowButton {
+    backdrop-filter: none;
+    background: rgba(27, 27, 27, 0.85);
   }
 }

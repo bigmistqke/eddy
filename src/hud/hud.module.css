@@ -15,6 +15,8 @@
   pointer-events: auto;
   border-radius: var(--radius-big);
   backdrop-filter: blur(10px) brightness(1.1) invert(0.25);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* ---- Orientation -------------------------------------------------- */
@@ -67,7 +69,7 @@
    any grid-placed HUD. */
 .bottomCenter {
   position: absolute;
-  bottom: var(--padding);
+  bottom: max(var(--padding), env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
 }
@@ -99,6 +101,7 @@
   justify-content: center;
   color: var(--color-front);
   cursor: pointer;
+  touch-action: manipulation;
 
   &.active {
     background: var(--color-active-back);
@@ -112,6 +115,16 @@
 
   &[data-action="record-start"]:not(:disabled) {
     color: var(--color-red);
+  }
+}
+
+/* Reduced-transparency a11y fallback (spec §6) — swap the backdrop
+   blur for a solid semi-transparent fill when the user has opted in
+   at the OS level. */
+@media (prefers-reduced-transparency: reduce) {
+  .hud {
+    backdrop-filter: none;
+    background: rgba(27, 27, 27, 0.85);
   }
 }
 

@@ -4,8 +4,9 @@
   background: var(--color-back);
   color: var(--color-front);
   border-radius: var(--radius-big);
-  min-width: 260px;
-  max-height: 80vh;
+  min-width: min(16.25rem, calc(100dvw - 2 * var(--padding)));
+  max-width: calc(100dvw - 2 * env(safe-area-inset-left) - 2 * env(safe-area-inset-right) - 2 * var(--padding));
+  max-height: 80dvh;
   /* Only switch to flex when the dialog is open — otherwise the UA's
      `dialog:not([open]) { display: none }` rule would be overridden
      and the menu would render inline. */
@@ -49,6 +50,9 @@
   text-align: left;
   cursor: pointer;
   border-radius: calc(var(--radius-big) - var(--padding));
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
 
   &:hover {
     background: var(--color-active-back);
@@ -147,6 +151,8 @@
   display: flex;
   align-items: stretch;
   gap: var(--padding);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .projectOpen {
@@ -164,11 +170,20 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* Restore text-selection: .projectOpen composes .option (which has
+     user-select: none for the touch-ergonomics pass) and .projectRow
+     also sets user-select: none. Project names are content the user
+     might want to copy. */
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .projectAge {
   font-size: 0.75em;
   opacity: 0.6;
+  /* Same rationale as .projectName above. */
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .projectDelete {
@@ -190,5 +205,15 @@
   &[data-confirming="true"] {
     background: var(--color-red);
     color: var(--color-back);
+  }
+}
+
+/* Reduced-transparency a11y fallback (spec §6) — swap the dialog
+   backdrop's blur for a solid semi-transparent fill when the user
+   has opted in at the OS level. */
+@media (prefers-reduced-transparency: reduce) {
+  .dialog::backdrop {
+    backdrop-filter: none;
+    background: rgba(0, 0, 0, 0.5);
   }
 }
